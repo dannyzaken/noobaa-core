@@ -23,29 +23,35 @@ argv.key = argv.key || ('md_blow-' + Date.now().toString(36));
 
 main();
 
-function main() {
-    return client.create_auth_token({
+async function main() {
+    try {
+        await client.create_auth_token({
             email: argv.email,
             password: argv.password,
             system: argv.system,
-        })
-        .then(() => blow_objects())
-        .then(() => process.exit(0))
-        .catch(() => process.exit(1));
+        });
+        await blow_objects();
+        process.exit(0);
+
+    } catch (err) {
+        dbg.error('md_blow failed with error:', err);
+        process.exit(1);
+    }
+
 }
 
-function blow_objects() {
+async function blow_objects() {
     let index = 0;
 
-    function blow_next() {
+    async function blow_next() {
         if (index >= argv.count) return;
         index += 1;
-        return blow_object(index).then(blow_next);
+        await blow_object(index).then(blow_next);
     }
-    return P.all(_.times(argv.concur, blow_next));
+    await P.all(_.times(argv.concur, blow_next));
 }
 
-function blow_object(index) {
+async function blow_object(index) {
     const params = {
         bucket: argv.bucket,
         key: argv.key + '-' + index,
@@ -53,58 +59,49 @@ function blow_object(index) {
         content_type: 'application/octet_stream'
     };
     dbg.log0('create_object_upload', params.key);
-    return client.object.create_object_upload(params)
-        .then(create_reply => {
-            params.obj_id = create_reply.obj_id;
-            return blow_parts(params);
-        })
-        .then(() => {
-            let complete_params = _.pick(params, 'bucket', 'key', 'size', 'obj_id');
-            complete_params.etag = 'bla';
-            dbg.log0('complete_object_upload', params.key);
-            return client.object.complete_object_upload(complete_params);
-        });
+    const create_reply = await client.object.create_object_upload(params);
+
+    params.obj_id = create_reply.obj_id;
+    params.bucket_id = create_reply.bucket_id;
+    params.tier_id = create_reply.tier_id;
+    params.chunk_coder_config = create_reply.chunk_coder_config;
+    await blow_parts(params);
+    let complete_params = _.pick(params, 'bucket', 'key', 'size', 'obj_id');
+    complete_params.etag = 'bla';
+    dbg.log0('complete_object_upload', params.key);
+    await client.object.complete_object_upload(complete_params);
 }
 
-function blow_parts(params) {
-    dbg.log0('allocate_object_parts', params.key);
+async function blow_parts(params) {
 
-    return P.resolve()
-        .then(() => client.bucket.read_bucket({ name: params.bucket }))
-        .then(bucket => {
-            const [record] = bucket.tiering.tiers;
-            return client.tier.read_tier({ name: record.tier });
-        })
-        .then(tier => client.object.allocate_object_parts({
-            obj_id: params.obj_id,
-            bucket: params.bucket,
-            key: params.key,
-            parts: _.times(argv.chunks, i => ({
+    dbg.log0('get_mappings', params.key);
+
+    const mappings = await client.object.get_mapping({
+        chunks: _.times(argv.chunks, i => ({
+            bucket_id: params.bucket_id,
+            tier_id: params.tier_id,
+            chunk_coder_config: params.chunk_coder_config,
+            size: argv.chunk_size,
+            frag_size: argv.chunk_size,
+            compress_size: argv.chunk_size,
+            digest_b64: crypto.randomBytes(32).toString('base64'),
+            cipher_key_b64: crypto.randomBytes(32).toString('base64'),
+            cipher_iv_b64: crypto.randomBytes(32).toString('base64'),
+            frags: _.times(6, data_index => ({
+                data_index,
+                digest_b64: crypto.randomBytes(32).toString('base64'),
+                blocks: []
+            })),
+            parts: [{
+                obj_id: params.obj_id,
                 start: i * argv.chunk_size,
                 end: (i + 1) * argv.chunk_size,
                 seq: i,
-                chunk: {
-                    chunk_coder_config: tier.chunk_coder_config,
-                    size: argv.chunk_size,
-                    frag_size: argv.chunk_size,
-                    compress_size: argv.chunk_size,
-                    digest_b64: crypto.randomBytes(32).toString('base64'),
-                    cipher_key_b64: crypto.randomBytes(32).toString('base64'),
-                    cipher_iv_b64: crypto.randomBytes(32).toString('base64'),
-                    frags: _.times(6, data_index => ({
-                        data_index,
-                        digest_b64: crypto.randomBytes(32).toString('base64'),
-                    }))
-                }
-            }))
+            }]
+
         }))
-        .then(res => {
-            dbg.log0('finalize_object_parts', params.key);
-            return client.object.finalize_object_parts({
-                obj_id: params.obj_id,
-                bucket: params.bucket,
-                key: params.key,
-                parts: res.parts
-            });
-        });
+    });
+
+    dbg.log0('put_mappings', params.key);
+    await client.object.put_mapping(mappings);
 }
