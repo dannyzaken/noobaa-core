@@ -1,13 +1,13 @@
 name: Manual Build Dispatch
-on: 
+on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch to Build From'
+        description: "Branch to Build From"
         required: true
       tag:
-        description: 'Additional tag for the build (such as alpha, beta, etc.) - Optional'
-        default: ''
+        description: "Additional tag for the build (such as alpha, beta, etc.) - Optional"
+        default: ""
 
 jobs:
   manual-build-and-publish-image:
@@ -21,7 +21,7 @@ jobs:
       - name: Get Current Date
         id: date
         run: echo "::set-output name=date::$(date +'%Y%m%d')"
-      
+
       - name: Prepare Suffix
         id: suffix
         if: ${{ github.event.inputs.tag != '' }}
@@ -30,9 +30,9 @@ jobs:
       - name: Prepare Tags
         id: prep
         run: |
-          DOCKER_BASE_IMAGE=noobaa/noobaa-base
-          DOCKER_BUILDER_IMAGE=noobaa/noobaa-builder
-          DOCKER_CORE_IMAGE=noobaa/noobaa-core
+          DOCKER_BASE_IMAGE=dannyzaken/noobaa-base
+          DOCKER_BUILDER_IMAGE=dannyzaken/noobaa-builder
+          DOCKER_CORE_IMAGE=dannyzaken/noobaa-core
           VERSION="${{ steps.date.outputs.date }}"
           echo "::warning ${VERSION}"
           BASE_TAGS="${DOCKER_BASE_IMAGE}:${{ github.event.inputs.branch }}-${VERSION}${{ steps.suffix.outputs.suffix }}"
@@ -52,39 +52,36 @@ jobs:
         env:
           DOCKERHUB_OWNER: ${{ secrets.GHACTIONSDOCKERHUBNAME }}
         run: |
-            make noobaa
-            docker tag noobaa-base ${{ steps.prep.outputs.basetags }}
-            docker push ${{ steps.prep.outputs.basetags }}
-            docker tag noobaa-builder ${{ steps.prep.outputs.buildertags }}
-            docker push ${{ steps.prep.outputs.buildertags }}
-            docker tag noobaa ${{ steps.prep.outputs.coretags }}
-            docker push ${{ steps.prep.outputs.coretags }}
+          make noobaa
+          docker tag noobaa-base ${{ steps.prep.outputs.basetags }}
+          docker push ${{ steps.prep.outputs.basetags }}
+          docker tag noobaa-builder ${{ steps.prep.outputs.buildertags }}
+          docker push ${{ steps.prep.outputs.buildertags }}
+          docker tag noobaa ${{ steps.prep.outputs.coretags }}
+          docker push ${{ steps.prep.outputs.coretags }}
 
-      - name: Login to Quay Registry
-        run: echo ${{ secrets.GHACTIONQUAYTOKEN }} | docker login quay.io -u ${{ secrets.GHACTIONQUAYNAME }} --password-stdin
-      
-      - name: Push Docker Images to Quay
-        env:
-          DOCKERHUB_OWNER: ${{ secrets.GHACTIONQUAYNAME }}
-        run: |
-            docker tag ${{ steps.prep.outputs.coretags }} quay.io/${{ steps.prep.outputs.coretags }}
-            docker push quay.io/${{ steps.prep.outputs.coretags }}
+      # - name: Login to Quay Registry
+      #   run: echo ${{ secrets.GHACTIONQUAYTOKEN }} | docker login quay.io -u ${{ secrets.GHACTIONQUAYNAME }} --password-stdin
 
-      - name: Push to ocs-dev as latest
-        env:
-          DOCKERHUB_OWNER: ${{ secrets.GHACTIONQUAYNAME }}
-        run: |
-          docker login -u="${{ secrets.OCSDEVCIUSER }}" -p="${{ secrets.OCSDEVCITOKEN }}" quay.io
-          docker tag ${{ steps.prep.outputs.coretags }} quay.io/${{ steps.prep.outputs.ocsdevlatest }} 
-          docker push quay.io/${{ steps.prep.outputs.ocsdevlatest }}
+      # - name: Push Docker Images to Quay
+      #   env:
+      #     DOCKERHUB_OWNER: ${{ secrets.GHACTIONQUAYNAME }}
+      #   run: |
+      #     docker tag ${{ steps.prep.outputs.coretags }} quay.io/${{ steps.prep.outputs.coretags }}
+      #     docker push quay.io/${{ steps.prep.outputs.coretags }}
 
-      - name: Invoke Build on Operator Repo
-        uses: benc-uk/workflow-dispatch@v1
-        with:
-          workflow: Manual Operator Build Dispatch
-          repo: noobaa/noobaa-operator
-          token: ${{ secrets.GHACCESSTOKEN }}
-          inputs: '{ "branch": "${{ github.event.inputs.branch }}", "tag": "${{ github.event.inputs.tag }}" }'
-      
+      # - name: Push to ocs-dev as latest
+      #   env:
+      #     DOCKERHUB_OWNER: ${{ secrets.GHACTIONQUAYNAME }}
+      #   run: |
+      #     docker login -u="${{ secrets.OCSDEVCIUSER }}" -p="${{ secrets.OCSDEVCITOKEN }}" quay.io
+      #     docker tag ${{ steps.prep.outputs.coretags }} quay.io/${{ steps.prep.outputs.ocsdevlatest }}
+      #     docker push quay.io/${{ steps.prep.outputs.ocsdevlatest }}
 
-            
+      # - name: Invoke Build on Operator Repo
+      #   uses: benc-uk/workflow-dispatch@v1
+      #   with:
+      #     workflow: Manual Operator Build Dispatch
+      #     repo: noobaa/noobaa-operator
+      #     token: ${{ secrets.GHACCESSTOKEN }}
+      #     inputs: '{ "branch": "${{ github.event.inputs.branch }}", "tag": "${{ github.event.inputs.tag }}" }'
