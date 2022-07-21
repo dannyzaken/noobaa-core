@@ -26,6 +26,11 @@ const { RpcError } = require('../rpc');
 const SensitiveString = require('./sensitive_string');
 const time_utils = require('./time_utils');
 const config = require('../../config');
+
+
+const sequence_name = 'testsequence';
+
+
 mongodb.Binary.prototype[util.inspect.custom] = function custom_inspect_binary() {
     return `<mongodb.Binary ${this.buffer.toString('base64')} >`;
 };
@@ -562,7 +567,13 @@ class PostgresTable {
     async _create_table(pool) {
         const { init_function } = this;
         try {
-            dbg.log0(`creating table ${this.name}`);
+            if (this.name === 'mdsequences') {
+                dbg.log0(`creating sequence ${sequence_name}`);
+                await this.single_query(`CREATE SEQUENCE IF NOT EXISTS ${sequence_name} AS BIGINT START 1;`, undefined, pool, true);
+            } else {
+                dbg.log0(`creating table ${this.name}`);
+                await this.single_query(`CREATE TABLE IF NOT EXISTS ${this.name} (_id char(24) PRIMARY KEY, data jsonb)`, undefined, pool, true);
+            }
             await this.single_query(`CREATE TABLE IF NOT EXISTS ${this.name} (_id char(24) PRIMARY KEY, data jsonb)`, undefined, pool, true);
             if (init_function) await init_function(this);
         } catch (err) {
@@ -655,6 +666,11 @@ class PostgresTable {
     async estimatedQueryCount(query) {
         // TODO: Do an estimate
         return this.countDocuments(query);
+    }
+
+    async nextsequence() {
+        const res = await this.single_query(`SELECT nextval('${sequence_name}')`);
+        return res.rows[0].nextval;
     }
 
     async insertOne(data) {

@@ -398,11 +398,10 @@ class MDStore {
      */
     async alloc_object_version_seq() {
         // empty query, we maintain a single doc in this collection
-        const query = {};
-        const update = { $inc: { object_version_seq: 1 } };
-        const options = { upsert: true, returnOriginal: false };
-        let res = await this._sequences.findOneAndUpdate(query, update, options);
-        return res.value.object_version_seq;
+        // const query = {};
+        // const update = { $inc: { object_version_seq: 1 } };
+        // const options = { upsert: true, returnOriginal: false };
+        return this._sequences.nextsqeuence();
     }
 
     /**

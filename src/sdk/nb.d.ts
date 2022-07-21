@@ -656,6 +656,7 @@ interface DBClient {
     get_db_name(): string;
 
     define_collection(params: object): DBCollection;
+    define_sequence(): void;
     collection(name: string): DBCollection;
     validate(name: string, doc: object, warn?: 'warn'): object;
 
@@ -696,6 +697,7 @@ interface DBCollection {
     insertManyUnordered(docs: DBDoc[]): Promise<object>;
     updateOne(query: object, update: object, options?: object): Promise<object>;
     updateMany(query: object, update: object, options?: object): Promise<object>;
+    nextsqeuence(): Promise<number>;
 
     mapReduce(map: Function, reduce: Function, options?: object): Promise<DBDoc[]>;
     groupBy(match: object, group: object): Promise<DBDoc[]>;
