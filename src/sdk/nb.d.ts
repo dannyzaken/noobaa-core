@@ -697,7 +697,7 @@ interface DBCollection {
     insertManyUnordered(docs: DBDoc[]): Promise<object>;
     updateOne(query: object, update: object, options?: object): Promise<object>;
     updateMany(query: object, update: object, options?: object): Promise<object>;
-    nextsqeuence(): Promise<number>;
+    nextsequence(): Promise<number>;
 
     mapReduce(map: Function, reduce: Function, options?: object): Promise<DBDoc[]>;
     groupBy(match: object, group: object): Promise<DBDoc[]>;

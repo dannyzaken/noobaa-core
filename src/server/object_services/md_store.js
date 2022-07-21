@@ -401,7 +401,7 @@ class MDStore {
         // const query = {};
         // const update = { $inc: { object_version_seq: 1 } };
         // const options = { upsert: true, returnOriginal: false };
-        return this._sequences.nextsqeuence();
+        return this._sequences.nextsequence();
     }
 
     /**
