@@ -1347,7 +1347,7 @@ class PostgresClient extends EventEmitter {
         this.new_pool_params = {
 
             // TODO: check the effect of max clients. default is 10
-            // max: 50,
+            max: (process.env.LOCAL_MD_SERVER === 'true') ? 80 : 10,
 
             host: process.env.POSTGRES_HOST || 'localhost',
             user: process.env.POSTGRES_USER || 'postgres',
