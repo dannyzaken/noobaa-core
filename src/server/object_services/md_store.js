@@ -518,6 +518,20 @@ class MDStore {
         const hint = 'latest_version_index';
         const sort = { bucket: 1, key: 1, version_past: 1 };
 
+
+        if (delimiter && key_marker && key_marker.endsWith(delimiter)) {
+            key_marker = await this._resolve_new_key_marker_for_common_prefix(key_marker, {
+                // index fields:
+                bucket: bucket_id,
+                version_past: null,
+                // partialFilterExpression:
+                deleted: null,
+                upload_started: null,
+                // scan (max 1):
+                delete_marker: null
+            }, { bucket: -1, key: -1, version_past: -1 });
+        }
+
         const { key_query } = this._build_list_key_query_from_markers(prefix, delimiter, key_marker);
 
         const query = compact({
@@ -658,6 +672,22 @@ class MDStore {
         }
     }
 
+    async _resolve_new_key_marker_for_common_prefix(key_marker, query, sort) {
+        // search backword to get the last object with the common prefix
+
+        query.key = { $regex: new RegExp('^' + _.escapeRegExp(key_marker)) };
+        const res = await this._objects.findOne(query, {
+            sort,
+        });
+
+        if (res) {
+            return res.key;
+        } else {
+            return key_marker;
+        }
+
+    }
+
     _build_list_key_query_from_prefix(prefix) {
         // filter keys starting with prefix
         return prefix ? { key_query: new RegExp('^' + _.escapeRegExp(prefix)) } : {};
@@ -675,17 +705,17 @@ class MDStore {
         // filter keys starting with prefix
         let regexp_text = '^' + _.escapeRegExp(prefix);
 
-        // Optimization:
-        // when using delimiter and key_marker ends with delimiter,
-        // this means the last iteration ended on a directory, i.e. common prefix,
-        // so we can safely skip any objects under that directory,
-        // since all these keys have the same common prefix and surely not > key_marker.
-        // this is also safe with secondary markers such as upload_started_marker or version_seq_marker,
-        // since common prefixes are never assumed to have a secondary marker.
-        const key_marker_suffix = key_marker.slice(prefix.length);
-        if (delimiter && key_marker_suffix.endsWith(delimiter)) {
-            regexp_text += '(?!' + _.escapeRegExp(key_marker_suffix) + ')';
-        }
+        // // Optimization:
+        // // when using delimiter and key_marker ends with delimiter,
+        // // this means the last iteration ended on a directory, i.e. common prefix,
+        // // so we can safely skip any objects under that directory,
+        // // since all these keys have the same common prefix and surely not > key_marker.
+        // // this is also safe with secondary markers such as upload_started_marker or version_seq_marker,
+        // // since common prefixes are never assumed to have a secondary marker.
+        // const key_marker_suffix = key_marker.slice(prefix.length);
+        // if (delimiter && key_marker_suffix.endsWith(delimiter)) {
+        //     regexp_text += '(?!' + _.escapeRegExp(key_marker_suffix) + ')';
+        // }
         if (regexp_text !== '^') {
             key_query.$regex = new RegExp(regexp_text);
         }
