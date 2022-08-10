@@ -793,11 +793,11 @@ class PostgresTable {
         if (sql_query.order_by) {
             query_string += ` ORDER BY ${sql_query.order_by}`;
         }
-        if (sql_query.limit) {
-            query_string += ` LIMIT ${sql_query.limit}`;
-        }
+        // if (sql_query.limit) {
+        //     query_string += ` LIMIT ${sql_query.limit}`;
+        // }
         try {
-            mr_q = `SELECT _id, json_agg(value) FROM map_common_prefixes('${options.scope.prefix || ''}', '${options.scope.delimiter || ''}', $$${query_string}$$) GROUP BY _id`;
+            mr_q = `SELECT _id, json_agg(value) FROM map_common_prefixes('${options.scope.prefix || ''}', '${options.scope.delimiter || ''}', $$${sql_query.where}$$, $$${sql_query.order_by}$$, ${options.limit}) GROUP BY _id`;
             const res = await this.single_query(mr_q);
             return res.rows.map(row => {
                 const r_row = { _id: row._id };
