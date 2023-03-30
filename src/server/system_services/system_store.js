@@ -395,12 +395,15 @@ class SystemStore extends EventEmitter {
     }
 
     async refresh() {
+        dbg.log1('starting system_Store refresh()');
+
         let load_time = 0;
         if (this.data) {
             load_time = this.data.time;
         }
         let since_load = Date.now() - load_time;
         if (since_load < this.START_REFRESH_THRESHOLD) {
+            dbg.log1('finished system_Store refresh(). returning data');
             return this.data;
         } else if (since_load < this.FORCE_REFRESH_THRESHOLD) {
             dbg.warn(`system_store.refresh: system_store.data.time > START_REFRESH_THRESHOLD, since_load = ${since_load}, START_REFRESH_THRESHOLD = ${this.START_REFRESH_THRESHOLD}`);
@@ -413,6 +416,7 @@ class SystemStore extends EventEmitter {
     }
 
     async load(since) {
+        dbg.log1('in load(). before _load_serial.surround()');
         // serializing load requests since we have to run a fresh load after the previous one will finish
         // because it might not see the latest changes if we don't reload right after make_changes.
         return this._load_serial.surround(async () => {
@@ -453,6 +457,7 @@ class SystemStore extends EventEmitter {
                 }
                 this.emit('load');
                 this.is_finished_initial_load = true;
+                dbg.log1('in load(). finished _load_serial.surround()');
                 return this.data;
             } catch (err) {
                 dbg.error('SystemStore: load failed', err.stack || err);

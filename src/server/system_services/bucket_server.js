@@ -470,6 +470,7 @@ async function read_bucket(req) {
 }
 
 async function read_bucket_sdk_info(req) {
+    dbg.log1('inside read_bucket_sdk_info');
     const bucket = find_bucket(req);
     var pools = [];
 
