@@ -93,8 +93,8 @@ Options:
 
     ## multi user mode
 
-    --config_root <dir>     (default ${config.NSFS_NC_DEFAULT_CONF_DIR})    Configuration files for Noobaa standalon NSFS. It includes config files for environment variables(<config_root>/.env), 
-                                                            local configuration(<config_root>/config-local.js), authentication (<config_root>/accounts/<access-key>.json) and 
+    --config_root <dir>     (default ${config.NSFS_NC_DEFAULT_CONF_DIR})    Configuration files for Noobaa standalon NSFS. It includes config files for environment variables(<config_root>/.env),
+                                                            local configuration(<config_root>/config-local.js), authentication (<config_root>/accounts/<access-key>.json) and
                                                             bucket schema (<config_root>/buckets/<bucket-name>.json).
 
     ## features
@@ -109,7 +109,7 @@ const ANONYMOUS_AUTH_WARNING = `
 WARNING:
 
     !!! AUTHENTICATION is not enabled !!!
-    
+
     This means that any access/secret signature or unsigned (anonymous) requests
     will allow access to the filesystem over the network.
 `;
@@ -155,6 +155,7 @@ class NsfsObjectSDK extends ObjectSDK {
         });
         this.nsfs_config_root = nsfs_config_root;
         this.nsfs_fs_root = fs_root;
+        this.nsfs_account_config_file = 'whatsup';
         this.nsfs_fs_config = fs_config;
         this.nsfs_account = account;
         this.nsfs_versioning = versioning;
@@ -186,6 +187,7 @@ class NsfsObjectSDK extends ObjectSDK {
             versioning: this.nsfs_versioning,
             stats: endpoint_stats_collector.instance(),
             force_md5_etag: false,
+            test: this.nsfs_account_config_file,
         });
         this.nsfs_namespaces[bucket_name] = ns_fs;
         return ns_fs;
@@ -201,9 +203,14 @@ class NsfsObjectSDK extends ObjectSDK {
                     `Anonymous access to bucket not allowed`,
                 );
             }
+
+            for (const keys of this.nsfs_account.access_keys) {
+                console.log('keys', keys);
+            }
+
             if (token.access_key !== access_key.unwrap()) {
                 throw new RpcError(
-                    'INVALID_ACCESS_KEY_ID',
+                    'BAD_REQUEST',
                     `Account with access_key not found`,
                 );
             }

@@ -92,6 +92,7 @@ async function create_object_upload(req) {
                 'etag must be provided when using complete_upload',
             );
         }
+
         if (!req.rpc_params.last_modified_time) {
             throw new RpcError(
                 'INVALID_REQUEST',
@@ -107,6 +108,8 @@ async function create_object_upload(req) {
 
     if (req.bucket.namespace && req.bucket.namespace.caching) {
         info.cache_last_valid_time = new Date();
+    } else {
+        throw new RpcError('INVALID_REQUEST', 'caching is not enabled');
     }
 
     const lock_settings = config.WORM_ENABLED ? calc_retention(req) : undefined;
