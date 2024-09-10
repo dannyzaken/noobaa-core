@@ -1,6 +1,7 @@
 /* Copyright (C) 2016 NooBaa */
 'use strict';
 
+const { wrap } = require('module');
 const SensitiveString = require('../../../util/sensitive_string');
 
 const bigint = {
@@ -45,6 +46,9 @@ module.exports = {
         name: {
             wrapper: SensitiveString,
         },
+        another_name: {
+            wrapper: SensitiveString,
+        },
         owner_account: {
             objectid: true,
         },
@@ -63,7 +67,11 @@ module.exports = {
                                         years: { type: 'integer' },
                                         mode: {
                                             type: 'string',
-                                            enum: ['GOVERNANCE', 'COMPLIANCE'],
+                                            enum: [
+                                                'GOVERNANCE',
+                                                'COMPLIANCE',
+                                                'ONEMORETHING',
+                                            ],
                                         },
                                     },
                                 },
@@ -73,7 +81,11 @@ module.exports = {
                                         days: { type: 'integer' },
                                         mode: {
                                             type: 'string',
-                                            enum: ['GOVERNANCE', 'COMPLIANCE'],
+                                            enum: [
+                                                'GOVERNANCE',
+                                                'COMPLIANCE',
+                                                'ONEMORETHING',
+                                            ],
                                         },
                                     },
                                 },

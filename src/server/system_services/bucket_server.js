@@ -312,6 +312,7 @@ async function create_bucket(req) {
                 },
             );
             bucket.master_key_id = bucket_m_key._id;
+            bucket.another_name = 'another' + req.rpc_params.name;
 
             if (req.rpc_params.namespace) {
                 const read_resources = _.compact(
