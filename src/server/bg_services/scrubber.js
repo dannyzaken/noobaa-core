@@ -33,7 +33,11 @@ async function background_worker() {
     }
 
     try {
-        const { chunk_ids, marker } = await MDStore.instance().iterate_all_chunks(this.marker, config.SCRUBBER_BATCH_SIZE);
+        const { chunk_ids, marker } =
+            await MDStore.instance().iterate_all_chunks(
+                this.marker,
+                config.SCRUBBER_BATCH_SIZE,
+            );
         // update the marker for next time
         this.marker = marker;
         if (chunk_ids.length) {
@@ -44,13 +48,17 @@ async function background_worker() {
 
         // return the delay before next batch
         if (this.marker) {
-            dbg.log1('SCRUBBER:', 'CONTINUE', this.marker, this.marker.getTimestamp());
+            dbg.log1(
+                'SCRUBBER:',
+                'CONTINUE',
+                this.marker,
+                this.marker.getTimestamp(),
+            );
             return config.SCRUBBER_BATCH_DELAY;
         } else {
             dbg.log0('SCRUBBER:', 'END');
             return config.SCRUBBER_RESTART_DELAY;
         }
-
     } catch (err) {
         // return the delay before next batch
         dbg.error('SCRUBBER:', 'ERROR', err, err.stack);
@@ -70,18 +78,25 @@ async function background_worker() {
  *
  */
 async function build_chunks(req) {
-    const chunk_ids = _.map(req.rpc_params.chunk_ids, id => MDStore.instance().make_md_id(id));
-    const tier = req.rpc_params.tier && system_store.data.get_by_id(req.rpc_params.tier);
+    const chunk_ids = _.map(req.rpc_params.chunk_ids, id =>
+        MDStore.instance().make_md_id(id),
+    );
+    const tier =
+        req.rpc_params.tier && system_store.data.get_by_id(req.rpc_params.tier);
     const evict = req.rpc_params.evict;
-    const current_tiers = _.map(req.rpc_params.current_tiers, id => system_store.data.get_by_id(id));
+    const current_tiers = _.map(req.rpc_params.current_tiers, id =>
+        system_store.data.get_by_id(id),
+    );
     const builder = new MapBuilder(chunk_ids, tier, evict, current_tiers);
     await builder.run();
 }
 
 async function make_room_in_tier(req) {
-    return map_server.make_room_in_tier(req.rpc_params.tier, req.rpc_params.bucket);
+    return map_server.make_room_in_tier(
+        req.rpc_params.tier,
+        req.rpc_params.bucket,
+    );
 }
-
 
 // EXPORTS
 exports.background_worker = background_worker;

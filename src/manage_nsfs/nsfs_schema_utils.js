@@ -26,16 +26,16 @@ const log_schema = require('../server/system_services/schemas/log_schema');
 
 _.each(common_api.definitions, schema => {
     schema_utils.strictify(schema, {
-        additionalProperties: false
+        additionalProperties: false,
     });
 });
 
 schema_utils.strictify(bucket_schema, {
-    additionalProperties: false
+    additionalProperties: false,
 });
 
 schema_utils.strictify(account_schema, {
-    additionalProperties: false
+    additionalProperties: false,
 });
 
 schema_utils.strictify(nsfs_config_schema, {});
@@ -53,8 +53,11 @@ function validate_account_schema(account) {
     const valid = validate_account(account);
     if (!valid) {
         const first_err = validate_account.errors[0];
-        const err_msg = first_err.message ? create_schema_err_msg(first_err) : undefined;
-        if (config.NC_DISABLE_SCHEMA_CHECK === true) return warn_invalid_schema('account', account, err_msg);
+        const err_msg =
+            first_err.message ? create_schema_err_msg(first_err) : undefined;
+        if (config.NC_DISABLE_SCHEMA_CHECK === true) {
+            return warn_invalid_schema('account', account, err_msg);
+        }
         throw new RpcError('INVALID_SCHEMA', err_msg);
     }
 }
@@ -67,8 +70,11 @@ function validate_bucket_schema(bucket) {
     const valid = validate_bucket(bucket);
     if (!valid) {
         const first_err = validate_bucket.errors[0];
-        const err_msg = first_err.message ? create_schema_err_msg(first_err) : undefined;
-        if (config.NC_DISABLE_SCHEMA_CHECK === true) return warn_invalid_schema('bucket', bucket, err_msg);
+        const err_msg =
+            first_err.message ? create_schema_err_msg(first_err) : undefined;
+        if (config.NC_DISABLE_SCHEMA_CHECK === true) {
+            return warn_invalid_schema('bucket', bucket, err_msg);
+        }
         throw new RpcError('INVALID_SCHEMA', err_msg);
     }
 }
@@ -78,13 +84,16 @@ function validate_bucket_schema(bucket) {
  * @param {object} nsfs_config
  */
 function validate_nsfs_config_schema(nsfs_config) {
-
     const valid = validate_nsfs_config(nsfs_config);
     if (!valid) {
         const first_err = validate_nsfs_config.errors[0];
-        const err_msg = first_err.message ? create_schema_err_msg(first_err) : undefined;
-        if (nsfs_config.NC_DISABLE_SCHEMA_CHECK === true ||
-            (nsfs_config.NC_DISABLE_SCHEMA_CHECK === undefined && config.NC_DISABLE_SCHEMA_CHECK === true)) {
+        const err_msg =
+            first_err.message ? create_schema_err_msg(first_err) : undefined;
+        if (
+            nsfs_config.NC_DISABLE_SCHEMA_CHECK === true ||
+            (nsfs_config.NC_DISABLE_SCHEMA_CHECK === undefined &&
+                config.NC_DISABLE_SCHEMA_CHECK === true)
+        ) {
             return warn_invalid_schema('nsfs_config', nsfs_config, err_msg);
         }
         throw new RpcError('INVALID_SCHEMA', err_msg);
@@ -98,7 +107,9 @@ function validate_nsfs_config_schema(nsfs_config) {
  * @param {string} err_msg
  */
 function warn_invalid_schema(type, invalid_schema, err_msg) {
-    console.warn(`nsfs_schema_utils ${type} ${invalid_schema} is invalid, schema check is disabled, skipping - err=${err_msg}`);
+    console.warn(
+        `nsfs_schema_utils ${type} ${invalid_schema} is invalid, schema check is disabled, skipping - err=${err_msg}`,
+    );
 }
 
 /**
@@ -109,8 +120,11 @@ function validate_log_schema(log) {
     const valid = validate_logging(log);
     if (!valid) {
         const first_err = validate_logging.errors[0];
-        const err_msg = first_err.message ? create_schema_err_msg(first_err) : undefined;
-        if (config.NC_DISABLE_SCHEMA_CHECK === true) return warn_invalid_schema('logging', log, err_msg);
+        const err_msg =
+            first_err.message ? create_schema_err_msg(first_err) : undefined;
+        if (config.NC_DISABLE_SCHEMA_CHECK === true) {
+            return warn_invalid_schema('logging', log, err_msg);
+        }
         throw new RpcError('INVALID_SCHEMA', err_msg);
     }
 }

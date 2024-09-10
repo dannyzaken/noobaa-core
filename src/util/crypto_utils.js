@@ -10,7 +10,7 @@ function new_md5_stream() {
             this.md5.update(buf);
             this.size += buf.length;
             next(null, buf);
-        }
+        },
     });
 
     md5_stream.md5 = crypto.createHash('md5');
@@ -32,7 +32,7 @@ function calc_body_md5(stream_file) {
             md5_stream.md5_buf = Buffer.from(final_md5, 'hex');
 
             return md5_stream.md5_buf;
-        }
+        },
     };
 }
 

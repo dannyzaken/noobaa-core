@@ -5,17 +5,16 @@ const xml_utils = require('../../util/xml_utils');
 
 /**
  * @typedef {{
- *      code?: string, 
- *      message: string, 
+ *      code?: string,
+ *      message: string,
  *      http_code: number,
  *      detail?: string
  * }} BlobErrorSpec
  */
 
 class BlobError extends Error {
-
     /**
-     * @param {BlobErrorSpec} error_spec 
+     * @param {BlobErrorSpec} error_spec
      */
     constructor({ code, message, http_code, detail }) {
         super(message); // sets this.message
@@ -29,10 +28,9 @@ class BlobError extends Error {
             Error: {
                 Code: this.code,
                 Message: this.message,
-            }
+            },
         });
     }
-
 }
 
 /**
@@ -41,7 +39,8 @@ class BlobError extends Error {
  */
 BlobError.InternalError = Object.freeze({
     code: 'InternalError',
-    message: 'The server encountered an internal error. Please retry the request.',
+    message:
+        'The server encountered an internal error. Please retry the request.',
     http_code: 500,
 });
 BlobError.ContainerAlreadyExists = Object.freeze({
@@ -66,12 +65,14 @@ BlobError.InvalidBlobOrBlock = Object.freeze({
 });
 BlobError.InvalidHeaderValue = Object.freeze({
     code: 'InvalidHeaderValue',
-    message: 'The value provided for one of the HTTP headers was not in the correct format.',
+    message:
+        'The value provided for one of the HTTP headers was not in the correct format.',
     http_code: 400,
 });
 BlobError.OutOfRangeQueryParameterValue = Object.freeze({
     code: 'OutOfRangeQueryParameterValue',
-    message: 'A query parameter specified in the request URI is outside the permissible range.',
+    message:
+        'A query parameter specified in the request URI is outside the permissible range.',
     http_code: 400,
 });
 BlobError.BlobNotFound = Object.freeze({

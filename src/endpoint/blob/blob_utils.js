@@ -6,12 +6,18 @@ const url = require('url');
 const _ = require('lodash');
 const time_utils = require('../../util/time_utils');
 const endpoint_utils = require('../endpoint_utils');
-const { make_https_request, parse_xml_to_js } = require('../../util/http_utils');
+const {
+    make_https_request,
+    parse_xml_to_js,
+} = require('../../util/http_utils');
 const { read_stream_join } = require('../../util/buffer_utils');
 
 function set_response_object_md(res, object_md) {
     res.setHeader('ETag', '"' + object_md.etag + '"');
-    res.setHeader('Last-Modified', time_utils.format_http_header_date(new Date(object_md.create_time)));
+    res.setHeader(
+        'Last-Modified',
+        time_utils.format_http_header_date(new Date(object_md.create_time)),
+    );
     res.setHeader('Content-Type', object_md.content_type);
     res.setHeader('Content-Length', object_md.size);
     res.setHeader('Accept-Ranges', 'bytes');
@@ -42,7 +48,7 @@ function set_response_xattr(res, xattr) {
 }
 
 function parse_etag(etag) {
-    const match = (/^\s*(?:"(\S*)"|(\S*))\s*$/).exec(etag);
+    const match = /^\s*(?:"(\S*)"|(\S*))\s*$/.exec(etag);
     if (match) return match[1] || match[2];
     return etag;
 }
@@ -54,18 +60,15 @@ function parse_copy_source(req) {
     return _.pick(endpoint_utils.parse_source_url(source_url), 'bucket', 'key');
 }
 
-
-
-
 //////// BLOB API UTILS ////////
 
 // https://docs.microsoft.com/en-us/rest/api/storageservices/list-blobs
 // This API called directly because of an inefficient matching function of the Azure blob SDK.
 async function list_objects(params, account_name, container, sasToken) {
-
     const hostname = `${account_name}.blob.core.windows.net`;
 
-    let path = `https://${account_name}.blob.core.windows.net/${container}?restype=container&comp=list` +
+    let path =
+        `https://${account_name}.blob.core.windows.net/${container}?restype=container&comp=list` +
         `&maxresults=${params.limit}&${sasToken}`;
     if (params.key_marker) path += `&marker=${params.key_marker}`;
     if (params.delimiter) path += `&delimiter=${params.delimiter}`;
@@ -73,9 +76,16 @@ async function list_objects(params, account_name, container, sasToken) {
 
     let response;
     try {
-        response = await make_https_request({ hostname, port: 443, path, method: 'GET' });
+        response = await make_https_request({
+            hostname,
+            port: 443,
+            path,
+            method: 'GET',
+        });
     } catch (err) {
-        throw new Error(`GET ${path} did not responed or returned with an error ${err}`);
+        throw new Error(
+            `GET ${path} did not responed or returned with an error ${err}`,
+        );
     }
     const status_code = response.statusCode;
     const buffer = await read_stream_join(response);
@@ -89,24 +99,33 @@ async function list_objects(params, account_name, container, sasToken) {
         if (status_code !== 200) {
             if (parsed.Error) {
                 const code = parsed.Error.Code && parsed.Error.Code[0];
-                const faulty_query_param = parsed.Error.QueryParameterName &&
+                const faulty_query_param =
+                    parsed.Error.QueryParameterName &&
                     parsed.Error.QueryParameterName[0];
-                if (code === 'OutOfRangeQueryParameterValue' &&
-                    faulty_query_param === 'maxresults' && params.limit === 0) {
-                        return { blobs: [], dirs: [], next_marker: '' };
-                    }
+                if (
+                    code === 'OutOfRangeQueryParameterValue' &&
+                    faulty_query_param === 'maxresults' &&
+                    params.limit === 0
+                ) {
+                    return { blobs: [], dirs: [], next_marker: '' };
+                }
             }
-            throw new Error(`Could not get blobs and diresctories list, (status code: ${status_code}) got ${body}`);
+            throw new Error(
+                `Could not get blobs and diresctories list, (status code: ${status_code}) got ${body}`,
+            );
         }
         blobs = parsed.EnumerationResults.Blobs[0].Blob;
         dirs = parsed.EnumerationResults.Blobs[0].BlobPrefix;
         next_marker = parsed.EnumerationResults.NextMarker[0];
         const parse_blobs = key => {
             const props = key.Properties[0];
-            const obj = Object.keys(props).reduce((acc, p) => {
-                acc[(_.lowerFirst(_.camelCase(p)))] = props[p][0];
-                return acc;
-            }, { name: key.Name[0] });
+            const obj = Object.keys(props).reduce(
+                (acc, p) => {
+                    acc[_.lowerFirst(_.camelCase(p))] = props[p][0];
+                    return acc;
+                },
+                { name: key.Name[0] },
+            );
             return obj;
         };
         blobs = _.map(blobs, obj => parse_blobs(obj));
@@ -115,7 +134,6 @@ async function list_objects(params, account_name, container, sasToken) {
     }
     return { blobs, dirs, next_marker };
 }
-
 
 exports.list_objects = list_objects;
 exports.set_response_object_md = set_response_object_md;

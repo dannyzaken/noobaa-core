@@ -23,7 +23,7 @@ const util = require('util');
 function self_bind(object, method_desc) {
     if (!_.isString(method_desc)) {
         method_desc = method_desc || _.functionsIn(object);
-        _.each(method_desc, function(method) {
+        _.each(method_desc, function (method) {
             self_bind(object, method);
         });
         return;
@@ -41,10 +41,8 @@ function self_bind(object, method_desc) {
     return closure_func;
 }
 
-
 // see http://jsperf.com/concat-vs-push-apply/39
 const _cached_array_push = Array.prototype.push;
-
 
 /**
  * push list of items into array
@@ -83,7 +81,6 @@ function named_array_push(obj, arr_name, item) {
  * @returns {T}
  */
 function deep_freeze(obj) {
-
     // Checking isFrozen is the break condition for the recursion
     // Since isFrozen(non_object)===false it will break if it is number,string,etc,..
     // But note that any shallow frozen object will not get recursive freeze by this
@@ -105,18 +102,20 @@ function deep_freeze(obj) {
     return obj;
 }
 
-
 /**
  * Creates an object from a list of keys, intializing each key using the given value provider.
  */
 function make_object(keys, valueProvider) {
     valueProvider = _.isFunction(valueProvider) ? valueProvider : _.noop;
-    return _.reduce(keys, (obj, key) => {
-        obj[key] = valueProvider(key);
-        return obj;
-    }, {});
+    return _.reduce(
+        keys,
+        (obj, key) => {
+            obj[key] = valueProvider(key);
+            return obj;
+        },
+        {},
+    );
 }
-
 
 function default_value(val, def_val) {
     return _.isUndefined(val) ? def_val : val;
@@ -130,7 +129,7 @@ function default_value(val, def_val) {
 function sort_compare_by(key_getter, order) {
     key_getter = key_getter || (item => item);
     order = order || 1;
-    return function(item1, item2) {
+    return function (item1, item2) {
         const key1 = key_getter(item1);
         const key2 = key_getter(item2);
         if (key1 < key2) return -order;
@@ -164,7 +163,7 @@ function inspect_lazy(obj, ...inspect_args) {
     return {
         [util.inspect.custom]() {
             return util.inspect(obj, ...inspect_args);
-        }
+        },
     };
 }
 

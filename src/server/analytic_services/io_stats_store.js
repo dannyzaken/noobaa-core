@@ -9,7 +9,6 @@ const io_stats_schema = require('./io_stats_schema');
 const io_stats_indexes = require('./io_stats_indexes');
 
 class IoStatsStore {
-
     static instance(system) {
         IoStatsStore._instance = IoStatsStore._instance || new IoStatsStore();
         return IoStatsStore._instance;
@@ -32,16 +31,20 @@ class IoStatsStore {
             system,
             resource_id: node_id,
             resource_type: 'NODE',
-            stats
+            stats,
         });
     }
 
-    async update_namespace_resource_io_stats({ system, stats, namespace_resource_id }) {
+    async update_namespace_resource_io_stats({
+        system,
+        stats,
+        namespace_resource_id,
+    }) {
         await this._update_io_stats({
             system,
             resource_id: namespace_resource_id,
             resource_type: 'NAMESPACE_RESOURCE',
-            stats
+            stats,
         });
     }
 
@@ -53,15 +56,25 @@ class IoStatsStore {
             resource_id,
             resource_type,
             start_time,
-            end_time
+            end_time,
         };
         const update = {
             $set: selector,
-            $inc: _.pick(stats, 'read_count', 'write_count', 'read_bytes', 'write_bytes', 'error_read_count', 'error_write_count', 'error_read_bytes', 'error_write_bytes')
+            $inc: _.pick(
+                stats,
+                'read_count',
+                'write_count',
+                'read_bytes',
+                'write_bytes',
+                'error_read_count',
+                'error_write_count',
+                'error_read_bytes',
+                'error_write_bytes',
+            ),
         };
         const res = await this._io_stats.findOneAndUpdate(selector, update, {
             upsert: true,
-            returnOriginal: false
+            returnOriginal: false,
         });
         this._io_stats.validate(res.value, 'warn');
     }
@@ -71,7 +84,7 @@ class IoStatsStore {
             start_date,
             end_date,
             system,
-            resource_type: 'NODE'
+            resource_type: 'NODE',
         });
     }
 
@@ -80,20 +93,33 @@ class IoStatsStore {
             start_date,
             end_date,
             system,
-            resource_type: 'NAMESPACE_RESOURCE'
+            resource_type: 'NAMESPACE_RESOURCE',
         });
     }
 
-
-    async _get_stats_for_resource_type({ start_date, end_date, system, resource_type }) {
+    async _get_stats_for_resource_type({
+        start_date,
+        end_date,
+        system,
+        resource_type,
+    }) {
         let start_time;
-        if (start_date || end_date) start_time = _.omitBy({ $gte: start_date, $lte: end_date }, _.isUndefined);
+        if (start_date || end_date) {
+            start_time = _.omitBy(
+                { $gte: start_date, $lte: end_date },
+                _.isUndefined,
+            );
+        }
         return this._io_stats.groupBy(
-            _.omitBy({
-                system,
-                resource_type,
-                start_time
-            }, _.isUndefined), {
+            _.omitBy(
+                {
+                    system,
+                    resource_type,
+                    start_time,
+                },
+                _.isUndefined,
+            ),
+            {
                 _id: '$resource_id',
                 read_count: { $sum: '$read_count' },
                 write_count: { $sum: '$write_count' },
@@ -103,11 +129,10 @@ class IoStatsStore {
                 error_write_count: { $sum: '$error_write_count' },
                 error_read_bytes: { $sum: '$error_read_bytes' },
                 error_write_bytes: { $sum: '$error_write_bytes' },
-            }
+            },
         );
     }
 }
-
 
 // EXPORTS
 exports.IoStatsStore = IoStatsStore;

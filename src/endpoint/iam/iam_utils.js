@@ -4,7 +4,12 @@
 const _ = require('lodash');
 const s3_utils = require('../s3/s3_utils');
 const { IamError } = require('./iam_errors');
-const { AWS_IAM_PATH_REGEXP, AWS_USERNAME_REGEXP, AWS_IAM_LIST_MARKER, AWS_IAM_ACCESS_KEY_INPUT_REGEXP } = require('../../util/string_utils');
+const {
+    AWS_IAM_PATH_REGEXP,
+    AWS_USERNAME_REGEXP,
+    AWS_IAM_LIST_MARKER,
+    AWS_IAM_ACCESS_KEY_INPUT_REGEXP,
+} = require('../../util/string_utils');
 const iam_constants = require('./iam_constants');
 const { RpcError } = require('../../rpc');
 
@@ -14,7 +19,7 @@ const { RpcError } = require('../../rpc');
  */
 function format_iam_xml_date(input) {
     const date_iso = s3_utils.format_s3_xml_date(input);
-    const date_iso_no_millis = date_iso.replace(/\.\d+/, ""); // remove the milliseconds part
+    const date_iso_no_millis = date_iso.replace(/\.\d+/, ''); // remove the milliseconds part
     return date_iso_no_millis;
 }
 
@@ -61,14 +66,19 @@ function parse_max_items(input_max_items) {
     const parameter_name = 'MaxItems';
     const value_as_number = Number(input_max_items);
     if (Number.isNaN(value_as_number)) {
-        const message_with_details = `1 validation error detected: Value ${input_max_items} at ` +
-        `'${parameter_name}' failed to satisfy constraint: Member must be ${input_type}`;
+        const message_with_details =
+            `1 validation error detected: Value ${input_max_items} at ` +
+            `'${parameter_name}' failed to satisfy constraint: Member must be ${input_type}`;
         const { code, http_code, type } = IamError.ValidationError;
-        throw new IamError({ code, message: message_with_details, http_code, type });
+        throw new IamError({
+            code,
+            message: message_with_details,
+            http_code,
+            type,
+        });
     }
     return value_as_number;
 }
-
 
 /**
  * _type_check_input checks that the input is the same as needed
@@ -78,10 +88,16 @@ function parse_max_items(input_max_items) {
  */
 function _type_check_input(input_type, input_value, parameter_name) {
     if (typeof input_value !== input_type) {
-        const message_with_details = `1 validation error detected: Value ${input_value} at ` +
+        const message_with_details =
+            `1 validation error detected: Value ${input_value} at ` +
             `'${parameter_name}'  failed to satisfy constraint: Member must be ${input_type}`;
         const { code, http_code, type } = IamError.ValidationError;
-        throw new IamError({ code, message: message_with_details, http_code, type });
+        throw new IamError({
+            code,
+            message: message_with_details,
+            http_code,
+            type,
+        });
     }
 }
 
@@ -94,10 +110,16 @@ function _type_check_input(input_type, input_value, parameter_name) {
 function _length_min_check_input(min_length, input_value, parameter_name) {
     const input_length = input_value.length;
     if (input_length < min_length) {
-        const message_with_details = `Invalid length for parameter ${parameter_name}, ` +
+        const message_with_details =
+            `Invalid length for parameter ${parameter_name}, ` +
             `value: ${input_length}, valid min length: ${min_length}`;
         const { code, http_code, type } = IamError.ValidationError;
-        throw new IamError({ code, message: message_with_details, http_code, type });
+        throw new IamError({
+            code,
+            message: message_with_details,
+            http_code,
+            type,
+        });
     }
 }
 
@@ -110,11 +132,17 @@ function _length_min_check_input(min_length, input_value, parameter_name) {
 function _length_max_check_input(max_length, input_value, parameter_name) {
     const input_length = input_value.length;
     if (input_length > max_length) {
-        const message_with_details = `1 validation error detected: Value ${input_value} at ` +
+        const message_with_details =
+            `1 validation error detected: Value ${input_value} at ` +
             `'${parameter_name}' failed to satisfy constraint:` +
             `Member must have length less than or equal to ${max_length}`;
         const { code, http_code, type } = IamError.ValidationError;
-        throw new IamError({ code, message: message_with_details, http_code, type });
+        throw new IamError({
+            code,
+            message: message_with_details,
+            http_code,
+            type,
+        });
     }
 }
 
@@ -125,7 +153,12 @@ function _length_max_check_input(max_length, input_value, parameter_name) {
  * @param {string} input_value
  * @param {string} parameter_name
  */
-function _length_check_input(min_length, max_length, input_value, parameter_name) {
+function _length_check_input(
+    min_length,
+    max_length,
+    input_value,
+    parameter_name,
+) {
     _length_min_check_input(min_length, input_value, parameter_name);
     _length_max_check_input(max_length, input_value, parameter_name);
 }
@@ -136,13 +169,13 @@ function _length_check_input(min_length, max_length, input_value, parameter_name
  * @param {object} params
  */
 function validate_params(action, params) {
-        if (action.includes('user')) {
-            validate_user_params(action, params);
-        } else if (action.includes('access_key')) {
-            validate_access_keys_params(action, params);
-        } else {
-            throw new RpcError('INTERNAL_ERROR', `${action} is not supported`);
-        }
+    if (action.includes('user')) {
+        validate_user_params(action, params);
+    } else if (action.includes('access_key')) {
+        validate_access_keys_params(action, params);
+    } else {
+        throw new RpcError('INTERNAL_ERROR', `${action} is not supported`);
+    }
 }
 
 /**
@@ -154,22 +187,22 @@ function validate_user_params(action, params) {
     switch (action) {
         case iam_constants.IAM_ACTIONS.CREATE_USER:
             validate_create_user(params);
-          break;
+            break;
         case iam_constants.IAM_ACTIONS.GET_USER:
             validate_get_user(params);
-          break;
+            break;
         case iam_constants.IAM_ACTIONS.UPDATE_USER:
             validate_update_user(params);
-          break;
+            break;
         case iam_constants.IAM_ACTIONS.DELETE_USER:
             validate_delete_user(params);
-          break;
+            break;
         case iam_constants.IAM_ACTIONS.LIST_USERS:
             validate_list_users(params);
-          break;
+            break;
         default:
-          throw new RpcError('INTERNAL_ERROR', `${action} is not supported`);
-      }
+            throw new RpcError('INTERNAL_ERROR', `${action} is not supported`);
+    }
 }
 
 /**
@@ -181,22 +214,22 @@ function validate_access_keys_params(action, params) {
     switch (action) {
         case iam_constants.IAM_ACTIONS.CREATE_ACCESS_KEY:
             validate_create_access_key(params);
-          break;
+            break;
         case iam_constants.IAM_ACTIONS.GET_ACCESS_KEY_LAST_USED:
             validate_get_access_key_last_used(params);
-          break;
+            break;
         case iam_constants.IAM_ACTIONS.UPDATE_ACCESS_KEY:
             validate_update_access_key(params);
-          break;
+            break;
         case iam_constants.IAM_ACTIONS.DELETE_ACCESS_KEY:
             validate_delete_access_key(params);
-          break;
+            break;
         case iam_constants.IAM_ACTIONS.LIST_ACCESS_KEYS:
             validate_list_access_keys(params);
-          break;
+            break;
         default:
-          throw new RpcError('INTERNAL_ERROR', `${action} is not supported`);
-      }
+            throw new RpcError('INTERNAL_ERROR', `${action} is not supported`);
+    }
 }
 
 /**
@@ -232,7 +265,12 @@ function check_required_key(value, flag_name) {
     if (value === undefined) {
         const message_with_details = `the following arguments are required: --${flag_name}`; // copied from AWS CLI
         const { code, http_code, type } = IamError.ValidationError;
-        throw new IamError({ code, message: message_with_details, http_code, type });
+        throw new IamError({
+            code,
+            message: message_with_details,
+            http_code,
+            type,
+        });
     }
 }
 
@@ -242,8 +280,14 @@ function check_required_key(value, flag_name) {
  */
 function validate_create_user(params) {
     check_required_username(params);
-    validate_username(params.username, iam_constants.IAM_PARAMETER_NAME.USERNAME);
-    validate_iam_path(params.iam_path, iam_constants.IAM_PARAMETER_NAME.IAM_PATH);
+    validate_username(
+        params.username,
+        iam_constants.IAM_PARAMETER_NAME.USERNAME,
+    );
+    validate_iam_path(
+        params.iam_path,
+        iam_constants.IAM_PARAMETER_NAME.IAM_PATH,
+    );
 }
 
 /**
@@ -251,7 +295,10 @@ function validate_create_user(params) {
  * @param {object} params
  */
 function validate_get_user(params) {
-    validate_username(params.username, iam_constants.IAM_PARAMETER_NAME.USERNAME);
+    validate_username(
+        params.username,
+        iam_constants.IAM_PARAMETER_NAME.USERNAME,
+    );
 }
 
 /**
@@ -260,9 +307,18 @@ function validate_get_user(params) {
  */
 function validate_update_user(params) {
     check_required_username(params);
-    validate_username(params.username, iam_constants.IAM_PARAMETER_NAME.USERNAME);
-    validate_username(params.new_username, iam_constants.IAM_PARAMETER_NAME.NEW_USERNAME);
-    validate_iam_path(params.new_iam_path, iam_constants.IAM_PARAMETER_NAME.NEW_IAM_PATH);
+    validate_username(
+        params.username,
+        iam_constants.IAM_PARAMETER_NAME.USERNAME,
+    );
+    validate_username(
+        params.new_username,
+        iam_constants.IAM_PARAMETER_NAME.NEW_USERNAME,
+    );
+    validate_iam_path(
+        params.new_iam_path,
+        iam_constants.IAM_PARAMETER_NAME.NEW_IAM_PATH,
+    );
 }
 
 /**
@@ -271,7 +327,10 @@ function validate_update_user(params) {
  */
 function validate_delete_user(params) {
     check_required_username(params);
-    validate_username(params.username, iam_constants.IAM_PARAMETER_NAME.USERNAME);
+    validate_username(
+        params.username,
+        iam_constants.IAM_PARAMETER_NAME.USERNAME,
+    );
 }
 
 /**
@@ -281,7 +340,10 @@ function validate_delete_user(params) {
 function validate_list_users(params) {
     validate_marker(params.marker);
     validate_max_items(params.max_items);
-    validate_iam_path(params.iam_path_prefix, iam_constants.IAM_PARAMETER_NAME.IAM_PATH_PREFIX);
+    validate_iam_path(
+        params.iam_path_prefix,
+        iam_constants.IAM_PARAMETER_NAME.IAM_PATH_PREFIX,
+    );
 }
 
 /**
@@ -289,7 +351,10 @@ function validate_list_users(params) {
  * @param {object} params
  */
 function validate_create_access_key(params) {
-    validate_username(params.username, iam_constants.IAM_PARAMETER_NAME.USERNAME);
+    validate_username(
+        params.username,
+        iam_constants.IAM_PARAMETER_NAME.USERNAME,
+    );
 }
 
 /**
@@ -310,7 +375,10 @@ function validate_update_access_key(params) {
     check_required_status(params);
     validate_access_key_id(params.access_key);
     validate_status(params.status);
-    validate_username(params.username, iam_constants.IAM_PARAMETER_NAME.USERNAME);
+    validate_username(
+        params.username,
+        iam_constants.IAM_PARAMETER_NAME.USERNAME,
+    );
 }
 
 /**
@@ -320,7 +388,10 @@ function validate_update_access_key(params) {
 function validate_delete_access_key(params) {
     check_required_access_key_id(params);
     validate_access_key_id(params.access_key);
-    validate_username(params.username, iam_constants.IAM_PARAMETER_NAME.USERNAME);
+    validate_username(
+        params.username,
+        iam_constants.IAM_PARAMETER_NAME.USERNAME,
+    );
 }
 
 /**
@@ -330,7 +401,10 @@ function validate_delete_access_key(params) {
 function validate_list_access_keys(params) {
     validate_marker(params.marker);
     validate_max_items(params.max_items);
-    validate_username(params.username, iam_constants.IAM_PARAMETER_NAME.USERNAME);
+    validate_username(
+        params.username,
+        iam_constants.IAM_PARAMETER_NAME.USERNAME,
+    );
 }
 
 /**
@@ -341,7 +415,10 @@ function validate_list_access_keys(params) {
  * @param {string} input_path
  * @param {string} parameter_name
  */
-function validate_iam_path(input_path, parameter_name = iam_constants.IAM_PARAMETER_NAME.IAM_PATH) {
+function validate_iam_path(
+    input_path,
+    parameter_name = iam_constants.IAM_PARAMETER_NAME.IAM_PATH,
+) {
     if (input_path === undefined) return;
     // type check
     _type_check_input('string', input_path, parameter_name);
@@ -350,12 +427,21 @@ function validate_iam_path(input_path, parameter_name = iam_constants.IAM_PARAME
     const max_length = 512;
     _length_check_input(min_length, max_length, input_path, parameter_name);
     // regex check
-    const valid_aws_path = input_path.startsWith('/') && input_path.endsWith('/') && AWS_IAM_PATH_REGEXP.test(input_path);
+    const valid_aws_path =
+        input_path.startsWith('/') &&
+        input_path.endsWith('/') &&
+        AWS_IAM_PATH_REGEXP.test(input_path);
     if (!valid_aws_path) {
-            const message_with_details = `The specified value for ${_.lowerFirst(parameter_name)} is invalid. ` +
+        const message_with_details =
+            `The specified value for ${_.lowerFirst(parameter_name)} is invalid. ` +
             `It must begin and end with / and contain only alphanumeric characters and/or / characters.`;
-            const { code, http_code, type } = IamError.ValidationError;
-            throw new IamError({ code, message: message_with_details, http_code, type });
+        const { code, http_code, type } = IamError.ValidationError;
+        throw new IamError({
+            code,
+            message: message_with_details,
+            http_code,
+            type,
+        });
     }
     return true;
 }
@@ -369,7 +455,10 @@ function validate_iam_path(input_path, parameter_name = iam_constants.IAM_PARAME
  * @param {string} input_username
  * @param {string} parameter_name
  */
-function validate_username(input_username, parameter_name = iam_constants.IAM_PARAMETER_NAME.USERNAME) {
+function validate_username(
+    input_username,
+    parameter_name = iam_constants.IAM_PARAMETER_NAME.USERNAME,
+) {
     if (input_username === undefined) return;
     // type check
     _type_check_input('string', input_username, parameter_name);
@@ -380,24 +469,42 @@ function validate_username(input_username, parameter_name = iam_constants.IAM_PA
     // regex check
     const valid_username = AWS_USERNAME_REGEXP.test(input_username);
     if (!valid_username) {
-            const message_with_details = `The specified value for ${_.lowerFirst(parameter_name)} is invalid. ` +
+        const message_with_details =
+            `The specified value for ${_.lowerFirst(parameter_name)} is invalid. ` +
             `It must contain only alphanumeric characters and/or the following: +=,.@_-`;
-            const { code, http_code, type } = IamError.ValidationError;
-            throw new IamError({ code, message: message_with_details, http_code, type });
+        const { code, http_code, type } = IamError.ValidationError;
+        throw new IamError({
+            code,
+            message: message_with_details,
+            http_code,
+            type,
+        });
     }
     // internal limitations
     const invalid_internal_names = new Set(['anonymous', '/', '.']);
     if (invalid_internal_names.has(input_username)) {
-        const message_with_details = `The specified value for ${_.lowerFirst(parameter_name)} is invalid. ` +
-        `Should not be one of: ${[...invalid_internal_names].join(' ').toString()}`;
+        const message_with_details =
+            `The specified value for ${_.lowerFirst(parameter_name)} is invalid. ` +
+            `Should not be one of: ${[...invalid_internal_names].join(' ').toString()}`;
         const { code, http_code, type } = IamError.ValidationError;
-        throw new IamError({ code, message: message_with_details, http_code, type });
+        throw new IamError({
+            code,
+            message: message_with_details,
+            http_code,
+            type,
+        });
     }
     if (input_username !== input_username.trim()) {
-        const message_with_details = `The specified value for ${_.lowerFirst(parameter_name)} is invalid. ` +
-        `Must not contain leading or trailing spaces`;
+        const message_with_details =
+            `The specified value for ${_.lowerFirst(parameter_name)} is invalid. ` +
+            `Must not contain leading or trailing spaces`;
         const { code, http_code, type } = IamError.ValidationError;
-        throw new IamError({ code, message: message_with_details, http_code, type });
+        throw new IamError({
+            code,
+            message: message_with_details,
+            http_code,
+            type,
+        });
     }
     return true;
 }
@@ -420,9 +527,14 @@ function validate_marker(input_marker) {
     // regex check
     const valid_marker = AWS_IAM_LIST_MARKER.test(input_marker);
     if (!valid_marker) {
-            const message_with_details = `The specified value for ${_.lowerFirst(parameter_name)} is invalid. `;
-            const { code, http_code, type } = IamError.ValidationError;
-            throw new IamError({ code, message: message_with_details, http_code, type });
+        const message_with_details = `The specified value for ${_.lowerFirst(parameter_name)} is invalid. `;
+        const { code, http_code, type } = IamError.ValidationError;
+        throw new IamError({
+            code,
+            message: message_with_details,
+            http_code,
+            type,
+        });
     }
     return true;
 }
@@ -438,23 +550,35 @@ function validate_max_items(input_max_items) {
     const parameter_name = 'MaxItems';
     if (input_max_items === undefined) return;
     // type check
-     _type_check_input('number', input_max_items, parameter_name);
+    _type_check_input('number', input_max_items, parameter_name);
     // value check
     const min_value = 1;
     const max_value = 1000;
     if (input_max_items < min_value) {
         // using AWS CLI there is not actual validation for this (can even send zero and negative value)
-        const message_with_details = `Invalid value for parameter ${_.lowerFirst(parameter_name)}, ` +
+        const message_with_details =
+            `Invalid value for parameter ${_.lowerFirst(parameter_name)}, ` +
             `value: ${input_max_items}, valid min: ${min_value}`;
         const { code, http_code, type } = IamError.ValidationError;
-        throw new IamError({ code, message: message_with_details, http_code, type });
+        throw new IamError({
+            code,
+            message: message_with_details,
+            http_code,
+            type,
+        });
     }
     if (input_max_items > max_value) {
         // using AWS CLI there is not actual validation for this (can send 2000 value)
-        const message_with_details = `Invalid value for parameter ${parameter_name}, ` +
+        const message_with_details =
+            `Invalid value for parameter ${parameter_name}, ` +
             `value: ${input_max_items}, valid max: ${min_value}`;
         const { code, http_code, type } = IamError.ValidationError;
-        throw new IamError({ code, message: message_with_details, http_code, type });
+        throw new IamError({
+            code,
+            message: message_with_details,
+            http_code,
+            type,
+        });
     }
     return true;
 }
@@ -474,14 +598,26 @@ function validate_access_key_id(input_access_key_id) {
     // length check
     const min_length = 16;
     const max_length = 128;
-    _length_check_input(min_length, max_length, input_access_key_id, parameter_name);
+    _length_check_input(
+        min_length,
+        max_length,
+        input_access_key_id,
+        parameter_name,
+    );
     // regex check
-    const valid_access_key_id = AWS_IAM_ACCESS_KEY_INPUT_REGEXP.test(input_access_key_id);
+    const valid_access_key_id =
+        AWS_IAM_ACCESS_KEY_INPUT_REGEXP.test(input_access_key_id);
     if (!valid_access_key_id) {
-            const message_with_details = `The specified value for ${_.lowerFirst(parameter_name)} is invalid. ` +
+        const message_with_details =
+            `The specified value for ${_.lowerFirst(parameter_name)} is invalid. ` +
             `It must contain only alphanumeric characters`;
-            const { code, http_code, type } = IamError.ValidationError;
-            throw new IamError({ code, message: message_with_details, http_code, type });
+        const { code, http_code, type } = IamError.ValidationError;
+        throw new IamError({
+            code,
+            message: message_with_details,
+            http_code,
+            type,
+        });
     }
     return true;
 }
@@ -494,17 +630,24 @@ function validate_access_key_id(input_access_key_id) {
 function validate_status(input_status) {
     const parameter_name = 'Status';
     if (input_status === undefined) return;
-    if (input_status !== iam_constants.ACCESS_KEY_STATUS_ENUM.ACTIVE &&
-        input_status !== iam_constants.ACCESS_KEY_STATUS_ENUM.INACTIVE) {
-        const message_with_details = `Value ${input_status} at '${parameter_name}' ` +
+    if (
+        input_status !== iam_constants.ACCESS_KEY_STATUS_ENUM.ACTIVE &&
+        input_status !== iam_constants.ACCESS_KEY_STATUS_ENUM.INACTIVE
+    ) {
+        const message_with_details =
+            `Value ${input_status} at '${parameter_name}' ` +
             `failed to satisfy constraint: Member must satisfy enum value set: ` +
             `[${iam_constants.ACCESS_KEY_STATUS_ENUM.ACTIVE}, ${iam_constants.ACCESS_KEY_STATUS_ENUM.INACTIVE}]`;
         const { code, http_code, type } = IamError.ValidationError;
-        throw new IamError({ code, message: message_with_details, http_code, type });
+        throw new IamError({
+            code,
+            message: message_with_details,
+            http_code,
+            type,
+        });
     }
     return true;
 }
-
 
 // EXPORTS
 exports.format_iam_xml_date = format_iam_xml_date;
@@ -518,4 +661,3 @@ exports.validate_username = validate_username;
 exports.validate_marker = validate_marker;
 exports.validate_access_key_id = validate_access_key_id;
 exports.validate_status = validate_status;
-

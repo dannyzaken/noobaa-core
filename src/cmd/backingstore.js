@@ -85,7 +85,6 @@ async function main(argv = minimist(process.argv.slice(2))) {
         }
 
         await run_backingstore(storage_path, address, port, pool_name);
-
     } catch (err) {
         console.error('backingstore: exit on error', err.stack || err);
         process.exit(2);
@@ -93,7 +92,6 @@ async function main(argv = minimist(process.argv.slice(2))) {
 }
 
 async function run_backingstore(storage_path, address, port, pool_name) {
-
     const conf_path = path.join(storage_path, 'agent_conf.json');
     const token_path = path.join(storage_path, 'token');
     const agent_conf = new json_utils.JsonFileWrapper(conf_path);
@@ -106,8 +104,12 @@ async function run_backingstore(storage_path, address, port, pool_name) {
             email: process.env.CREATE_SYS_EMAIL,
             password: process.env.CREATE_SYS_PASSWD,
         });
-        const install_string = await client.pool.get_hosts_pool_agent_config({ name: pool_name });
-        const install_conf = JSON.parse(Buffer.from(install_string, 'base64').toString());
+        const install_string = await client.pool.get_hosts_pool_agent_config({
+            name: pool_name,
+        });
+        const install_conf = JSON.parse(
+            Buffer.from(install_string, 'base64').toString(),
+        );
         await fs_utils.replace_file(token_path, install_conf.create_node_token);
     }
 

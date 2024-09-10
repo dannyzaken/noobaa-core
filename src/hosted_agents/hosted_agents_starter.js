@@ -31,7 +31,7 @@ async function start_hosted_agents() {
         register_rpc(),
 
         // Try to start the hosted agents metrics server
-        prom_reporting.start_server(config.HA_METRICS_SERVER_PORT)
+        prom_reporting.start_server(config.HA_METRICS_SERVER_PORT),
     ]);
 }
 

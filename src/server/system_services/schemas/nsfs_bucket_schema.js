@@ -35,7 +35,7 @@ module.exports = {
         system_owner: {
             type: 'string',
         },
-        /** 
+        /**
          * @deprecated bucket_owner is kept for backward compatibility,
          * but will no longer be included in new / updated bucket json.
          */
@@ -58,7 +58,7 @@ module.exports = {
             type: 'string',
         },
         fs_backend: {
-            $ref: 'common_api#/definitions/fs_backend'
+            $ref: 'common_api#/definitions/fs_backend',
         },
         s3_policy: {
             $ref: 'common_api#/definitions/bucket_policy',
@@ -78,5 +78,5 @@ module.exports = {
         lifecycle_configuration_rules: {
             $ref: 'common_api#/definitions/bucket_lifecycle_configuration',
         },
-    }
+    },
 };

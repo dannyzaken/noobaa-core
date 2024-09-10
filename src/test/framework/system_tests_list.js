@@ -18,7 +18,7 @@ const tests = [
         server_cpu: '400m',
         server_mem: '400Mi',
         agent_cpu: '250m',
-        agent_mem: '250Mi'
+        agent_mem: '250Mi',
     },
     {
         name: 'test-bucket-placement',
@@ -27,7 +27,7 @@ const tests = [
         server_mem: '400Mi',
         agent_cpu: '250m',
         agent_mem: '150Mi',
-        pv: true
+        pv: true,
     },
     // This test was commented out because of we need a reliable and fast way
     // to take down an agent on a statefulset pod (the current decommission action
@@ -47,7 +47,7 @@ const tests = [
         server_cpu: '400m',
         server_mem: '400Mi',
         agent_cpu: '250m',
-        agent_mem: '150Mi'
+        agent_mem: '150Mi',
     },
     {
         name: 'test-bucket-lambda-triggers',
@@ -55,8 +55,8 @@ const tests = [
         server_cpu: '400m',
         server_mem: '400Mi',
         agent_cpu: '250m',
-        agent_mem: '150Mi'
-    }
+        agent_mem: '150Mi',
+    },
 ];
 
 module.exports = tests;

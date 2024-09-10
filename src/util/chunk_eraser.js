@@ -17,14 +17,13 @@ const chance = new Chance();
  *
  */
 class ChunkEraser extends stream.Transform {
-
     /**
      * @param {{
      *      watermark?: number,
      *      erasures?: number,
      *      save_data?: string,
      *      verbose?: boolean,
-     * }} args 
+     * }} args
      */
     constructor({ watermark, erasures, save_data, verbose }) {
         super({
@@ -39,8 +38,7 @@ class ChunkEraser extends stream.Transform {
     }
 
     _transform(chunk, encoding, callback) {
-
-        // Here we are removing the chunk.data property to make sure the decoder 
+        // Here we are removing the chunk.data property to make sure the decoder
         // will really be tested in reconstructing the data,
         // but allowing the caller pipeline to ask to save the original data
         // in that case we save the original as a different property of the chunk
@@ -50,19 +48,33 @@ class ChunkEraser extends stream.Transform {
 
         // checking the position is continuous
         if (chunk.pos !== this.pos) {
-            return callback(new Error(`ChunkEraser: chunk pos ${chunk.pos} !== ${this.pos}`));
+            return callback(
+                new Error(
+                    `ChunkEraser: chunk pos ${chunk.pos} !== ${this.pos}`,
+                ),
+            );
         }
         this.pos += chunk.size;
 
-        const data_frags = (chunk.chunk_coder_config && chunk.chunk_coder_config.data_frags) || 0;
-        const parity_frags = (chunk.chunk_coder_config && chunk.chunk_coder_config.parity_frags) || 0;
-        const erasures = this.erasures === undefined ?
-            chance.integer({ min: 0, max: parity_frags }) :
-            this.erasures;
+        const data_frags =
+            (chunk.chunk_coder_config && chunk.chunk_coder_config.data_frags) ||
+            0;
+        const parity_frags =
+            (chunk.chunk_coder_config &&
+                chunk.chunk_coder_config.parity_frags) ||
+            0;
+        const erasures =
+            this.erasures === undefined ?
+                chance.integer({ min: 0, max: parity_frags })
+            :   this.erasures;
         const num_frags_to_keep = data_frags + parity_frags - erasures;
 
         if (chunk.frags.length !== data_frags + parity_frags) {
-            return callback(new Error(`ChunkEraser: frags count ${chunk.frags.length} !== ${data_frags}+${parity_frags}`));
+            return callback(
+                new Error(
+                    `ChunkEraser: frags count ${chunk.frags.length} !== ${data_frags}+${parity_frags}`,
+                ),
+            );
         }
 
         // remove frags from the list, picking at random from the list
@@ -71,10 +83,14 @@ class ChunkEraser extends stream.Transform {
             _.pull(chunk.frags, frag);
         }
 
-        if (this.verbose) console.log(`ChunkEraser: erased ${erasures} frags in chunk`, chunk);
+        if (this.verbose) {
+            console.log(
+                `ChunkEraser: erased ${erasures} frags in chunk`,
+                chunk,
+            );
+        }
         return callback(null, chunk);
     }
-
 }
 
 module.exports = ChunkEraser;

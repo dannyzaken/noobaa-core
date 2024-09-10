@@ -6,7 +6,6 @@ const dbg = require('./debug_module')(__filename);
 const error_utils = require('./error_utils');
 
 class Semaphore {
-
     /**
      * construct a semaphore with initial count
      * params: Includes several parameters for the semaphore that could be:
@@ -33,11 +32,14 @@ class Semaphore {
             this._verbose = Boolean(params && params.verbose);
             if (params.timeout) {
                 this._timeout = params.timeout;
-                this._timeout_error_code = params.timeout_error_code || 'SEMAPHORE_TIMEOUT';
+                this._timeout_error_code =
+                    params.timeout_error_code || 'SEMAPHORE_TIMEOUT';
             }
             if (params.work_timeout) {
                 this._work_timeout = params.work_timeout;
-                this._work_timeout_error_code = params.work_timeout_error_code || 'SEMAPHORE_WORKER_TIMEOUT';
+                this._work_timeout_error_code =
+                    params.work_timeout_error_code ||
+                    'SEMAPHORE_WORKER_TIMEOUT';
             }
             if (params.warning_timeout) {
                 this._warning_timeout = params.warning_timeout;
@@ -47,7 +49,10 @@ class Semaphore {
 
     async _work_cap() {
         return new Promise((resolve, reject) => {
-            const err = error_utils.new_error_code(this._work_timeout_error_code, 'Semaphore Worker Timeout');
+            const err = error_utils.new_error_code(
+                this._work_timeout_error_code,
+                'Semaphore Worker Timeout',
+            );
             setTimeout(() => reject(err), this._work_timeout).unref();
         });
     }
@@ -65,10 +70,15 @@ class Semaphore {
             if (this._warning_timeout) {
                 // Capture the stack trace of the caller before registering the timer to identify the code that called it
                 const err = new Error('Warning stuck surround item');
-                warning_timer = setTimeout(() => console.error(err.stack), this._warning_timeout).unref();
+                warning_timer = setTimeout(
+                    () => console.error(err.stack),
+                    this._warning_timeout,
+                ).unref();
             }
             // May lead to unaccounted work in the background on timeout
-            return this._work_timeout ? Promise.race([func(), this._work_cap()]) : await func();
+            return this._work_timeout ?
+                    Promise.race([func(), this._work_cap()])
+                :   await func();
         } finally {
             if (warning_timer) clearTimeout(warning_timer);
             // Release should be called only when the wait was successful
@@ -92,10 +102,15 @@ class Semaphore {
             if (this._warning_timeout) {
                 // Capture the stack trace of the caller before registering the timer to identify the code that called it
                 const err = new Error('Warning stuck surround_count item');
-                warning_timer = setTimeout(() => console.error(err.stack), this._warning_timeout).unref();
+                warning_timer = setTimeout(
+                    () => console.error(err.stack),
+                    this._warning_timeout,
+                ).unref();
             }
             // May lead to unaccounted work in the background on timeout
-            return this._work_timeout ? Promise.race([func(), this._work_cap()]) : await func();
+            return this._work_timeout ?
+                    Promise.race([func(), this._work_cap()])
+                :   await func();
         } finally {
             if (warning_timer) clearTimeout(warning_timer);
             // Release should be called only when the wait was successful
@@ -133,7 +148,12 @@ class Semaphore {
         if (this._wq.length) return false;
         if (this._value < count) return false;
         if (this._verbose) {
-            dbg.log2('Semaphore updating value ', this._value, ' -> ', this._value - count);
+            dbg.log2(
+                'Semaphore updating value ',
+                this._value,
+                ' -> ',
+                this._value - count,
+            );
         }
         this._value -= count;
         return true;
@@ -184,10 +204,7 @@ class Semaphore {
         count = to_sem_count(count);
 
         if (this._timeout && !this._timer) {
-            this._timer = setTimeout(
-                () => this._on_timeout(),
-                this._timeout
-            );
+            this._timer = setTimeout(() => this._on_timeout(), this._timeout);
             this._timer.unref();
         }
 
@@ -214,8 +231,12 @@ class Semaphore {
         count = to_sem_count(count);
 
         if (this._verbose) {
-            dbg.log2('Semaphore release updating value ', this._value, ' -> ',
-                this._value + count);
+            dbg.log2(
+                'Semaphore release updating value ',
+                this._value,
+                ' -> ',
+                this._value + count,
+            );
         }
 
         this._value += count;
@@ -228,8 +249,12 @@ class Semaphore {
             }
 
             if (this._verbose) {
-                dbg.log2('Semaphore release waking next worker, updating value ',
-                    this._value, ' -> ', this._value - waiter.count);
+                dbg.log2(
+                    'Semaphore release waking next worker, updating value ',
+                    this._value,
+                    ' -> ',
+                    this._value - waiter.count,
+                );
             }
 
             this._value -= waiter.count;
@@ -253,7 +278,10 @@ class Semaphore {
                 break;
             }
 
-            const err = error_utils.new_error_code(this._timeout_error_code, 'Semaphore Timeout');
+            const err = error_utils.new_error_code(
+                this._timeout_error_code,
+                'Semaphore Timeout',
+            );
             this._waiting_value -= waiter.count;
             this._wq.wakeup(waiter, err);
         }
@@ -263,16 +291,22 @@ class Semaphore {
      * Pretty print of Semaphore internals
      */
     print() {
-        return 'Semaphore: {value: ' + this._value + ', waitq.length:' + this._wq.length +
-            '[' + this._wq.enum_items() + ']}';
+        return (
+            'Semaphore: {value: ' +
+            this._value +
+            ', waitq.length:' +
+            this._wq.length +
+            '[' +
+            this._wq.enum_items() +
+            ']}'
+        );
     }
-
 }
 
 // if count is not a number (like undefined) or negative, we assume count of 1.
 // NOTE that count===0 is a special case for wait/release - see comments above.
 function to_sem_count(count) {
-    return (typeof(count) === 'number' && count >= 0) ? Math.floor(count) : 1;
+    return typeof count === 'number' && count >= 0 ? Math.floor(count) : 1;
 }
 
 module.exports = Semaphore;

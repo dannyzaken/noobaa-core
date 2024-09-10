@@ -6,7 +6,7 @@
  */
 function get_service_properties(req, res) {
     return {
-        StorageServiceProperties: {}
+        StorageServiceProperties: {},
     };
 }
 

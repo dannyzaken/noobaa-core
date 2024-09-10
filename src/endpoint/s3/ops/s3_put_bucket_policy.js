@@ -15,12 +15,19 @@ async function put_bucket_policy(req) {
         throw new S3Error(S3Error.InvalidArgument);
     }
     try {
-        await req.object_sdk.put_bucket_policy({ name: req.params.bucket, policy });
+        await req.object_sdk.put_bucket_policy({
+            name: req.params.bucket,
+            policy,
+        });
     } catch (error) {
         let err = error;
-        if (error.rpc_code === "INVALID_SCHEMA" || error.rpc_code === "INVALID_SCHEMA_PARAMS") {
+        if (
+            error.rpc_code === 'INVALID_SCHEMA' ||
+            error.rpc_code === 'INVALID_SCHEMA_PARAMS'
+        ) {
             err = new S3Error(S3Error.MalformedPolicy);
-            err.message = "Policy was not well formed or did not validate against the published schema";
+            err.message =
+                'Policy was not well formed or did not validate against the published schema';
         }
         throw err;
     }

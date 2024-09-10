@@ -1,22 +1,22 @@
 /* Copyright (C) 2016 NooBaa */
 'use strict';
 
-const NoobaaEvent = require('../manage_nsfs/manage_nsfs_events_utils').NoobaaEvent;
+const NoobaaEvent =
+    require('../manage_nsfs/manage_nsfs_events_utils').NoobaaEvent;
 
 /**
  * @typedef {{
- *      code?: string, 
- *      message: string, 
+ *      code?: string,
+ *      message: string,
  *      http_code: number,
  *      detail: string,
- *      cause?: Error  
+ *      cause?: Error
  * }} ManageCLIErrorSpec
  */
 
 class ManageCLIError extends Error {
-
     /**
-     * @param {ManageCLIErrorSpec} error_spec 
+     * @param {ManageCLIErrorSpec} error_spec
      */
     constructor({ code, message, http_code, detail, cause }) {
         super(message, { cause });
@@ -31,8 +31,8 @@ class ManageCLIError extends Error {
                 code: this.code,
                 message: this.message,
                 detail: this.detail,
-                cause: this.cause?.stack || this.cause?.message
-            }
+                cause: this.cause?.stack || this.cause?.message,
+            },
         };
         return JSON.stringify(json, null, 2);
     }
@@ -44,10 +44,10 @@ class ManageCLIError extends Error {
 //// GENERAL ERRORS ////
 ////////////////////////
 
-
 ManageCLIError.InternalError = Object.freeze({
     code: 'InternalError',
-    message: 'The server encountered an internal error. Please retry the request',
+    message:
+        'The server encountered an internal error. Please retry the request',
     http_code: 500,
 });
 
@@ -65,13 +65,15 @@ ManageCLIError.NotImplemented = Object.freeze({
 
 ManageCLIError.InvalidAction = Object.freeze({
     code: 'InvalidAction',
-    message: 'Invalid action, available actions are add, status, update, delete, list',
+    message:
+        'Invalid action, available actions are add, status, update, delete, list',
     http_code: 400,
 });
 
 ManageCLIError.InvalidDiagnoseAction = Object.freeze({
     code: 'InvalidDiagnoseAction',
-    message: 'Invalid action, available actions are health, gather-logs and metrics',
+    message:
+        'Invalid action, available actions are health, gather-logs and metrics',
     http_code: 400,
 });
 
@@ -89,7 +91,8 @@ ManageCLIError.InvalidArgumentType = Object.freeze({
 
 ManageCLIError.InvalidType = Object.freeze({
     code: 'InvalidType',
-    message: 'Invalid type, available types are account, bucket, logging, whitelist or upgrade',
+    message:
+        'Invalid type, available types are account, bucket, logging, whitelist or upgrade',
     http_code: 400,
 });
 
@@ -159,7 +162,8 @@ ManageCLIError.WhiteListIPUpdateFailed = Object.freeze({
 
 ManageCLIError.InvalidMasterKey = Object.freeze({
     code: 'InvalidMasterKey',
-    message: 'Master key manager had issues loading master key, can not decrypt/encrypt secrets.',
+    message:
+        'Master key manager had issues loading master key, can not decrypt/encrypt secrets.',
     http_code: 500,
 });
 
@@ -228,28 +232,32 @@ ManageCLIError.AccountNameAlreadyExists = Object.freeze({
 
 ManageCLIError.AccountDeleteForbiddenHasBuckets = Object.freeze({
     code: 'AccountDeleteForbiddenHasBuckets',
-    message: 'Cannot delete account that is owner of buckets. ' +
+    message:
+        'Cannot delete account that is owner of buckets. ' +
         'You must delete all buckets before deleting the account',
     http_code: 403,
 });
 
 ManageCLIError.AccountDeleteForbiddenHasIAMAccounts = Object.freeze({
     code: 'AccountDeleteForbiddenHasIAMAccounts',
-    message: 'Cannot delete account that is owner of IAM accounts. ' +
+    message:
+        'Cannot delete account that is owner of IAM accounts. ' +
         'You must delete all IAM accounts before deleting the root account',
     http_code: 403,
 });
 
 ManageCLIError.AccountCannotCreateRootAccountsRequesterIAMUser = Object.freeze({
     code: 'AccountCannotCreateRootAccounts',
-    message: 'Cannot update account to have iam_operate_on_root_account. ' +
+    message:
+        'Cannot update account to have iam_operate_on_root_account. ' +
         'You must use root account for this action',
     http_code: 409,
 });
 
 ManageCLIError.AccountCannotBeRootAccountsManager = Object.freeze({
     code: 'AccountCannotBeRootAccountsManager',
-    message: 'Cannot update account to have iam_operate_on_root_account. ' +
+    message:
+        'Cannot update account to have iam_operate_on_root_account. ' +
         'You must delete all IAM accounts before update or ' +
         'use root accounts that does not owns any IAM accounts',
     http_code: 409,
@@ -261,25 +269,29 @@ ManageCLIError.AccountCannotBeRootAccountsManager = Object.freeze({
 
 ManageCLIError.MissingAccountSecretKeyFlag = Object.freeze({
     code: 'MissingAccountSecretKeyFlag',
-    message: 'Account secret key is mandatory, please use the --secret_key flag or --regenerate on update',
+    message:
+        'Account secret key is mandatory, please use the --secret_key flag or --regenerate on update',
     http_code: 400,
 });
 
 ManageCLIError.MissingAccountAccessKeyFlag = Object.freeze({
     code: 'MissingAccountAccessKeyFlag',
-    message: 'Account access key is mandatory, please use the --access_key flag or --regenerate on update on update',
+    message:
+        'Account access key is mandatory, please use the --access_key flag or --regenerate on update on update',
     http_code: 400,
 });
 
 ManageCLIError.InvalidAccountSecretKeyFlag = Object.freeze({
     code: 'InvalidAccountSecretKeyFlag',
-    message: 'Account secret length must be 40, and must contain only alpha-numeric chars, "+", "/"',
+    message:
+        'Account secret length must be 40, and must contain only alpha-numeric chars, "+", "/"',
     http_code: 400,
 });
 
 ManageCLIError.InvalidAccountAccessKeyFlag = Object.freeze({
     code: 'InvalidAccountAccessKeyFlag',
-    message: 'Account access key length must be 20, and must contain only alpha-numeric chars',
+    message:
+        'Account access key length must be 20, and must contain only alpha-numeric chars',
     http_code: 400,
 });
 
@@ -291,13 +303,15 @@ ManageCLIError.MissingAccountNameFlag = Object.freeze({
 
 ManageCLIError.MissingIdentifier = Object.freeze({
     code: 'MissingIdentifier',
-    message: 'Account identifier is mandatory, please use the --access_key or --name flag',
+    message:
+        'Account identifier is mandatory, please use the --access_key or --name flag',
     http_code: 400,
 });
 
 ManageCLIError.InvalidAccountNSFSConfig = Object.freeze({
     code: 'InvalidAccountNSFSConfig',
-    message: 'Account config should not be empty, should contain UID, GID or user',
+    message:
+        'Account config should not be empty, should contain UID, GID or user',
     http_code: 400,
 });
 
@@ -315,7 +329,8 @@ ManageCLIError.MissingAccountNSFSConfigGID = Object.freeze({
 
 ManageCLIError.InvalidAccountNewBucketsPath = Object.freeze({
     code: 'InvalidAccountNewBucketsPath',
-    message: 'Account\'s new_buckets_path should be a valid and existing directory path',
+    message:
+        "Account's new_buckets_path should be a valid and existing directory path",
     http_code: 400,
 });
 
@@ -327,7 +342,8 @@ ManageCLIError.InvalidBooleanValue = Object.freeze({
 
 ManageCLIError.InaccessibleAccountNewBucketsPath = Object.freeze({
     code: 'InaccessibleAccountNewBucketsPath',
-    message: 'Account should have read & write access to the specified new_buckets_path',
+    message:
+        'Account should have read & write access to the specified new_buckets_path',
     http_code: 400,
 });
 
@@ -341,7 +357,6 @@ ManageCLIError.InvalidGlacierOperation = Object.freeze({
     message: 'only "migrate", "restore" and "expiry" subcommands are supported',
     http_code: 400,
 });
-
 
 ////////////////////////
 //// BUCKET ERRORS /////
@@ -367,20 +382,23 @@ ManageCLIError.InvalidStoragePath = Object.freeze({
 
 ManageCLIError.BucketAlreadyExists = Object.freeze({
     code: 'BucketAlreadyExists',
-    message: 'The requested bucket name is not available. The bucket namespace is shared by all users of the system. Please select a different name and try again.',
+    message:
+        'The requested bucket name is not available. The bucket namespace is shared by all users of the system. Please select a different name and try again.',
     http_code: 409,
 });
 
 ManageCLIError.BucketSetForbiddenBucketOwnerNotExists = Object.freeze({
     code: 'BucketSetForbiddenBucketOwnerNotExists',
-    message: 'The bucket owner you set for the bucket does not exist. ' +
+    message:
+        'The bucket owner you set for the bucket does not exist. ' +
         'Please set the bucket owner from existing account',
     http_code: 403,
 });
 
 ManageCLIError.BucketSetForbiddenBucketOwnerIsIAMAccount = Object.freeze({
     code: 'BucketSetForbiddenBucketOwnerIsIAMAccount',
-    message: 'The bucket owner you set for the bucket is an IAM account. ' +
+    message:
+        'The bucket owner you set for the bucket is an IAM account. ' +
         'Please set root account as bucket owner',
     http_code: 403,
 });
@@ -393,15 +411,15 @@ ManageCLIError.BucketCreationNotAllowed = Object.freeze({
 
 ManageCLIError.BucketDeleteForbiddenHasObjects = Object.freeze({
     code: 'BucketDeleteForbiddenHasObjects',
-    message: 'Cannot delete non-empty bucket. ' +
-    'You must delete all object before deleting the bucket or use --force flag',
+    message:
+        'Cannot delete non-empty bucket. ' +
+        'You must delete all object before deleting the bucket or use --force flag',
     http_code: 403,
 });
 
 /////////////////////////////////
 //// BUCKET ARGUMENTS ERRORS ////
 /////////////////////////////////
-
 
 ManageCLIError.MissingBucketNameFlag = Object.freeze({
     code: 'MissingBucketNameFlag',
@@ -411,7 +429,8 @@ ManageCLIError.MissingBucketNameFlag = Object.freeze({
 
 ManageCLIError.MissingBucketOwnerFlag = Object.freeze({
     code: 'MissingBucketOwnerFlag',
-    message: 'Bucket owner (account name) is mandatory, please use the --owner flag',
+    message:
+        'Bucket owner (account name) is mandatory, please use the --owner flag',
     http_code: 400,
 });
 
@@ -423,7 +442,8 @@ ManageCLIError.MissingBucketPathFlag = Object.freeze({
 
 ManageCLIError.InvalidFSBackend = Object.freeze({
     code: 'InvalidFSBackend',
-    message: 'FS backend supported types are GPFS, CEPH_FS, NFSv4 default is POSIX',
+    message:
+        'FS backend supported types are GPFS, CEPH_FS, NFSv4 default is POSIX',
     http_code: 400,
 });
 
@@ -435,16 +455,17 @@ ManageCLIError.MalformedPolicy = Object.freeze({
 
 ManageCLIError.InaccessibleStoragePath = Object.freeze({
     code: 'InaccessibleStoragePath',
-    message: 'Bucket owner should have read & write access to the specified bucket storage path',
+    message:
+        'Bucket owner should have read & write access to the specified bucket storage path',
     http_code: 400,
 });
 
 ManageCLIError.BucketNotEmpty = Object.freeze({
     code: 'BucketNotEmpty',
-    message: 'The bucket you tried to delete is not empty. You must delete all versions in the bucket',
+    message:
+        'The bucket you tried to delete is not empty. You must delete all versions in the bucket',
     http_code: 400,
 });
-
 
 ///////////////////////////////
 //      UPGRADE ERRORS       //
@@ -478,7 +499,6 @@ ManageCLIError.UpgradeHistoryFailed = Object.freeze({
 //       ERRORS MAPPING      //
 ///////////////////////////////
 
-
 ManageCLIError.FS_ERRORS_TO_MANAGE = Object.freeze({
     EACCES: ManageCLIError.AccessDenied,
     EPERM: ManageCLIError.AccessDenied,
@@ -495,7 +515,7 @@ ManageCLIError.RPC_ERROR_TO_MANAGE = Object.freeze({
     INVALID_SCHEMA: ManageCLIError.InvalidSchema,
     NO_SUCH_USER: ManageCLIError.InvalidAccountDistinguishedName,
     INVALID_MASTER_KEY: ManageCLIError.InvalidMasterKey,
-    INVALID_BUCKET_NAME: ManageCLIError.InvalidBucketName
+    INVALID_BUCKET_NAME: ManageCLIError.InvalidBucketName,
 });
 
 const NSFS_CLI_ERROR_EVENT_MAP = {

@@ -56,31 +56,42 @@ function get_protocol_port(protocol) {
 }
 
 function new_router_from_base_address(base_address) {
-    const {
-        protocol,
-        hostname,
-        port,
-        slashes,
-    } = url.parse(base_address);
+    const { protocol, hostname, port, slashes } = url.parse(base_address);
 
-    const ports = get_default_ports(Number(port) || get_protocol_port(protocol));
+    const ports = get_default_ports(
+        Number(port) || get_protocol_port(protocol),
+    );
 
     return {
         default: url.format({ protocol, slashes, hostname, port: ports.mgmt }),
         md: url.format({ protocol, slashes, hostname, port: ports.md }),
         bg: url.format({ protocol, slashes, hostname, port: ports.bg }),
-        hosted_agents: url.format({ protocol, slashes, hostname, port: ports.hosted_agents }),
-        master: url.format({ protocol, slashes, hostname, port: ports.mgmt })
+        hosted_agents: url.format({
+            protocol,
+            slashes,
+            hostname,
+            port: ports.hosted_agents,
+        }),
+        master: url.format({ protocol, slashes, hostname, port: ports.mgmt }),
     };
 }
 
 function new_router_from_address_list(address_list, hint) {
     return {
-        default: get_base_address(address_list, { hint, api: 'mgmt' }).toString(),
+        default: get_base_address(address_list, {
+            hint,
+            api: 'mgmt',
+        }).toString(),
         md: get_base_address(address_list, { hint, api: 'md' }).toString(),
         bg: get_base_address(address_list, { hint, api: 'bg' }).toString(),
-        hosted_agents: get_base_address(address_list, { hint, api: 'hosted_agents' }).toString(),
-        master: get_base_address(address_list, { hint, api: 'mgmt' }).toString()
+        hosted_agents: get_base_address(address_list, {
+            hint,
+            api: 'hosted_agents',
+        }).toString(),
+        master: get_base_address(address_list, {
+            hint,
+            api: 'mgmt',
+        }).toString(),
     };
 }
 
@@ -116,8 +127,8 @@ function new_rpc_from_routing(routing_table) {
             replication_api: 'bg',
             hosted_agents_api: 'hosted_agents',
             node_api: 'master',
-            host_api: 'master'
-        }
+            host_api: 'master',
+        },
     });
 }
 
@@ -138,9 +149,9 @@ function new_rpc_default_only(base_address) {
     return new RPC({
         schema: api_schema,
         router: {
-            default: base_address
+            default: base_address,
         },
-        api_routes: {}
+        api_routes: {},
     });
 }
 

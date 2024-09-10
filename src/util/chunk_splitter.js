@@ -14,8 +14,12 @@ const nb_native = require('./nb_native');
  *
  */
 class ChunkSplitter extends stream.Transform {
-
-    constructor({ watermark, chunk_split_config: { avg_chunk, delta_chunk }, calc_md5, calc_sha256 }) {
+    constructor({
+        watermark,
+        chunk_split_config: { avg_chunk, delta_chunk },
+        calc_md5,
+        calc_sha256,
+    }) {
         super({
             objectMode: true,
             allowHalfOpen: false,
@@ -25,7 +29,8 @@ class ChunkSplitter extends stream.Transform {
         this.state = {
             min_chunk: avg_chunk - delta_chunk,
             max_chunk: avg_chunk + delta_chunk,
-            avg_chunk_bits: delta_chunk >= 1 ? Math.round(Math.log2(delta_chunk)) : 0,
+            avg_chunk_bits:
+                delta_chunk >= 1 ? Math.round(Math.log2(delta_chunk)) : 0,
             calc_md5: Boolean(calc_md5),
             calc_sha256: Boolean(calc_sha256),
         };
@@ -110,7 +115,7 @@ class ChunkSplitter extends stream.Transform {
                     }
                 }
                 return callback();
-            }
+            },
         );
     }
 }

@@ -10,12 +10,11 @@ const argv = minimist(process.argv, {
         input_format: 'CSV',
         field_delimiter: ',',
         record_delimiter: '\n',
-        file_header_info: 'IGNORE'
-    }
+        file_header_info: 'IGNORE',
+    },
 });
 
 class S3SelectStream extends Transform {
-
     constructor(opts = {}) {
         super(opts);
         const context = {
@@ -24,14 +23,17 @@ class S3SelectStream extends Transform {
             input_serialization_format: {
                 FieldDelimiter: argv.field_delimiter,
                 RecordDelimiter: argv.record_delimiter,
-                FileHeaderInfo: argv.file_header_info
+                FileHeaderInfo: argv.file_header_info,
             },
-            records_header_buf: Buffer.from("don't care") /*Used for CRC, ignored here.*/
+            records_header_buf:
+                Buffer.from("don't care") /*Used for CRC, ignored here.*/,
         };
         if (S3Select) {
             this.s3select = new S3Select(context);
         } else {
-            console.log("ERROR - nb_native doesn't have S3Select. Did you build with GYP_DEFINES=BUILD_S3SELECT=1?");
+            console.log(
+                "ERROR - nb_native doesn't have S3Select. Did you build with GYP_DEFINES=BUILD_S3SELECT=1?",
+            );
             process.exit(1);
         }
     }

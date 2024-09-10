@@ -17,16 +17,18 @@ const s3_utils = require('../endpoint/s3/s3_utils');
 const config = require('../../config');
 const size_utils = require('../util/size_utils');
 
-const _global_cache_uploader = new Semaphore(cache_config.UPLOAD_SEMAPHORE_CAP, {
-    timeout: cache_config.UPLOAD_SEMAPHORE_TIMEOUT,
-    timeout_error_code: 'NAMESPACE_CACHE_UPLOAD_TIMEOUT'
-});
+const _global_cache_uploader = new Semaphore(
+    cache_config.UPLOAD_SEMAPHORE_CAP,
+    {
+        timeout: cache_config.UPLOAD_SEMAPHORE_TIMEOUT,
+        timeout_error_code: 'NAMESPACE_CACHE_UPLOAD_TIMEOUT',
+    },
+);
 
 /**
  * @implements {nb.Namespace}
  */
 class NamespaceCache {
-
     /**
      * @param {{
      *      namespace_hub: nb.Namespace,
@@ -36,7 +38,13 @@ class NamespaceCache {
      *      stats: import('./endpoint_stats_collector').EndpointStatsCollector,
      * }} params
      */
-   constructor({ namespace_hub, namespace_nb, caching, active_triggers, stats }) {
+    constructor({
+        namespace_hub,
+        namespace_nb,
+        caching,
+        active_triggers,
+        stats,
+    }) {
         this.namespace_hub = namespace_hub;
         this.namespace_nb = namespace_nb;
         this.active_triggers = active_triggers;
@@ -57,30 +65,46 @@ class NamespaceCache {
     }
 
     is_server_side_copy(other, other_md, params) {
-        return other instanceof NamespaceCache &&
+        return (
+            other instanceof NamespaceCache &&
             this.namespace_hub === other.namespace_hub &&
-            this.namespace_nb === other.namespace_nb;
+            this.namespace_nb === other.namespace_nb
+        );
     }
 
     async _delete_object_from_cache(params, object_sdk) {
         try {
             const delete_params = _.pick(params, 'bucket', 'key');
             await this.namespace_nb.delete_object(delete_params, object_sdk);
-            dbg.log0('NamespaceCache: deleted object from cache', delete_params);
+            dbg.log0(
+                'NamespaceCache: deleted object from cache',
+                delete_params,
+            );
         } catch (err) {
-            dbg.warn('NamespaceCache: error in deleting object from cache', params, err);
+            dbg.warn(
+                'NamespaceCache: error in deleting object from cache',
+                params,
+                err,
+            );
         }
     }
 
     async _update_cache_last_valid_time(params, object_sdk) {
         try {
-            const update_params = _.pick(_.defaults({ bucket: this.namespace_nb.target_bucket }, params), 'bucket', 'key');
-            update_params.cache_last_valid_time = (new Date()).getTime();
+            const update_params = _.pick(
+                _.defaults({ bucket: this.namespace_nb.target_bucket }, params),
+                'bucket',
+                'key',
+            );
+            update_params.cache_last_valid_time = new Date().getTime();
 
             await object_sdk.rpc_client.object.update_object_md(update_params);
             dbg.log0('NamespaceCache: updated cache valid time', update_params);
         } catch (err) {
-            dbg.error('NamespaceCache: error in updating cache last valid time', err);
+            dbg.error(
+                'NamespaceCache: error in updating cache last valid time',
+                err,
+            );
         }
     }
 
@@ -91,10 +115,18 @@ class NamespaceCache {
         }
 
         try {
-            const bucket_usage = await object_sdk.read_bucket_usage_info(params.bucket);
-            const bucket_free_space_bytes = Math.floor(size_utils.bigint_to_bytes(bucket_usage.free) *
-                cache_config.CACHE_USAGE_PERCENTAGE_HIGH_THRESHOLD / 100);
-            dbg.log0('NamespaceCache: bucket usage', { bucket_free_space_bytes, bucket_usage });
+            const bucket_usage = await object_sdk.read_bucket_usage_info(
+                params.bucket,
+            );
+            const bucket_free_space_bytes = Math.floor(
+                (size_utils.bigint_to_bytes(bucket_usage.free) *
+                    cache_config.CACHE_USAGE_PERCENTAGE_HIGH_THRESHOLD) /
+                    100,
+            );
+            dbg.log0('NamespaceCache: bucket usage', {
+                bucket_free_space_bytes,
+                bucket_usage,
+            });
             return bucket_free_space_bytes;
         } catch (err) {
             dbg.error('NamespaceCache: error in read bucket usage', err);
@@ -105,7 +137,10 @@ class NamespaceCache {
     async _get_cached_range_parts_info(params, object_sdk) {
         const read_mapping_params = _.pick(params, ['bucket', 'key', 'obj_id']);
         read_mapping_params.obj_id = params.object_md.obj_id;
-        const object_mapping = await object_sdk.rpc_client.object.read_object_mapping(read_mapping_params);
+        const object_mapping =
+            await object_sdk.rpc_client.object.read_object_mapping(
+                read_mapping_params,
+            );
         const parts = [];
         for (const chunk of object_mapping.chunks) {
             for (const part of chunk.parts) {
@@ -115,9 +150,16 @@ class NamespaceCache {
         parts.sort((p1, p2) => p1.start - p2.start);
         const num_parts = parts.length;
         const deduped_parts = range_utils.dedup_ranges(parts);
-        const total_cached_size = _.sumBy(deduped_parts, part => part.end - part.start);
+        const total_cached_size = _.sumBy(
+            deduped_parts,
+            part => part.end - part.start,
+        );
 
-        return { num_parts, num_deduped_parts: deduped_parts.length, total_cached_size };
+        return {
+            num_parts,
+            num_deduped_parts: deduped_parts.length,
+            total_cached_size,
+        };
     }
 
     // Return block info (start and end block index) for range in read
@@ -141,7 +183,6 @@ class NamespaceCache {
     // Return true if range reads will be performed
     // Return false if entire object read will be performed
     async _range_read_hub_check(params, object_sdk) {
-
         const block_info = this._get_range_block_idx(params);
         if (block_info) {
             // s3 read is range read
@@ -149,17 +190,34 @@ class NamespaceCache {
             // If object is small (i.e. <= block size), we would like to read entire object.
             if (this._should_cache_entire_object(params)) return false;
             if (params.object_md.size <= params.bucket_free_space_bytes) {
-                const part_size = (block_info.end_block_idx - block_info.start_block_idx + 1) * block_size;
-                const read_percentage = _.divide(part_size, params.object_md.size) * 100;
+                const part_size =
+                    (block_info.end_block_idx -
+                        block_info.start_block_idx +
+                        1) *
+                    block_size;
+                const read_percentage =
+                    _.divide(part_size, params.object_md.size) * 100;
 
                 // If the size of data to be read is large enough in terms of object size and
                 // we don't have enough data cached, we would like to read entire object from hub.
                 // Otherwise, we will perform range read on hub.
-                if (params.object_md.should_read_from_cache &&
-                    read_percentage > cache_config.CACHED_PERCENTAGE_HIGH_THRESHOLD) {
-                    const { total_cached_size } = await this._get_cached_range_parts_info(params, object_sdk);
-                    const cached_data_percentage = _.divide(total_cached_size, params.object_md.size) * 100;
-                    if (cached_data_percentage <= cache_config.CACHED_PERCENTAGE_LOW_THRESHOLD) {
+                if (
+                    params.object_md.should_read_from_cache &&
+                    read_percentage >
+                        cache_config.CACHED_PERCENTAGE_HIGH_THRESHOLD
+                ) {
+                    const { total_cached_size } =
+                        await this._get_cached_range_parts_info(
+                            params,
+                            object_sdk,
+                        );
+                    const cached_data_percentage =
+                        _.divide(total_cached_size, params.object_md.size) *
+                        100;
+                    if (
+                        cached_data_percentage <=
+                        cache_config.CACHED_PERCENTAGE_LOW_THRESHOLD
+                    ) {
                         // Read entire object from hub
                         return false;
                     }
@@ -167,16 +225,23 @@ class NamespaceCache {
             }
 
             return true;
-
-        } else if (params.object_md.should_read_from_cache && params.read_size > params.max_cache_obj_size) {
+        } else if (
+            params.object_md.should_read_from_cache &&
+            params.read_size > params.max_cache_obj_size
+        ) {
             // For entire read, iff large object is partially cache, check to see whether we should
             // read cached parts from cache and non cached from hub, or read entire object from hub.
-            const { total_cached_size, num_deduped_parts } = await this._get_cached_range_parts_info(params, object_sdk);
-            const cached_data_percentage = _.divide(total_cached_size, params.object_md.size) * 100;
+            const { total_cached_size, num_deduped_parts } =
+                await this._get_cached_range_parts_info(params, object_sdk);
+            const cached_data_percentage =
+                _.divide(total_cached_size, params.object_md.size) * 100;
             // If large object has many disjoint cache parts or small amount of cached data,
             // we would like to read entire object from hub because of overhead in hub reads.
-            if (cached_data_percentage <= cache_config.CACHED_PERCENTAGE_LOW_THRESHOLD &&
-                num_deduped_parts <= cache_config.PART_COUNT_HIGH_THRESHOLD) {
+            if (
+                cached_data_percentage <=
+                    cache_config.CACHED_PERCENTAGE_LOW_THRESHOLD &&
+                num_deduped_parts <= cache_config.PART_COUNT_HIGH_THRESHOLD
+            ) {
                 // We will read cached parts and non-cached from hub
                 return true;
             }
@@ -232,19 +297,34 @@ class NamespaceCache {
             try {
                 // Remove get_from_cache if exists for maching RPC schema
                 params = _.omit(params, 'get_from_cache');
-                object_info_cache = await this.namespace_nb.read_object_md(params, object_sdk);
+                object_info_cache = await this.namespace_nb.read_object_md(
+                    params,
+                    object_sdk,
+                );
                 if (get_from_cache) {
-                    dbg.log0('NamespaceCache.read_object_md get_from_cache is enabled', object_info_cache);
+                    dbg.log0(
+                        'NamespaceCache.read_object_md get_from_cache is enabled',
+                        object_info_cache,
+                    );
                     object_info_cache.should_read_from_cache = true;
                     return object_info_cache;
                 }
 
-                const cache_validation_time = object_info_cache.cache_last_valid_time;
-                const time_since_validation = Date.now() - cache_validation_time;
+                const cache_validation_time =
+                    object_info_cache.cache_last_valid_time;
+                const time_since_validation =
+                    Date.now() - cache_validation_time;
 
-                if ((this.caching.ttl_ms > 0 && time_since_validation <= this.caching.ttl_ms) || this.caching.ttl_ms < 0) {
+                if (
+                    (this.caching.ttl_ms > 0 &&
+                        time_since_validation <= this.caching.ttl_ms) ||
+                    this.caching.ttl_ms < 0
+                ) {
                     object_info_cache.should_read_from_cache = true; // mark it for read_object_stream
-                    dbg.log0('NamespaceCache.read_object_md use md from cache', object_info_cache);
+                    dbg.log0(
+                        'NamespaceCache.read_object_md use md from cache',
+                        object_info_cache,
+                    );
                     return object_info_cache;
                 }
 
@@ -255,59 +335,94 @@ class NamespaceCache {
             }
         }
         try {
-            const object_info_hub = await this.namespace_hub.read_object_md(params, object_sdk);
+            const object_info_hub = await this.namespace_hub.read_object_md(
+                params,
+                object_sdk,
+            );
             if (object_info_hub.etag === cache_etag) {
-                dbg.log0('NamespaceCache.read_object_md: same etags: updating cache valid time', object_info_hub);
-                setImmediate(() => this._update_cache_last_valid_time(params, object_sdk));
+                dbg.log0(
+                    'NamespaceCache.read_object_md: same etags: updating cache valid time',
+                    object_info_hub,
+                );
+                setImmediate(() =>
+                    this._update_cache_last_valid_time(params, object_sdk),
+                );
                 object_info_cache.should_read_from_cache = true;
 
                 return object_info_cache;
-
-            } else if (object_info_hub.first_range_data && object_info_hub.size <= object_info_hub.first_range_data.length) {
+            } else if (
+                object_info_hub.first_range_data &&
+                object_info_hub.size <= object_info_hub.first_range_data.length
+            ) {
                 // If the inline read covers entire object, we will submit it to cache.
                 _global_cache_uploader.submit_background(
                     object_info_hub.size,
                     async () => {
                         const upload_params = {
-                            source_stream: buffer_utils.buffer_to_read_stream(object_info_hub.first_range_data),
+                            source_stream: buffer_utils.buffer_to_read_stream(
+                                object_info_hub.first_range_data,
+                            ),
                             bucket: params.bucket,
                             key: params.key,
                             size: object_info_hub.size,
                             content_type: params.content_type,
                             xattr: object_info_hub.xattr,
-                            last_modified_time: (new Date(object_info_hub.create_time)).getTime(),
-                            upload_chunks_hook: this.update_cache_stats_hook(params.bucket)
+                            last_modified_time: new Date(
+                                object_info_hub.create_time,
+                            ).getTime(),
+                            upload_chunks_hook: this.update_cache_stats_hook(
+                                params.bucket,
+                            ),
                         };
 
                         const start_time = process.hrtime.bigint();
-                        const upload_res = await this.namespace_nb.upload_object(upload_params, object_sdk);
+                        const upload_res =
+                            await this.namespace_nb.upload_object(
+                                upload_params,
+                                object_sdk,
+                            );
 
                         this.stats?.update_cache_latency_stats({
                             bucket_name: params.bucket,
-                            cache_write_latency: Number(process.hrtime.bigint() - start_time) / 1e6,
+                            cache_write_latency:
+                                Number(process.hrtime.bigint() - start_time) /
+                                1e6,
                         });
 
                         return upload_res;
-                    }
+                    },
                 );
             } else if (cache_etag === '') {
                 object_info_hub.should_read_from_cache = false;
             } else {
-                dbg.log0('NamespaceCache.read_object_md: etags different: removing object from cache', { params, hub_tag: object_info_hub.etag, cache_etag: cache_etag });
-                setImmediate(() => this._delete_object_from_cache(params, object_sdk));
+                dbg.log0(
+                    'NamespaceCache.read_object_md: etags different: removing object from cache',
+                    {
+                        params,
+                        hub_tag: object_info_hub.etag,
+                        cache_etag: cache_etag,
+                    },
+                );
+                setImmediate(() =>
+                    this._delete_object_from_cache(params, object_sdk),
+                );
             }
 
             return object_info_hub;
-
         } catch (err) {
             if (err.code === 'NoSuchKey') {
                 if (object_info_cache) {
-                    setImmediate(() => this._delete_object_from_cache(params, object_sdk));
+                    setImmediate(() =>
+                        this._delete_object_from_cache(params, object_sdk),
+                    );
                 }
             } else {
-                dbg.error('NamespaceCache.read_object_md: NOT NoSuchKey in hub', err);
+                dbg.error(
+                    'NamespaceCache.read_object_md: NOT NoSuchKey in hub',
+                    err,
+                );
             }
-            throw (err);
+            throw err;
         }
     }
 
@@ -323,12 +438,20 @@ class NamespaceCache {
     async _read_object_stream(params, object_sdk) {
         dbg.log0('NamespaceCache._read_object_stream', { params: params });
 
-        params.bucket_free_space_bytes = await this._get_bucket_free_space_bytes(params, object_sdk);
-        const range_hub_read = await this._range_read_hub_check(params, object_sdk);
+        params.bucket_free_space_bytes =
+            await this._get_bucket_free_space_bytes(params, object_sdk);
+        const range_hub_read = await this._range_read_hub_check(
+            params,
+            object_sdk,
+        );
         if (!params.object_md.should_read_from_cache) {
             // Object not in cache
-            if (range_hub_read && params.read_size <= params.bucket_free_space_bytes) {
-                const create_params = _.pick(params,
+            if (
+                range_hub_read &&
+                params.read_size <= params.bucket_free_space_bytes
+            ) {
+                const create_params = _.pick(
+                    params,
                     'bucket',
                     'key',
                     'content_type',
@@ -344,46 +467,70 @@ class NamespaceCache {
                 create_params.size = params.object_md.size;
                 create_params.etag = params.object_md.etag;
                 create_params.xattr = params.object_md.xattr;
-                create_params.last_modified_time = (new Date(params.object_md.create_time)).getTime();
+                create_params.last_modified_time = new Date(
+                    params.object_md.create_time,
+                ).getTime();
                 create_params.complete_upload = true;
                 // Create partial object md
-                const create_reply = await object_sdk.rpc_client.object.create_object_upload(create_params);
+                const create_reply =
+                    await object_sdk.rpc_client.object.create_object_upload(
+                        create_params,
+                    );
                 params.object_md.obj_id = create_reply.obj_id;
 
-                dbg.log0('NamespaceCache._read_object_stream: partial object created:', create_reply.obj_id);
+                dbg.log0(
+                    'NamespaceCache._read_object_stream: partial object created:',
+                    create_reply.obj_id,
+                );
             }
 
-            return this._read_hub_object_stream(params, object_sdk,
-                range_hub_read ? { start: params.start, end: params.end } : undefined);
+            return this._read_hub_object_stream(
+                params,
+                object_sdk,
+                range_hub_read ?
+                    { start: params.start, end: params.end }
+                :   undefined,
+            );
         }
 
-        params.missing_part_getter = async (missing_part_start, missing_part_end) => {
-            dbg.log0('NamespaceCache._read_object_stream: missing_part_getter', { params: params, missing_part_start, missing_part_end });
+        params.missing_part_getter = async (
+            missing_part_start,
+            missing_part_end,
+        ) => {
+            dbg.log0(
+                'NamespaceCache._read_object_stream: missing_part_getter',
+                { params: params, missing_part_start, missing_part_end },
+            );
 
             const read_params = _.omit(params, ['start', 'end']);
             read_params.start = missing_part_start;
             read_params.end = missing_part_end;
 
             const read_stream = await this._read_hub_object_stream(
-                read_params, object_sdk, { start: missing_part_start, end: missing_part_end });
+                read_params,
+                object_sdk,
+                { start: missing_part_start, end: missing_part_end },
+            );
 
             return buffer_utils.read_stream_join(read_stream);
         };
 
         try {
             const start_time = process.hrtime.bigint();
-            const cache_read_stream = await this.namespace_nb.read_object_stream(params, object_sdk);
+            const cache_read_stream =
+                await this.namespace_nb.read_object_stream(params, object_sdk);
 
             // update latency stats on 'end'
             cache_read_stream.once('end', () => {
                 this.stats?.update_cache_latency_stats({
                     bucket_name: params.bucket,
-                    cache_read_latency: Number(process.hrtime.bigint() - start_time) / 1e6,
+                    cache_read_latency:
+                        Number(process.hrtime.bigint() - start_time) / 1e6,
                 });
                 this.stats?.update_cache_stats({
                     bucket_name: params.bucket,
                     hit_count: 1,
-                    range_op: (params.start || params.end)
+                    range_op: params.start || params.end,
                 });
             });
 
@@ -397,8 +544,17 @@ class NamespaceCache {
             cache_read_stream.pipe(tap_stream);
             return tap_stream;
         } catch (err) {
-            dbg.error('NamespaceCache.hub_range_read: fallback to hub after error in reading cache', err);
-            return this._read_hub_object_stream(params, object_sdk, range_hub_read ? { start: params.start, end: params.end } : undefined);
+            dbg.error(
+                'NamespaceCache.hub_range_read: fallback to hub after error in reading cache',
+                err,
+            );
+            return this._read_hub_object_stream(
+                params,
+                object_sdk,
+                range_hub_read ?
+                    { start: params.start, end: params.end }
+                :   undefined,
+            );
         }
     }
 
@@ -414,7 +570,10 @@ class NamespaceCache {
      * Returns range_stream if range read; otherwise, hub_read_stream
      */
     async _read_hub_object_stream(params, object_sdk, hub_read_range) {
-        dbg.log0('NamespaceCache._read_hub_object_stream', { params: params, hub_read_range });
+        dbg.log0('NamespaceCache._read_hub_object_stream', {
+            params: params,
+            hub_read_range,
+        });
 
         let hub_read_size = params.read_size;
         // Omit the original start and end set by s3 client
@@ -423,9 +582,18 @@ class NamespaceCache {
         if (hub_read_range) {
             // Align hub read range
             const block_size = cache_config.DEFAULT_BLOCK_SIZE;
-            hub_read_range.start = range_utils.align_down(hub_read_range.start, block_size);
-            const aligned_read_end = range_utils.align_up(hub_read_range.end, block_size);
-            hub_read_range.end = Math.min(params.object_md.size, aligned_read_end);
+            hub_read_range.start = range_utils.align_down(
+                hub_read_range.start,
+                block_size,
+            );
+            const aligned_read_end = range_utils.align_up(
+                hub_read_range.end,
+                block_size,
+            );
+            hub_read_range.end = Math.min(
+                params.object_md.size,
+                aligned_read_end,
+            );
 
             // Set the actual start and end in range read on hub
             hub_read_params.start = hub_read_range.start;
@@ -438,15 +606,21 @@ class NamespaceCache {
         let hub_read_stream;
         try {
             if (!hub_read_params.md_conditions) {
-                hub_read_params.md_conditions = { if_match_etag: params.object_md.etag };
+                hub_read_params.md_conditions = {
+                    if_match_etag: params.object_md.etag,
+                };
             }
             const start_time = process.hrtime.bigint();
-            hub_read_stream = await this.namespace_hub.read_object_stream(hub_read_params, object_sdk);
+            hub_read_stream = await this.namespace_hub.read_object_stream(
+                hub_read_params,
+                object_sdk,
+            );
             // update latency stats on 'end'
             hub_read_stream.once('end', () => {
                 this.stats?.update_hub_latency_stats({
                     bucket_name: params.bucket,
-                    hub_read_latency: Number(process.hrtime.bigint() - start_time) / 1e6,
+                    hub_read_latency:
+                        Number(process.hrtime.bigint() - start_time) / 1e6,
                 });
             });
         } catch (err) {
@@ -487,9 +661,10 @@ class NamespaceCache {
                 xattr: params.object_md.xattr,
             };
             if (hub_read_range) {
-                if (params.md_conditions === undefined ||
-                    params.md_conditions.if_match_etag === params.object_md.etag) {
-
+                if (
+                    params.md_conditions === undefined ||
+                    params.md_conditions.if_match_etag === params.object_md.etag
+                ) {
                     upload_params.start = hub_read_range.start;
                     upload_params.end = hub_read_range.end;
                     // Set object ID since partial object has been created before
@@ -499,23 +674,41 @@ class NamespaceCache {
                         hub_read_size,
                         async () => {
                             const start_time = process.hrtime.bigint();
-                            const upload_res = await object_sdk.object_io.upload_object_range(
-                                _.defaults({
-                                    client: object_sdk.rpc_client,
-                                    bucket: this.namespace_nb.target_bucket,
-                                }, upload_params));
+                            const upload_res =
+                                await object_sdk.object_io.upload_object_range(
+                                    _.defaults(
+                                        {
+                                            client: object_sdk.rpc_client,
+                                            bucket: this.namespace_nb
+                                                .target_bucket,
+                                        },
+                                        upload_params,
+                                    ),
+                                );
 
                             this.stats?.update_cache_latency_stats({
                                 bucket_name: params.bucket,
-                                cache_write_latency: Number(process.hrtime.bigint() - start_time) / 1e6,
+                                cache_write_latency:
+                                    Number(
+                                        process.hrtime.bigint() - start_time,
+                                    ) / 1e6,
                             });
 
                             return upload_res;
-                        }
+                        },
                     );
-                    dbg.log0('NamespaceCache._read_hub_object_stream: started uploading part to cache', params.object_md);
+                    dbg.log0(
+                        'NamespaceCache._read_hub_object_stream: started uploading part to cache',
+                        params.object_md,
+                    );
                 } else {
-                    dbg.log0('NamespaceCache._read_hub_object_stream: etags are different or non if-match preconditions, skip uploading part to cache', { md_conditions: params.md_conditions, cache_object_md: params.object_md });
+                    dbg.log0(
+                        'NamespaceCache._read_hub_object_stream: etags are different or non if-match preconditions, skip uploading part to cache',
+                        {
+                            md_conditions: params.md_conditions,
+                            cache_object_md: params.object_md,
+                        },
+                    );
                 }
 
                 this.stats?.update_cache_stats({
@@ -524,22 +717,32 @@ class NamespaceCache {
                     range_op: true,
                 });
             } else {
-                upload_params.last_modified_time = (new Date(params.object_md.create_time)).getTime();
-                upload_params.upload_chunks_hook = this.update_cache_stats_hook(params.bucket);
+                upload_params.last_modified_time = new Date(
+                    params.object_md.create_time,
+                ).getTime();
+                upload_params.upload_chunks_hook = this.update_cache_stats_hook(
+                    params.bucket,
+                );
 
                 _global_cache_uploader.submit_background(
                     params.object_md.size,
                     async () => {
                         const start_time = process.hrtime.bigint();
-                        const upload_res = await this.namespace_nb.upload_object(upload_params, object_sdk);
+                        const upload_res =
+                            await this.namespace_nb.upload_object(
+                                upload_params,
+                                object_sdk,
+                            );
 
                         this.stats?.update_cache_latency_stats({
                             bucket_name: params.bucket,
-                            cache_write_latency: Number(process.hrtime.bigint() - start_time) / 1e6,
+                            cache_write_latency:
+                                Number(process.hrtime.bigint() - start_time) /
+                                1e6,
                         });
 
                         return upload_res;
-                    }
+                    },
                 );
 
                 this.stats?.update_cache_stats({
@@ -553,7 +756,6 @@ class NamespaceCache {
         const ret_stream = range_stream ? range_stream : hub_read_stream;
         return ret_stream;
     }
-
 
     async read_object_stream(params, object_sdk) {
         // part_number is set to the query parameter partNumber in request. If set,
@@ -582,19 +784,26 @@ class NamespaceCache {
         if (get_from_cache) {
             // For testing purpose: get_from_cache query parameter is on
             try {
-                dbg.log0('NamespaceCache.read_object_stream: get_from_cache is on: read object from cache', params);
+                dbg.log0(
+                    'NamespaceCache.read_object_stream: get_from_cache is on: read object from cache',
+                    params,
+                );
                 const start_time = process.hrtime.bigint();
-                read_response = await this.namespace_nb.read_object_stream(params, object_sdk);
+                read_response = await this.namespace_nb.read_object_stream(
+                    params,
+                    object_sdk,
+                );
                 // update latency stats on 'end'
                 read_response.once('end', () => {
                     this.stats?.update_cache_latency_stats({
                         bucket_name: params.bucket,
-                        cache_read_latency: Number(process.hrtime.bigint() - start_time) / 1e6,
+                        cache_read_latency:
+                            Number(process.hrtime.bigint() - start_time) / 1e6,
                     });
                     this.stats?.update_cache_stats({
                         bucket_name: params.bucket,
                         hit_count: 1,
-                        range_op
+                        range_op,
                     });
                 });
 
@@ -607,11 +816,15 @@ class NamespaceCache {
                 });
                 read_response.pipe(tap_stream);
             } catch (err) {
-                dbg.warn('NamespaceCache.read_object_stream: cache read error', err);
+                dbg.warn(
+                    'NamespaceCache.read_object_stream: cache read error',
+                    err,
+                );
             }
         }
 
-        tap_stream = tap_stream || await this._read_object_stream(params, object_sdk);
+        tap_stream =
+            tap_stream || (await this._read_object_stream(params, object_sdk));
 
         this.stats?.update_cache_stats({
             bucket_name: params.bucket,
@@ -620,14 +833,18 @@ class NamespaceCache {
         });
 
         const operation = 'ObjectRead';
-        const load_for_trigger = !params.noobaa_trigger_agent &&
-            object_sdk.should_run_triggers({ active_triggers: this.active_triggers, operation });
+        const load_for_trigger =
+            !params.noobaa_trigger_agent &&
+            object_sdk.should_run_triggers({
+                active_triggers: this.active_triggers,
+                operation,
+            });
         if (load_for_trigger) {
             object_sdk.dispatch_triggers({
                 active_triggers: this.active_triggers,
                 operation,
                 obj: params.object_md,
-                bucket: params.bucket
+                bucket: params.bucket,
             });
         }
 
@@ -639,52 +856,83 @@ class NamespaceCache {
     ///////////////////
 
     async upload_object(params, object_sdk) {
-        dbg.log0("NamespaceCache.upload_object", _.omit(params, 'source_stream'));
+        dbg.log0(
+            'NamespaceCache.upload_object',
+            _.omit(params, 'source_stream'),
+        );
         const operation = 'ObjectCreated';
-        const load_for_trigger = object_sdk.should_run_triggers({ active_triggers: this.active_triggers, operation });
+        const load_for_trigger = object_sdk.should_run_triggers({
+            active_triggers: this.active_triggers,
+            operation,
+        });
 
-        const bucket_free_space_bytes = await this._get_bucket_free_space_bytes(params, object_sdk);
+        const bucket_free_space_bytes = await this._get_bucket_free_space_bytes(
+            params,
+            object_sdk,
+        );
         let upload_response;
         let etag;
         if (params.size > bucket_free_space_bytes) {
-            dbg.log0("NamespaceCache.upload_object: object is too big, skip caching");
+            dbg.log0(
+                'NamespaceCache.upload_object: object is too big, skip caching',
+            );
 
-            setImmediate(() => this._delete_object_from_cache(params, object_sdk));
+            setImmediate(() =>
+                this._delete_object_from_cache(params, object_sdk),
+            );
             const start_time = process.hrtime.bigint();
-            upload_response = await this.namespace_hub.upload_object(params, object_sdk);
+            upload_response = await this.namespace_hub.upload_object(
+                params,
+                object_sdk,
+            );
 
             this.stats?.update_hub_latency_stats({
                 bucket_name: params.bucket,
-                hub_write_latency: Number(process.hrtime.bigint() - start_time) / 1e6,
+                hub_write_latency:
+                    Number(process.hrtime.bigint() - start_time) / 1e6,
             });
 
             etag = upload_response.etag;
-
         } else {
-
             // UPLOAD SIMULTANEOUSLY TO BOTH
 
             const hub_stream = new stream.PassThrough();
             const hub_params = { ...params, source_stream: hub_stream };
             const start_time = process.hrtime.bigint();
-            const hub_promise = this.namespace_hub.upload_object(hub_params, object_sdk);
+            const hub_promise = this.namespace_hub.upload_object(
+                hub_params,
+                object_sdk,
+            );
             // update latency stats on 'end'
-            hub_promise.then(() => this.stats?.update_hub_latency_stats({
-                bucket_name: params.bucket,
-                hub_write_latency: Number(process.hrtime.bigint() - start_time) / 1e6,
-            }));
+            hub_promise.then(() =>
+                this.stats?.update_hub_latency_stats({
+                    bucket_name: params.bucket,
+                    hub_write_latency:
+                        Number(process.hrtime.bigint() - start_time) / 1e6,
+                }),
+            );
 
-            const cache_finalizer = callback => hub_promise.then(() => callback(), err => callback(err));
+            const cache_finalizer = callback =>
+                hub_promise.then(
+                    () => callback(),
+                    err => callback(err),
+                );
 
-            const cache_stream = new stream.PassThrough({ final: cache_finalizer });
+            const cache_stream = new stream.PassThrough({
+                final: cache_finalizer,
+            });
             const cache_params = {
                 ...params,
                 source_stream: cache_stream,
                 async_get_last_modified_time: async () => {
                     const upload_res = await hub_promise;
-                    const last_modified_time = (new Date(upload_res.last_modified_time)).getTime();
+                    const last_modified_time = new Date(
+                        upload_res.last_modified_time,
+                    ).getTime();
                     if (isNaN(last_modified_time)) {
-                        throw new Error('Invalid last_modified_time returned from hub_promise, Expected a valid date or timestamp.');
+                        throw new Error(
+                            'Invalid last_modified_time returned from hub_promise, Expected a valid date or timestamp.',
+                        );
                     }
                     return last_modified_time;
                 },
@@ -692,19 +940,26 @@ class NamespaceCache {
             };
             const cache_promise = _global_cache_uploader.surround_count(
                 params.size,
-                async () => this.namespace_nb.upload_object(cache_params, object_sdk)
+                async () =>
+                    this.namespace_nb.upload_object(cache_params, object_sdk),
             );
             // update latency stats on 'end'
-            cache_promise.then(() => this.stats?.update_cache_latency_stats({
-                bucket_name: params.bucket,
-                cache_write_latency: Number(process.hrtime.bigint() - start_time) / 1e6,
-            }));
+            cache_promise.then(() =>
+                this.stats?.update_cache_latency_stats({
+                    bucket_name: params.bucket,
+                    cache_write_latency:
+                        Number(process.hrtime.bigint() - start_time) / 1e6,
+                }),
+            );
 
             // One important caveat is that if the Readable stream emits an error during processing,
             // the Writable destination is not closed automatically. If an error occurs, it will be
             // necessary to manually close each stream in order to prevent memory leaks.
             params.source_stream.on('error', err => {
-                dbg.log0("NamespaceCache.upload_object: error in read source", { params: _.omit(params, 'source_stream'), error: err });
+                dbg.log0('NamespaceCache.upload_object: error in read source', {
+                    params: _.omit(params, 'source_stream'),
+                    error: err,
+                });
                 hub_stream.destroy();
                 cache_stream.destroy();
             });
@@ -712,18 +967,27 @@ class NamespaceCache {
             params.source_stream.pipe(hub_stream);
             params.source_stream.pipe(cache_stream);
 
-            const [hub_res, cache_res] = await Promise.allSettled([hub_promise, cache_promise]);
+            const [hub_res, cache_res] = await Promise.allSettled([
+                hub_promise,
+                cache_promise,
+            ]);
             const hub_ok = hub_res.status === 'fulfilled';
             const cache_ok = cache_res.status === 'fulfilled';
             if (!hub_ok) {
-                dbg.log0("NamespaceCache.upload_object: error in upload", { params: _.omit(params, 'source_stream'), hub_res, cache_res });
+                dbg.log0('NamespaceCache.upload_object: error in upload', {
+                    params: _.omit(params, 'source_stream'),
+                    hub_res,
+                    cache_res,
+                });
                 // handling the case where cache succeeded and cleanup.
                 // We can also just mark the cache object for re-validation
                 // to make sure any read will have to re-validate it,
                 // but writes (retries of the upload most likely) will be already in the cache
                 // and detected by dedup so we don't need to do anything.
                 if (cache_ok) {
-                    setImmediate(() => this._delete_object_from_cache(params, object_sdk));
+                    setImmediate(() =>
+                        this._delete_object_from_cache(params, object_sdk),
+                    );
                 }
                 // fail back to client with the hub reason
                 throw hub_res.reason;
@@ -733,9 +997,18 @@ class NamespaceCache {
                 assert.strictEqual(hub_res.value.etag, cache_res.value.etag);
             } else {
                 // on error from cache, we ignore and let hub upload continue
-                dbg.log0("NamespaceCache.upload_object: error in cache upload", { params: _.omit(params, 'source_stream'), hub_res, cache_res });
+                dbg.log0(
+                    'NamespaceCache.upload_object: error in cache upload',
+                    {
+                        params: _.omit(params, 'source_stream'),
+                        hub_res,
+                        cache_res,
+                    },
+                );
                 // Invalidate cache in case we have old object
-                setImmediate(() => this._delete_object_from_cache(params, object_sdk));
+                setImmediate(() =>
+                    this._delete_object_from_cache(params, object_sdk),
+                );
             }
 
             upload_response = hub_res.value;
@@ -748,9 +1021,14 @@ class NamespaceCache {
                 key: params.key,
                 size: params.size,
                 content_type: params.content_type,
-                etag
+                etag,
             };
-            object_sdk.dispatch_triggers({ active_triggers: this.active_triggers, operation, obj, bucket: params.bucket });
+            object_sdk.dispatch_triggers({
+                active_triggers: this.active_triggers,
+                operation,
+                obj,
+                bucket: params.bucket,
+            });
         }
 
         return upload_response;
@@ -774,9 +1052,15 @@ class NamespaceCache {
 
     async complete_object_upload(params, object_sdk) {
         const operation = 'ObjectCreated';
-        const load_for_trigger = object_sdk.should_run_triggers({ active_triggers: this.active_triggers, operation });
+        const load_for_trigger = object_sdk.should_run_triggers({
+            active_triggers: this.active_triggers,
+            operation,
+        });
 
-        const res = await this.namespace_hub.complete_object_upload(params, object_sdk);
+        const res = await this.namespace_hub.complete_object_upload(
+            params,
+            object_sdk,
+        );
         if (load_for_trigger) {
             const head_res = await this.read_object_md(params, object_sdk);
             const obj = {
@@ -784,9 +1068,14 @@ class NamespaceCache {
                 key: params.key,
                 size: head_res.size,
                 content_type: head_res.content_type,
-                etag: head_res.etag
+                etag: head_res.etag,
             };
-            object_sdk.dispatch_triggers({ active_triggers: this.active_triggers, operation, obj, bucket: params.bucket });
+            object_sdk.dispatch_triggers({
+                active_triggers: this.active_triggers,
+                operation,
+                obj,
+                bucket: params.bucket,
+            });
         }
         await this._delete_object_from_cache(params, object_sdk);
         return res;
@@ -801,7 +1090,6 @@ class NamespaceCache {
     ///////////////////
 
     async delete_object(params, object_sdk) {
-
         const [hub_res, cache_res] = await Promise.allSettled([
             this.namespace_hub.delete_object(params, object_sdk),
             this.namespace_nb.delete_object(params, object_sdk),
@@ -809,19 +1097,24 @@ class NamespaceCache {
         if (hub_res.status === 'rejected') {
             throw hub_res.reason;
         }
-        if (cache_res.status === 'rejected' &&
-            cache_res.reason.code !== 'NoSuchKey') {
+        if (
+            cache_res.status === 'rejected' &&
+            cache_res.reason.code !== 'NoSuchKey'
+        ) {
             throw cache_res.reason;
         }
 
         const operation = 'ObjectRemoved';
-        const load_for_trigger = object_sdk.should_run_triggers({ active_triggers: this.active_triggers, operation });
+        const load_for_trigger = object_sdk.should_run_triggers({
+            active_triggers: this.active_triggers,
+            operation,
+        });
         if (load_for_trigger) {
             object_sdk.dispatch_triggers({
                 active_triggers: this.active_triggers,
                 operation,
                 obj: params.object_md,
-                bucket: params.bucket
+                bucket: params.bucket,
             });
         }
 
@@ -832,24 +1125,38 @@ class NamespaceCache {
         const operation = 'ObjectRemoved';
         const objects = params.objects.filter(obj => obj.version_id);
         if (objects.length > 0) {
-            dbg.error('S3 Version request not (NotImplemented) for s3_post_bucket_delete', params);
+            dbg.error(
+                'S3 Version request not (NotImplemented) for s3_post_bucket_delete',
+                params,
+            );
             throw new S3Error(S3Error.NotImplemented);
         }
-        const load_for_trigger = object_sdk.should_run_triggers({ active_triggers: this.active_triggers, operation });
-        const head_res = load_for_trigger && await P.map(params.objects, async obj => {
-            const request = {
-                bucket: params.bucket,
-                key: obj.key,
-                version_id: obj.version_id
-            };
-            let obj_md;
-            try {
-                obj_md = _.defaults({ key: obj.key }, await this.namespace_hub.read_object_md(request, object_sdk));
-            } catch (err) {
-                if (err.rpc_code !== 'NO_SUCH_OBJECT') throw err;
-            }
-            return obj_md;
+        const load_for_trigger = object_sdk.should_run_triggers({
+            active_triggers: this.active_triggers,
+            operation,
         });
+        const head_res =
+            load_for_trigger &&
+            (await P.map(params.objects, async obj => {
+                const request = {
+                    bucket: params.bucket,
+                    key: obj.key,
+                    version_id: obj.version_id,
+                };
+                let obj_md;
+                try {
+                    obj_md = _.defaults(
+                        { key: obj.key },
+                        await this.namespace_hub.read_object_md(
+                            request,
+                            object_sdk,
+                        ),
+                    );
+                } catch (err) {
+                    if (err.rpc_code !== 'NO_SUCH_OBJECT') throw err;
+                }
+                return obj_md;
+            }));
 
         const [hub_res, cache_res] = await Promise.allSettled([
             this.namespace_hub.delete_multiple_objects(params, object_sdk),
@@ -866,12 +1173,15 @@ class NamespaceCache {
             for (let i = 0; i < hub_res.value.length; ++i) {
                 const deleted_obj = hub_res.value[i];
                 const head_obj = head_res[i];
-                if (_.isUndefined(deleted_obj && deleted_obj.err_code) && head_obj) {
+                if (
+                    _.isUndefined(deleted_obj && deleted_obj.err_code) &&
+                    head_obj
+                ) {
                     object_sdk.dispatch_triggers({
                         active_triggers: this.active_triggers,
                         operation,
                         obj: head_obj,
-                        bucket: params.bucket
+                        bucket: params.bucket,
                     });
                 }
             }
@@ -881,7 +1191,8 @@ class NamespaceCache {
     }
 
     update_cache_stats_hook(bucket_name) {
-        return write_bytes => this.stats?.update_cache_stats({ bucket_name, write_bytes });
+        return write_bytes =>
+            this.stats?.update_cache_stats({ bucket_name, write_bytes });
     }
 
     ////////////////////
@@ -889,7 +1200,6 @@ class NamespaceCache {
     ////////////////////
 
     async get_object_tagging(params, object_sdk) {
-
         const object_md = await this.read_object_md(params, object_sdk);
         if (object_md.should_read_from_cache) {
             return this.namespace_nb.get_object_tagging(params, object_sdk);
@@ -899,23 +1209,31 @@ class NamespaceCache {
     }
 
     async delete_object_tagging(params, object_sdk) {
-
-        const res = this.namespace_hub.delete_object_tagging(params, object_sdk);
+        const res = this.namespace_hub.delete_object_tagging(
+            params,
+            object_sdk,
+        );
         try {
             await this.namespace_nb.delete_object_tagging(params, object_sdk);
         } catch (err) {
-            dbg.log0('failed to delete tags in cache', { params: _.omit(params, 'source_stream') });
+            dbg.log0('failed to delete tags in cache', {
+                params: _.omit(params, 'source_stream'),
+            });
         }
         return res;
     }
 
     async put_object_tagging(params, object_sdk) {
-
-        const res = await this.namespace_hub.put_object_tagging(params, object_sdk);
+        const res = await this.namespace_hub.put_object_tagging(
+            params,
+            object_sdk,
+        );
         try {
             await this.namespace_nb.put_object_tagging(params, object_sdk);
         } catch (err) {
-            dbg.log0('failed to store tags in cache', { params: _.omit(params, 'source_stream') });
+            dbg.log0('failed to store tags in cache', {
+                params: _.omit(params, 'source_stream'),
+            });
         }
         return res;
     }
@@ -947,11 +1265,11 @@ class NamespaceCache {
     for example, if the user tries to interact with an object that does not exist, the operation would fail as expected with NoSuchObject.
     */
     async get_object_acl(params, object_sdk) {
-        if (config.NAMESPACE_CACHING.ACL_HANDLING === "reject") {
+        if (config.NAMESPACE_CACHING.ACL_HANDLING === 'reject') {
             throw new S3Error(S3Error.AccessDenied);
         }
 
-        if (config.NAMESPACE_CACHING.ACL_HANDLING === "pass-through") {
+        if (config.NAMESPACE_CACHING.ACL_HANDLING === 'pass-through') {
             return this.namespace_hub.get_object_acl(params, object_sdk);
         }
 
@@ -960,11 +1278,11 @@ class NamespaceCache {
     }
 
     async put_object_acl(params, object_sdk) {
-        if (config.NAMESPACE_CACHING.ACL_HANDLING === "reject") {
+        if (config.NAMESPACE_CACHING.ACL_HANDLING === 'reject') {
             throw new S3Error(S3Error.AccessDenied);
         }
 
-        if (config.NAMESPACE_CACHING.ACL_HANDLING === "pass-through") {
+        if (config.NAMESPACE_CACHING.ACL_HANDLING === 'pass-through') {
             return this.namespace_hub.put_object_acl(params, object_sdk);
         }
 
@@ -1007,6 +1325,5 @@ class NamespaceCache {
         throw new Error('TODO');
     }
 }
-
 
 module.exports = NamespaceCache;

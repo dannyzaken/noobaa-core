@@ -1,5 +1,5 @@
 /* Copyright (C) 2016 NooBaa */
-"use strict";
+'use strict';
 
 const argv = require('minimist')(process.argv);
 const dbg = require('../../util/debug_module')(__filename);
@@ -17,25 +17,20 @@ const test_utils = require('./test_utils');
 const dotenv = require('../../util/dotenv');
 dotenv.load();
 
-
-const {
-    mgmt_ip = 'localhost',
-        mgmt_port = '8080',
-        s3_ip = 'localhost',
-} = argv;
+const { mgmt_ip = 'localhost', mgmt_port = '8080', s3_ip = 'localhost' } = argv;
 
 argv.access_key = argv.access_key || '123';
 argv.secret_key = argv.secret_key || 'abc';
 const rpc = api.new_rpc();
 const client = rpc.new_client({
-    address: 'ws://' + mgmt_ip + ':' + mgmt_port
+    address: 'ws://' + mgmt_ip + ':' + mgmt_port,
 });
 
 const TEST_BUCKET_NAME = 'bucket1';
 const TEST_QUOTA_BUCKET_NAME = 'bucketquota';
 
 module.exports = {
-    run_test: run_test
+    run_test: run_test,
 };
 
 // Does the Auth and returns the nodes in the system
@@ -43,7 +38,7 @@ async function create_auth() {
     const auth_params = {
         email: 'demo@noobaa.com',
         password: 'DeMo1',
-        system: 'demo'
+        system: 'demo',
     };
     return client.create_auth_token(auth_params);
 }
@@ -53,14 +48,13 @@ async function run_test() {
         await perform_placement_tests();
         await perform_quota_tests();
         rpc.disconnect_all();
-        return P.resolve("Test Passed! Everything Seems To Be Fine...");
+        return P.resolve('Test Passed! Everything Seems To Be Fine...');
     } catch (err) {
         console.error('test_bucket_placement FAILED: ', err.stack || err);
         rpc.disconnect_all();
         throw new Error(`test_bucket_placement FAILED: ${err}`);
     }
 }
-
 
 async function upload_random_file() {
     const fkey = await basic_server_ops.generate_random_file(20);
@@ -81,21 +75,23 @@ async function perform_placement_tests() {
     await create_auth();
     await Promise.all([
         test_utils.create_hosts_pool(client, 'pool1', 3),
-        test_utils.create_hosts_pool(client, 'pool2', 3)
+        test_utils.create_hosts_pool(client, 'pool2', 3),
     ]);
     await client.tier.create_tier({
         name: 'tier1',
         attached_pools: ['pool1', 'pool2'],
-        data_placement: 'SPREAD'
+        data_placement: 'SPREAD',
     });
     await client.tiering_policy.create_policy({
         name: 'tiering1',
-        tiers: [{
-            order: 0,
-            tier: 'tier1',
-            spillover: false,
-            disabled: false
-        }]
+        tiers: [
+            {
+                order: 0,
+                tier: 'tier1',
+                spillover: false,
+                disabled: false,
+            },
+        ],
     });
     await client.bucket.create_bucket({
         name: TEST_BUCKET_NAME,
@@ -112,7 +108,7 @@ async function perform_placement_tests() {
             _.each(chunk.frags, frag => {
                 if (frag.blocks.length !== 3) {
                     console.error('SPREAD NOT CORRECT!');
-                    throw new Error("SPREAD NOT CORRECT!");
+                    throw new Error('SPREAD NOT CORRECT!');
                 }
             });
         });
@@ -120,7 +116,7 @@ async function perform_placement_tests() {
 
     await client.tier.update_tier({
         name: 'tier1',
-        data_placement: 'MIRROR'
+        data_placement: 'MIRROR',
     });
 
     {
@@ -143,7 +139,7 @@ async function perform_placement_tests() {
             });
             if (pool1_count !== 3 && pool2_count !== 3) {
                 console.error('MIRROR NOT CORRECT!');
-                throw new Error("MIRROR NOT CORRECT!");
+                throw new Error('MIRROR NOT CORRECT!');
             }
         });
     }
@@ -154,16 +150,18 @@ async function perform_quota_tests() {
     await client.tier.create_tier({
         name: 'tier2',
         attached_pools: ['pool1', 'pool2'],
-        data_placement: 'SPREAD'
+        data_placement: 'SPREAD',
     });
     await client.tiering_policy.create_policy({
         name: 'tiering2',
-        tiers: [{
-            order: 0,
-            tier: 'tier2',
-            spillover: false,
-            disabled: false
-        }]
+        tiers: [
+            {
+                order: 0,
+                tier: 'tier2',
+                spillover: false,
+                disabled: false,
+            },
+        ],
     });
     await client.bucket.create_bucket({
         name: TEST_QUOTA_BUCKET_NAME,
@@ -174,23 +172,44 @@ async function perform_quota_tests() {
     let fl = await basic_server_ops.generate_random_file(1);
     console.log('Uploading 1MB file');
     try {
-        await basic_server_ops.upload_file(s3_ip, fl, TEST_QUOTA_BUCKET_NAME, fl);
+        await basic_server_ops.upload_file(
+            s3_ip,
+            fl,
+            TEST_QUOTA_BUCKET_NAME,
+            fl,
+        );
     } catch (err) {
-        throw new Error(`perform_quota_tests should not fail ul 1mb when quota is 1gb ${err}`);
+        throw new Error(
+            `perform_quota_tests should not fail ul 1mb when quota is 1gb ${err}`,
+        );
     }
     fl = await basic_server_ops.generate_random_file(1200);
     console.log('uploading 1.2GB file');
     try {
-        await basic_server_ops.upload_file(s3_ip, fl, TEST_QUOTA_BUCKET_NAME, fl);
+        await basic_server_ops.upload_file(
+            s3_ip,
+            fl,
+            TEST_QUOTA_BUCKET_NAME,
+            fl,
+        );
     } catch (err) {
-        throw new Error(`perform_quota_tests should not fail ul 1mb when quota is 1gb ${err}`);
+        throw new Error(
+            `perform_quota_tests should not fail ul 1mb when quota is 1gb ${err}`,
+        );
     }
     console.log('waiting for md_aggregation calculations');
     await P.delay(120000);
     fl = await basic_server_ops.generate_random_file(30);
     let didFail = false;
     try {
-        await basic_server_ops.upload_file(s3_ip, fl, TEST_QUOTA_BUCKET_NAME, fl, 20, true);
+        await basic_server_ops.upload_file(
+            s3_ip,
+            fl,
+            TEST_QUOTA_BUCKET_NAME,
+            fl,
+            20,
+            true,
+        );
     } catch (err) {
         didFail = true;
         console.info('Expected failure of file over quota limit');
@@ -207,8 +226,8 @@ function update_quota_on_bucket(limit_gb) {
                     name: TEST_QUOTA_BUCKET_NAME,
                     quota: {
                         size: limit_gb,
-                        unit: 'GIGABYTE'
-                    }
+                        unit: 'GIGABYTE',
+                    },
                 });
             } else {
                 return client.bucket.update_bucket({
@@ -223,10 +242,10 @@ function update_quota_on_bucket(limit_gb) {
 
 function main() {
     return run_test()
-        .then(function() {
+        .then(function () {
             process.exit(0);
         })
-        .catch(function() {
+        .catch(function () {
             process.exit(1);
         });
 }

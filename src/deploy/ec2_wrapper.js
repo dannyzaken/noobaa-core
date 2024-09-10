@@ -1,5 +1,5 @@
 /* Copyright (C) 2016 NooBaa */
-"use strict";
+'use strict';
 
 const _ = require('lodash');
 const P = require('../util/promise');
@@ -60,7 +60,6 @@ if (!process.env.AWS_ACCESS_KEY_ID) {
     dotenv.load();
 }
 
-
 // the heroku app name
 let app_name = '';
 
@@ -70,7 +69,6 @@ const _ec2_per_region = {};
 let _cached_ami_image_id;
 
 load_aws_config_env();
-
 
 /*************************************
  *
@@ -87,60 +85,85 @@ load_aws_config_env();
  */
 function describe_instances(params, filter, verbose) {
     const regions = [];
-    return foreach_region(function(region) {
-            regions.push(region);
-            return ec2_region_call(region.RegionName, 'describeInstances', params)
-                .then(function(res) {
-                    // return a flat array of instances from res.Reservations[].Instances[]
-                    const instances = _.flatten(_.map(res.Reservations, 'Instances'));
-                    // prepare instance extra fields and filter out irrelevant instances
-                    return _.filter(instances, function(instance) {
-                        instance.region = region;
-                        instance.region_name = region.RegionName;
-                        instance.tags_map = _.mapValues(_.keyBy(instance.Tags, 'Key'), 'Value');
-                        if (typeof filter !== 'undefined') {
-                            if (filter.filter_tags &&
-                                (typeof instance.tags_map.Name !== 'undefined')) {
-                                if ((instance.tags_map.Name.indexOf(filter.filter_tags) !== -1) ||
-                                    instance.tags_map.Name !== argv.tag) {
-                                    if (verbose) {
-                                        console.log('FILTERED exclude', instance.InstanceId, instance.tags_map.Name);
-                                    }
-                                    return false;
+    return foreach_region(function (region) {
+        regions.push(region);
+        return ec2_region_call(region.RegionName, 'describeInstances', params)
+            .then(function (res) {
+                // return a flat array of instances from res.Reservations[].Instances[]
+                const instances = _.flatten(
+                    _.map(res.Reservations, 'Instances'),
+                );
+                // prepare instance extra fields and filter out irrelevant instances
+                return _.filter(instances, function (instance) {
+                    instance.region = region;
+                    instance.region_name = region.RegionName;
+                    instance.tags_map = _.mapValues(
+                        _.keyBy(instance.Tags, 'Key'),
+                        'Value',
+                    );
+                    if (typeof filter !== 'undefined') {
+                        if (
+                            filter.filter_tags &&
+                            typeof instance.tags_map.Name !== 'undefined'
+                        ) {
+                            if (
+                                instance.tags_map.Name.indexOf(
+                                    filter.filter_tags,
+                                ) !== -1 ||
+                                instance.tags_map.Name !== argv.tag
+                            ) {
+                                if (verbose) {
+                                    console.log(
+                                        'FILTERED exclude',
+                                        instance.InstanceId,
+                                        instance.tags_map.Name,
+                                    );
                                 }
-                            } else if (filter.match &&
-                                (typeof instance.tags_map.Name !== 'undefined')) {
-                                if (instance.tags_map.Name.indexOf(filter.match) === -1) {
-                                    if (verbose) {
-                                        console.log('FILTERED match', instance.InstanceId, instance.tags_map.Name);
-                                    }
-                                    return false;
-                                }
+                                return false;
                             }
-                            if (typeof instance.tags_map.Name === 'undefined') {
-                                //assume empty tagged instances are manual and always ignore them
+                        } else if (
+                            filter.match &&
+                            typeof instance.tags_map.Name !== 'undefined'
+                        ) {
+                            if (
+                                instance.tags_map.Name.indexOf(filter.match) ===
+                                -1
+                            ) {
+                                if (verbose) {
+                                    console.log(
+                                        'FILTERED match',
+                                        instance.InstanceId,
+                                        instance.tags_map.Name,
+                                    );
+                                }
                                 return false;
                             }
                         }
-                        return true;
-                    });
-                })
-                .then(null, function(err) {
-                    if (verbose) {
-                        console.log('Error:', err);
+                        if (typeof instance.tags_map.Name === 'undefined') {
+                            //assume empty tagged instances are manual and always ignore them
+                            return false;
+                        }
                     }
-                    return false;
+                    return true;
                 });
-        })
-        .then(function(res) {
-            // flatten again for all regions, remove regions without results
-            const instances = _.flatten(_.filter(res, function(r) {
+            })
+            .then(null, function (err) {
+                if (verbose) {
+                    console.log('Error:', err);
+                }
+                return false;
+            });
+    }).then(function (res) {
+        // flatten again for all regions, remove regions without results
+        const instances = _.flatten(
+            _.filter(res, function (r) {
                 return r !== false;
-            }));
-            // also put the regions list as a "secret" property of the array
-            instances.regions = regions;
-            return instances;
-        });
+            }),
+        );
+        // also put the regions list as a "secret" property of the array
+        instances.regions = regions;
+        return instances;
+    });
 }
 
 /**
@@ -151,14 +174,15 @@ function describe_instances(params, filter, verbose) {
  *
  */
 function describe_instance(instance_id, filter_tags, verbose) {
-    return describe_instances({
-                InstanceIds: [instance_id],
-            },
-            filter_tags,
-            verbose)
-        .then(function(res) {
-            return res[0];
-        });
+    return describe_instances(
+        {
+            InstanceIds: [instance_id],
+        },
+        filter_tags,
+        verbose,
+    ).then(function (res) {
+        return res[0];
+    });
 }
 
 /**
@@ -168,11 +192,17 @@ function describe_instance(instance_id, filter_tags, verbose) {
  * @param instance_ids array of ids.
  */
 function terminate_instances(region_name, instance_ids) {
-    console.log('Terminate:', region_name, 'terminating',
-        instance_ids.length, 'instances -', instance_ids);
+    console.log(
+        'Terminate:',
+        region_name,
+        'terminating',
+        instance_ids.length,
+        'instances -',
+        instance_ids,
+    );
     return ec2_region_call(region_name, 'terminateInstances', {
         InstanceIds: instance_ids,
-    }).then(null, function(err) {
+    }).then(null, function (err) {
         if (err.code === 'InvalidInstanceID.NotFound') {
             console.error(err);
             return;
@@ -189,33 +219,37 @@ function terminate_instances(region_name, instance_ids) {
 function import_key_pair_to_region(region_name) {
     const KEY_PAIR_PARAMS = {
         KeyName: 'noobaa-demo',
-        PublicKeyMaterial: fs.readFileSync(path.join(__dirname, 'noobaa-demo.pub'))
+        PublicKeyMaterial: fs.readFileSync(
+            path.join(__dirname, 'noobaa-demo.pub'),
+        ),
     };
-    return ec2_region_call(region_name, 'importKeyPair', KEY_PAIR_PARAMS)
-        .then(function(res) {
+    return ec2_region_call(region_name, 'importKeyPair', KEY_PAIR_PARAMS).then(
+        function (res) {
             console.log('KeyPair: imported', res.KeyName);
-        }, function(err) {
+        },
+        function (err) {
             if (err.code === 'InvalidKeyPair.Duplicate') return;
             throw err;
-        });
+        },
+    );
 }
 
 function print_instances(instances) {
     if (argv.long) {
         console_inspect('Instances:', instances);
     } else {
-        _.each(instances, function(instance) {
-            console.log('Instance:',
+        _.each(instances, function (instance) {
+            console.log(
+                'Instance:',
                 instance.InstanceId,
                 (instance.State && instance.State.Name) || '[no-state]',
                 instance.PublicIpAddress,
                 instance.region_name,
                 instance.tags_map.Name || '[no-name]',
-                '[private ip ' + instance.PrivateIpAddress + ']'
+                '[private ip ' + instance.PrivateIpAddress + ']',
             );
         });
     }
-
 }
 
 /**
@@ -228,38 +262,49 @@ function print_instances(instances) {
 function create_instance_from_ami(ami_name, region, instance_type, name) {
     const KEY_PAIR_PARAMS = {
         KeyName: 'noobaa-demo',
-        PublicKeyMaterial: fs.readFileSync(path.join(__dirname, 'noobaa-demo.pub'))
+        PublicKeyMaterial: fs.readFileSync(
+            path.join(__dirname, 'noobaa-demo.pub'),
+        ),
     };
-    return P.fcall(function() {
-            return ec2_region_call(region, 'describeImages', {
-                    Filters: [{
-                        Name: 'name',
-                        Values: [
-                            ami_name,
-                        ]
-                    }]
-                })
-                .then(function(res) {
-                    return res.Images[0].ImageId;
-                });
-        }).then(function(ami_image) {
-            console.log('runInstances of:', ami_name, 'at', region, 'of type', instance_type);
+    return P.fcall(function () {
+        return ec2_region_call(region, 'describeImages', {
+            Filters: [
+                {
+                    Name: 'name',
+                    Values: [ami_name],
+                },
+            ],
+        }).then(function (res) {
+            return res.Images[0].ImageId;
+        });
+    })
+        .then(function (ami_image) {
+            console.log(
+                'runInstances of:',
+                ami_name,
+                'at',
+                region,
+                'of type',
+                instance_type,
+            );
             return ec2_region_call(region, 'runInstances', {
                 ImageId: ami_image,
                 MaxCount: 1,
                 MinCount: 1,
                 InstanceType: instance_type,
-                BlockDeviceMappings: [{
-                    DeviceName: '/dev/sda1',
-                    Ebs: {
-                        VolumeSize: 40,
+                BlockDeviceMappings: [
+                    {
+                        DeviceName: '/dev/sda1',
+                        Ebs: {
+                            VolumeSize: 40,
+                        },
                     },
-                }],
+                ],
                 KeyName: KEY_PAIR_PARAMS.KeyName,
                 SecurityGroups: ['noobaa'],
             });
         })
-        .then(function(res) {
+        .then(function (res) {
             const id = res.Instances[0].InstanceId;
             console.log('Got instanceID', id);
             if (name) {
@@ -273,52 +318,66 @@ function create_instance_from_ami(ami_name, region, instance_type, name) {
 }
 
 function add_instance_name(instid, name, region) {
-    console.log('TaggingInstance', instid, 'at', region, ' with\'', name, '\'');
-    return P.fcall(function() {
-            return ec2_region_call(region, 'createTags', {
-                Resources: [instid],
-                Tags: [{
+    console.log('TaggingInstance', instid, 'at', region, " with'", name, "'");
+    return P.fcall(function () {
+        return ec2_region_call(region, 'createTags', {
+            Resources: [instid],
+            Tags: [
+                {
                     Key: 'Name',
-                    Value: name
-                }]
-            });
-        })
-        .then(null, function(err) {
-            console.log('Failed TaggingInstance', err);
+                    Value: name,
+                },
+            ],
         });
+    }).then(null, function (err) {
+        console.log('Failed TaggingInstance', err);
+    });
 }
 
 function get_ip_address(instid) {
-    return P.fcall(function() {
-            return describe_instance(instid);
-        })
-        .then(function(res) {
-            //On pending instance state, still no public IP. Wait.
-            if (res.State.Name === 'pending') {
-                const params = {
-                    InstanceIds: [instid],
-                };
+    return P.fcall(function () {
+        return describe_instance(instid);
+    }).then(function (res) {
+        //On pending instance state, still no public IP. Wait.
+        if (res.State.Name === 'pending') {
+            const params = {
+                InstanceIds: [instid],
+            };
 
-                console.log('Machine in', res.State, 'state, waiting for instanceStatusOk');
-                return ec2_wait_for(res.region_name, 'instanceStatusOk', params)
-                    .then(function() {
-                        return P.fcall(function() {
-                                return describe_instance(instid);
-                            })
-                            .then(function(res2) {
-                                console.log('Recieved IP', res2.PublicIpAddress);
-                                return res2.PublicIpAddress;
-                            });
-                    })
-                    .then(null, function(error) {
-                        throw new Error('Error in get_ip_address ' + instid + ' on ec2_wait_for ' + error);
+            console.log(
+                'Machine in',
+                res.State,
+                'state, waiting for instanceStatusOk',
+            );
+            return ec2_wait_for(res.region_name, 'instanceStatusOk', params)
+                .then(function () {
+                    return P.fcall(function () {
+                        return describe_instance(instid);
+                    }).then(function (res2) {
+                        console.log('Recieved IP', res2.PublicIpAddress);
+                        return res2.PublicIpAddress;
                     });
-            } else if (res.State.Name !== 'running') {
-                console.log('Error in get_ip_address InstanceID', instid, 'Not in pending/running state, unexpected');
-                throw new Error('InstanceID ' + instid + ' Not in pending/running state');
-            }
-            return res.PublicIpAddress;
-        });
+                })
+                .then(null, function (error) {
+                    throw new Error(
+                        'Error in get_ip_address ' +
+                            instid +
+                            ' on ec2_wait_for ' +
+                            error,
+                    );
+                });
+        } else if (res.State.Name !== 'running') {
+            console.log(
+                'Error in get_ip_address InstanceID',
+                instid,
+                'Not in pending/running state, unexpected',
+            );
+            throw new Error(
+                'InstanceID ' + instid + ' Not in pending/running state',
+            );
+        }
+        return res.PublicIpAddress;
+    });
 }
 
 /*************************************
@@ -339,16 +398,22 @@ function verify_demo_system(ip) {
     });
 
     return P.ninvoke(s3bucket, 'listObjects', {
-            Bucket: 'first.bucket'
-        })
-        .then(function(data) {
+        Bucket: 'first.bucket',
+    })
+        .then(function (data) {
             console.log('Demo system exists');
             load_aws_config_env(); //back to EC2/S3
-
         })
-        .then(null, function(error) {
+        .then(null, function (error) {
             load_aws_config_env(); //back to EC2/S3
-            throw new Error('No Demo System, please create one for ' + rest_endpoint + ' bucket:' + s3bucket + ',error:' + error);
+            throw new Error(
+                'No Demo System, please create one for ' +
+                    rest_endpoint +
+                    ' bucket:' +
+                    s3bucket +
+                    ',error:' +
+                    error,
+            );
         });
 }
 
@@ -374,38 +439,64 @@ function put_object(ip, source, bucket, key, timeout, throw_on_error) {
     };
     console.log('about to upload object', params);
     let start_ts = Date.now();
-    return P.ninvoke(s3bucket, 'upload', params)
-        .then(function(res) {
-            console.log('Uploaded object took', (Date.now() - start_ts) / 1000, 'seconds, result', res);
+    return P.ninvoke(s3bucket, 'upload', params).then(
+        function (res) {
+            console.log(
+                'Uploaded object took',
+                (Date.now() - start_ts) / 1000,
+                'seconds, result',
+                res,
+            );
             load_aws_config_env(); //back to EC2/S3
-
-        }, function(err) {
+        },
+        function (err) {
             const wait_limit_in_sec = timeout || 1200;
             const start_moment = moment();
-            let wait_for_agents = (err.statusCode === 500 || err.statusCode === 403);
-            console.log('failed to upload object in loop', err.statusCode, wait_for_agents);
+            let wait_for_agents =
+                err.statusCode === 500 || err.statusCode === 403;
+            console.log(
+                'failed to upload object in loop',
+                err.statusCode,
+                wait_for_agents,
+            );
             return P.pwhile(
-                function() {
+                function () {
                     return wait_for_agents;
                 },
-                function() {
-                    return P.fcall(function() {
+                function () {
+                    return P.fcall(function () {
                         //switch to Demo system
                         return load_demo_config_env();
-                    }).then(function() {
+                    }).then(function () {
                         params.Body = fs.createReadStream(source);
                         start_ts = Date.now();
-                        return P.ninvoke(s3bucket, 'upload', params)
-                            .then(function(res) {
-                                console.log('Uploaded object took', (Date.now() - start_ts) / 1000, 'seconds, result', res);
+                        return P.ninvoke(s3bucket, 'upload', params).then(
+                            function (res) {
+                                console.log(
+                                    'Uploaded object took',
+                                    (Date.now() - start_ts) / 1000,
+                                    'seconds, result',
+                                    res,
+                                );
                                 load_aws_config_env(); //back to EC2/S3
                                 wait_for_agents = false;
-
-                            }, function(err2) {
-                                console.log('failed to upload. Will wait 10 seconds and retry. err', err2.statusCode);
+                            },
+                            function (err2) {
+                                console.log(
+                                    'failed to upload. Will wait 10 seconds and retry. err',
+                                    err2.statusCode,
+                                );
                                 const curr_time = moment();
-                                if (curr_time.subtract(wait_limit_in_sec, 'second') > start_moment) {
-                                    console.error('failed to upload. cannot wait any more', err2.statusCode);
+                                if (
+                                    curr_time.subtract(
+                                        wait_limit_in_sec,
+                                        'second',
+                                    ) > start_moment
+                                ) {
+                                    console.error(
+                                        'failed to upload. cannot wait any more',
+                                        err2.statusCode,
+                                    );
                                     load_aws_config_env(); //back to EC2/S3
                                     wait_for_agents = false;
                                     if (throw_on_error) {
@@ -414,10 +505,13 @@ function put_object(ip, source, bucket, key, timeout, throw_on_error) {
                                 } else {
                                     return P.delay(10000);
                                 }
-                            });
+                            },
+                        );
                     });
-                });
-        });
+                },
+            );
+        },
+    );
 }
 
 function get_object(ip, obj_path) {
@@ -439,20 +533,22 @@ function get_object(ip, obj_path) {
 
     const start_ts = Date.now();
     console.log('about to download object');
-    return P.fcall(function() {
-            if (obj_path) {
-                return s3bucket.getObject(params).createReadStream()
-                    .pipe(file);
-            } else {
-                return s3bucket.getObject(params).createWriteStream();
-            }
-        })
-        .then(function() {
-            console.log('Download object took', (Date.now() - start_ts) / 1000, 'seconds');
+    return P.fcall(function () {
+        if (obj_path) {
+            return s3bucket.getObject(params).createReadStream().pipe(file);
+        } else {
+            return s3bucket.getObject(params).createWriteStream();
+        }
+    })
+        .then(function () {
+            console.log(
+                'Download object took',
+                (Date.now() - start_ts) / 1000,
+                'seconds',
+            );
             load_aws_config_env(); //back to EC2/S3
-
         })
-        .then(null, function(err) {
+        .then(null, function (err) {
             load_aws_config_env(); //back to EC2/S3
             throw new Error('Error in download ' + err);
         });
@@ -470,15 +566,28 @@ function get_object(ip, obj_path) {
  *
  */
 // eslint-disable-next-line max-params
-function scale_agent_instances(count, allow_terminate, is_docker_host, number_of_dockers, is_win, filter_region, agent_conf) {
-    return describe_instances({
-        Filters: [{
-            Name: 'instance-state-name',
-            Values: ['running', 'pending']
-        }],
-    }, {
-        match: app_name,
-    }).then(function(instances) {
+function scale_agent_instances(
+    count,
+    allow_terminate,
+    is_docker_host,
+    number_of_dockers,
+    is_win,
+    filter_region,
+    agent_conf,
+) {
+    return describe_instances(
+        {
+            Filters: [
+                {
+                    Name: 'instance-state-name',
+                    Values: ['running', 'pending'],
+                },
+            ],
+        },
+        {
+            match: app_name,
+        },
+    ).then(function (instances) {
         const instances_per_region = _.groupBy(instances, 'region_name');
         let region_names = _.map(instances.regions, 'RegionName');
         let target_region_count = 0;
@@ -503,32 +612,53 @@ function scale_agent_instances(count, allow_terminate, is_docker_host, number_of
             // divide instances equally per region.
             // the first region will get the redundant instances
             target_region_count = Math.floor(count / region_names.length);
-            first_region_extra_count = (count % region_names.length);
+            first_region_extra_count = count % region_names.length;
             if (target_region_count > 100) {
                 target_region_count = 100;
                 first_region_extra_count = 0;
-                console.log('Cannot scale to over 100 instances per region. will scale to 100');
+                console.log(
+                    'Cannot scale to over 100 instances per region. will scale to 100',
+                );
             }
         }
 
         console.log('Scale:', target_region_count, 'per region');
-        console.log('Scale:', first_region_extra_count, 'extra in first region');
+        console.log(
+            'Scale:',
+            first_region_extra_count,
+            'extra in first region',
+        );
 
         let new_count = 0;
-        return P.all(_.map(region_names, function(region_name) {
-            const region_instances = instances_per_region[region_name] || [];
-            let region_count = 0;
-            if (new_count < count) {
-                if (first_region_extra_count > 0 && region_name === region_names[0]) {
-                    region_count = target_region_count + first_region_extra_count;
-                } else {
-                    region_count = target_region_count;
+        return P.all(
+            _.map(region_names, function (region_name) {
+                const region_instances =
+                    instances_per_region[region_name] || [];
+                let region_count = 0;
+                if (new_count < count) {
+                    if (
+                        first_region_extra_count > 0 &&
+                        region_name === region_names[0]
+                    ) {
+                        region_count =
+                            target_region_count + first_region_extra_count;
+                    } else {
+                        region_count = target_region_count;
+                    }
+                    new_count += region_count;
                 }
-                new_count += region_count;
-            }
-            return scale_region(region_name, region_count, region_instances, allow_terminate,
-                is_docker_host, number_of_dockers, is_win, agent_conf);
-        }));
+                return scale_region(
+                    region_name,
+                    region_count,
+                    region_instances,
+                    allow_terminate,
+                    is_docker_host,
+                    number_of_dockers,
+                    is_win,
+                    agent_conf,
+                );
+            }),
+        );
     });
 }
 
@@ -537,29 +667,48 @@ function scale_agent_instances(count, allow_terminate, is_docker_host, number_of
  * add_agent_region_instances
  *
  */
-function add_agent_region_instances(region_name, count, is_docker_host, number_of_dockers, is_win, agent_conf) {
+function add_agent_region_instances(
+    region_name,
+    count,
+    is_docker_host,
+    number_of_dockers,
+    is_win,
+    agent_conf,
+) {
     let instance_type = 'c3.large';
     // the run script to send to started instances
-    let run_script = fs.readFileSync(path.join(__dirname, 'init_agent.sh'), 'UTF8');
+    let run_script = fs.readFileSync(
+        path.join(__dirname, 'init_agent.sh'),
+        'UTF8',
+    );
 
     let test_instances_counter;
 
     if (is_docker_host) {
         instance_type = 'm3.2xlarge';
-        run_script = fs.readFileSync(path.join(__dirname, 'docker_setup.sh'), 'utf8');
+        run_script = fs.readFileSync(
+            path.join(__dirname, 'docker_setup.sh'),
+            'utf8',
+        );
         //replace 'test' with the correct env name
         test_instances_counter = (run_script.match(/test/g) || []).length;
-        const dockers_instances_counter = (run_script.match(/200/g) || []).length;
+        const dockers_instances_counter = (run_script.match(/200/g) || [])
+            .length;
 
         if (test_instances_counter !== 1 || dockers_instances_counter !== 1) {
-            throw new Error('docker_setup.sh expected to contain default env "test" and default number of dockers - 200');
+            throw new Error(
+                'docker_setup.sh expected to contain default env "test" and default number of dockers - 200',
+            );
         }
         run_script = run_script.replace('<agent_conf>', agent_conf);
         run_script = run_script.replace('test', app_name);
         run_script = run_script.replace('200', number_of_dockers);
     } else if (is_win) {
-        run_script = fs.readFileSync(path.join(__dirname, 'init_agent.bat'), 'UTF8');
-        run_script = "<script>" + run_script + "</script>";
+        run_script = fs.readFileSync(
+            path.join(__dirname, 'init_agent.bat'),
+            'UTF8',
+        );
+        run_script = '<script>' + run_script + '</script>';
         run_script = run_script.replace('$env_name', app_name);
         run_script = run_script.replace('$agent_conf', agent_conf);
         instance_type = 'c3.large';
@@ -571,43 +720,62 @@ function add_agent_region_instances(region_name, count, is_docker_host, number_o
         console.log('script:', run_script);
     }
 
-
     const KEY_PAIR_PARAMS = {
         KeyName: 'noobaa-demo',
-        PublicKeyMaterial: fs.readFileSync(path.join(__dirname, 'noobaa-demo.pub'))
+        PublicKeyMaterial: fs.readFileSync(
+            path.join(__dirname, 'noobaa-demo.pub'),
+        ),
     };
 
-    return P.fcall(get_agent_ami_image_id, region_name, is_win)
-        .then(function(ami_image_id) {
-
+    return P.fcall(get_agent_ami_image_id, region_name, is_win).then(
+        function (ami_image_id) {
             console.log('AddInstance:', region_name, count, ami_image_id);
             return ec2_region_call(region_name, 'runInstances', {
-                    ImageId: ami_image_id,
-                    MaxCount: count,
-                    MinCount: count,
-                    InstanceType: instance_type,
-                    // InstanceType: 'm3.medium',
-                    BlockDeviceMappings: [{
+                ImageId: ami_image_id,
+                MaxCount: count,
+                MinCount: count,
+                InstanceType: instance_type,
+                // InstanceType: 'm3.medium',
+                BlockDeviceMappings: [
+                    {
                         DeviceName: '/dev/sda1',
                         Ebs: {
                             VolumeSize: 120,
                         },
-                    }],
-                    KeyName: KEY_PAIR_PARAMS.KeyName,
-                    SecurityGroups: ['ssh_and_http_v2'],
-                    UserData: Buffer.from(run_script).toString('base64'),
+                    },
+                ],
+                KeyName: KEY_PAIR_PARAMS.KeyName,
+                SecurityGroups: ['ssh_and_http_v2'],
+                UserData: Buffer.from(run_script).toString('base64'),
+            })
+                .then(function (res) {
+                    //Tag Instances
+                    return P.all(
+                        _.map(res.Instances, function (instance) {
+                            return P.fcall(function () {
+                                return add_instance_name(
+                                    instance.InstanceId,
+                                    'Agent_For_' + app_name,
+                                    region_name,
+                                );
+                            });
+                        }),
+                    );
                 })
-                .then(function(res) { //Tag Instances
-                    return P.all(_.map(res.Instances, function(instance) {
-                        return P.fcall(function() {
-                            return add_instance_name(instance.InstanceId, 'Agent_For_' + app_name, region_name);
-                        });
-                    }));
-                })
-                .then(null, function(err) {
-                    throw new Error('Error on AddInstance at ' + region_name + ' #' + count + ' of ' + ami_image_id + ' ' + err);
+                .then(null, function (err) {
+                    throw new Error(
+                        'Error on AddInstance at ' +
+                            region_name +
+                            ' #' +
+                            count +
+                            ' of ' +
+                            ami_image_id +
+                            ' ' +
+                            err,
+                    );
                 });
-        });
+        },
+    );
 }
 
 /**
@@ -620,35 +788,35 @@ function add_agent_region_instances(region_name, count, is_docker_host, number_o
 function get_agent_ami_image_id(region_name, is_win) {
     // if (_cached_ami_image_id) return _cached_ami_image_id;
     if (is_win) {
-
         return ec2_region_call(region_name, 'describeImages', {
-                Filters: [{
+            Filters: [
+                {
                     Name: 'name',
                     Values: [
                         'Windows_Server-2012-R2_RTM-English-64Bit-Base-2015*',
-                    ]
-                }]
-            })
-            .then(function(res) {
-                // console.log('res:',res);
-                // res = null;
-                _cached_ami_image_id = res.Images[0].ImageId;
-                return _cached_ami_image_id;
-            });
+                    ],
+                },
+            ],
+        }).then(function (res) {
+            // console.log('res:',res);
+            // res = null;
+            _cached_ami_image_id = res.Images[0].ImageId;
+            return _cached_ami_image_id;
+        });
     } else {
-
         return ec2_region_call(region_name, 'describeImages', {
-                Filters: [{
+            Filters: [
+                {
                     Name: 'name',
                     Values: [
                         'ubuntu/images/hvm-ssd/ubuntu-trusty-14.04-amd64-server-20140927',
-                    ]
-                }]
-            })
-            .then(function(res) {
-                _cached_ami_image_id = res.Images[0].ImageId;
-                return _cached_ami_image_id;
-            });
+                    ],
+                },
+            ],
+        }).then(function (res) {
+            _cached_ami_image_id = res.Images[0].ImageId;
+            return _cached_ami_image_id;
+        });
     }
 }
 
@@ -661,11 +829,12 @@ function ec2_call(func_name, params) {
     return _ec2[func_name](params).promise();
 }
 
-
 function ec2_region_call(region_name, func_name, params) {
-    const ec2 = _ec2_per_region[region_name] || new AWS.EC2({
-        region: region_name
-    });
+    const ec2 =
+        _ec2_per_region[region_name] ||
+        new AWS.EC2({
+            region: region_name,
+        });
     _ec2_per_region[region_name] = ec2;
     return ec2[func_name](params).promise();
 }
@@ -676,20 +845,27 @@ function set_app_name(appname) {
 }
 
 function ec2_wait_for(region_name, state_name, params) {
-    const ec2 = _ec2_per_region[region_name] || new AWS.EC2({
-        region: region_name
-    });
+    const ec2 =
+        _ec2_per_region[region_name] ||
+        new AWS.EC2({
+            region: region_name,
+        });
     _ec2_per_region[region_name] = ec2;
 
-    return P.ninvoke(ec2, 'waitFor', state_name, params).then(function(data) {
+    return P.ninvoke(ec2, 'waitFor', state_name, params).then(function (data) {
         if (!data) {
-            console.error('Error while waiting for state', state_name, 'at', region_name, 'with', params);
+            console.error(
+                'Error while waiting for state',
+                state_name,
+                'at',
+                region_name,
+                'with',
+                params,
+            );
             return '';
         }
     });
 }
-
-
 
 /*************************************
  *
@@ -705,43 +881,93 @@ function ec2_wait_for(region_name, state_name, params) {
  *
  */
 // eslint-disable-next-line max-params
-function scale_region(region_name, count, instances, allow_terminate, is_docker_host, number_of_dockers, is_win, agent_conf) {
+function scale_region(
+    region_name,
+    count,
+    instances,
+    allow_terminate,
+    is_docker_host,
+    number_of_dockers,
+    is_win,
+    agent_conf,
+) {
     // always make sure the region has the security group and key pair
-    return P.fcall(function() {
-            return create_security_group(region_name);
-        })
-        .then(function() {
+    return P.fcall(function () {
+        return create_security_group(region_name);
+    })
+        .then(function () {
             return import_key_pair_to_region(region_name);
         })
-        .then(function() {
-
+        .then(function () {
             // need to create
             if (count > instances.length) {
-                console.log('ScaleRegion:', region_name, 'has', instances.length,
-                    ' +++ adding', count - instances.length);
-                return add_agent_region_instances(region_name, count - instances.length, is_docker_host,
-                    number_of_dockers, is_win, agent_conf);
+                console.log(
+                    'ScaleRegion:',
+                    region_name,
+                    'has',
+                    instances.length,
+                    ' +++ adding',
+                    count - instances.length,
+                );
+                return add_agent_region_instances(
+                    region_name,
+                    count - instances.length,
+                    is_docker_host,
+                    number_of_dockers,
+                    is_win,
+                    agent_conf,
+                );
             }
 
             // need to terminate
             if (count < instances.length) {
                 if (!allow_terminate) {
-                    console.log('ScaleRegion:', region_name, 'has', instances.length,
-                        ' ??? should remove', instances.length - count);
+                    console.log(
+                        'ScaleRegion:',
+                        region_name,
+                        'has',
+                        instances.length,
+                        ' ??? should remove',
+                        instances.length - count,
+                    );
                     throw new Error('allow_terminate');
                 }
-                console.log('ScaleRegion:', region_name, 'has', instances.length,
-                    ' --- removing', instances.length - count);
-                const death_row = _.slice(instances, 0, instances.length - count);
+                console.log(
+                    'ScaleRegion:',
+                    region_name,
+                    'has',
+                    instances.length,
+                    ' --- removing',
+                    instances.length - count,
+                );
+                const death_row = _.slice(
+                    instances,
+                    0,
+                    instances.length - count,
+                );
                 console.log('death:', death_row.length);
                 const ids = _.map(death_row, 'InstanceId');
                 return terminate_instances(region_name, ids);
             }
 
-            console.log('ScaleRegion:', region_name, 'has', instances.length, ' ... unchanged');
+            console.log(
+                'ScaleRegion:',
+                region_name,
+                'has',
+                instances.length,
+                ' ... unchanged',
+            );
         })
-        .then(null, function(err) {
-            console.log('Error while trying to scale region:', region_name, ', has', instances.length, ' error:', err, err.stack);
+        .then(null, function (err) {
+            console.log(
+                'Error while trying to scale region:',
+                region_name,
+                ', has',
+                instances.length,
+                ' error:',
+                err,
+                err.stack,
+            );
         });
 }
 
@@ -755,71 +981,96 @@ function create_security_group(region_name) {
 
     // first find if the group exists
     return ec2_region_call(region_name, 'describeSecurityGroups', {
-            GroupNames: [ssh_and_http_v2]
-        })
-        .then(function(group_data) {
+        GroupNames: [ssh_and_http_v2],
+    })
+        .then(
+            function (group_data) {
+                // yeah! exists. return it to check if port rules exists
+                // console.log('SecurityGroup: Found on region', region_name);
+                return group_data;
+            },
+            function (err) {
+                // if failed because of some really bad thing then bail
+                if (err.code !== 'InvalidSecurityGroup.NotFound') {
+                    console.error(
+                        'SecurityGroup: describe failed',
+                        region_name,
+                        err,
+                    );
+                    throw err;
+                }
 
-            // yeah! exists. return it to check if port rules exists
-            // console.log('SecurityGroup: Found on region', region_name);
-            return group_data;
-        }, function(err) {
-
-            // if failed because of some really bad thing then bail
-            if (err.code !== 'InvalidSecurityGroup.NotFound') {
-                console.error('SecurityGroup: describe failed', region_name, err);
-                throw err;
-            }
-
-            // if failed because the group doesn't exists - create it.
-            console.log('SecurityGroup: will create for region', region_name);
-            return ec2_region_call(region_name, 'createSecurityGroup', {
+                // if failed because the group doesn't exists - create it.
+                console.log(
+                    'SecurityGroup: will create for region',
+                    region_name,
+                );
+                return ec2_region_call(region_name, 'createSecurityGroup', {
                     Description: ssh_and_http_v2,
-                    GroupName: ssh_and_http_v2
-                })
-                .then(null, function(err2) {
-                    console.error('SecurityGroup: create failed', region_name, err2);
+                    GroupName: ssh_and_http_v2,
+                }).then(null, function (err2) {
+                    console.error(
+                        'SecurityGroup: create failed',
+                        region_name,
+                        err2,
+                    );
                     throw err2;
                 });
-        })
-        .then(function(group_data) {
-
+            },
+        )
+        .then(function (group_data) {
             // set the port rules of the group to open ports ssh(22) and nb-http(5050)
             // console.log('SecurityGroup: setting ssh/http rules for group',
             // group_data.GroupId, region_name);
-            return ec2_region_call(region_name, 'authorizeSecurityGroupIngress', {
+            return ec2_region_call(
+                region_name,
+                'authorizeSecurityGroupIngress',
+                {
                     GroupId: group_data.GroupId,
                     GroupName: ssh_and_http_v2,
-                    IpPermissions: [{
+                    IpPermissions: [
+                        {
                             FromPort: 22,
                             IpProtocol: 'tcp',
                             ToPort: 22,
-                            IpRanges: [{
-                                CidrIp: '0.0.0.0/0'
-                            }]
-                        }, {
+                            IpRanges: [
+                                {
+                                    CidrIp: '0.0.0.0/0',
+                                },
+                            ],
+                        },
+                        {
                             FromPort: 5050,
                             IpProtocol: 'tcp',
                             ToPort: 5050,
-                            IpRanges: [{
-                                CidrIp: '0.0.0.0/0'
-                            }]
+                            IpRanges: [
+                                {
+                                    CidrIp: '0.0.0.0/0',
+                                },
+                            ],
                         },
                         // more items
-                    ]
-                })
-                .then(function(data) {
+                    ],
+                },
+            ).then(
+                function (data) {
                     console.log('SecurityGroup: Opened ports 22 and 5050');
-                }, function(err) {
-
+                },
+                function (err) {
                     // if failed because the rules exist - it's a good thing
                     if (err.code === 'InvalidPermission.Duplicate') {
                         // console.log('SecurityGroup: Rules exist for region', region_name);
                         return;
                     }
-                    console.error('SecurityGroup: authorize failed',
-                        region_name, group_data.GroupId, err);
+                    console.error(
+                        'SecurityGroup: authorize failed',
+                        region_name,
+                        group_data.GroupId,
+                        err,
+                    );
                     throw err;
-                });
+                },
+            );
         });
 }
 
@@ -841,10 +1092,9 @@ function get_regions(func) {
  *
  */
 function foreach_region(func) {
-    return get_regions()
-        .then(function(res) {
-            return P.all(_.map(res.Regions, func));
-        });
+    return get_regions().then(function (res) {
+        return P.all(_.map(res.Regions, func));
+    });
 }
 
 // print object with deep levels
@@ -866,6 +1116,6 @@ function load_demo_config_env() {
     AWS.config.update({
         accessKeyId: '123',
         secretAccessKey: 'abc',
-        Bucket: 'first.bucket'
+        Bucket: 'first.bucket',
     });
 }

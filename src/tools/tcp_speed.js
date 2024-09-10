@@ -58,7 +58,8 @@ function main() {
         return run_server();
     }
     if (argv.client) {
-        argv.client = (typeof(argv.client) === 'string' && argv.client) || 'localhost';
+        argv.client =
+            (typeof argv.client === 'string' && argv.client) || 'localhost';
         return run_client();
     }
     return usage();
@@ -73,11 +74,13 @@ function usage() {
 }
 
 function run_server() {
-    const server = argv.ssl ?
-        tls.createServer(ssl_utils.generate_ssl_certificate()) :
-        net.createServer();
+    const server =
+        argv.ssl ?
+            tls.createServer(ssl_utils.generate_ssl_certificate())
+        :   net.createServer();
 
-    server.on('error', err => {
+    server
+        .on('error', err => {
             console.error('TCP server error', err.message);
             process.exit();
         })
@@ -90,12 +93,19 @@ function run_server() {
         })
         .on(argv.ssl ? 'secureConnection' : 'connection', conn => {
             const fd = conn._handle.fd;
-            console.log(`TCP connection accepted from ${conn.remoteAddress}:${conn.remotePort} (fd ${fd})`);
+            console.log(
+                `TCP connection accepted from ${conn.remoteAddress}:${conn.remotePort} (fd ${fd})`,
+            );
             conn.once('close', () => {
-                console.log(`TCP connection closed from ${conn.remoteAddress}:${conn.remotePort} (fd ${fd})`);
+                console.log(
+                    `TCP connection closed from ${conn.remoteAddress}:${conn.remotePort} (fd ${fd})`,
+                );
             });
             conn.once('error', err => {
-                console.log(`TCP connection error from ${conn.remoteAddress}:${conn.remotePort} (fd ${fd}):`, err);
+                console.log(
+                    `TCP connection error from ${conn.remoteAddress}:${conn.remotePort} (fd ${fd}):`,
+                    err,
+                );
             });
             if (argv.frame) {
                 run_receiver_frame(conn);
@@ -114,7 +124,8 @@ function run_client() {
 
 function run_client_conn() {
     /** @type {net.Socket} */
-    const conn = (argv.ssl ? tls : net).connect({
+    const conn = (argv.ssl ? tls : net)
+        .connect({
             port: argv.port,
             host: argv.client,
             // we allow self generated certificates to avoid public CA signing:
@@ -139,7 +150,7 @@ function run_client_conn() {
     return conn;
 }
 
-/** 
+/**
  * @param {net.Socket} conn
  */
 function run_sender(conn) {
@@ -156,7 +167,7 @@ function run_sender(conn) {
     }
 }
 
-/** 
+/**
  * @param {net.Socket} conn
  */
 function run_sender_frame(conn) {
@@ -177,7 +188,7 @@ function run_sender_frame(conn) {
     }
 }
 
-/** 
+/**
  * @param {net.Socket} conn
  */
 function run_receiver(conn) {
@@ -196,7 +207,7 @@ function run_receiver(conn) {
     });
 }
 
-/** 
+/**
  * @param {net.Socket} conn
  */
 function run_receiver_frame(conn) {

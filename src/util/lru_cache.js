@@ -20,7 +20,6 @@ const LRU = require('./lru');
  * @template V val
  */
 class LRUCache {
-
     /**
      * @param {{
      *  name: string,
@@ -38,7 +37,8 @@ class LRUCache {
         this.name = options.name;
         this.load = options.load;
         this.validate = options.validate || ((data, params) => true);
-        this.make_key = options.make_key || /** @type {(p:any)=>any} */ (params => params);
+        this.make_key =
+            options.make_key || /** @type {(p:any)=>any} */ (params => params);
         this.make_val = options.make_val || ((data, params) => data);
         this.item_usage = options.item_usage;
         this.use_negative_cache = options.use_negative_cache;
@@ -60,7 +60,8 @@ class LRUCache {
         const key = this.make_key(params);
         /** @type {LRUCacheItem<T,K,V>} */
         const item = this.lru.find_or_add_item(key);
-        let valid = cache_miss !== 'cache_miss' &&
+        let valid =
+            cache_miss !== 'cache_miss' &&
             (this.use_negative_cache ? 'd' in item : Boolean(item.d));
         // use cached item when not forcing cache_miss and still not expired by lru
         // also go to load if data is falsy and negative caching is off
@@ -92,11 +93,11 @@ class LRUCache {
 
     /**
      * peek_cache is returning the item if exists.
-     * 
+     *
      * NOTE about peek vs. validations - since the validator is an async function and we don't want peek to be async,
      * we do not run validations on peek. The caller should inspect the data in the cache and decide how to use it
      * assuming validations are not called.
-     * 
+     *
      * @param {T} params
      * @returns {V | undefined}
      */
@@ -157,7 +158,6 @@ class LRUCache {
             return item.d;
         }
     }
-
 }
 
 module.exports = LRUCache;

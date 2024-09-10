@@ -32,7 +32,7 @@ const N2N_CONFIG_FIELDS_PICK = [
     'udp_port',
     'udp_dtls',
     'stun_servers',
-    'public_ips'
+    'public_ips',
 ];
 
 let global_tcp_permanent_passive;
@@ -48,7 +48,6 @@ let global_tcp_permanent_passive;
  */
 
 class RpcN2NAgent extends EventEmitter {
-
     constructor(options) {
         super();
         options = options || {};
@@ -66,7 +65,6 @@ class RpcN2NAgent extends EventEmitter {
 
         // initialize the default config structure
         this.n2n_config = {
-
             // ip options
             offer_ipv4: true,
             offer_ipv6: true,
@@ -78,7 +76,7 @@ class RpcN2NAgent extends EventEmitter {
             tcp_active: true,
             tcp_permanent_passive: {
                 min: 60101, //60100 is used by the hosted agents
-                max: 60600
+                max: 60600,
             },
             tcp_transient_passive: false,
             tcp_simultaneous_open: false,
@@ -101,7 +99,10 @@ class RpcN2NAgent extends EventEmitter {
             ssl_options: {
                 // we allow self generated certificates to avoid public CA signing:
                 rejectUnauthorized: false,
-                secureContext: tls.createSecureContext({ honorCipherOrder: true, ...ssl_utils.generate_ssl_certificate() }),
+                secureContext: tls.createSecureContext({
+                    honorCipherOrder: true,
+                    ...ssl_utils.generate_ssl_certificate(),
+                }),
             },
 
             // callback to create and bind nudp socket
@@ -117,11 +118,12 @@ class RpcN2NAgent extends EventEmitter {
             // signaller callback
             // send ice info to the peer over a relayed signal channel
             // in order to coordinate NAT traversal.
-            signaller: (target, info) => send_signal({
-                source: this.rpc_address,
-                target: target,
-                info: info
-            })
+            signaller: (target, info) =>
+                send_signal({
+                    source: this.rpc_address,
+                    target: target,
+                    info: info,
+                }),
         };
     }
 
@@ -139,8 +141,10 @@ class RpcN2NAgent extends EventEmitter {
     }
 
     set_ssl_context(secure_context_params) {
-        this.n2n_config.ssl_options.secureContext =
-            tls.createSecureContext({ ...secure_context_params, honorCipherOrder: true });
+        this.n2n_config.ssl_options.secureContext = tls.createSecureContext({
+            ...secure_context_params,
+            honorCipherOrder: true,
+        });
     }
 
     update_n2n_config(n2n_config) {
@@ -150,14 +154,23 @@ class RpcN2NAgent extends EventEmitter {
                 // since the tcp permanent object holds more info than just the port_range
                 // then we need to check if the port range cofig changes, if not we ignore
                 // if it did then we have to start a new
-                const conf = _.pick(this.n2n_config.tcp_permanent_passive, N2N_CONFIG_PORT_PICK);
-                dbg.log0('update_n2n_config: update tcp_permanent_passive old', conf, 'new', val);
+                const conf = _.pick(
+                    this.n2n_config.tcp_permanent_passive,
+                    N2N_CONFIG_PORT_PICK,
+                );
+                dbg.log0(
+                    'update_n2n_config: update tcp_permanent_passive old',
+                    conf,
+                    'new',
+                    val,
+                );
                 if (!_.isEqual(conf, val)) {
                     this.disconnect();
                     if (!global_tcp_permanent_passive) {
                         global_tcp_permanent_passive = _.clone(val);
                     }
-                    this.n2n_config.tcp_permanent_passive = global_tcp_permanent_passive;
+                    this.n2n_config.tcp_permanent_passive =
+                        global_tcp_permanent_passive;
                 }
             } else {
                 this.n2n_config[key] = val;
@@ -168,8 +181,11 @@ class RpcN2NAgent extends EventEmitter {
         this.emit('reset_n2n');
         const remaining_listeners = this.listenerCount('reset_n2n');
         if (remaining_listeners) {
-            dbg.warn('update_n2n_config: remaining listeners on reset_n2n event',
-                remaining_listeners, '(probably a connection that forgot to call close)');
+            dbg.warn(
+                'update_n2n_config: remaining listeners on reset_n2n event',
+                remaining_listeners,
+                '(probably a connection that forgot to call close)',
+            );
         }
     }
 
@@ -184,33 +200,42 @@ class RpcN2NAgent extends EventEmitter {
     }
 
     get_plain_n2n_config() {
-        const n2n_config =
-            _.pick(this.n2n_config, N2N_CONFIG_FIELDS_PICK);
+        const n2n_config = _.pick(this.n2n_config, N2N_CONFIG_FIELDS_PICK);
         n2n_config.tcp_permanent_passive =
             n2n_config.tcp_permanent_passive ?
-            _.pick(n2n_config.tcp_permanent_passive, N2N_CONFIG_PORT_PICK) :
-            n2n_config.tcp_permanent_passive;
+                _.pick(n2n_config.tcp_permanent_passive, N2N_CONFIG_PORT_PICK)
+            :   n2n_config.tcp_permanent_passive;
         return n2n_config;
     }
 
     accept_signal(params) {
-        dbg.log1('N2N AGENT accept_signal:', params, 'my rpc_address', this.rpc_address);
+        dbg.log1(
+            'N2N AGENT accept_signal:',
+            params,
+            'my rpc_address',
+            this.rpc_address,
+        );
 
         // target address is me, source is you.
         // the special case if rpc_address='n2n://*' allows testing code to accept for any target
         const source = url_utils.quick_parse(params.source);
         const target = url_utils.quick_parse(params.target);
-        if (!this.rpc_address || !target ||
-            (this.rpc_address !== N2N_STAR && this.rpc_address !== target.href)) {
-            throw new Error('N2N MISMATCHING PEER ID ' + params.target +
-                ' my rpc_address ' + this.rpc_address);
+        if (
+            !this.rpc_address ||
+            !target ||
+            (this.rpc_address !== N2N_STAR && this.rpc_address !== target.href)
+        ) {
+            throw new Error(
+                'N2N MISMATCHING PEER ID ' +
+                    params.target +
+                    ' my rpc_address ' +
+                    this.rpc_address,
+            );
         }
         const conn = new RpcN2NConnection(source, this);
         conn.once('connect', () => this.emit('connection', conn));
         return conn.accept(params.info);
     }
-
-
 }
 
 module.exports = RpcN2NAgent;

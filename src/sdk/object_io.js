@@ -14,7 +14,8 @@ const buffer_utils = require('../util/buffer_utils');
 const stream_utils = require('../util/stream_utils');
 const ChunkSplitter = require('../util/chunk_splitter');
 const CoalesceStream = require('../util/coalesce_stream');
-const system_store = require('../server/system_services/system_store').get_instance();
+const system_store =
+    require('../server/system_services/system_store').get_instance();
 
 const { MapClient } = require('./map_client');
 const { ChunkAPI } = require('./map_api_types');
@@ -71,7 +72,6 @@ Object.isFrozen(RpcError); // otherwise unused
  */
 
 class ObjectReadable extends stream.Readable {
-
     /**
      *
      * @param {number} [start]
@@ -113,7 +113,6 @@ class ObjectReadable extends stream.Readable {
  *
  */
 class ObjectIO {
-
     /**
      *
      * @param {nb.LocationInfo} [location_info]
@@ -124,15 +123,18 @@ class ObjectIO {
 
         this._io_buffers_sem = new Semaphore(config.IO_SEMAPHORE_CAP, {
             timeout: config.IO_STREAM_SEMAPHORE_TIMEOUT,
-            timeout_error_code: 'IO_STREAM_ITEM_TIMEOUT'
+            timeout_error_code: 'IO_STREAM_ITEM_TIMEOUT',
         });
 
-        dbg.log0('ObjectIO Configurations:', util.inspect({
-            location_info,
-            CONTAINER_MEM_LIMIT: config.CONTAINER_MEM_LIMIT,
-            BUFFERS_MEM_LIMIT: config.BUFFERS_MEM_LIMIT,
-            IO_SEMAPHORE_CAP: config.IO_SEMAPHORE_CAP,
-        }));
+        dbg.log0(
+            'ObjectIO Configurations:',
+            util.inspect({
+                location_info,
+                CONTAINER_MEM_LIMIT: config.CONTAINER_MEM_LIMIT,
+                BUFFERS_MEM_LIMIT: config.BUFFERS_MEM_LIMIT,
+                IO_SEMAPHORE_CAP: config.IO_SEMAPHORE_CAP,
+            }),
+        );
     }
 
     set_verification_mode() {
@@ -142,8 +144,6 @@ class ObjectIO {
     clear_verification_mode() {
         this._verification_mode = false;
     }
-
-
 
     ////////////////////////////////////////////////////////////////////////////
     // UPLOAD FLOW /////////////////////////////////////////////////////////////
@@ -159,9 +159,19 @@ class ObjectIO {
      */
     async upload_object_range(params) {
         const complete_params = _.pick(params, 'obj_id', 'bucket', 'key');
-        const upload_params = _.pick(params, 'bucket', 'key', 'obj_id', 'start', 'end');
+        const upload_params = _.pick(
+            params,
+            'bucket',
+            'key',
+            'obj_id',
+            'start',
+            'end',
+        );
 
-        const obj_upload = await params.client.object.get_upload_object_range_info(upload_params);
+        const obj_upload =
+            await params.client.object.get_upload_object_range_info(
+                upload_params,
+            );
 
         params.chunk_split_config = obj_upload.chunk_split_config;
         params.chunk_coder_config = obj_upload.chunk_coder_config;
@@ -176,7 +186,11 @@ class ObjectIO {
             dbg.log0('upload_object_range: start upload stream', upload_params);
             return this._upload_stream(params, complete_params);
         } catch (err) {
-            dbg.error('upload_object_range: object part upload failed', upload_params, err);
+            dbg.error(
+                'upload_object_range: object part upload failed',
+                upload_params,
+                err,
+            );
             throw err;
         }
     }
@@ -190,7 +204,8 @@ class ObjectIO {
      * @param {UploadParams} params
      */
     async upload_object(params) {
-        const create_params = _.pick(params,
+        const create_params = _.pick(
+            params,
             'bucket',
             'key',
             'content_type',
@@ -205,7 +220,8 @@ class ObjectIO {
             'storage_class',
             'last_modified_time',
         );
-        const complete_params = _.pick(params,
+        const complete_params = _.pick(
+            params,
             'obj_id',
             'bucket',
             'key',
@@ -214,7 +230,8 @@ class ObjectIO {
         );
         try {
             dbg.log0('upload_object: start upload', create_params);
-            const create_reply = await params.client.object.create_object_upload(create_params);
+            const create_reply =
+                await params.client.object.create_object_upload(create_params);
             params.obj_id = create_reply.obj_id;
             params.tier_id = create_reply.tier_id;
             params.bucket_id = create_reply.bucket_id;
@@ -231,10 +248,14 @@ class ObjectIO {
             dbg.log0('upload_object: complete upload', complete_params);
 
             if (params.async_get_last_modified_time) {
-                complete_params.last_modified_time = await params.async_get_last_modified_time();
+                complete_params.last_modified_time =
+                    await params.async_get_last_modified_time();
             }
 
-            const complete_result = await params.client.object.complete_object_upload(complete_params);
+            const complete_result =
+                await params.client.object.complete_object_upload(
+                    complete_params,
+                );
             if (params.copy_source) {
                 complete_result.copy_source = params.copy_source;
             }
@@ -243,10 +264,19 @@ class ObjectIO {
             dbg.warn('upload_object: failed upload', complete_params, err);
             if (params.obj_id) {
                 try {
-                    await params.client.object.abort_object_upload(_.pick(params, 'bucket', 'key', 'obj_id'));
-                    dbg.log0('upload_object: aborted object upload', complete_params);
+                    await params.client.object.abort_object_upload(
+                        _.pick(params, 'bucket', 'key', 'obj_id'),
+                    );
+                    dbg.log0(
+                        'upload_object: aborted object upload',
+                        complete_params,
+                    );
                 } catch (err2) {
-                    dbg.warn('upload_object: Failed to abort object upload', complete_params, err2);
+                    dbg.warn(
+                        'upload_object: Failed to abort object upload',
+                        complete_params,
+                        err2,
+                    );
                 }
             }
             throw err; // throw the original error
@@ -257,7 +287,8 @@ class ObjectIO {
      * @param {UploadParams} params
      */
     async upload_multipart(params) {
-        const create_params = _.pick(params,
+        const create_params = _.pick(
+            params,
             'obj_id',
             'bucket',
             'key',
@@ -265,9 +296,10 @@ class ObjectIO {
             'size',
             'md5_b64',
             'sha256_b64',
-            'encryption'
+            'encryption',
         );
-        const complete_params = _.pick(params,
+        const complete_params = _.pick(
+            params,
             'multipart_id',
             'obj_id',
             'bucket',
@@ -276,7 +308,8 @@ class ObjectIO {
         );
         try {
             dbg.log0('upload_multipart: start upload', complete_params);
-            const multipart_reply = await params.client.object.create_multipart(create_params);
+            const multipart_reply =
+                await params.client.object.create_multipart(create_params);
             params.tier_id = multipart_reply.tier_id;
             params.bucket_id = multipart_reply.bucket_id;
             params.multipart_id = multipart_reply.multipart_id;
@@ -303,16 +336,22 @@ class ObjectIO {
      * @param {Object} complete_params
      */
     async _upload_copy(params, complete_params) {
-        const { obj_id, bucket, key, version_id, ranges, encryption } = params.copy_source;
-        if (bucket === params.bucket && !ranges && !(encryption || params.encryption)) {
+        const { obj_id, bucket, key, version_id, ranges, encryption } =
+            params.copy_source;
+        if (
+            bucket === params.bucket &&
+            !ranges &&
+            !(encryption || params.encryption)
+        ) {
             /** @type {{ object_md: nb.ObjectInfo, num_parts: number }} */
-            const { object_md, num_parts } = await params.client.object.copy_object_mapping({
-                bucket: params.bucket,
-                key: params.key,
-                obj_id: params.obj_id,
-                multipart_id: params.multipart_id,
-                copy_source: { obj_id },
-            });
+            const { object_md, num_parts } =
+                await params.client.object.copy_object_mapping({
+                    bucket: params.bucket,
+                    key: params.key,
+                    obj_id: params.obj_id,
+                    multipart_id: params.multipart_id,
+                    copy_source: { obj_id },
+                });
             complete_params.size = object_md.size;
             complete_params.num_parts = num_parts;
             complete_params.md5_b64 = object_md.md5_b64;
@@ -324,14 +363,14 @@ class ObjectIO {
                 key,
                 obj_id,
                 version_id,
-                encryption
+                encryption,
             });
             if (ranges) {
                 params.source_stream = this.read_object_stream({
                     client: params.client,
                     object_md,
                     start: ranges[0].start,
-                    end: ranges[0].end
+                    end: ranges[0].end,
                 });
             } else {
                 params.source_stream = this.read_object_stream({
@@ -358,7 +397,7 @@ class ObjectIO {
             // on non server side copy the buffer will be taken when called to read_object_stream
             const res = await this._io_buffers_sem.surround_count(
                 _get_io_semaphore_size(is_copy ? 0 : params.size),
-                () => this._upload_stream_internal(params, complete_params)
+                () => this._upload_stream_internal(params, complete_params),
             );
             return res;
         } catch (err) {
@@ -373,9 +412,14 @@ class ObjectIO {
      * @param {Object} complete_params
      */
     async _upload_stream_internal(params, complete_params) {
-
         params.desc = _.pick(params, 'obj_id', 'num', 'bucket', 'key');
-        dbg.log0('UPLOAD:', params.desc, 'streaming to', params.bucket, params.key);
+        dbg.log0(
+            'UPLOAD:',
+            params.desc,
+            'streaming to',
+            params.bucket,
+            params.key,
+        );
 
         // start and seq are set to zero even for multiparts and will be fixed
         // when multiparts are combined to object in complete_object_upload
@@ -391,10 +435,17 @@ class ObjectIO {
         const splitter = new ChunkSplitter({
             watermark: 50,
             calc_md5: Boolean(config.IO_CALC_MD5_ENABLED),
-            calc_sha256: Boolean(config.IO_CALC_SHA256_ENABLED && params.sha256_b64),
+            calc_sha256: Boolean(
+                config.IO_CALC_SHA256_ENABLED && params.sha256_b64,
+            ),
             chunk_split_config: params.chunk_split_config,
         });
-        splitter.on('error', err1 => dbg.error('object_io._upload_stream_internal: error occured on stream Splitter: ', err1));
+        splitter.on('error', err1 =>
+            dbg.error(
+                'object_io._upload_stream_internal: error occured on stream Splitter: ',
+                err1,
+            ),
+        );
 
         // The coder transformer is responsible for digest & compress & encrypt & erasure coding
         const coder = new ChunkCoder({
@@ -403,16 +454,26 @@ class ObjectIO {
             coder: 'enc',
             chunk_coder_config: params.chunk_coder_config,
             // TODO: Load the key from KMS as well
-            cipher_key_b64: params.encryption && params.encryption.key_b64
+            cipher_key_b64: params.encryption && params.encryption.key_b64,
         });
-        coder.on('error', err1 => dbg.error('object_io._upload_stream_internal: error occured on stream ChunkCoder: ', err1));
+        coder.on('error', err1 =>
+            dbg.error(
+                'object_io._upload_stream_internal: error occured on stream ChunkCoder: ',
+                err1,
+            ),
+        );
 
         const coalescer = new CoalesceStream({
             objectMode: true,
             max_length: 50,
             max_wait_ms: 1000,
         });
-        coalescer.on('error', err1 => dbg.error('object_io._upload_stream_internal: error occured on stream Coalescer: ', err1));
+        coalescer.on('error', err1 =>
+            dbg.error(
+                'object_io._upload_stream_internal: error occured on stream Coalescer: ',
+                err1,
+            ),
+        );
 
         // The uploader transformer takes chunks after processed by the coder and uploads them
         // by doing allocate(md) + write(data) + finalize(md).
@@ -421,11 +482,17 @@ class ObjectIO {
             allowHalfOpen: false,
             highWaterMark: 4,
             transform: (chunks, encoding, callback) =>
-                this._upload_chunks(params, complete_params, chunks, callback)
+                this._upload_chunks(params, complete_params, chunks, callback),
         });
-        uploader.on('error', err1 => dbg.error('object_io._upload_stream_internal: error occured on stream Uploader: ', err1));
+        uploader.on('error', err1 =>
+            dbg.error(
+                'object_io._upload_stream_internal: error occured on stream Uploader: ',
+                err1,
+            ),
+        );
 
-        const transforms = [params.source_stream,
+        const transforms = [
+            params.source_stream,
             splitter,
             coder,
             coalescer,
@@ -435,10 +502,13 @@ class ObjectIO {
         await stream_utils.pipeline(transforms);
         await stream_utils.wait_finished(uploader);
 
-        if (splitter.md5) complete_params.md5_b64 = splitter.md5.toString('base64');
-        if (splitter.sha256) complete_params.sha256_b64 = splitter.sha256.toString('base64');
+        if (splitter.md5) {
+            complete_params.md5_b64 = splitter.md5.toString('base64');
+        }
+        if (splitter.sha256) {
+            complete_params.sha256_b64 = splitter.sha256.toString('base64');
+        }
     }
-
 
     /**
      *
@@ -453,7 +523,9 @@ class ObjectIO {
      */
     async _upload_chunks(params, complete_params, chunks, callback) {
         try {
-            const is_using_encryption = params.encryption || (params.copy_source && params.copy_source.encryption);
+            const is_using_encryption =
+                params.encryption ||
+                (params.copy_source && params.copy_source.encryption);
             params.range = {
                 start: params.start,
                 end: params.start,
@@ -487,17 +559,24 @@ class ObjectIO {
                 params.range.end = params.start;
                 complete_params.size += chunk.size;
                 complete_params.num_parts += 1;
-                dbg.log0('UPLOAD: part', { ...params.desc, start: part.start, end: part.end, seq: part.seq });
+                dbg.log0('UPLOAD: part', {
+                    ...params.desc,
+                    start: part.start,
+                    end: part.end,
+                    seq: part.seq,
+                });
 
                 if (chunk.size > config.MAX_OBJECT_PART_SIZE) {
-                    throw new Error(`Chunk size=${chunk.size} exceeds ` +
-                        `config.MAX_OBJECT_PART_SIZE=${config.MAX_OBJECT_PART_SIZE}`);
+                    throw new Error(
+                        `Chunk size=${chunk.size} exceeds ` +
+                            `config.MAX_OBJECT_PART_SIZE=${config.MAX_OBJECT_PART_SIZE}`,
+                    );
                 }
 
                 return chunk;
             });
 
-            /** 
+            /**
              * passing partial object info we have in this context which will be sent to block_stores
              * as block_md.mapping_info so it can be used for recovery in case the db is not available.
              * @type {Partial<nb.ObjectInfo>}
@@ -515,11 +594,21 @@ class ObjectIO {
                 check_dups: !is_using_encryption,
                 rpc_client: params.client,
                 desc: params.desc,
-                report_error: (block_md, action, err) => this._report_error_on_object_upload(params, block_md, action, err),
+                report_error: (block_md, action, err) =>
+                    this._report_error_on_object_upload(
+                        params,
+                        block_md,
+                        action,
+                        err,
+                    ),
             });
             await mc.run();
             if (mc.had_errors) throw new Error('Upload map errors');
-            if (params.upload_chunks_hook) params.upload_chunks_hook(params.range.end - params.range.start);
+            if (params.upload_chunks_hook) {
+                params.upload_chunks_hook(
+                    params.range.end - params.range.start,
+                );
+            }
             return callback();
         } catch (err) {
             dbg.error('UPLOAD: _upload_chunks', err.stack || err);
@@ -534,28 +623,30 @@ class ObjectIO {
                 obj_id: params.obj_id,
                 bucket: params.bucket,
                 key: params.key,
-                blocks_report: [{
-                    block_md: block_md,
-                    action: action,
-                    rpc_code: err.rpc_code || '',
-                    error_message: err.message || '',
-                }]
+                blocks_report: [
+                    {
+                        block_md: block_md,
+                        action: action,
+                        rpc_code: err.rpc_code || '',
+                        error_message: err.message || '',
+                    },
+                ],
             });
         } catch (reporting_err) {
             // reporting failed, we don't have much to do with it now
             // so will drop it, and wait for next failure to retry reporting
-            dbg.warn('_report_error_on_object_upload:',
+            dbg.warn(
+                '_report_error_on_object_upload:',
                 'will throw original upload error',
-                'and ignore this reporting error -', reporting_err);
+                'and ignore this reporting error -',
+                reporting_err,
+            );
         }
     }
-
-
 
     ////////////////////////////////////////////////////////////////////////////
     // READ FLOW ///////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
-
 
     /**
      *
@@ -568,7 +659,6 @@ class ObjectIO {
         return buffer_utils.read_stream_join(this.read_object_stream(params));
     }
 
-
     /**
      *
      * returns a readable stream to the object.
@@ -578,97 +668,128 @@ class ObjectIO {
      */
     read_object_stream(params) {
         params.start = Number(params.start) || 0;
-        params.end = params.end === undefined ? params.object_md.size : Math.min(params.end, params.object_md.size);
-        const reader = new ObjectReadable(params.start, requested_size => {
-            if (reader.closed) {
-                dbg.log1('READ reader closed', reader.pos);
-                reader.push(null);
-                return;
-            }
-            if (reader.pending.length) {
-                reader.push(reader.pending.shift());
-                return;
-            }
-            const io_sem_size = _get_io_semaphore_size(requested_size);
-
-            // TODO we dont want to use requested_size as end, because we read entire chunks
-            // and we are better off return the data to the stream buffer
-            // instead of getting multiple calls from the stream with small slices to return.
-
-            const requested_end = Math.min(params.end, reader.pos + requested_size);
-            this._io_buffers_sem.surround_count(io_sem_size, async () => {
-                try {
-                    const buffers = await this.read_object({
-                        ...params,
-                        start: reader.pos,
-                        end: requested_end,
-                    });
-                    if (buffers && buffers.length) {
-                        for (const buffer of buffers) {
-                            if (buffer.data) {
-                                reader.pos += buffer.data.length;
-                                reader.pending.push(buffer.data);
-                            } else {
-                                if (!params.missing_part_getter) {
-                                    throw new Error('missing_part_getter not set for getting missing part');
-                                }
-
-                                // Handle missing buffer part
-                                // If performance is needed, we can potentially perform concurrency on missing_part_getter
-                                // calls using promise.
-                                const missing_buf = await params.missing_part_getter(buffer.start, buffer.end);
-                                if (!missing_buf || missing_buf.length === 0) {
-                                    throw new Error('missing buffer should not be empty');
-                                }
-                                reader.pos += missing_buf.length;
-                                reader.pending.push(missing_buf);
-                            }
-                        }
-                        dbg.log0('READ reader pos', reader.pos);
-                        reader.push(reader.pending.shift());
-                    } else {
-                        reader.push(null);
-                        dbg.log1('READ reader finished', reader.pos);
-                    }
-                } catch (err) {
-                    this._handle_semaphore_errors(params.client, err);
-                    dbg.error('READ reader error', err.stack || err);
-                    reader.emit('error', err || 'reader error');
+        params.end =
+            params.end === undefined ?
+                params.object_md.size
+            :   Math.min(params.end, params.object_md.size);
+        const reader = new ObjectReadable(
+            params.start,
+            requested_size => {
+                if (reader.closed) {
+                    dbg.log1('READ reader closed', reader.pos);
+                    reader.push(null);
+                    return;
                 }
-            }).catch(err => {
-                dbg.error('Semaphore reader error', (err && err.stack) || err);
-                reader.emit('error', err || 'Semaphore reader error');
-            });
+                if (reader.pending.length) {
+                    reader.push(reader.pending.shift());
+                    return;
+                }
+                const io_sem_size = _get_io_semaphore_size(requested_size);
 
-            // when starting to stream also prefrech the last part of the file
-            // since some video encodings put a chunk of video metadata in the end
-            // and it is often requested once doing a video time seek.
-            // see https://trac.ffmpeg.org/wiki/Encode/H.264#faststartforwebvideo
-            if (!params.start &&
-                params.object_md &&
-                params.object_md.size > 1024 * 1024 &&
-                params.object_md.content_type.startsWith('video') &&
-                this._io_buffers_sem.waiting_time < config.VIDEO_READ_STREAM_PRE_FETCH_LOAD_CAP) {
-                const tail_io_sem_size = _get_io_semaphore_size(1024);
-                setTimeout(async () => {
-                    try {
-                        await this._io_buffers_sem.surround_count(tail_io_sem_size, async () => {
-                            await this.read_object({
+                // TODO we dont want to use requested_size as end, because we read entire chunks
+                // and we are better off return the data to the stream buffer
+                // instead of getting multiple calls from the stream with small slices to return.
+
+                const requested_end = Math.min(
+                    params.end,
+                    reader.pos + requested_size,
+                );
+                this._io_buffers_sem
+                    .surround_count(io_sem_size, async () => {
+                        try {
+                            const buffers = await this.read_object({
                                 ...params,
-                                start: params.object_md.size - 1024,
-                                end: params.object_md.size,
+                                start: reader.pos,
+                                end: requested_end,
                             });
-                        });
-                    } catch (err) {
-                        this._handle_semaphore_errors(params.client, err);
-                        dbg.error('READ prefetch end of file error', err);
-                    }
-                }, 10);
-            }
-        }, params.watermark);
+                            if (buffers && buffers.length) {
+                                for (const buffer of buffers) {
+                                    if (buffer.data) {
+                                        reader.pos += buffer.data.length;
+                                        reader.pending.push(buffer.data);
+                                    } else {
+                                        if (!params.missing_part_getter) {
+                                            throw new Error(
+                                                'missing_part_getter not set for getting missing part',
+                                            );
+                                        }
+
+                                        // Handle missing buffer part
+                                        // If performance is needed, we can potentially perform concurrency on missing_part_getter
+                                        // calls using promise.
+                                        const missing_buf =
+                                            await params.missing_part_getter(
+                                                buffer.start,
+                                                buffer.end,
+                                            );
+                                        if (
+                                            !missing_buf ||
+                                            missing_buf.length === 0
+                                        ) {
+                                            throw new Error(
+                                                'missing buffer should not be empty',
+                                            );
+                                        }
+                                        reader.pos += missing_buf.length;
+                                        reader.pending.push(missing_buf);
+                                    }
+                                }
+                                dbg.log0('READ reader pos', reader.pos);
+                                reader.push(reader.pending.shift());
+                            } else {
+                                reader.push(null);
+                                dbg.log1('READ reader finished', reader.pos);
+                            }
+                        } catch (err) {
+                            this._handle_semaphore_errors(params.client, err);
+                            dbg.error('READ reader error', err.stack || err);
+                            reader.emit('error', err || 'reader error');
+                        }
+                    })
+                    .catch(err => {
+                        dbg.error(
+                            'Semaphore reader error',
+                            (err && err.stack) || err,
+                        );
+                        reader.emit('error', err || 'Semaphore reader error');
+                    });
+
+                // when starting to stream also prefrech the last part of the file
+                // since some video encodings put a chunk of video metadata in the end
+                // and it is often requested once doing a video time seek.
+                // see https://trac.ffmpeg.org/wiki/Encode/H.264#faststartforwebvideo
+                if (
+                    !params.start &&
+                    params.object_md &&
+                    params.object_md.size > 1024 * 1024 &&
+                    params.object_md.content_type.startsWith('video') &&
+                    this._io_buffers_sem.waiting_time <
+                        config.VIDEO_READ_STREAM_PRE_FETCH_LOAD_CAP
+                ) {
+                    const tail_io_sem_size = _get_io_semaphore_size(1024);
+                    setTimeout(async () => {
+                        try {
+                            await this._io_buffers_sem.surround_count(
+                                tail_io_sem_size,
+                                async () => {
+                                    await this.read_object({
+                                        ...params,
+                                        start: params.object_md.size - 1024,
+                                        end: params.object_md.size,
+                                    });
+                                },
+                            );
+                        } catch (err) {
+                            this._handle_semaphore_errors(params.client, err);
+                            dbg.error('READ prefetch end of file error', err);
+                        }
+                    }, 10);
+                }
+            },
+            params.watermark,
+        );
         return reader;
     }
-
 
     /**
      *
@@ -695,15 +816,14 @@ class ObjectIO {
             location_info: this.location_info,
             rpc_client: params.client,
             verification_mode: this._verification_mode,
-            report_error: (block_md, action, err) => this._report_error_on_object_read(params, block_md, err),
+            report_error: (block_md, action, err) =>
+                this._report_error_on_object_read(params, block_md, err),
         });
         await mc.run_read_object();
         if (mc.had_errors) throw new Error('Read map errors');
 
         return slice_buffers_in_range(mc.chunks, params.start, params.end);
     }
-
-
 
     /**
      * @param {ReadParams} params
@@ -718,19 +838,24 @@ class ObjectIO {
                 key: params.object_md.key,
                 start: params.start,
                 end: params.end,
-                blocks_report: [{
-                    block_md: block_md,
-                    action: 'read',
-                    rpc_code: /** @type {RpcError} */ (err).rpc_code || '',
-                    error_message: err.message || '',
-                }]
+                blocks_report: [
+                    {
+                        block_md: block_md,
+                        action: 'read',
+                        rpc_code: /** @type {RpcError} */ (err).rpc_code || '',
+                        error_message: err.message || '',
+                    },
+                ],
             });
         } catch (reporting_err) {
             // reporting failed, we don't have much to do with it now
             // so will drop it, and wait for next failure to retry reporting
-            dbg.warn('report_error_on_object_read:',
+            dbg.warn(
+                'report_error_on_object_read:',
                 'will throw original upload error',
-                'and ignore this reporting error -', reporting_err);
+                'and ignore this reporting error -',
+                reporting_err,
+            );
         }
     }
 
@@ -749,17 +874,16 @@ class ObjectIO {
                     host_id: this.location_info && this.location_info.host_id,
                 });
             } catch (reporting_err) {
-                dbg.error('_handle_semaphore_errors: had an error', reporting_err);
+                dbg.error(
+                    '_handle_semaphore_errors: had an error',
+                    reporting_err,
+                );
             }
         });
     }
-
 }
 
-
-
 // INTERNAL ///////////////////////////////////////////////////////////////////
-
 
 /**
  * slice_buffers_in_range
@@ -783,7 +907,12 @@ function slice_buffers_in_range(chunks, start, end) {
     const buffers = [];
     for (const chunk of chunks) {
         const part = chunk.parts[0];
-        const part_range = range_utils.intersection(part.start, part.end, pos, end);
+        const part_range = range_utils.intersection(
+            part.start,
+            part.end,
+            pos,
+            end,
+        );
         if (!part_range) {
             if (end <= part.start) {
                 // --- start ------------- pos --------- end ---
@@ -836,7 +965,11 @@ function slice_buffers_in_range(chunks, start, end) {
             buffer_end += part.chunk_offset;
         }
         pos = part_range.end;
-        buffers.push({ start: part_range.start, end: part_range.end, data: chunk.data.slice(buffer_start, buffer_end) });
+        buffers.push({
+            start: part_range.start,
+            end: part_range.end,
+            data: chunk.data.slice(buffer_start, buffer_end),
+        });
 
         if (pos >= end) break;
     }
@@ -873,8 +1006,9 @@ function _get_io_semaphore_size(size) {
     // TODO: Currently we have a gap regarding chunked uploads
     // We assume that the chunked upload will take 1MB
     // This is done as a temporary quick fix and is not a good one
-    return _.isNumber(size) ? Math.min(config.IO_STREAM_SEMAPHORE_SIZE_CAP, size) :
-        config.IO_STREAM_MINIMAL_SIZE_LOCK;
+    return _.isNumber(size) ?
+            Math.min(config.IO_STREAM_SEMAPHORE_SIZE_CAP, size)
+        :   config.IO_STREAM_MINIMAL_SIZE_LOCK;
 }
 
 module.exports = ObjectIO;

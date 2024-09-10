@@ -1,8 +1,8 @@
 name: RPM Build And Upload Flow
-on: 
+on:
   workflow_call:
     inputs:
-      branch: 
+      branch:
         type: string
         description: 'Run rpm build and upload to aws flow'
         default: 'master'
@@ -19,7 +19,7 @@ jobs:
     with:
       branch: ${{ inputs.branch }}
       centos_ver: '9'
-  
+
   build-rpm-centos8-ppc64le:
     uses: ./.github/workflows/rpm-build-base.yaml
     with:
@@ -47,7 +47,7 @@ jobs:
     with:
       rpm_full_path: ${{ needs.build-rpm-centos9.outputs.rpm_full_path }}
     secrets: inherit
-  
+
   upload-centos8-ppc64le-rpm-to-aws:
     needs: build-rpm-centos8-ppc64le
     uses: ./.github/workflows/upload-rpm-to-aws.yaml

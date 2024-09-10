@@ -7,11 +7,9 @@
  *
  */
 module.exports = {
-
     $id: 'scrubber_api',
 
     methods: {
-
         build_chunks: {
             method: 'PUT',
             params: {
@@ -20,7 +18,7 @@ module.exports = {
                 properties: {
                     chunk_ids: {
                         type: 'array',
-                        items: { objectid: true }
+                        items: { objectid: true },
                     },
                     tier: { objectid: true },
                     evict: {
@@ -28,11 +26,11 @@ module.exports = {
                     },
                     current_tiers: {
                         type: 'array',
-                        items: { objectid: true }
+                        items: { objectid: true },
                     },
-                }
+                },
             },
-            auth: { system: 'admin' }
+            auth: { system: 'admin' },
         },
 
         make_room_in_tier: {
@@ -43,14 +41,11 @@ module.exports = {
                 properties: {
                     bucket: { objectid: true },
                     tier: { objectid: true },
-                }
+                },
             },
-            auth: { system: 'admin' }
+            auth: { system: 'admin' },
         },
-
     },
 
-    definitions: {
-
-    }
+    definitions: {},
 };

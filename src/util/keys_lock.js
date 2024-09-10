@@ -6,7 +6,6 @@ const P = require('../util/promise');
 const LinkedList = require('./linked_list');
 
 class KeysLock {
-
     constructor() {
         this._keys_map = new Map();
         this._wait_list = new LinkedList('keys_lock');

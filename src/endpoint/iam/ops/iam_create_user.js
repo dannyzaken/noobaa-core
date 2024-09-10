@@ -4,13 +4,14 @@
 const dbg = require('../../../util/debug_module')(__filename);
 const iam_utils = require('../iam_utils');
 const iam_constants = require('../iam_constants');
-const { CONTENT_TYPE_APP_FORM_URLENCODED } = require('../../../util/http_utils');
+const {
+    CONTENT_TYPE_APP_FORM_URLENCODED,
+} = require('../../../util/http_utils');
 
 /**
  * https://docs.aws.amazon.com/IAM/latest/APIReference/API_CreateUser.html
  */
 async function create_user(req, res) {
-
     const params = {
         iam_path: req.body.path,
         username: req.body.user_name,
@@ -29,13 +30,15 @@ async function create_user(req, res) {
                     UserId: reply.user_id,
                     Arn: reply.arn,
                     // CreateDate appears in actual respond (not in docs)
-                    CreateDate: iam_utils.format_iam_xml_date(reply.create_date),
-                }
+                    CreateDate: iam_utils.format_iam_xml_date(
+                        reply.create_date,
+                    ),
+                },
             },
             ResponseMetadata: {
                 RequestId: req.request_id,
-            }
-        }
+            },
+        },
     };
 }
 

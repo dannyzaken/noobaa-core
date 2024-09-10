@@ -6,14 +6,10 @@
  */
 'use strict';
 
-
 module.exports = {
-
     $id: 'host_api',
 
     methods: {
-
-
         read_host: {
             method: 'GET',
             params: {
@@ -21,16 +17,16 @@ module.exports = {
                 required: ['name'],
                 properties: {
                     name: {
-                        type: 'string'
+                        type: 'string',
                     },
                 },
             },
             reply: {
-                $ref: '#/definitions/host_info'
+                $ref: '#/definitions/host_info',
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         list_hosts: {
@@ -40,13 +36,13 @@ module.exports = {
                 // required: [],
                 properties: {
                     query: {
-                        $ref: '#/definitions/hosts_query'
+                        $ref: '#/definitions/hosts_query',
                     },
                     skip: {
-                        type: 'integer'
+                        type: 'integer',
                     },
                     limit: {
-                        type: 'integer'
+                        type: 'integer',
                     },
                     sort: {
                         type: 'string',
@@ -63,19 +59,19 @@ module.exports = {
                             'pool',
                             'services',
                             'recommended',
-                            'healthy_drives'
-                        ]
+                            'healthy_drives',
+                        ],
                     },
                     order: {
                         type: 'integer',
                     },
                     recommended_hint: {
-                        type: 'string'
+                        type: 'string',
                     },
                     adminfo: {
-                        type: 'boolean'
-                    }
-                }
+                        type: 'boolean',
+                    },
+                },
             },
             reply: {
                 type: 'object',
@@ -85,24 +81,24 @@ module.exports = {
                         type: 'object',
                         properties: {
                             non_paginated: {
-                                type: 'integer'
+                                type: 'integer',
                             },
                             by_mode: {
-                                $ref: '#/definitions/mode_counters'
-                            }
-                        }
+                                $ref: '#/definitions/mode_counters',
+                            },
+                        },
                     },
                     hosts: {
                         type: 'array',
                         items: {
-                            $ref: '#/definitions/host_info'
-                        }
-                    }
-                }
+                            $ref: '#/definitions/host_info',
+                        },
+                    },
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         update_host_services: {
@@ -112,15 +108,15 @@ module.exports = {
                 required: ['name'],
                 properties: {
                     name: {
-                        type: 'string'
+                        type: 'string',
                     },
                     services: {
                         type: 'object',
                         properties: {
                             storage: {
-                                type: 'boolean'
-                            }
-                        }
+                                type: 'boolean',
+                            },
+                        },
                     },
                     nodes: {
                         type: 'array',
@@ -132,16 +128,16 @@ module.exports = {
                                     type: 'string',
                                 },
                                 enabled: {
-                                    type: 'boolean'
-                                }
-                            }
-                        }
-                    }
-                }
+                                    type: 'boolean',
+                                },
+                            },
+                        },
+                    },
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         get_test_hosts: {
@@ -156,7 +152,7 @@ module.exports = {
                     source: {
                         type: 'string',
                     },
-                }
+                },
             },
             reply: {
                 type: 'array',
@@ -165,17 +161,17 @@ module.exports = {
                     required: ['name', 'rpc_address'],
                     properties: {
                         name: {
-                            type: 'string'
+                            type: 'string',
                         },
                         rpc_address: {
-                            type: 'string'
-                        }
-                    }
-                }
+                            type: 'string',
+                        },
+                    },
+                },
             },
             auth: {
                 system: 'admin',
-            }
+            },
         },
 
         retrust_host: {
@@ -185,13 +181,13 @@ module.exports = {
                 required: ['name'],
                 properties: {
                     name: {
-                        type: 'string'
+                        type: 'string',
                     },
                 },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         delete_host: {
@@ -201,13 +197,13 @@ module.exports = {
                 required: ['name'],
                 properties: {
                     name: {
-                        type: 'string'
+                        type: 'string',
                     },
                 },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         hide_host: {
@@ -217,13 +213,13 @@ module.exports = {
                 required: ['name'],
                 properties: {
                     name: {
-                        type: 'string'
+                        type: 'string',
                     },
                 },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         set_debug_host: {
@@ -233,16 +229,16 @@ module.exports = {
                 required: ['name', 'level'],
                 properties: {
                     name: {
-                        type: 'string'
+                        type: 'string',
                     },
                     level: {
                         type: 'integer',
-                    }
+                    },
                 },
             },
             auth: {
                 system: 'admin',
-            }
+            },
         },
 
         diagnose_host: {
@@ -252,56 +248,53 @@ module.exports = {
                 required: ['name'],
                 properties: {
                     name: {
-                        type: 'string'
-                    }
-                }
+                        type: 'string',
+                    },
+                },
             },
             reply: {
-                type: 'string'
+                type: 'string',
             },
             auth: {
                 system: 'admin',
-            }
-        }
-
+            },
+        },
     },
 
-
     definitions: {
-
         host_info: {
             type: 'object',
             required: ['name', 'storage_nodes_info'],
             properties: {
                 name: {
-                    type: 'string'
+                    type: 'string',
                 },
                 host_id: {
-                    type: 'string'
+                    type: 'string',
                 },
                 pool: {
-                    type: 'string'
+                    type: 'string',
                 },
                 geolocation: {
-                    type: 'string'
+                    type: 'string',
                 },
                 ip: {
-                    type: 'string'
+                    type: 'string',
                 },
                 base_address: {
-                    type: 'string'
+                    type: 'string',
                 },
                 public_ip: {
-                    type: 'string'
+                    type: 'string',
                 },
                 version: {
-                    type: 'string'
+                    type: 'string',
                 },
                 version_install_time: {
-                    idate: true
+                    idate: true,
                 },
                 last_communication: {
-                    idate: true
+                    idate: true,
                 },
                 trusted: {
                     type: 'boolean',
@@ -310,22 +303,22 @@ module.exports = {
                     type: 'boolean',
                 },
                 connectivity: {
-                    $ref: 'node_api#/definitions/connectivity_type'
+                    $ref: 'node_api#/definitions/connectivity_type',
                 },
                 storage: {
-                    $ref: 'common_api#/definitions/storage_info'
+                    $ref: 'common_api#/definitions/storage_info',
                 },
                 os_info: {
-                    $ref: 'common_api#/definitions/os_info'
+                    $ref: 'common_api#/definitions/os_info',
                 },
                 process_cpu_usage: {
-                    type: 'number'
+                    type: 'number',
                 },
                 process_mem_usage: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 latency_to_server: {
-                    $ref: 'node_api#/definitions/latency_array'
+                    $ref: 'node_api#/definitions/latency_array',
                 },
                 debug: {
                     type: 'object',
@@ -334,47 +327,48 @@ module.exports = {
                         level: {
                             type: 'integer',
                         },
-                        time_left: { // in ms
-                            type: 'integer'
+                        time_left: {
+                            // in ms
+                            type: 'integer',
                         },
                     },
                 },
                 rpc_address: {
-                    type: 'string'
+                    type: 'string',
                 },
                 ports: {
                     type: 'object',
                     properties: {
                         range: {
-                            $ref: 'common_api#/definitions/port_range_config'
-                        }
-                    }
+                            $ref: 'common_api#/definitions/port_range_config',
+                        },
+                    },
                 },
                 suggested_pool: {
-                    type: 'string'
+                    type: 'string',
                 },
                 mode: {
-                    $ref: '#/definitions/host_mode'
+                    $ref: '#/definitions/host_mode',
                 },
                 storage_nodes_info: {
                     type: 'object',
                     properties: {
                         mode: {
-                            $ref: '#/definitions/storage_nodes_mode'
+                            $ref: '#/definitions/storage_nodes_mode',
                         },
                         enabled: {
-                            type: 'boolean'
+                            type: 'boolean',
                         },
                         nodes: {
                             type: 'array',
                             items: {
-                                $ref: 'node_api#/definitions/node_info'
-                            }
+                                $ref: 'node_api#/definitions/node_info',
+                            },
                         },
                         data_activities: {
-                            $ref: 'node_api#/definitions/data_activities'
-                        }
-                    }
+                            $ref: 'node_api#/definitions/data_activities',
+                        },
+                    },
                 },
                 untrusted_reasons: {
                     type: 'array',
@@ -382,7 +376,7 @@ module.exports = {
                         type: 'object',
                         properties: {
                             drive: {
-                                $ref: 'common_api#/definitions/drive_info'
+                                $ref: 'common_api#/definitions/drive_info',
                             },
                             events: {
                                 type: 'array',
@@ -393,19 +387,19 @@ module.exports = {
                                             type: 'string',
                                             enum: [
                                                 'DATA_EVENT',
-                                                'PERMISSION_EVENT'
-                                            ]
+                                                'PERMISSION_EVENT',
+                                            ],
                                         },
                                         time: {
-                                            idate: true
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+                                            idate: true,
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
         },
 
         storage_nodes_mode: {
@@ -433,7 +427,7 @@ module.exports = {
                 'SOME_STORAGE_DECOMMISSIONING',
                 'SOME_STORAGE_INITIALIZING',
                 'SOME_STORAGE_MIGRATING',
-            ]
+            ],
         },
 
         host_mode: {
@@ -463,16 +457,15 @@ module.exports = {
                 'SOME_STORAGE_INITIALIZING',
                 'SOME_STORAGE_MIGRATING',
                 'HAS_ERRORS',
-                'HAS_ISSUES'
-            ]
+                'HAS_ISSUES',
+            ],
         },
-
 
         host_service_update: {
             type: 'object',
             properties: {
                 enabled: {
-                    type: 'boolean'
+                    type: 'boolean',
                 },
                 nodes: {
                     type: 'array',
@@ -484,12 +477,12 @@ module.exports = {
                                 type: 'string',
                             },
                             enabled: {
-                                type: 'string'
-                            }
-                        }
-                    }
-                }
-            }
+                                type: 'string',
+                            },
+                        },
+                    },
+                },
+            },
         },
 
         hosts_query: {
@@ -499,7 +492,7 @@ module.exports = {
                     type: 'array',
                     items: {
                         type: 'string',
-                    }
+                    },
                 },
                 pools: {
                     type: 'array',
@@ -509,17 +502,18 @@ module.exports = {
                 },
                 filter: {
                     // regexp on name & ip
-                    type: 'string'
+                    type: 'string',
                 },
                 mode: {
                     type: 'array',
                     items: {
-                        $ref: '#/definitions/host_mode'
-                    }
+                        $ref: '#/definitions/host_mode',
+                    },
                 },
-                include_all: { // also include non BLOCK_STORE_FS nodes
-                    type: 'boolean'
-                }
+                include_all: {
+                    // also include non BLOCK_STORE_FS nodes
+                    type: 'boolean',
+                },
             },
         },
 
@@ -527,81 +521,81 @@ module.exports = {
             type: 'object',
             properties: {
                 OFFLINE: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 DELETING: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 STORAGE_OFFLINE: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 DECOMMISSIONED: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 DECOMMISSIONING: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 UNTRUSTED: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 STORAGE_NOT_EXIST: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 IO_ERRORS: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 N2N_ERRORS: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 GATEWAY_ERRORS: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 MIGRATING: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 IN_PROCESS: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 NO_CAPACITY: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 LOW_CAPACITY: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 N2N_PORTS_BLOCKED: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 INITIALIZING: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 OPTIMAL: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 SOME_STORAGE_OFFLINE: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 SOME_STORAGE_IO_ERRORS: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 SOME_STORAGE_NOT_EXIST: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 SOME_STORAGE_DECOMMISSIONING: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 SOME_STORAGE_INITIALIZING: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 SOME_STORAGE_MIGRATING: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 HAS_ERRORS: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 HAS_ISSUES: {
-                    type: 'integer'
+                    type: 'integer',
                 },
-            }
+            },
         },
-    }
+    },
 };

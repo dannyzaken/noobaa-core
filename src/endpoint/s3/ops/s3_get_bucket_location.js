@@ -7,7 +7,7 @@
 async function get_bucket_location(req) {
     await req.object_sdk.read_bucket({ name: req.params.bucket });
     return {
-        LocationConstraint: '' // default US East
+        LocationConstraint: '', // default US East
     };
 }
 

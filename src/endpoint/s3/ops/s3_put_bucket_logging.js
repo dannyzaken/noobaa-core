@@ -11,7 +11,7 @@ async function put_bucket_logging(req) {
     if (logging.log_bucket) {
         return req.object_sdk.put_bucket_logging({
             name: req.params.bucket,
-            logging
+            logging,
         });
     }
     return req.object_sdk.delete_bucket_logging({

@@ -20,6 +20,6 @@ module.exports = {
     },
     reply: {
         type: 'empty',
-        keep_status_code: true
+        keep_status_code: true,
     },
 };

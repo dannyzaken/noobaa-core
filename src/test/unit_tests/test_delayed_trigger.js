@@ -3,7 +3,10 @@
 
 const mocha = require('mocha');
 const assert = require('assert');
-const { setTimeout: delay, setImmediate: immediate } = require('node:timers/promises');
+const {
+    setTimeout: delay,
+    setImmediate: immediate,
+} = require('node:timers/promises');
 
 const error_utils = require('../../util/error_utils');
 const DelayedTrigger = require('../../util/delayed_trigger');
@@ -11,7 +14,6 @@ const WaitQueue = require('../../util/wait_queue');
 
 // class to test the expectations from DelayedTrigger
 class TriggerTester {
-
     counter = 0;
     holder = new WaitQueue();
     notifier = new WaitQueue();
@@ -98,7 +100,14 @@ class TriggerTester {
 
         this.holder.wakeup();
         await immediate();
-        this.assert_state(counter + 1 + (concur ? 1 : 0), fail, false, false, 0, 0);
+        this.assert_state(
+            counter + 1 + (concur ? 1 : 0),
+            fail,
+            false,
+            false,
+            0,
+            0,
+        );
     }
 
     // the tested trigger callback function
@@ -130,29 +139,25 @@ class TriggerTester {
     }
 }
 
-
-mocha.describe('DelayedTrigger', function() {
-
-    mocha.it('should trigger one by one', async function() {
+mocha.describe('DelayedTrigger', function () {
+    mocha.it('should trigger one by one', async function () {
         const t = new TriggerTester();
         for (let i = 0; i < 10; ++i) {
             await t.test_once(i % 2 === 0);
         }
     });
 
-    mocha.it('should trigger fail once and recover', async function() {
+    mocha.it('should trigger fail once and recover', async function () {
         const t = new TriggerTester();
         for (let i = 0; i < 10; ++i) {
             await t.test_fail_and_recover(i % 2 === 0);
         }
     });
 
-    mocha.it('should trigger fail until exhausted', async function() {
+    mocha.it('should trigger fail until exhausted', async function () {
         const t = new TriggerTester();
         for (let i = 0; i < 10; ++i) {
             await t.test_fail_exhausted();
         }
     });
-
 });
-

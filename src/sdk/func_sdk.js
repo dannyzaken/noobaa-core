@@ -2,7 +2,6 @@
 'use strict';
 
 class FuncSDK {
-
     constructor(rpc_client) {
         this.rpc_client = rpc_client;
     }
@@ -31,7 +30,6 @@ class FuncSDK {
     delete_func(params) {
         return this.rpc_client.func.delete_func(params);
     }
-
 }
 
 module.exports = FuncSDK;

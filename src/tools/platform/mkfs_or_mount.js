@@ -11,7 +11,9 @@ const {
 
 // read devices from lsblk
 function lsblk() {
-    return execSync('lsblk -bpP -o NAME,TYPE,FSTYPE,LABEL,MOUNTPOINT,UUID,SIZE,STATE,MODEL,VENDOR,SERIAL,KNAME,PKNAME')
+    return execSync(
+        'lsblk -bpP -o NAME,TYPE,FSTYPE,LABEL,MOUNTPOINT,UUID,SIZE,STATE,MODEL,VENDOR,SERIAL,KNAME,PKNAME',
+    )
         .toString()
         .trim()
         .split('\n')
@@ -19,13 +21,15 @@ function lsblk() {
             const dev = {};
             let l = line;
             while (l) {
-                const match = (/^\s*(\w+)="([^"]*)"\s*/).exec(l);
+                const match = /^\s*(\w+)="([^"]*)"\s*/.exec(l);
                 if (!match) {
                     console.warn(`unrecognized device ${line}`);
                     break;
                 }
                 if (dev[match[1]]) {
-                    console.warn(`duplicate device property on field ${match[1]} ${line}`);
+                    console.warn(
+                        `duplicate device property on field ${match[1]} ${line}`,
+                    );
                     continue;
                 }
                 dev[match[1]] = match[2];
@@ -44,11 +48,15 @@ function filter_device(dev, partitioned) {
 
 function mount_device(dev) {
     if (!dev.FSTYPE) {
-        console.warn(`*** device has no filesystem, call with 'mkfs' to format`);
+        console.warn(
+            `*** device has no filesystem, call with 'mkfs' to format`,
+        );
         return false;
     }
     if (dev.MOUNTPOINT) {
-        console.warn(`*** device already mounted, call with 'umount' to unmount`);
+        console.warn(
+            `*** device already mounted, call with 'umount' to unmount`,
+        );
         return false;
     }
     const name = dev.NAME;
@@ -71,11 +79,15 @@ function umount_device(dev) {
 
 function mkfs_device(dev) {
     if (dev.MOUNTPOINT) {
-        console.warn(`*** device already mounted, call with 'umount' to unmount`);
+        console.warn(
+            `*** device already mounted, call with 'umount' to unmount`,
+        );
         return false;
     }
     if (dev.FSTYPE) {
-        console.warn(`*** device already formatted, call with 'wipe' to wipefs`);
+        console.warn(
+            `*** device already formatted, call with 'wipe' to wipefs`,
+        );
         return false;
     }
     const name = dev.NAME;
@@ -85,7 +97,9 @@ function mkfs_device(dev) {
 
 function wipe_device(dev) {
     if (dev.MOUNTPOINT) {
-        console.warn(`*** device already mounted, call with 'umount' to unmount`);
+        console.warn(
+            `*** device already mounted, call with 'umount' to unmount`,
+        );
         return false;
     }
     const name = dev.NAME;
@@ -95,7 +109,9 @@ function wipe_device(dev) {
 
 function show_device(dev) {
     if (!dev.FSTYPE) {
-        console.warn(`*** device has no filesystem, call with 'mkfs' to format`);
+        console.warn(
+            `*** device has no filesystem, call with 'mkfs' to format`,
+        );
         return false;
     }
     if (!dev.MOUNTPOINT) {

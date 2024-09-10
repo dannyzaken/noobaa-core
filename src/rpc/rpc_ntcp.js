@@ -7,14 +7,12 @@ const RpcBaseConnection = require('./rpc_base_conn');
 const nb_native = require('../util/nb_native');
 // const dbg = require('../util/debug_module')(__filename);
 
-
 /**
  *
  * RpcNtcpConnection
  *
  */
 class RpcNtcpConnection extends RpcBaseConnection {
-
     // constructor(addr_url) { super(addr_url); }
 
     /**
@@ -25,8 +23,9 @@ class RpcNtcpConnection extends RpcBaseConnection {
     _connect() {
         const Ntcp = nb_native().Ntcp;
         this.ntcp = new Ntcp();
-        this.ntcp.connect(this.url.port, this.url.hostname,
-            () => this.emit('connect'));
+        this.ntcp.connect(this.url.port, this.url.hostname, () =>
+            this.emit('connect'),
+        );
         this._init_tcp();
     }
 
@@ -60,7 +59,6 @@ class RpcNtcpConnection extends RpcBaseConnection {
         ntcp.on('error', err => this.emit('error', err));
         ntcp.on('message', msg => this.emit('message', [msg]));
     }
-
 }
 
 module.exports = RpcNtcpConnection;

@@ -13,7 +13,6 @@ const RpcBaseConnection = require('./rpc_base_conn');
  *
  */
 class RpcWsConnection extends RpcBaseConnection {
-
     constructor(addr_url) {
         super(addr_url);
         if (WS === global.WebSocket) {
@@ -62,7 +61,7 @@ class RpcWsConnection extends RpcBaseConnection {
             compress: false,
         };
         for (let i = 0; i < msg.length; ++i) {
-            opts.fin = (i + 1 === msg.length);
+            opts.fin = i + 1 === msg.length;
             this.ws.send(msg[i], opts);
         }
     }
@@ -83,7 +82,12 @@ class RpcWsConnection extends RpcBaseConnection {
                 const buffer = Buffer.from(event.data);
                 this.emit('message', [buffer]);
             } catch (err) {
-                dbg.error('WS MESSAGE ERROR', this.connid, err.stack || err, event.data);
+                dbg.error(
+                    'WS MESSAGE ERROR',
+                    this.connid,
+                    err.stack || err,
+                    event.data,
+                );
                 this.emit('error', err);
             }
         };
@@ -95,13 +99,14 @@ class RpcWsConnection extends RpcBaseConnection {
     }
 
     _close() {
-        if (this.ws &&
+        if (
+            this.ws &&
             this.ws.readyState !== WS.CLOSED &&
-            this.ws.readyState !== WS.CLOSING) {
+            this.ws.readyState !== WS.CLOSING
+        ) {
             this.ws.close();
         }
     }
-
 }
 
 function stackless_error(msg) {

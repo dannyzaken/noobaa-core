@@ -8,14 +8,18 @@ const http_utils = require('../util/http_utils');
 const buffer_utils = require('../util/buffer_utils');
 const { DIAGNOSE_ACTIONS } = require('./manage_nsfs_constants');
 const ManageCLIError = require('./manage_nsfs_cli_errors').ManageCLIError;
-const { throw_cli_error, write_stdout_response } = require('./manage_nsfs_cli_utils');
-const ManageCLIResponse = require('../manage_nsfs/manage_nsfs_cli_responses').ManageCLIResponse;
+const {
+    throw_cli_error,
+    write_stdout_response,
+} = require('./manage_nsfs_cli_utils');
+const ManageCLIResponse =
+    require('../manage_nsfs/manage_nsfs_cli_responses').ManageCLIResponse;
 
 /**
  * manage_diagnose_operations handles cli diagnose operations
- * @param {string} action 
- * @param {Object} user_input 
- * @param {import('../sdk/config_fs').ConfigFS} config_fs 
+ * @param {string} action
+ * @param {Object} user_input
+ * @param {import('../sdk/config_fs').ConfigFS} config_fs
  * @returns {Promise<Void>}
  */
 async function manage_diagnose_operations(action, user_input, config_fs) {
@@ -53,18 +57,25 @@ async function gather_metrics() {
             hostname: 'localhost',
             port: config.EP_METRICS_SERVER_PORT,
             path: '/metrics/nsfs_stats',
-            method: 'GET'
+            method: 'GET',
         });
         if (res.statusCode === 200) {
             const buffer = await buffer_utils.read_stream_join(res);
             const body = buffer.toString('utf8');
             metrics_output = JSON.parse(body);
         }
-        if (!metrics_output) throw new Error('recieved empty metrics response', { cause: res.statusCode });
+        if (!metrics_output) {
+            throw new Error('recieved empty metrics response', {
+                cause: res.statusCode,
+            });
+        }
         write_stdout_response(ManageCLIResponse.MetricsStatus, metrics_output);
     } catch (err) {
         dbg.warn('could not receive metrics response', err);
-        throw_cli_error({ ...ManageCLIError.MetricsStatusFailed, cause: err?.errors?.[0] || err });
+        throw_cli_error({
+            ...ManageCLIError.MetricsStatusFailed,
+            cause: err?.errors?.[0] || err,
+        });
     }
 }
 

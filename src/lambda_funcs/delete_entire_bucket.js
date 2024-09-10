@@ -10,7 +10,7 @@
 
 const AWS = require('aws-sdk');
 
-module.exports.handler = async function(event, context, callback) {
+module.exports.handler = async function (event, context, callback) {
     try {
         const s3 = new AWS.S3();
         const sure = event.are_you_sure === true;
@@ -21,12 +21,13 @@ module.exports.handler = async function(event, context, callback) {
         let count = 0;
 
         while (truncated) {
-
-            const res = await s3.listObjectVersions({
-                Bucket: event.bucket,
-                KeyMarker: key_marker,
-                VersionIdMarker: version_id_marker
-            }).promise();
+            const res = await s3
+                .listObjectVersions({
+                    Bucket: event.bucket,
+                    KeyMarker: key_marker,
+                    VersionIdMarker: version_id_marker,
+                })
+                .promise();
 
             const list = [];
             if (res.Versions) {
@@ -45,16 +46,18 @@ module.exports.handler = async function(event, context, callback) {
             count += list.length;
 
             if (sure && list.length) {
-                await s3.deleteObjects({
-                    Bucket: event.bucket,
-                    Delete: { Objects: list }
-                }).promise();
+                await s3
+                    .deleteObjects({
+                        Bucket: event.bucket,
+                        Delete: { Objects: list },
+                    })
+                    .promise();
             }
         }
 
-        const text = sure ? 'Deleted' : 'NOT Deleted (use "are_you_sure": true)';
+        const text =
+            sure ? 'Deleted' : 'NOT Deleted (use "are_you_sure": true)';
         return callback(null, `${count} Objects ${text}`);
-
     } catch (err) {
         return callback(err);
     }

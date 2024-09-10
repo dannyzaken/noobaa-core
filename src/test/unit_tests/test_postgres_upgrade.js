@@ -11,19 +11,13 @@ const _ = require('lodash');
 const postgres_client = require('../../util/postgres_client');
 const wtf = require('wtfnode');
 
-
 // coretest.setup({ pools_to_create: [], db_name: 'upgradetest' });
 process.env.CORETEST = 'upgrade-test';
 
 const default_schema = {
     id: 'default_schema',
     type: 'object',
-    required: [
-        '_id',
-        'key1',
-        'key2',
-        'key3',
-    ],
+    required: ['_id', 'key1', 'key2', 'key3'],
     properties: {
         _id: { objectid: true },
         key1: { type: 'string' },
@@ -32,8 +26,8 @@ const default_schema = {
             type: 'array',
             items: {
                 type: 'string',
-                enum: ['val1', 'val2', 'val3', 'val4']
-            }
+                enum: ['val1', 'val2', 'val3', 'val4'],
+            },
         },
         key4: {
             type: 'object',
@@ -45,23 +39,24 @@ const default_schema = {
                     type: 'string',
                 },
                 when: {
-                    date: true
-                }
-            }
+                    date: true,
+                },
+            },
         },
         epoch: {
-            idate: true
-        }
-    }
+            idate: true,
+        },
+    },
 };
 
 class TestCollection {
-
     /**
      * @param {TestCollection} col
      * @returns {nb.DBCollection}
      */
-    static implements_interface(col) { return col; }
+    static implements_interface(col) {
+        return col;
+    }
 
     constructor(col, size) {
         TestCollection.implements_interface(this);
@@ -69,7 +64,8 @@ class TestCollection {
         this.name = col.name;
         this.db_indexes = col.db_indexes;
         this.size = size;
-        this.data = _.times(this.size, i => ({ _id: i + 1,
+        this.data = _.times(this.size, i => ({
+            _id: i + 1,
             key1: 'value1-' + i,
             key2: Boolean(i % 2),
             key3: _.times(i % 10, j => 'val' + j),
@@ -98,7 +94,9 @@ class TestClient extends EventEmitter {
      * @param {TestClient} client
      * @returns {nb.DBClient}
      */
-    static implements_interface(client) { return client; }
+    static implements_interface(client) {
+        return client;
+    }
 
     constructor(size) {
         super();
@@ -116,12 +114,14 @@ class TestClient extends EventEmitter {
     }
 
     /**
-     * 
+     *
      * @returns {nb.DBCollection}
      */
     define_collection(col) {
         if (this.collections[col.name]) {
-            throw new Error('define_collection: collection already defined ' + col.name);
+            throw new Error(
+                'define_collection: collection already defined ' + col.name,
+            );
         }
         const test_collection = new TestCollection(col, this.size, this);
         this.collections[col.name] = test_collection;
@@ -129,7 +129,7 @@ class TestClient extends EventEmitter {
     }
 
     /**
-     * 
+     *
      * @returns {nb.DBCollection}
      */
     collection(col_name) {
@@ -137,7 +137,7 @@ class TestClient extends EventEmitter {
     }
 }
 
-mocha.describe('upgrade_mongo_postgress', function() {
+mocha.describe('upgrade_mongo_postgress', function () {
     let to_client;
 
     async function announce(msg) {
@@ -150,16 +150,20 @@ mocha.describe('upgrade_mongo_postgress', function() {
         console.log('='.repeat(l));
     }
 
-    mocha.after('upgradetest-after-all', async function() {
+    mocha.after('upgradetest-after-all', async function () {
         // to_client.disconnect();
         let tries_left = 3;
         setInterval(function check_dangling_handles() {
             tries_left -= 1;
-            console.info(`Waiting for dangling handles to release, re-sample in 30s (tries left: ${tries_left})`);
+            console.info(
+                `Waiting for dangling handles to release, re-sample in 30s (tries left: ${tries_left})`,
+            );
             wtf.dump();
 
             if (tries_left === 0) {
-                console.error('Tests cannot complete successfully, running tests resulted in dangling handles');
+                console.error(
+                    'Tests cannot complete successfully, running tests resulted in dangling handles',
+                );
 
                 // Force the test suite to fail (ignoring the exist handle that mocha sets up in order to return a fail
                 // exit code)
@@ -167,10 +171,9 @@ mocha.describe('upgrade_mongo_postgress', function() {
                 process.exit(1);
             }
         }, 30000).unref();
-
     });
 
-    mocha.beforeEach('upgradetest-before', async function() {
+    mocha.beforeEach('upgradetest-before', async function () {
         this.timeout(60000); // eslint-disable-line no-invalid-this
         to_client = new postgres_client.PostgresClient();
         to_client.set_db_name('upgrade_test');
@@ -182,11 +185,11 @@ mocha.describe('upgrade_mongo_postgress', function() {
         await to_client.disconnect();
     });
 
-    mocha.afterEach('clean-test', async function() {
+    mocha.afterEach('clean-test', async function () {
         await to_client.disconnect();
     });
 
-    mocha.it('verify moving one collection with many rows', async function() {
+    mocha.it('verify moving one collection with many rows', async function () {
         this.timeout(60000); // eslint-disable-line no-invalid-this
         const collection_size = 3000;
         const from_client = new TestClient(collection_size);
@@ -202,7 +205,7 @@ mocha.describe('upgrade_mongo_postgress', function() {
         await to_client.disconnect();
     });
 
-    mocha.it('verify moving many collection with few rows', async function() {
+    mocha.it('verify moving many collection with few rows', async function () {
         this.timeout(60000); // eslint-disable-line no-invalid-this
         const collection_number = 100;
         const collection_size = 30;
@@ -221,58 +224,81 @@ mocha.describe('upgrade_mongo_postgress', function() {
         await to_client.disconnect();
     });
 
-    mocha.it('verify a collection from after spesific marker', async function() {
-        this.timeout(60000); // eslint-disable-line no-invalid-this
-        const collection_number = 4;
-        const collection_size = 350;
-        const from_client = new TestClient(collection_size);
-        const collections = _.times(collection_number, i => ({
-            name: 'test3_collection' + i,
-            schema: default_schema,
-        }));
-        to_client.define_collection({ name: 'migrate_status' });
-        await to_client.connect();
-        await to_client.collection('migrate_status').updateOne({}, {
-            collection_index: collection_number / 2,
-            marker: collection_size / 2,
-        });
-        to_client.tables = [];
-        await to_client.disconnect();
-        const migrator = new Migrator(from_client, to_client, collections);
-        await migrator.migrate_db();
-        await to_client.connect();
-        for (let i = (collection_number / 2); i < collection_number; ++i) {
-            const table_i = to_client.collection(collections[i].name);
-            assert.strictEqual(await table_i.countDocuments(), collection_size);
-        }
-        await to_client.disconnect();
-    });
+    mocha.it(
+        'verify a collection from after spesific marker',
+        async function () {
+            this.timeout(60000); // eslint-disable-line no-invalid-this
+            const collection_number = 4;
+            const collection_size = 350;
+            const from_client = new TestClient(collection_size);
+            const collections = _.times(collection_number, i => ({
+                name: 'test3_collection' + i,
+                schema: default_schema,
+            }));
+            to_client.define_collection({ name: 'migrate_status' });
+            await to_client.connect();
+            await to_client.collection('migrate_status').updateOne(
+                {},
+                {
+                    collection_index: collection_number / 2,
+                    marker: collection_size / 2,
+                },
+            );
+            to_client.tables = [];
+            await to_client.disconnect();
+            const migrator = new Migrator(from_client, to_client, collections);
+            await migrator.migrate_db();
+            await to_client.connect();
+            for (let i = collection_number / 2; i < collection_number; ++i) {
+                const table_i = to_client.collection(collections[i].name);
+                assert.strictEqual(
+                    await table_i.countDocuments(),
+                    collection_size,
+                );
+            }
+            await to_client.disconnect();
+        },
+    );
 
-    mocha.it('verify a collection moved success with wrong marker', async function() {
-        this.timeout(60000); // eslint-disable-line no-invalid-this
-        const collection_number = 4;
-        const collection_size = 350;
-        let from_client = new TestClient(collection_size);
-        const collections = _.times(collection_number, i => ({
-            name: 'test4_collection' + i,
-            schema: default_schema,
-        }));
-        let migrator = new Migrator(from_client, to_client, collections.slice(0, collection_number / 2));
-        await migrator.migrate_db();
-        await to_client.connect();
-        await to_client.collection('migrate_status').updateOne({}, { $set: {collection_index: (collection_number / 2) - 1}});
-        await to_client.disconnect();
-        from_client = new TestClient(collection_size);
-        to_client = new postgres_client.PostgresClient();
-        to_client.set_db_name('upgrade_test');
-        migrator = new Migrator(from_client, to_client, collections);
-        await migrator.migrate_db();
-        await to_client.connect();
-        for (let i = 0; i < collection_number; ++i) {
-            const table = to_client.collection(collections[i].name);
-            assert.strictEqual(await table.countDocuments(), collection_size);
-        }
-        await to_client.disconnect();
-    });
-
+    mocha.it(
+        'verify a collection moved success with wrong marker',
+        async function () {
+            this.timeout(60000); // eslint-disable-line no-invalid-this
+            const collection_number = 4;
+            const collection_size = 350;
+            let from_client = new TestClient(collection_size);
+            const collections = _.times(collection_number, i => ({
+                name: 'test4_collection' + i,
+                schema: default_schema,
+            }));
+            let migrator = new Migrator(
+                from_client,
+                to_client,
+                collections.slice(0, collection_number / 2),
+            );
+            await migrator.migrate_db();
+            await to_client.connect();
+            await to_client
+                .collection('migrate_status')
+                .updateOne(
+                    {},
+                    { $set: { collection_index: collection_number / 2 - 1 } },
+                );
+            await to_client.disconnect();
+            from_client = new TestClient(collection_size);
+            to_client = new postgres_client.PostgresClient();
+            to_client.set_db_name('upgrade_test');
+            migrator = new Migrator(from_client, to_client, collections);
+            await migrator.migrate_db();
+            await to_client.connect();
+            for (let i = 0; i < collection_number; ++i) {
+                const table = to_client.collection(collections[i].name);
+                assert.strictEqual(
+                    await table.countDocuments(),
+                    collection_size,
+                );
+            }
+            await to_client.disconnect();
+        },
+    );
 });

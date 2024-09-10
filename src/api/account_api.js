@@ -11,11 +11,9 @@ const SensitiveString = require('../util/sensitive_string');
  *
  */
 module.exports = {
-
     $id: 'account_api',
 
     methods: {
-
         create_account: {
             doc: 'Create a new account',
             method: 'POST',
@@ -30,36 +28,36 @@ module.exports = {
                         type: 'boolean',
                     },
                     has_login: {
-                        type: 'boolean'
+                        type: 'boolean',
                     },
                     s3_access: {
-                        type: 'boolean'
+                        type: 'boolean',
                     },
                     default_resource: {
                         type: 'string',
                     },
                     allow_bucket_creation: {
-                        type: 'boolean'
+                        type: 'boolean',
                     },
                     roles: {
                         type: 'array',
                         items: {
                             type: 'string',
-                            enum: ['admin', 'user', 'viewer', 'operator']
-                        }
+                            enum: ['admin', 'user', 'viewer', 'operator'],
+                        },
                     },
                     bucket_claim_owner: {
-                        $ref: 'common_api#/definitions/bucket_name'
+                        $ref: 'common_api#/definitions/bucket_name',
                     },
                     //Special handling for the first account created with create_system
                     new_system_parameters: {
                         type: 'object',
                         properties: {
                             new_system_id: {
-                                type: 'string'
+                                type: 'string',
                             },
                             account_id: {
-                                type: 'string'
+                                type: 'string',
                             },
                             default_resource: {
                                 type: 'string',
@@ -67,19 +65,19 @@ module.exports = {
                         },
                     },
                     force_md5_etag: {
-                        type: 'boolean'
+                        type: 'boolean',
                     },
                     nsfs_account_config: {
-                        $ref: 'common_api#/definitions/nsfs_account_config'
+                        $ref: 'common_api#/definitions/nsfs_account_config',
                     },
                     access_keys: {
                         type: 'array',
                         items: {
-                            $ref: 'common_api#/definitions/access_keys'
-                        }
+                            $ref: 'common_api#/definitions/access_keys',
+                        },
                     },
                     role_config: {
-                        $ref: 'common_api#/definitions/role_config'
+                        $ref: 'common_api#/definitions/role_config',
                     },
                 },
             },
@@ -88,21 +86,21 @@ module.exports = {
                 required: ['token'],
                 properties: {
                     token: {
-                        type: 'string'
+                        type: 'string',
                     },
                     access_keys: {
                         type: 'array',
                         items: {
-                            $ref: 'common_api#/definitions/access_keys'
-                        }
+                            $ref: 'common_api#/definitions/access_keys',
+                        },
                     },
-                }
+                },
             },
             auth: {
                 account: false,
                 system: false,
                 anonymous: true,
-            }
+            },
         },
 
         create_external_user_account: {
@@ -113,28 +111,28 @@ module.exports = {
                 required: ['name', 'email'],
                 properties: {
                     name: { $ref: 'common_api#/definitions/account_name' },
-                    email: { $ref: 'common_api#/definitions/email' }
-                }
+                    email: { $ref: 'common_api#/definitions/email' },
+                },
             },
             reply: {
                 type: 'object',
                 required: ['token'],
                 properties: {
                     token: {
-                        type: 'string'
+                        type: 'string',
                     },
                     access_keys: {
                         type: 'array',
                         items: {
-                            $ref: 'common_api#/definitions/access_keys'
-                        }
-                    }
-                }
+                            $ref: 'common_api#/definitions/access_keys',
+                        },
+                    },
+                },
             },
             auth: {
                 system: 'admin',
-                account: true
-            }
+                account: true,
+            },
         },
 
         read_account: {
@@ -144,14 +142,14 @@ module.exports = {
                 type: 'object',
                 properties: {
                     email: { $ref: 'common_api#/definitions/email' },
-                }
+                },
             },
             reply: {
-                $ref: '#/definitions/account_info'
+                $ref: '#/definitions/account_info',
             },
             auth: {
-                system: false
-            }
+                system: false,
+            },
         },
 
         read_account_by_access_key: {
@@ -161,14 +159,14 @@ module.exports = {
                 type: 'object',
                 properties: {
                     access_key: { $ref: 'common_api#/definitions/access_key' },
-                }
+                },
             },
             reply: {
-                $ref: '#/definitions/account_info'
+                $ref: '#/definitions/account_info',
             },
             auth: {
                 system: 'admin',
-            }
+            },
         },
 
         update_account: {
@@ -185,35 +183,38 @@ module.exports = {
                     },
                     new_email: { $ref: 'common_api#/definitions/email' },
                     ips: {
-                        anyOf: [{
-                            type: 'null'
-                        }, {
-                            type: 'array',
-                            items: {
-                                $ref: 'common_api#/definitions/ip_range'
-                            }
-                        }]
+                        anyOf: [
+                            {
+                                type: 'null',
+                            },
+                            {
+                                type: 'array',
+                                items: {
+                                    $ref: 'common_api#/definitions/ip_range',
+                                },
+                            },
+                        ],
                     },
                     preferences: {
                         type: 'object',
                         properties: {
                             ui_theme: {
                                 type: 'string',
-                                enum: ['DARK', 'LIGHT']
-                            }
-                        }
+                                enum: ['DARK', 'LIGHT'],
+                            },
+                        },
                     },
                     role_config: {
-                        $ref: 'common_api#/definitions/role_config'
+                        $ref: 'common_api#/definitions/role_config',
                     },
                     remove_role_config: {
-                        type: 'boolean'
+                        type: 'boolean',
                     },
-                }
+                },
             },
             auth: {
-                system: false
-            }
+                system: false,
+            },
         },
 
         reset_password: {
@@ -224,16 +225,18 @@ module.exports = {
                 required: ['email', 'verification_password', 'password'],
                 properties: {
                     email: { $ref: 'common_api#/definitions/email' },
-                    verification_password: { $ref: 'common_api#/definitions/password' },
+                    verification_password: {
+                        $ref: 'common_api#/definitions/password',
+                    },
                     password: { $ref: 'common_api#/definitions/password' },
                     must_change_password: {
-                        type: 'boolean'
-                    }
+                        type: 'boolean',
+                    },
                 },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         generate_account_keys: {
@@ -247,8 +250,8 @@ module.exports = {
                 },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         update_account_keys: {
@@ -259,12 +262,14 @@ module.exports = {
                 required: ['email', 'access_keys'],
                 properties: {
                     email: { $ref: 'common_api#/definitions/email' },
-                    access_keys: { $ref: 'common_api#/definitions/access_keys' },
+                    access_keys: {
+                        $ref: 'common_api#/definitions/access_keys',
+                    },
                 },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         verify_authorized_account: {
@@ -274,15 +279,17 @@ module.exports = {
                 type: 'object',
                 required: ['verification_password'],
                 properties: {
-                    verification_password: { $ref: 'common_api#/definitions/password' },
+                    verification_password: {
+                        $ref: 'common_api#/definitions/password',
+                    },
                 },
             },
             reply: {
-                type: 'boolean'
+                type: 'boolean',
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         update_account_s3_access: {
@@ -294,16 +301,16 @@ module.exports = {
                 properties: {
                     email: { $ref: 'common_api#/definitions/email' },
                     s3_access: {
-                        type: 'boolean'
+                        type: 'boolean',
                     },
                     default_resource: {
-                        type: 'string'
+                        type: 'string',
                     },
                     allow_bucket_creation: {
-                        type: 'boolean'
+                        type: 'boolean',
                     },
                     force_md5_etag: {
-                        type: 'boolean'
+                        type: 'boolean',
                     },
                     nsfs_account_config: {
                         type: 'object',
@@ -312,14 +319,14 @@ module.exports = {
                             uid: { type: 'number' },
                             gid: { type: 'number' },
                             new_buckets_path: { type: 'string' },
-                            nsfs_only: { type: 'boolean' }
-                        }
+                            nsfs_only: { type: 'boolean' },
+                        },
                     },
                 },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         delete_account: {
@@ -330,11 +337,11 @@ module.exports = {
                 required: ['email'],
                 properties: {
                     email: { $ref: 'common_api#/definitions/email' },
-                }
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         delete_account_by_property: {
@@ -345,26 +352,31 @@ module.exports = {
                 required: ['nsfs_account_config'],
                 properties: {
                     nsfs_account_config: {
-                        oneOf: [{
-                            type: 'object',
-                            required: ['uid', 'gid'],
-                            properties: {
-                                uid: { type: 'number' },
-                                gid: { type: 'number' },
-                            }
-                        }, {
-                            type: 'object',
-                            required: ['distinguished_name'],
-                            properties: {
-                                distinguished_name: { wrapper: SensitiveString },
-                            }
-                        }]
-                    }
-                }
+                        oneOf: [
+                            {
+                                type: 'object',
+                                required: ['uid', 'gid'],
+                                properties: {
+                                    uid: { type: 'number' },
+                                    gid: { type: 'number' },
+                                },
+                            },
+                            {
+                                type: 'object',
+                                required: ['distinguished_name'],
+                                properties: {
+                                    distinguished_name: {
+                                        wrapper: SensitiveString,
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         list_accounts: {
@@ -377,24 +389,29 @@ module.exports = {
                         type: 'object',
                         properties: {
                             fs_identity: {
-                                oneOf: [{
-                                    type: 'object',
-                                    required: ['uid', 'gid'],
-                                    properties: {
-                                        uid: { type: 'number' },
-                                        gid: { type: 'number' },
-                                    }
-                                }, {
-                                    type: 'object',
-                                    required: ['distinguished_name'],
-                                    properties: {
-                                        distinguished_name: { wrapper: SensitiveString },
-                                    }
-                                }]
-                            }
-                        }
-                    }
-                }
+                                oneOf: [
+                                    {
+                                        type: 'object',
+                                        required: ['uid', 'gid'],
+                                        properties: {
+                                            uid: { type: 'number' },
+                                            gid: { type: 'number' },
+                                        },
+                                    },
+                                    {
+                                        type: 'object',
+                                        required: ['distinguished_name'],
+                                        properties: {
+                                            distinguished_name: {
+                                                wrapper: SensitiveString,
+                                            },
+                                        },
+                                    },
+                                ],
+                            },
+                        },
+                    },
+                },
             },
             reply: {
                 type: 'object',
@@ -403,14 +420,14 @@ module.exports = {
                     accounts: {
                         type: 'array',
                         items: {
-                            $ref: '#/definitions/account_info'
-                        }
+                            $ref: '#/definitions/account_info',
+                        },
                     },
-                }
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         accounts_status: {
@@ -420,77 +437,80 @@ module.exports = {
                 required: ['has_accounts'],
                 properties: {
                     has_accounts: {
-                        type: 'boolean'
-                    }
-                }
+                        type: 'boolean',
+                    },
+                },
             },
             auth: {
                 account: false,
                 system: false,
                 anonymous: true,
-            }
+            },
         },
 
         add_external_connection: {
-            doc: 'Add a connection to authorized account\'s connections cache',
+            doc: "Add a connection to authorized account's connections cache",
             method: 'PUT',
             params: {
                 type: 'object',
                 required: ['name', 'endpoint', 'endpoint_type'],
                 properties: {
                     name: {
-                        type: 'string'
+                        type: 'string',
                     },
                     endpoint: {
-                        type: 'string'
+                        type: 'string',
                     },
                     identity: { $ref: 'common_api#/definitions/access_key' },
                     secret: { $ref: 'common_api#/definitions/secret_key' },
-                    azure_log_access_keys: { $ref: 'common_api#/definitions/azure_log_access_keys' },
+                    azure_log_access_keys: {
+                        $ref: 'common_api#/definitions/azure_log_access_keys',
+                    },
                     aws_sts_arn: {
-                        type: 'string'
+                        type: 'string',
                     },
                     region: {
-                        type: 'string'
+                        type: 'string',
                     },
                     auth_method: {
-                        $ref: 'common_api#/definitions/cloud_auth_method'
+                        $ref: 'common_api#/definitions/cloud_auth_method',
                     },
                     cp_code: {
-                        type: 'string'
+                        type: 'string',
                     },
                     endpoint_type: {
-                        $ref: 'common_api#/definitions/endpoint_type'
-                    }
-
-                }
+                        $ref: 'common_api#/definitions/endpoint_type',
+                    },
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         update_external_connection: {
-            doc: 'Update a connection in authorized account\'s connections cache',
+            doc: "Update a connection in authorized account's connections cache",
             method: 'PUT',
             params: {
                 type: 'object',
                 required: ['name', 'secret'],
                 properties: {
                     name: {
-                        type: 'string'
+                        type: 'string',
                     },
                     identity: { $ref: 'common_api#/definitions/access_key' },
                     secret: { $ref: 'common_api#/definitions/secret_key' },
-                    azure_log_access_keys: { $ref: 'common_api#/definitions/azure_log_access_keys' },
+                    azure_log_access_keys: {
+                        $ref: 'common_api#/definitions/azure_log_access_keys',
+                    },
                     region: {
-                        type: 'string'
-                    }
-                }
+                        type: 'string',
+                    },
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         check_external_connection: {
@@ -500,33 +520,35 @@ module.exports = {
                 required: ['endpoint', 'endpoint_type'],
                 properties: {
                     name: {
-                        type: 'string'
+                        type: 'string',
                     },
                     endpoint: {
-                        type: 'string'
+                        type: 'string',
                     },
                     identity: { $ref: 'common_api#/definitions/access_key' },
                     secret: { $ref: 'common_api#/definitions/secret_key' },
-                    azure_log_access_keys: { $ref: 'common_api#/definitions/azure_log_access_keys' },
+                    azure_log_access_keys: {
+                        $ref: 'common_api#/definitions/azure_log_access_keys',
+                    },
                     aws_sts_arn: {
-                        type: 'string'
+                        type: 'string',
                     },
                     region: {
-                        type: 'string'
+                        type: 'string',
                     },
                     auth_method: {
-                        $ref: 'common_api#/definitions/cloud_auth_method'
+                        $ref: 'common_api#/definitions/cloud_auth_method',
                     },
                     cp_code: {
-                        type: 'string'
+                        type: 'string',
                     },
                     endpoint_type: {
-                        $ref: 'common_api#/definitions/endpoint_type'
+                        $ref: 'common_api#/definitions/endpoint_type',
                     },
                     ignore_name_already_exist: {
-                        type: 'boolean'
-                    }
-                }
+                        type: 'boolean',
+                    },
+                },
             },
             reply: {
                 type: 'object',
@@ -541,26 +563,26 @@ module.exports = {
                             'INVALID_CREDENTIALS',
                             'NOT_SUPPORTED',
                             'TIME_SKEW',
-                            'UNKNOWN_FAILURE'
-                        ]
+                            'UNKNOWN_FAILURE',
+                        ],
                     },
                     error: {
                         type: 'object',
                         required: ['code', 'message'],
                         properties: {
                             code: {
-                                type: 'string'
+                                type: 'string',
                             },
                             message: {
-                                type: 'string'
+                                type: 'string',
                             },
-                        }
-                    }
-                }
+                        },
+                    },
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         delete_external_connection: {
@@ -571,13 +593,13 @@ module.exports = {
                 required: ['connection_name'],
                 properties: {
                     connection_name: {
-                        type: 'string'
+                        type: 'string',
                     },
-                }
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         get_account_usage: {
@@ -591,16 +613,16 @@ module.exports = {
                     accounts: {
                         type: 'array',
                         items: {
-                            $ref: 'common_api#/definitions/email'
-                        }
+                            $ref: 'common_api#/definitions/email',
+                        },
                     },
                     endpoint_groups: {
                         type: 'array',
                         items: {
-                            type: 'string'
-                        }
-                    }
-                }
+                            type: 'string',
+                        },
+                    },
+                },
             },
             reply: {
                 type: 'array',
@@ -608,28 +630,27 @@ module.exports = {
                     type: 'object',
                     properties: {
                         account: {
-                            $ref: 'common_api#/definitions/email'
+                            $ref: 'common_api#/definitions/email',
                         },
                         read_count: {
-                            type: 'integer'
+                            type: 'integer',
                         },
                         write_count: {
-                            type: 'integer'
+                            type: 'integer',
                         },
                         read_bytes: {
-                            $ref: 'common_api#/definitions/bigint'
+                            $ref: 'common_api#/definitions/bigint',
                         },
                         write_bytes: {
-                            $ref: 'common_api#/definitions/bigint'
+                            $ref: 'common_api#/definitions/bigint',
                         },
-                    }
-                }
+                    },
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
-
     },
 
     definitions: {
@@ -643,7 +664,7 @@ module.exports = {
                     type: 'boolean',
                 },
                 is_external: {
-                    type: 'boolean'
+                    type: 'boolean',
                 },
                 has_login: {
                     type: 'boolean',
@@ -654,23 +675,23 @@ module.exports = {
                 access_keys: {
                     type: 'array',
                     items: {
-                        $ref: 'common_api#/definitions/access_keys'
-                    }
+                        $ref: 'common_api#/definitions/access_keys',
+                    },
                 },
                 has_s3_access: {
-                    type: 'boolean'
+                    type: 'boolean',
                 },
                 role_config: {
-                    $ref: 'common_api#/definitions/role_config'
+                    $ref: 'common_api#/definitions/role_config',
                 },
                 can_create_buckets: {
-                    type: 'boolean'
+                    type: 'boolean',
                 },
                 allowed_ips: {
                     type: 'array',
                     items: {
-                        $ref: 'common_api#/definitions/ip_range'
-                    }
+                        $ref: 'common_api#/definitions/ip_range',
+                    },
                 },
                 default_resource: {
                     type: 'string',
@@ -682,7 +703,7 @@ module.exports = {
                     type: 'object',
                     properties: {
                         count: {
-                            type: 'number'
+                            type: 'number',
                         },
                         connections: {
                             type: 'array',
@@ -690,47 +711,56 @@ module.exports = {
                                 type: 'object',
                                 properties: {
                                     name: {
-                                        type: 'string'
+                                        type: 'string',
                                     },
                                     endpoint: {
-                                        type: 'string'
+                                        type: 'string',
                                     },
                                     region: {
-                                        type: 'string'
+                                        type: 'string',
                                     },
-                                    identity: { $ref: 'common_api#/definitions/access_key' },
+                                    identity: {
+                                        $ref: 'common_api#/definitions/access_key',
+                                    },
                                     cp_code: {
-                                        type: 'string'
+                                        type: 'string',
                                     },
                                     auth_method: {
-                                        $ref: 'common_api#/definitions/cloud_auth_method'
+                                        $ref: 'common_api#/definitions/cloud_auth_method',
                                     },
                                     endpoint_type: {
-                                        $ref: 'common_api#/definitions/endpoint_type'
+                                        $ref: 'common_api#/definitions/endpoint_type',
                                     },
                                     usage: {
                                         type: 'array',
                                         items: {
                                             type: 'object',
-                                            required: ['usage_type', 'entity', 'external_entity'],
+                                            required: [
+                                                'usage_type',
+                                                'entity',
+                                                'external_entity',
+                                            ],
                                             properties: {
                                                 usage_type: {
                                                     type: 'string',
-                                                    enum: ['CLOUD_RESOURCE', 'NAMESPACE_RESOURCE']
+                                                    enum: [
+                                                        'CLOUD_RESOURCE',
+                                                        'NAMESPACE_RESOURCE',
+                                                    ],
                                                 },
                                                 entity: {
-                                                    type: 'string'
+                                                    type: 'string',
                                                 },
                                                 external_entity: {
-                                                    type: 'string'
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                                                    type: 'string',
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
                 },
                 systems: {
                     type: 'array',
@@ -739,17 +769,17 @@ module.exports = {
                         required: ['name', 'roles'],
                         properties: {
                             name: {
-                                type: 'string'
+                                type: 'string',
                             },
                             roles: {
                                 type: 'array',
                                 items: {
                                     type: 'string',
-                                    enum: ['admin', 'user', 'operator']
-                                }
-                            }
-                        }
-                    }
+                                    enum: ['admin', 'user', 'operator'],
+                                },
+                            },
+                        },
+                    },
                 },
                 preferences: {
                     type: 'object',
@@ -757,35 +787,40 @@ module.exports = {
                     properties: {
                         ui_theme: {
                             type: 'string',
-                            enum: ['DARK', 'LIGHT']
-                        }
-                    }
+                            enum: ['DARK', 'LIGHT'],
+                        },
+                    },
                 },
                 force_md5_etag: {
-                    type: 'boolean'
+                    type: 'boolean',
                 },
                 nsfs_account_config: {
-                    $ref: 'common_api#/definitions/nsfs_account_config'
-                }
+                    $ref: 'common_api#/definitions/nsfs_account_config',
+                },
             },
         },
 
         account_acl: {
-            anyOf: [{
-                type: 'null'
-            }, {
-                type: 'array',
-                items: {
-                    type: 'object',
-                    required: ['bucket_name', 'is_allowed'],
-                    properties: {
-                        bucket_name: { $ref: 'common_api#/definitions/bucket_name' },
-                        is_allowed: {
-                            type: 'boolean'
-                        }
-                    }
-                }
-            }]
-        }
-    }
+            anyOf: [
+                {
+                    type: 'null',
+                },
+                {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        required: ['bucket_name', 'is_allowed'],
+                        properties: {
+                            bucket_name: {
+                                $ref: 'common_api#/definitions/bucket_name',
+                            },
+                            is_allowed: {
+                                type: 'boolean',
+                            },
+                        },
+                    },
+                },
+            ],
+        },
+    },
 };

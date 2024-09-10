@@ -12,8 +12,7 @@ function system_in_maintenance(system_id) {
         return false;
     }
 
-    if (system.maintenance_mode &&
-        system.maintenance_mode > Date.now()) {
+    if (system.maintenance_mode && system.maintenance_mode > Date.now()) {
         return true;
     }
 

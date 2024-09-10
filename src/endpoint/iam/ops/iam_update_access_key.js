@@ -4,28 +4,32 @@
 const dbg = require('../../../util/debug_module')(__filename);
 const iam_utils = require('../iam_utils');
 const iam_constants = require('../iam_constants');
-const { CONTENT_TYPE_APP_FORM_URLENCODED } = require('../../../util/http_utils');
+const {
+    CONTENT_TYPE_APP_FORM_URLENCODED,
+} = require('../../../util/http_utils');
 
 /**
  * https://docs.aws.amazon.com/IAM/latest/APIReference/API_UpdateAccessKey.html
  */
 async function update_access_key(req, res) {
-
     const params = {
         access_key: req.body.access_key_id,
         status: req.body.status,
         username: req.body.user_name,
     };
     dbg.log1('IAM UPDATE ACCESS KEY', params);
-    iam_utils.validate_params(iam_constants.IAM_ACTIONS.UPDATE_ACCESS_KEY, params);
+    iam_utils.validate_params(
+        iam_constants.IAM_ACTIONS.UPDATE_ACCESS_KEY,
+        params,
+    );
     await req.account_sdk.update_access_key(params);
 
     return {
         UpdateAccessKeyResponse: {
             ResponseMetadata: {
                 RequestId: req.request_id,
-            }
-        }
+            },
+        },
     };
 }
 

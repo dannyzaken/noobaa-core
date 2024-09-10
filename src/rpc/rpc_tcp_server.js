@@ -16,17 +16,20 @@ const dbg = require('../util/debug_module')(__filename);
  *
  */
 class RpcTcpServer extends events.EventEmitter {
-
     constructor(tls_options) {
         super();
-        this.protocol = (tls_options ? 'tls:' : 'tcp:');
-        this.server = tls_options ?
-            tls.createServer({ ...tls_options, honorCipherOrder: true }, tcp_conn => this._on_tcp_conn(tcp_conn)) :
-            net.createServer(tcp_conn => this._on_tcp_conn(tcp_conn));
+        this.protocol = tls_options ? 'tls:' : 'tcp:';
+        this.server =
+            tls_options ?
+                tls.createServer(
+                    { ...tls_options, honorCipherOrder: true },
+                    tcp_conn => this._on_tcp_conn(tcp_conn),
+                )
+            :   net.createServer(tcp_conn => this._on_tcp_conn(tcp_conn));
         this.server.on('close', err => {
             dbg.log0('on close:', err);
             // emitting this as error is not desirable since no one is listening and it gives Uncaught Error.
-            // this happens on test_rpc as after each test we call disconnect. 
+            // this happens on test_rpc as after each test we call disconnect.
             // this.emit('error', new Error('TCP SERVER CLOSED'));
         });
         this.server.on('error', err => this.emit('error', err));
@@ -64,11 +67,14 @@ class RpcTcpServer extends events.EventEmitter {
             address = url.format({
                 protocol: this.protocol,
                 hostname: tcp_conn.remoteAddress,
-                port: tcp_conn.remotePort
+                port: tcp_conn.remotePort,
             });
             const addr_url = url.parse(address);
             const conn = new RpcTcpConnection(addr_url);
-            dbg.log0('TCP ACCEPT CONNECTION', conn.connid + ' ' + conn.url.href);
+            dbg.log0(
+                'TCP ACCEPT CONNECTION',
+                conn.connid + ' ' + conn.url.href,
+            );
             conn.tcp_conn = tcp_conn;
             conn._init_tcp();
             conn.emit('connect');
@@ -78,7 +84,6 @@ class RpcTcpServer extends events.EventEmitter {
             tcp_conn.destroy();
         }
     }
-
 }
 
 module.exports = RpcTcpServer;

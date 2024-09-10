@@ -45,9 +45,12 @@ util.inspect.defaultOptions.breakLength = Infinity;
 //Different context requires different handling, for example rotating file steam usage or console wrapping
 let syslog;
 let console_wrapper;
-if (typeof process !== 'undefined' &&
+if (
+    typeof process !== 'undefined' &&
     process.versions &&
-    process.versions['atom-shell']) { //atom shell
+    process.versions['atom-shell']
+) {
+    //atom shell
     console_wrapper = require('./console_wrapper');
 } else if (global.document) {
     //browser
@@ -72,30 +75,51 @@ if (typeof process !== 'undefined' &&
     console_wrapper = require('./console_wrapper');
 }
 
-
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+];
 
 // Pretty time format
 function formatted_time() {
     const now = new Date();
-    let timemsg = MONTHS[now.getMonth()] + '-' + now.getDate() + ' ' + now.getHours() + ':';
+    let timemsg =
+        MONTHS[now.getMonth()] +
+        '-' +
+        now.getDate() +
+        ' ' +
+        now.getHours() +
+        ':';
     //not pretty but more efficient than convert to array and slice
-    timemsg += (now.getMinutes() < 10 ? "0" : "") + now.getMinutes();
-    timemsg += ":" + (now.getSeconds() < 10 ? "0" : "") + now.getSeconds();
-    timemsg += "." + (now.getMilliseconds() < 100 ? "0" : "") + (now.getMilliseconds() < 10 ? "0" : "") +
+    timemsg += (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+    timemsg += ':' + (now.getSeconds() < 10 ? '0' : '') + now.getSeconds();
+    timemsg +=
+        '.' +
+        (now.getMilliseconds() < 100 ? '0' : '') +
+        (now.getMilliseconds() < 10 ? '0' : '') +
         now.getMilliseconds();
     return timemsg;
 }
 
 function strip_newlines(msg) {
-    return msg.replace(/(\r\n|\n|\r)/gm, "");
+    return msg.replace(/(\r\n|\n|\r)/gm, '');
 }
 
 function extract_module(mod, ignore_extension) {
     // the 'core.' prefix is helpful for setting the level for all modules
     const stems = {
-        "/src/": "core.",
-        "\\src\\": "core."
+        '/src/': 'core.',
+        '\\src\\': 'core.',
     };
 
     //for initial module construction, filename is passed, remove extension
@@ -111,7 +135,7 @@ function extract_module(mod, ignore_extension) {
 
     let ind;
     //compact stem directory structure
-    _.each(stems, function(val, s) {
+    _.each(stems, function (val, s) {
         ind = name.lastIndexOf(s);
         if (ind !== -1) {
             name = stems[s] + name.substr(ind + s.length);
@@ -137,15 +161,11 @@ const LOG_FUNC_PER_LEVEL = {
     ERROR: 'error',
 };
 
-
 const THROTTLING_PERIOD_SEC = 30;
 const MESSAGES_LRU_SIZE = 10000;
 
 class InternalDebugLogger {
-
     constructor() {
-
-
         // an LRU table to hold last used messages for throttling
         this.lru = new LRU({
             name: 'debug_log_lru',
@@ -155,7 +175,7 @@ class InternalDebugLogger {
 
         this._logs_by_file = [];
         this._modules = {
-            __level: 0
+            __level: 0,
         };
         this._levels = {
             ERROR: 0,
@@ -169,7 +189,7 @@ class InternalDebugLogger {
             L3: 8,
             L4: 9,
             EVENT: 10,
-            LAST: 100
+            LAST: 100,
         };
         // map the levels we use to syslog protocol levels
         // ERROR --> LOG_ERR (3)
@@ -196,7 +216,6 @@ class InternalDebugLogger {
         this._log_console = console;
         this._log_console_silent = false;
         this._log_file = null;
-
     }
 
     static instance() {
@@ -213,10 +232,10 @@ class InternalDebugLogger {
         while (mod[0] === '.') {
             mod = mod.substr(1);
         }
-        const ind = mod.indexOf(".");
+        const ind = mod.indexOf('.');
         if (ind === -1) {
             mod_name = mod;
-            new_mod = "";
+            new_mod = '';
         } else {
             mod_name = mod.substr(0, ind);
             new_mod = mod.substr(ind + 1); //skipping the . and continuing the processing
@@ -224,7 +243,7 @@ class InternalDebugLogger {
         if (mod_name) {
             if (!mod_object[mod_name]) {
                 mod_object[mod_name] = {
-                    __level: LOG_LEVEL
+                    __level: LOG_LEVEL,
                 };
             }
         }
@@ -247,7 +266,7 @@ class InternalDebugLogger {
 
     // Setting level for a node in the tree sets all the subtree to the same level
     set_level(mod, level) {
-        const parts = mod.split(".");
+        const parts = mod.split('.');
         let tmp_mod = this._modules;
         //find the desired node to set level for
         for (let ind = 0; ind < parts.length; ++ind) {
@@ -255,7 +274,7 @@ class InternalDebugLogger {
                 if (console_wrapper) {
                     console_wrapper.original_console();
                 }
-                console.log("No such module " + mod + " registered");
+                console.log('No such module ' + mod + ' registered');
                 if (console_wrapper) {
                     console_wrapper.wrapper_console();
                 }
@@ -270,7 +289,7 @@ class InternalDebugLogger {
 
     //Getting level for a node in the tree
     get_level(mod) {
-        const parts = mod.split(".");
+        const parts = mod.split('.');
         let tmp_mod = this._modules;
         //find the desired node to set level for
         for (let ind = 0; ind < parts.length; ++ind) {
@@ -278,7 +297,7 @@ class InternalDebugLogger {
                 if (console_wrapper) {
                     console_wrapper.original_console();
                 }
-                console.log("No such module " + mod + " registered");
+                console.log('No such module ' + mod + ' registered');
                 if (console_wrapper) {
                     console_wrapper.wrapper_console();
                 }
@@ -290,10 +309,9 @@ class InternalDebugLogger {
     }
 
     message_format(level, args) {
-
-        let level_color = "";
-        let level_str = "";
-        let prefix = "";
+        let level_color = '';
+        let level_str = '';
+        let prefix = '';
         let msg;
 
         if (args.length > 1) {
@@ -309,7 +327,8 @@ class InternalDebugLogger {
         if (config.LOG_COLOR_ENABLED) {
             level_color = '\x1B[31m';
             if (this._levels[level]) {
-                level_color = this._levels[level] === 1 ? '\x1B[33m' : '\x1B[36m';
+                level_color =
+                    this._levels[level] === 1 ? '\x1B[33m' : '\x1B[36m';
             }
             level_str = level_color + `[${level}]`.padStart(7) + '\x1B[39m';
             prefix = '\x1B[32m' + ftime + '\x1B[35m ' + proc;
@@ -323,7 +342,7 @@ class InternalDebugLogger {
 
         //Browser
         const browser_args = args.slice(0);
-        if (typeof(browser_args[0]) === 'string') {
+        if (typeof browser_args[0] === 'string') {
             browser_args[0] = ftime + ' [' + level + '] ' + browser_args[0];
         } else {
             browser_args.unshift(ftime + ' [' + level + '] ');
@@ -348,7 +367,6 @@ class InternalDebugLogger {
         return this.log_internal(msg_info);
     }
 
-
     log_throttled(level, ...args) {
         if (console_wrapper) {
             console_wrapper.original_console();
@@ -369,9 +387,10 @@ class InternalDebugLogger {
                     return;
                 }
 
-                const msg_suffix = lru_item.hit_count === 2 ?
-                    ` - \x1B[33m[Duplicated message. Suppressing for ${THROTTLING_PERIOD_SEC} seconds]\x1B[39m` :
-                    ` - \x1B[33m[message repeated ${lru_item.hit_count} times since ${new Date(lru_item.time)}]\x1B[39m`;
+                const msg_suffix =
+                    lru_item.hit_count === 2 ?
+                        ` - \x1B[33m[Duplicated message. Suppressing for ${THROTTLING_PERIOD_SEC} seconds]\x1B[39m`
+                    :   ` - \x1B[33m[message repeated ${lru_item.hit_count} times since ${new Date(lru_item.time)}]\x1B[39m`;
                 msg_info.message_console += msg_suffix;
                 msg_info.message_file += msg_suffix;
                 msg_info.message_syslog += msg_suffix;
@@ -389,7 +408,11 @@ class InternalDebugLogger {
     log_internal(msg_info) {
         if (syslog && config.LOG_TO_SYSLOG_ENABLED) {
             // syslog path
-            syslog(this._levels_to_syslog[msg_info.level], msg_info.message_syslog, config.DEBUG_FACILITY);
+            syslog(
+                this._levels_to_syslog[msg_info.level],
+                msg_info.message_syslog,
+                config.DEBUG_FACILITY,
+            );
         } else if (this._log_file) {
             // rotating file steam path (non browser)
             this._log_file.write(msg_info.message_file + os.EOL);
@@ -432,7 +455,10 @@ function DebugLogger(mod) {
     const name = extract_module(mod);
     this._name = name;
 
-    this._cur_level = int_dbg.build_module_context(this._name, int_dbg._modules);
+    this._cur_level = int_dbg.build_module_context(
+        this._name,
+        int_dbg._modules,
+    );
 
     //set debug level for all modules, if defined
     if (process.env.DEBUG_MODE === 'true' && config.dbg_log_level !== 0) {
@@ -442,17 +468,17 @@ function DebugLogger(mod) {
 }
 
 function log_builder(idx, options) {
-
     /**
      * @this {DebugLogger}
      */
-    return function(...args) {
+    return function (...args) {
         if (this.should_log(idx)) {
             const level = 'L' + idx;
-            if (typeof(args[0]) === 'string') { //Keep string formatting if exists
-                args[0] = " " + this._name + ":: " + (args[0] ? args[0] : '');
+            if (typeof args[0] === 'string') {
+                //Keep string formatting if exists
+                args[0] = ' ' + this._name + ':: ' + (args[0] ? args[0] : '');
             } else {
-                args.unshift(" " + this._name + ":: ");
+                args.unshift(' ' + this._name + ':: ');
             }
             if (options.throttled) {
                 int_dbg.log_throttled(level, ...args);
@@ -464,19 +490,22 @@ function log_builder(idx, options) {
 }
 
 function log_bt_builder(idx) {
-
     /**
      * @this {DebugLogger}
      */
-    return function(...args) {
+    return function (...args) {
         if (this.should_log(idx)) {
             const level = 'L' + idx;
             const err = new Error();
-            const bt = err.stack.substr(err.stack.indexOf(")") + 1).replace(/(\r\n|\n|\r)/gm, " ");
-            if (typeof(args[0]) === 'string') { //Keep string formatting if exists
-                args[0] = " " + this._name + ":: " + (args[0] ? args[0] : '') + bt;
+            const bt = err.stack
+                .substr(err.stack.indexOf(')') + 1)
+                .replace(/(\r\n|\n|\r)/gm, ' ');
+            if (typeof args[0] === 'string') {
+                //Keep string formatting if exists
+                args[0] =
+                    ' ' + this._name + ':: ' + (args[0] ? args[0] : '') + bt;
             } else {
-                args.unshift(" " + this._name + ":: ");
+                args.unshift(' ' + this._name + ':: ');
                 args.push(bt);
             }
             int_dbg.log_throttled(level, ...args);
@@ -488,25 +517,25 @@ function log_bt_builder(idx) {
  * Populate syslog levels logging functions. i.e warn/info/error ...
  */
 function log_syslog_builder(syslevel) {
-
     /**
      * @this {DebugLogger}
      */
-    return function(...args) {
+    return function (...args) {
         if (this._cur_level.__level < 0) return;
-        if (typeof(args[0]) === 'string') { //Keep string formatting if exists
-            args[0] = " " + this._name + ":: " + (args[0] ? args[0] : '');
+        if (typeof args[0] === 'string') {
+            //Keep string formatting if exists
+            args[0] = ' ' + this._name + ':: ' + (args[0] ? args[0] : '');
         } else {
-            args.unshift(" " + this._name + ":: ");
+            args.unshift(' ' + this._name + ':: ');
         }
         int_dbg.log_always(syslevel.toUpperCase(), ...args);
     };
 }
 
-/* When logging events message should not have any prefix such as time and processes id and 
- *the message should be in json format because of this events are logged directly without using log_builder; 
- * log_builder will format the message with prefix. 
-*/
+/* When logging events message should not have any prefix such as time and processes id and
+ *the message should be in json format because of this events are logged directly without using log_builder;
+ * log_builder will format the message with prefix.
+ */
 function log_event(event) {
     if (!config.EVENT_LOGGING_ENABLED) {
         console.info('Event logging not enabled');
@@ -522,7 +551,9 @@ function log_event(event) {
         syslog(config.EVENT_LEVEL, updated_event, config.EVENT_FACILITY);
     }
     if (console_wrapper && config.LOG_TO_STDERR_ENABLED) {
-        const formatted_event = int_dbg.message_format("EVENT", [updated_event]);
+        const formatted_event = int_dbg.message_format('EVENT', [
+            updated_event,
+        ]);
         process.stderr.write(formatted_event.message_console + '\n');
     }
 }
@@ -545,8 +576,7 @@ DebugLogger.prototype.log2_withbt = log_bt_builder(2);
 DebugLogger.prototype.log3_withbt = log_bt_builder(3);
 DebugLogger.prototype.log4_withbt = log_bt_builder(4);
 
-
-DebugLogger.prototype.set_module_level = function(level, mod) {
+DebugLogger.prototype.set_module_level = function (level, mod) {
     if (typeof mod === 'undefined') {
         int_dbg.set_level(this._name, level);
     } else {
@@ -554,34 +584,34 @@ DebugLogger.prototype.set_module_level = function(level, mod) {
     }
 };
 
-DebugLogger.prototype.should_log = function(level) {
+DebugLogger.prototype.should_log = function (level) {
     if (this._cur_level.__level >= level) {
         return true;
     }
     return false;
 };
 
-DebugLogger.prototype.get_module_structure = function() {
+DebugLogger.prototype.get_module_structure = function () {
     return int_dbg._modules;
 };
 
-DebugLogger.prototype.get_module_level = function(mod) {
+DebugLogger.prototype.get_module_level = function (mod) {
     return int_dbg.get_level(mod);
 };
 
-DebugLogger.prototype.set_logger_name = function(name) {
+DebugLogger.prototype.set_logger_name = function (name) {
     this._name = name;
 };
 
-DebugLogger.prototype.set_process_name = function(name) {
+DebugLogger.prototype.set_process_name = function (name) {
     int_dbg._proc_name = name;
 };
 
-DebugLogger.prototype.get_process_name = function() {
+DebugLogger.prototype.get_process_name = function () {
     return int_dbg._proc_name;
 };
 
-DebugLogger.prototype.set_log_to_file = function(log_file) {
+DebugLogger.prototype.set_log_to_file = function (log_file) {
     if (log_file) {
         int_dbg._file_path = path.parse(log_file);
     } else {
@@ -589,30 +619,34 @@ DebugLogger.prototype.set_log_to_file = function(log_file) {
     }
 };
 
-DebugLogger.prototype.set_console_output = function(is_enabled) {
+DebugLogger.prototype.set_console_output = function (is_enabled) {
     int_dbg._log_console_silent = !is_enabled;
 };
 
-DebugLogger.prototype.original_console = function() {
+DebugLogger.prototype.original_console = function () {
     console_wrapper.original_console();
 };
 
-DebugLogger.prototype.wrapper_console = function() {
+DebugLogger.prototype.wrapper_console = function () {
     console_wrapper.wrapper_console();
 };
 
 if (console_wrapper) {
     //Register a "console" module DebugLogger for the console wrapper
-    const conlogger = new DebugLogger("CONSOLE.js");
+    const conlogger = new DebugLogger('CONSOLE.js');
     console_wrapper.register_logger(conlogger);
 }
 
-
 function set_log_config() {
-    const dbg_native_conf = debug_config.get_debug_config(process.env.NOOBAA_LOG_LEVEL);
+    const dbg_native_conf = debug_config.get_debug_config(
+        process.env.NOOBAA_LOG_LEVEL,
+    );
     nb_native().fs.set_debug_level(dbg_native_conf.level);
-    nb_native().fs.set_log_config(config.LOG_TO_STDERR_ENABLED, config.LOG_TO_SYSLOG_ENABLED);
+    nb_native().fs.set_log_config(
+        config.LOG_TO_STDERR_ENABLED,
+        config.LOG_TO_SYSLOG_ENABLED,
+    );
 }
 
-config.event_emitter.on("config_updated", set_log_config);
+config.event_emitter.on('config_updated', set_log_config);
 set_log_config();

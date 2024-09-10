@@ -10,12 +10,12 @@
  *
  */
 function random_hex_char() {
-    const hexchars = "0123456789abcdef";
+    const hexchars = '0123456789abcdef';
     return hexchars[Math.floor(_rand() * 16)];
 }
 
 function random_hex_string(n) {
-    let s = "";
+    let s = '';
     for (let i = 0; i < n; ++i) {
         s += random_hex_char();
     }
@@ -34,7 +34,7 @@ for (let j = 0; j < 10000; ++j) {
             system,
             bucket,
             size: 1048576,
-            digest_type: "test",
+            digest_type: 'test',
             digest_b64: digest_b64,
             dedup_key: digest_b64,
             data_frags: 1,

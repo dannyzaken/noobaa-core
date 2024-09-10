@@ -4,13 +4,8 @@
 module.exports = {
     $id: 'system_schema',
     type: 'object',
-    required: [
-        '_id',
-        'name',
-        'owner',
-    ],
+    required: ['_id', 'name', 'owner'],
     properties: {
-
         _id: { objectid: true },
         master_key_id: { objectid: true },
         deleted: { date: true },
@@ -18,23 +13,16 @@ module.exports = {
         owner: { objectid: true }, // account id
         state: {
             type: 'object',
-            required: [
-                'mode',
-                'last_update'
-            ],
+            required: ['mode', 'last_update'],
             properties: {
                 mode: {
                     type: 'string',
-                    enum: [
-                        'INITIALIZING',
-                        'COULD_NOT_INITIALIZE',
-                        'READY',
-                    ],
+                    enum: ['INITIALIZING', 'COULD_NOT_INITIALIZE', 'READY'],
                 },
                 last_update: {
-                    idate: true
-                }
-            }
+                    idate: true,
+                },
+            },
         },
         default_chunk_config: { objectid: true },
 
@@ -44,15 +32,15 @@ module.exports = {
             // required: [],
             properties: {
                 agent_installer: {
-                    type: 'string'
+                    type: 'string',
                 },
                 linux_agent_installer: {
-                    type: 'string'
+                    type: 'string',
                 },
                 s3rest_installer: {
-                    type: 'string'
+                    type: 'string',
                 },
-            }
+            },
         },
         // n2n_config
         // keeps the n2n configuration for agents and other endpoints (see rpc_n2n.js)
@@ -62,60 +50,86 @@ module.exports = {
         n2n_config: {
             type: 'object',
             additionalProperties: true,
-            properties: {}
+            properties: {},
         },
         last_stats_report: {
-            idate: true
+            idate: true,
         },
         maintenance_mode: {
-            idate: true
+            idate: true,
         },
         system_address: {
             type: 'array',
             items: {
                 type: 'object',
-                required: ['service', 'kind', 'hostname', 'port', 'api', 'secure', 'weight'],
+                required: [
+                    'service',
+                    'kind',
+                    'hostname',
+                    'port',
+                    'api',
+                    'secure',
+                    'weight',
+                ],
                 properties: {
                     service: {
                         type: 'string',
-                        enum: ['noobaa-mgmt', 's3', 'sts', 'noobaa-db', 'noobaa-db-pg', 'noobaa-syslog']
+                        enum: [
+                            'noobaa-mgmt',
+                            's3',
+                            'sts',
+                            'noobaa-db',
+                            'noobaa-db-pg',
+                            'noobaa-syslog',
+                        ],
                     },
                     kind: {
                         type: 'string',
-                        enum: ['INTERNAL', 'EXTERNAL']
+                        enum: ['INTERNAL', 'EXTERNAL'],
                     },
                     hostname: { type: 'string' },
                     port: { $ref: 'common_api#/definitions/port' },
                     api: {
                         type: 'string',
-                        enum: ['mgmt', 's3', 'sts', 'md', 'bg', 'hosted_agents', 'mongodb', 'metrics', 'postgres', 'syslog']
+                        enum: [
+                            'mgmt',
+                            's3',
+                            'sts',
+                            'md',
+                            'bg',
+                            'hosted_agents',
+                            'mongodb',
+                            'metrics',
+                            'postgres',
+                            'syslog',
+                        ],
                     },
                     secure: { type: 'boolean' },
-                    weight: { type: 'integer' }
-                }
-            }
+                    weight: { type: 'integer' },
+                },
+            },
         },
         virtual_hosts: {
             type: 'array',
             items: {
-                type: 'string'
-            }
+                type: 'string',
+            },
         },
         freemium_cap: {
             type: 'object',
             properties: {
                 phone_home_upgraded: {
-                    type: 'boolean'
+                    type: 'boolean',
                 },
                 phone_home_notified: {
-                    type: 'boolean'
+                    type: 'boolean',
                 },
                 phone_home_unable_comm: {
-                    type: 'boolean'
+                    type: 'boolean',
                 },
                 cap_terabytes: {
-                    type: 'number'
-                }
+                    type: 'number',
+                },
             },
         },
 
@@ -126,22 +140,22 @@ module.exports = {
                     type: 'object',
                     properties: {
                         start_marker: {
-                            objectid: true
+                            objectid: true,
                         },
                         retry_range: {
                             type: 'object',
                             properties: {
                                 start: {
-                                    objectid: true
+                                    objectid: true,
                                 },
                                 end: {
-                                    objectid: true
+                                    objectid: true,
                                 },
-                            }
-                        }
+                            },
+                        },
                     },
-                }
-            }
+                },
+            },
         },
 
         // //NTP configuration
@@ -159,11 +173,11 @@ module.exports = {
 
         //Debug Level:
         debug_level: {
-            type: 'integer'
+            type: 'integer',
         },
 
         debug_mode: {
-            idate: true
+            idate: true,
         },
 
         mongo_upgrade: {
@@ -171,14 +185,13 @@ module.exports = {
             // required: [],
             properties: {
                 blocks_to_buckets: {
-                    type: 'boolean'
-                }
-            }
+                    type: 'boolean',
+                },
+            },
         },
 
-
         current_version: {
-            type: 'string'
+            type: 'string',
         },
 
         //history of past upgrades
@@ -191,54 +204,53 @@ module.exports = {
                         type: 'object',
                         properties: {
                             timestamp: {
-                                idate: true
+                                idate: true,
                             },
                             from_version: {
-                                type: 'string'
+                                type: 'string',
                             },
                             to_version: {
-                                type: 'string'
+                                type: 'string',
                             },
                             // upgrade scripts that were run during the upgrade process
                             completed_scripts: {
                                 type: 'array',
                                 items: {
-                                    type: 'string'
-                                }
-                            }
-                        }
-                    }
-
+                                    type: 'string',
+                                },
+                            },
+                        },
+                    },
                 },
                 last_failure: {
                     type: 'object',
                     properties: {
                         timestamp: {
-                            idate: true
+                            idate: true,
                         },
                         from_version: {
-                            type: 'string'
+                            type: 'string',
                         },
                         to_version: {
-                            type: 'string'
+                            type: 'string',
                         },
                         // upgrade scripts that were run during the upgrade process
                         completed_scripts: {
                             type: 'array',
                             items: {
-                                type: 'string'
-                            }
+                                type: 'string',
+                            },
                         },
                         error: {
-                            type: 'string'
-                        }
-                    }
-                }
-            }
+                            type: 'string',
+                        },
+                    },
+                },
+            },
         },
 
         global_last_update: {
-            idate: true
+            idate: true,
         },
-    }
+    },
 };

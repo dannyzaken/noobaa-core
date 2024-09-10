@@ -1,5 +1,5 @@
 /* Copyright (C) 2016 NooBaa */
-"use strict";
+'use strict';
 
 const argv = require('minimist')(process.argv);
 const _ = require('lodash');
@@ -48,7 +48,10 @@ async function init_db_upgrade(db_client, system_store) {
 }
 
 async function upgrade_db() {
-    const system_store = require('../server/system_services/system_store').get_instance({ standalone: true });
+    const system_store =
+        require('../server/system_services/system_store').get_instance({
+            standalone: true,
+        });
     const system_server = require('../server/system_services/system_server');
     const db_client = require('../util/db_client');
 
@@ -61,30 +64,49 @@ async function upgrade_db() {
 
     let exit_code = 0;
     const container_version = pkg.version;
-    const server_version = _.get(system_store, 'data.systems.0.current_version');
+    const server_version = _.get(
+        system_store,
+        'data.systems.0.current_version',
+    );
     let current_version = server_version;
     if (should_upgrade(server_version, container_version)) {
         const this_upgrade = {
             timestamp: Date.now(),
             completed_scripts: [],
             from_version: server_version,
-            to_version: container_version
+            to_version: container_version,
         };
         const upgrade_history = system_store.data.systems[0].upgrade_history;
         try {
-            const upgrade_scripts = await load_required_scripts(server_version, container_version);
+            const upgrade_scripts = await load_required_scripts(
+                server_version,
+                container_version,
+            );
             for (const script of upgrade_scripts) {
-                dbg.log0(`running upgrade script ${script.file}: ${script.description}`);
+                dbg.log0(
+                    `running upgrade script ${script.file}: ${script.description}`,
+                );
                 try {
-                    await script.run({ dbg, db_client, system_store, system_server });
+                    await script.run({
+                        dbg,
+                        db_client,
+                        system_store,
+                        system_server,
+                    });
                     this_upgrade.completed_scripts.push(script.file);
                 } catch (err) {
-                    dbg.error(`failed running upgrade script ${script.file}`, err);
+                    dbg.error(
+                        `failed running upgrade script ${script.file}`,
+                        err,
+                    );
                     this_upgrade.error = err.stack;
                     throw err;
                 }
             }
-            upgrade_history.successful_upgrades = [this_upgrade, ...upgrade_history.successful_upgrades];
+            upgrade_history.successful_upgrades = [
+                this_upgrade,
+                ...upgrade_history.successful_upgrades,
+            ];
             current_version = container_version;
         } catch (err) {
             dbg.error('upgrade manager failed!!!', err);
@@ -96,14 +118,19 @@ async function upgrade_db() {
         }
         // update upgrade_history
         try {
-            await system_store.make_changes_with_retries({
-                update: {
-                    systems: [{
-                        _id: system_store.data.systems[0]._id,
-                        $set: { upgrade_history, current_version }
-                    }]
-                }
-            }, { max_retries: 10, delay: 30000 });
+            await system_store.make_changes_with_retries(
+                {
+                    update: {
+                        systems: [
+                            {
+                                _id: system_store.data.systems[0]._id,
+                                $set: { upgrade_history, current_version },
+                            },
+                        ],
+                    },
+                },
+                { max_retries: 10, delay: 30000 },
+            );
         } catch (error) {
             dbg.error('failed to update system_store with upgrade information');
             exit_code = 1;
@@ -121,17 +148,29 @@ function should_upgrade(server_version, container_version) {
     const ver_comparison = version_compare(container_version, server_version);
     if (ver_comparison === 0) {
         if (server_version !== container_version) {
-            dbg.warn(`the container and server appear to be the same version but different builds. (container: ${container_version}), (server: ${server_version})`);
-            dbg.warn(`upgrade is not supported for different builds of the same version!!`);
+            dbg.warn(
+                `the container and server appear to be the same version but different builds. (container: ${container_version}), (server: ${server_version})`,
+            );
+            dbg.warn(
+                `upgrade is not supported for different builds of the same version!!`,
+            );
         }
-        dbg.log0('the versions of the container and the server match. no need to upgrade');
+        dbg.log0(
+            'the versions of the container and the server match. no need to upgrade',
+        );
         return false;
     } else if (ver_comparison < 0) {
         // container version is older than the server version - can't downgrade
-        dbg.error(`the container version (${container_version}) appear to be older than the current server version (${server_version}). cannot downgrade`);
-        throw new Error('attempt to run old container version with newer server version');
+        dbg.error(
+            `the container version (${container_version}) appear to be older than the current server version (${server_version}). cannot downgrade`,
+        );
+        throw new Error(
+            'attempt to run old container version with newer server version',
+        );
     } else {
-        dbg.log0(`container version is ${container_version} and server version is ${server_version}. will upgrade`);
+        dbg.log0(
+            `container version is ${container_version} and server version is ${server_version}. will upgrade`,
+        );
         return true;
     }
 }
@@ -144,17 +183,25 @@ async function load_required_scripts(server_version, container_version) {
         upgrade_dir_content = fs.readdirSync(upgrade_scripts_dir);
     } catch (err) {
         if (err.code === 'ENOENT') {
-            dbg.warn(`upgrade scripts directory "${upgrade_scripts_dir}" was not found. treating it as empty`);
+            dbg.warn(
+                `upgrade scripts directory "${upgrade_scripts_dir}" was not found. treating it as empty`,
+            );
         } else {
             throw err;
         }
     }
     // get all dirs for versions newer than server_version
-    const newer_versions = upgrade_dir_content.filter(ver =>
-            version_compare(ver, server_version) > 0 &&
-            version_compare(ver, container_version) <= 0)
+    const newer_versions = upgrade_dir_content
+        .filter(
+            ver =>
+                version_compare(ver, server_version) > 0 &&
+                version_compare(ver, container_version) <= 0,
+        )
         .sort(version_compare);
-    dbg.log0(`found the following versions with upgrade scripts which are newer than server version (${server_version}):`, newer_versions);
+    dbg.log0(
+        `found the following versions with upgrade scripts which are newer than server version (${server_version}):`,
+        newer_versions,
+    );
     // get all scripts under new_versions
     const upgrade_scripts = _.flatMap(newer_versions, ver => {
         const full_path = path.join(upgrade_scripts_dir, ver);
@@ -172,7 +219,7 @@ async function load_required_scripts(server_version, container_version) {
     // }
     return upgrade_scripts.map(script => ({
         ...require(script), // eslint-disable-line global-require
-        file: script
+        file: script,
     }));
 }
 
@@ -195,15 +242,25 @@ async function upgrade_nsfs() {
         timestamp: Date.now(),
         completed_scripts: [],
         from_version: current_version,
-        to_version: new_version
+        to_version: new_version,
     };
 
     try {
-        const upgrade_scripts = await load_required_scripts(current_version, new_version);
+        const upgrade_scripts = await load_required_scripts(
+            current_version,
+            new_version,
+        );
         for (const script of upgrade_scripts) {
-            dbg.log0(`running upgrade script ${script.file}: ${script.description}`);
+            dbg.log0(
+                `running upgrade script ${script.file}: ${script.description}`,
+            );
             try {
-                await script.run({ dbg, db_client: null, system_store: null, system_server: null });
+                await script.run({
+                    dbg,
+                    db_client: null,
+                    system_store: null,
+                    system_server: null,
+                });
                 this_upgrade.completed_scripts.push(script.file);
             } catch (err) {
                 dbg.error(`failed running upgrade script ${script.file}`, err);
@@ -212,7 +269,10 @@ async function upgrade_nsfs() {
             }
         }
 
-        upgrade_history.successful_upgrades = [this_upgrade, ...upgrade_history.successful_upgrades];
+        upgrade_history.successful_upgrades = [
+            this_upgrade,
+            ...upgrade_history.successful_upgrades,
+        ];
         current_version = new_version;
     } catch (err) {
         dbg.error('upgrade manager failed!!!', err);
@@ -228,8 +288,8 @@ async function upgrade_nsfs() {
             ...system,
             [hostname]: {
                 current_version,
-                upgrade_history
-            }
+                upgrade_history,
+            },
         });
     } catch (error) {
         dbg.error('failed to update system_store with upgrade information');

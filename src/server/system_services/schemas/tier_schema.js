@@ -15,7 +15,6 @@ module.exports = {
         'mirrors',
     ],
     properties: {
-
         // identifiers
         _id: { objectid: true },
         name: { wrapper: SensitiveString },
@@ -37,7 +36,7 @@ module.exports = {
         // with any number of spread pools per mirror.
         data_placement: {
             type: 'string',
-            enum: ['MIRROR', 'SPREAD']
+            enum: ['MIRROR', 'SPREAD'],
         },
 
         // Consist of two dimensional array, spread_pools is an array of pools that will be spread_pools
@@ -51,14 +50,14 @@ module.exports = {
                     _id: { objectid: true },
                     spread_pools: {
                         type: 'array',
-                        items: { objectid: true } // pool id
-                    }
-                }
-            }
+                        items: { objectid: true }, // pool id
+                    },
+                },
+            },
         },
 
         storage_class: {
-            $ref: 'common_api#/definitions/storage_class_enum'
-        }
-    }
+            $ref: 'common_api#/definitions/storage_class_enum',
+        },
+    },
 };

@@ -7,9 +7,8 @@ const assert = require('assert');
 const P = require('../../util/promise');
 const LRU = require('../../util/lru');
 
-mocha.describe('lru', function() {
-
-    mocha.it('should hit and miss after remove', function() {
+mocha.describe('lru', function () {
+    mocha.it('should hit and miss after remove', function () {
         const lru = new LRU();
         lru._sanity();
 
@@ -29,9 +28,9 @@ mocha.describe('lru', function() {
         lru._sanity();
     });
 
-    mocha.it('should remove item to make room', function() {
+    mocha.it('should remove item to make room', function () {
         const lru = new LRU({
-            max_usage: 1
+            max_usage: 1,
         });
         lru._sanity();
 
@@ -47,9 +46,9 @@ mocha.describe('lru', function() {
         lru._sanity();
     });
 
-    mocha.it('should remove expired item', async function() {
+    mocha.it('should remove expired item', async function () {
         const lru = new LRU({
-            expiry_ms: 100
+            expiry_ms: 100,
         });
         lru._sanity();
 
@@ -71,7 +70,7 @@ mocha.describe('lru', function() {
         lru._sanity();
     });
 
-    mocha.it('should return null for missing id', function() {
+    mocha.it('should return null for missing id', function () {
         const lru = new LRU();
         lru._sanity();
 
@@ -81,7 +80,7 @@ mocha.describe('lru', function() {
         lru._sanity();
     });
 
-    mocha.it('should handle max_usage = 0', function() {
+    mocha.it('should handle max_usage = 0', function () {
         const lru = new LRU({
             max_usage: 0,
         });
@@ -103,7 +102,7 @@ mocha.describe('lru', function() {
         lru._sanity();
     });
 
-    mocha.it('should respect max_usage', function() {
+    mocha.it('should respect max_usage', function () {
         const MAX_USAGE = 1000;
         const lru = new LRU({
             max_usage: MAX_USAGE,
@@ -117,5 +116,4 @@ mocha.describe('lru', function() {
             lru._sanity();
         }
     });
-
 });

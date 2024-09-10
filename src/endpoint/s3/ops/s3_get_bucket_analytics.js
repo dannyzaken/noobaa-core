@@ -7,7 +7,7 @@
 async function get_bucket_analytics(req) {
     await req.object_sdk.read_bucket({ name: req.params.bucket });
     return {
-        AnalyticsConfiguration: ''
+        AnalyticsConfiguration: '',
     };
 }
 

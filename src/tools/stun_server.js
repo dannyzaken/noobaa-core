@@ -20,17 +20,28 @@ function on_message(buffer, rinfo) {
         console.log('NON STUN MESSAGE', buffer.toString(), 'from', rinfo);
         return;
     }
-    console.log('STUN', stun.get_method_name(buffer), 'from', rinfo.address + ':' + rinfo.port);
+    console.log(
+        'STUN',
+        stun.get_method_name(buffer),
+        'from',
+        rinfo.address + ':' + rinfo.port,
+    );
     const method = stun.get_method_field(buffer);
     if (method === stun.METHODS.REQUEST) {
-        const reply = stun.new_packet(stun.METHODS.SUCCESS, [{
-            type: stun.ATTRS.XOR_MAPPED_ADDRESS,
-            value: {
-                family: 'IPv4',
-                port: rinfo.port,
-                address: rinfo.address
-            }
-        }], buffer);
+        const reply = stun.new_packet(
+            stun.METHODS.SUCCESS,
+            [
+                {
+                    type: stun.ATTRS.XOR_MAPPED_ADDRESS,
+                    value: {
+                        family: 'IPv4',
+                        port: rinfo.port,
+                        address: rinfo.address,
+                    },
+                },
+            ],
+            buffer,
+        );
         socket.send(reply, 0, reply.length, rinfo.port, rinfo.address);
     }
 }

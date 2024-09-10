@@ -41,7 +41,9 @@ function stat_collection(name) {
 function scale_by_objects(title, num_objects) {
     const objects_ratio = num_objects / total_num_objects;
     print(title);
-    print(`  Storage Size : ${human_bytes(total_storage_size * objects_ratio)}`);
+    print(
+        `  Storage Size : ${human_bytes(total_storage_size * objects_ratio)}`,
+    );
     print(`  Index Size   : ${human_bytes(total_index_size * objects_ratio)}`);
     print();
 }
@@ -54,7 +56,10 @@ stat_collection('objectmultiparts');
 stat_collection('datachunks');
 stat_collection('datablocks');
 
-scale_by_objects(`Current Scale ${total_num_objects} objects:`, total_num_objects);
+scale_by_objects(
+    `Current Scale ${total_num_objects} objects:`,
+    total_num_objects,
+);
 scale_by_objects('Scale Estimate 1 M objects:', 1000000);
 scale_by_objects('Scale Estimate 10 M objects:', 10000000);
 scale_by_objects('Scale Estimate 100 M objects:', 100000000);

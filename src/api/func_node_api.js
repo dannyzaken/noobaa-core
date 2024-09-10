@@ -7,11 +7,9 @@
  *
  */
 module.exports = {
-
     $id: 'func_node_api',
 
     methods: {
-
         invoke_func: {
             method: 'PUT',
             params: {
@@ -19,16 +17,16 @@ module.exports = {
                 required: ['config'],
                 properties: {
                     config: {
-                        $ref: 'func_api#/definitions/func_config'
+                        $ref: 'func_api#/definitions/func_config',
                     },
                     event: {
-                        $ref: 'func_api#/definitions/event_type'
+                        $ref: 'func_api#/definitions/event_type',
                     },
                     aws_config: {
-                        $ref: '#/definitions/aws_config'
+                        $ref: '#/definitions/aws_config',
                     },
                     rpc_options: {
-                        $ref: '#/definitions/rpc_options'
+                        $ref: '#/definitions/rpc_options',
                     },
                 },
             },
@@ -36,64 +34,63 @@ module.exports = {
                 type: 'object',
                 properties: {
                     result: {
-                        $ref: 'func_api#/definitions/event_type'
+                        $ref: 'func_api#/definitions/event_type',
                     },
                     error: {
-                        $ref: 'func_api#/definitions/error_type'
-                    }
-                }
+                        $ref: 'func_api#/definitions/error_type',
+                    },
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
-
     },
 
     definitions: {
-
         aws_config: {
             type: 'object',
             properties: {
                 endpoint: {
-                    type: 'string'
+                    type: 'string',
                 },
                 region: {
-                    type: 'string'
+                    type: 'string',
                 },
                 sslEnabled: {
-                    type: 'boolean'
+                    type: 'boolean',
                 },
                 s3ForcePathStyle: {
-                    type: 'boolean'
+                    type: 'boolean',
                 },
                 accessKeyId: {
-                    type: 'string'
+                    type: 'string',
                 },
                 secretAccessKey: {
-                    type: 'string'
+                    type: 'string',
                 },
-            }
+            },
         },
 
         rpc_options: {
             type: 'object',
             properties: {
                 address: {
-                    type: 'string'
+                    type: 'string',
                 },
                 auth_token: {
-                    oneOf: [{
-                        type: 'string'
-                    }, {
-                        type: 'object',
-                        additionalProperties: true,
-                        properties: {},
-                    }]
+                    oneOf: [
+                        {
+                            type: 'string',
+                        },
+                        {
+                            type: 'object',
+                            additionalProperties: true,
+                            properties: {},
+                        },
+                    ],
                 },
-            }
-        }
-
-    }
-
+            },
+        },
+    },
 };

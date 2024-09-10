@@ -113,7 +113,6 @@ class S3ClientSDKV2 {
     uploadPartCopy(params) {
         return this.s3.uploadPartCopy(params).promise();
     }
-
 }
 
 // EXPORTS

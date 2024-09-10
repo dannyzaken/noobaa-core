@@ -1,29 +1,17 @@
 {
-    "azure": [
-        
-    ],
-    "alyun": [
-        
-    ],
-    "aws": [
-        
-    ],
-    "esx": [
-
-    ],
-    "google": [
-        
-    ],
-    "dev": [
-        
-    ],
-    "docker": [
-        "dns_server",
-        "time_config",
-        "attach_server",
-        "peer_to_peer_ports",
-        "server_details",
-        "cluster_connectivity_ip",
-        "toggle_endpoint_agent"
-    ]
+  "azure": [],
+  "alyun": [],
+  "aws": [],
+  "esx": [],
+  "google": [],
+  "dev": [],
+  "docker": [
+    "dns_server",
+    "time_config",
+    "attach_server",
+    "peer_to_peer_ports",
+    "server_details",
+    "cluster_connectivity_ip",
+    "toggle_endpoint_agent"
+  ]
 }

@@ -5,11 +5,8 @@
     "resolveJsonModule": true,
     "noEmit": true,
     "checkJs": true,
-    "allowJs": true,
+    "allowJs": true
   },
-  "include": [
-    "src"
-  ],
-  "exclude": [
-  ]
+  "include": ["src"],
+  "exclude": []
 }

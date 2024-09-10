@@ -9,7 +9,6 @@ const HTTPParser = http_parser.HTTPParser;
 const _cached_array_push = Array.prototype.push;
 
 class HTTPRecorder extends stream.Writable {
-
     constructor(file_namer) {
         super();
         this.file_namer = file_namer;
@@ -34,9 +33,17 @@ class HTTPRecorder extends stream.Writable {
         // eslint-disable-next-line max-params
         // eslint-disable-next-line no-bitwise
         this._parser[HTTPParser.kOnHeadersComplete | 0] = (
-            versionMajor, versionMinor, headers, method, url,
+            versionMajor,
+            versionMinor,
+            headers,
+            method,
+            url,
             //eslint-disable-next-line max-params
-            statusCode, statusMessage, upgrade, shouldKeepAlive) => {
+            statusCode,
+            statusMessage,
+            upgrade,
+            shouldKeepAlive,
+        ) => {
             // console.log('kOnHeadersComplete',
             //     method, url, versionMajor, versionMinor,
             //     statusCode, statusMessage, upgrade, shouldKeepAlive, headers);
@@ -59,7 +66,9 @@ class HTTPRecorder extends stream.Writable {
                 msg.headers[key] = prev ? prev + ',' + val : val;
             }
             const file_name = this.file_namer(msg);
-            console.log(`----> HTTPRecorder to ${file_name} message ${JSON.stringify(msg)}`);
+            console.log(
+                `----> HTTPRecorder to ${file_name} message ${JSON.stringify(msg)}`,
+            );
             this._out_file = fs.createWriteStream(file_name);
             this._pending.forEach(buf => this._out_file.write(buf));
             this._pending = [];
@@ -75,7 +84,10 @@ class HTTPRecorder extends stream.Writable {
         this._parser[HTTPParser.kOnHeaders | 0] = (headers, url) => {
             console.log('kOnHeaders', headers, url);
             slow_url += url;
-            const add = headers.slice(0, this.max_headers - slow_headers.length);
+            const add = headers.slice(
+                0,
+                this.max_headers - slow_headers.length,
+            );
             _cached_array_push.apply(slow_headers, add);
         };
 
@@ -101,7 +113,6 @@ class HTTPRecorder extends stream.Writable {
         this._parser.execute(buf);
         return setImmediate(next);
     }
-
 }
 
 module.exports = HTTPRecorder;

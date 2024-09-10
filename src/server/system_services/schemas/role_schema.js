@@ -4,28 +4,23 @@
 module.exports = {
     $id: 'role_schema',
     type: 'object',
-    required: [
-        '_id',
-        'system',
-        'account',
-        'role'
-    ],
+    required: ['_id', 'system', 'account', 'role'],
     properties: {
         _id: {
-            objectid: true
+            objectid: true,
         },
         deleted: {
-            date: true
+            date: true,
         },
         system: {
-            objectid: true
+            objectid: true,
         },
         account: {
-            objectid: true
+            objectid: true,
         },
         role: {
             type: 'string',
-            enum: ['admin', 'user', 'operator']
+            enum: ['admin', 'user', 'operator'],
         },
-    }
+    },
 };

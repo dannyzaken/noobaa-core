@@ -7,14 +7,13 @@ const assert = require('assert');
 const P = require('../../util/promise');
 const KeysSemaphore = require('../../util/keys_semaphore');
 
-mocha.describe('keys_semaphore', function() {
-
-    mocha.it('should create ok', function() {
+mocha.describe('keys_semaphore', function () {
+    mocha.it('should create ok', function () {
         const ks = new KeysSemaphore(3);
         assert.strictEqual(ks.has_semaphore('not_exist'), false);
     });
 
-    mocha.it('should allow on empty semaphore', function() {
+    mocha.it('should allow on empty semaphore', function () {
         const ks = new KeysSemaphore(3);
         let func_executed = false;
 
@@ -24,16 +23,14 @@ mocha.describe('keys_semaphore', function() {
 
         assert.strictEqual(func_executed, false);
 
-        return ks.surround_key('test1', func)
-            .then(() => {
-                assert.strictEqual(func_executed, true);
-            });
+        return ks.surround_key('test1', func).then(() => {
+            assert.strictEqual(func_executed, true);
+        });
     });
 
-
-    mocha.it('should allow 2 callers', function() {
+    mocha.it('should allow 2 callers', function () {
         const ks = new KeysSemaphore(3, {
-            timeout: 5000
+            timeout: 5000,
         });
         let func1_executed = false;
         let func2_executed = false;
@@ -43,7 +40,8 @@ mocha.describe('keys_semaphore', function() {
             // func1 will not finish before func2 is executed
             return P.pwhile(
                 () => !func2_executed,
-                () => P.delay(100));
+                () => P.delay(100),
+            );
         }
 
         function func2() {
@@ -52,14 +50,9 @@ mocha.describe('keys_semaphore', function() {
 
         ks.surround_key('test2', func1);
 
-        return ks.surround_key('test2', func2)
-            .then(() => {
-                assert.strictEqual(func1_executed, true);
-                assert.strictEqual(func2_executed, true);
-            });
-
+        return ks.surround_key('test2', func2).then(() => {
+            assert.strictEqual(func1_executed, true);
+            assert.strictEqual(func2_executed, true);
+        });
     });
-
-
-
 });

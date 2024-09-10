@@ -15,7 +15,6 @@
  *
  */
 
-
 // declare names that these functions expect to have in scope
 // so that lint tools will not give warnings.
 const emit = (key, value) => value;
@@ -108,8 +107,6 @@ function map_key_with_prefix_delimiter() {
     }
 }
 
-
-
 // a map-reduce part for summing up
 // this function must be self contained to be able to send to mongo mapReduce()
 // so not using any functions or constants from above.
@@ -117,8 +114,8 @@ function reduce_sum(key, values) {
     const PETABYTE = 1024 * 1024 * 1024 * 1024 * 1024;
     let n = 0;
     let peta = 0;
-    values.forEach(function(v) {
-        if (typeof(v) === 'number') {
+    values.forEach(function (v) {
+        if (typeof v === 'number') {
             n += v;
         } else if (v) {
             n += v.n;
@@ -129,15 +126,19 @@ function reduce_sum(key, values) {
             peta += 1;
         }
     });
-    return peta ? {
-        n: n,
-        peta: peta,
-    } : n;
+    return peta ?
+            {
+                n: n,
+                peta: peta,
+            }
+        :   n;
 }
 
-function reduce_noop() { /* Empty Func */ }
+function reduce_noop() {
+    /* Empty Func */
+}
 
-const func_stats_exports = (function() {
+const func_stats_exports = (function () {
     // The following vars are defined here in order to simulate scope variables inside
     // the map/reduce/finalize function below and prevent lint errors.
     let step;
@@ -149,21 +150,24 @@ const func_stats_exports = (function() {
      */
     function map() {
         const key = Math.floor(this.time.valueOf() / step) * step;
-        const res = this.error ? {
-            invoked: 1,
-            fulfilled: 0,
-            rejected: 1,
-            aggr_response_time: 0,
-            max_response_time: 0,
-            completed_response_times: []
-        } : {
-            invoked: 1,
-            fulfilled: 1,
-            rejected: 0,
-            aggr_response_time: this.took,
-            max_response_time: this.took,
-            completed_response_times: [this.took]
-        };
+        const res =
+            this.error ?
+                {
+                    invoked: 1,
+                    fulfilled: 0,
+                    rejected: 1,
+                    aggr_response_time: 0,
+                    max_response_time: 0,
+                    completed_response_times: [],
+                }
+            :   {
+                    invoked: 1,
+                    fulfilled: 1,
+                    rejected: 0,
+                    aggr_response_time: this.took,
+                    max_response_time: this.took,
+                    completed_response_times: [this.took],
+                };
 
         emit(-1, res);
         emit(key, res);
@@ -177,11 +181,11 @@ const func_stats_exports = (function() {
             bin.aggr_response_time += other.aggr_response_time;
             bin.max_response_time = Math.max(
                 bin.max_response_time,
-                other.max_response_time
+                other.max_response_time,
             );
             bin.completed_response_times = [
                 ...bin.completed_response_times,
-                ...other.completed_response_times
+                ...other.completed_response_times,
             ];
 
             return bin;
@@ -190,10 +194,12 @@ const func_stats_exports = (function() {
         // Reduce the sample size to max_samples
         const response_times = reduced.completed_response_times;
         if (response_times.length > max_samples) {
-            reduced.completed_response_times = Array.from({ length: max_samples },
-                () => response_times[
-                    Math.floor(Math.random() * response_times.length)
-                ]
+            reduced.completed_response_times = Array.from(
+                { length: max_samples },
+                () =>
+                    response_times[
+                        Math.floor(Math.random() * response_times.length)
+                    ],
             );
         }
 
@@ -201,8 +207,9 @@ const func_stats_exports = (function() {
     }
 
     function finalize(key, bin) {
-        const response_times = bin.completed_response_times
-            .sort((a, b) => a - b);
+        const response_times = bin.completed_response_times.sort(
+            (a, b) => a - b,
+        );
 
         return {
             invoked: bin.invoked,
@@ -210,18 +217,20 @@ const func_stats_exports = (function() {
             rejected: bin.rejected,
             max_response_time: bin.max_response_time,
             aggr_response_time: bin.aggr_response_time,
-            avg_response_time: bin.fulfilled > 0 ?
-                Math.round(bin.aggr_response_time / bin.fulfilled) : 0,
+            avg_response_time:
+                bin.fulfilled > 0 ?
+                    Math.round(bin.aggr_response_time / bin.fulfilled)
+                :   0,
             response_percentiles: percentiles.map(percentile => {
                 const index = Math.floor(response_times.length * percentile);
                 const value = response_times[index] || 0;
                 return { percentile, value };
-            })
+            }),
         };
     }
 
     return { map, reduce, finalize };
-}());
+})();
 
 module.exports = {
     map_aggregate_objects: map_aggregate_objects,
@@ -234,5 +243,5 @@ module.exports = {
     reduce_common_prefixes: reduce_common_prefixes,
     map_func_stats: func_stats_exports.map,
     reduce_func_stats: func_stats_exports.reduce,
-    finalize_func_stats: func_stats_exports.finalize
+    finalize_func_stats: func_stats_exports.finalize,
 };

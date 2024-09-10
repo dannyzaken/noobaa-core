@@ -7,7 +7,7 @@
 async function get_bucket_cors(req) {
     await req.object_sdk.read_bucket({ name: req.params.bucket });
     return {
-        CORSConfiguration: ''
+        CORSConfiguration: '',
     };
 }
 

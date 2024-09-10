@@ -42,12 +42,19 @@ function get_opt_status(func, caller) {
 }
 
 function is_optimized(status) {
-    return status === OPTIMIZED || status === ALWAYS_OPTIMIZED || status === TURBOFAN_OPTIMIZED;
+    return (
+        status === OPTIMIZED ||
+        status === ALWAYS_OPTIMIZED ||
+        status === TURBOFAN_OPTIMIZED
+    );
 }
 
 function assert_optimized(func, caller) {
     const status = get_opt_status(func, caller);
-    assert.ok(is_optimized(status), `${func.name} expected to be optimized but is ${status} instead`);
+    assert.ok(
+        is_optimized(status),
+        `${func.name} expected to be optimized but is ${status} instead`,
+    );
 }
 
 // function assert_not_optimized(func, caller) {
@@ -56,71 +63,70 @@ function assert_optimized(func, caller) {
 // }
 
 // TODO GUY skipping because the optimization status is different on node.js v8
-mocha.describe.skip('v8 optimizations', function() {
-
-    mocha.it('should optimize buffer_utils.join', function() {
-        assert_optimized(buffer_utils.join,
-            () => buffer_utils.join([])
-        );
-        assert_optimized(buffer_utils.join,
-            () => buffer_utils.join([
+mocha.describe.skip('v8 optimizations', function () {
+    mocha.it('should optimize buffer_utils.join', function () {
+        assert_optimized(buffer_utils.join, () => buffer_utils.join([]));
+        assert_optimized(buffer_utils.join, () =>
+            buffer_utils.join([
                 Buffer.alloc(10, 'a'),
                 Buffer.alloc(10, 'b'),
                 Buffer.alloc(10, 'c'),
                 Buffer.alloc(10, 'd'),
-            ])
+            ]),
         );
     });
 
-    mocha.it('should optimize buffer_utils.extract', function() {
-        assert_optimized(buffer_utils.extract,
-            () => buffer_utils.extract([
-                Buffer.alloc(10, 'a'),
-                Buffer.alloc(10, 'b'),
-                Buffer.alloc(10, 'c'),
-                Buffer.alloc(10, 'd'),
-            ], 23)
+    mocha.it('should optimize buffer_utils.extract', function () {
+        assert_optimized(buffer_utils.extract, () =>
+            buffer_utils.extract(
+                [
+                    Buffer.alloc(10, 'a'),
+                    Buffer.alloc(10, 'b'),
+                    Buffer.alloc(10, 'c'),
+                    Buffer.alloc(10, 'd'),
+                ],
+                23,
+            ),
         );
     });
 
-    mocha.it('should optimize P.defer', function() {
+    mocha.it('should optimize P.defer', function () {
         assert_optimized(P.defer);
     });
 
-    mocha.it('should optimize P.resolve', function() {
+    mocha.it('should optimize P.resolve', function () {
         assert_optimized(P.resolve);
     });
 
-    mocha.it('should optimize P.then', function() {
-        assert_optimized(P.prototype.then,
-            () => P.resolve().then(_.noop)
-        );
+    mocha.it('should optimize P.then', function () {
+        assert_optimized(P.prototype.then, () => P.resolve().then(_.noop));
     });
 
-    mocha.it('should optimize P.catch', function() {
-        assert_optimized(P.prototype.catch,
-            () => P.resolve().catch(_.noop)
-        );
+    mocha.it('should optimize P.catch', function () {
+        assert_optimized(P.prototype.catch, () => P.resolve().catch(_.noop));
     });
 
-    mocha.it('should optimize frame_stream', function() {
-        const s = new FrameStream(new stream.Duplex({
-            read: () => { /* noop */ },
-            write: () => { /* noop */ }
-        }));
-        assert_optimized(FrameStream.prototype._send_message,
-            () => s._send_message([Buffer.from('abcd'), Buffer.from('efg')])
+    mocha.it('should optimize frame_stream', function () {
+        const s = new FrameStream(
+            new stream.Duplex({
+                read: () => {
+                    /* noop */
+                },
+                write: () => {
+                    /* noop */
+                },
+            }),
+        );
+        assert_optimized(FrameStream.prototype._send_message, () =>
+            s._send_message([Buffer.from('abcd'), Buffer.from('efg')]),
         );
         let seq = s._recv_seq || 0;
-        assert_optimized(FrameStream.prototype._on_data,
-            () => {
-                const buf = Buffer.alloc(s._header_len);
-                buf.write(s._magic);
-                buf.writeUInt16BE(seq, s._magic_len);
-                s._on_data(buf);
-                seq += 1;
-            }
-        );
+        assert_optimized(FrameStream.prototype._on_data, () => {
+            const buf = Buffer.alloc(s._header_len);
+            buf.write(s._magic);
+            buf.writeUInt16BE(seq, s._magic_len);
+            s._on_data(buf);
+            seq += 1;
+        });
     });
-
 });

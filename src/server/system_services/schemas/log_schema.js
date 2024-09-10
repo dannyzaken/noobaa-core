@@ -20,8 +20,16 @@
 module.exports = {
     $id: 'log_schema',
     type: 'object',
-    required: ['op', 'bucket_owner', 'source_bucket', 'object_key', 'log_bucket',
-        'log_prefix', 'remote_ip', 'http_status', 'request_id'
+    required: [
+        'op',
+        'bucket_owner',
+        'source_bucket',
+        'object_key',
+        'log_bucket',
+        'log_prefix',
+        'remote_ip',
+        'http_status',
+        'request_id',
     ],
     properties: {
         op: { type: 'string' },

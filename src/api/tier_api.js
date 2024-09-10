@@ -9,11 +9,9 @@
  *
  */
 module.exports = {
-
     $id: 'tier_api',
 
     methods: {
-
         create_tier: {
             doc: 'Create tier',
             method: 'POST',
@@ -22,18 +20,24 @@ module.exports = {
                 required: ['name'],
                 properties: {
                     name: { $ref: 'common_api#/definitions/tier_name' },
-                    chunk_coder_config: { $ref: 'common_api#/definitions/chunk_coder_config' },
-                    data_placement: { $ref: '#/definitions/data_placement_enum' },
+                    chunk_coder_config: {
+                        $ref: 'common_api#/definitions/chunk_coder_config',
+                    },
+                    data_placement: {
+                        $ref: '#/definitions/data_placement_enum',
+                    },
                     attached_pools: { $ref: '#/definitions/pool_info' },
-                    storage_class: { $ref: 'common_api#/definitions/storage_class_enum' },
-                }
+                    storage_class: {
+                        $ref: 'common_api#/definitions/storage_class_enum',
+                    },
+                },
             },
             reply: {
-                $ref: '#/definitions/tier_info'
+                $ref: '#/definitions/tier_info',
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         read_tier: {
@@ -44,14 +48,14 @@ module.exports = {
                 required: ['name'],
                 properties: {
                     name: { $ref: 'common_api#/definitions/tier_name' },
-                }
+                },
             },
             reply: {
-                $ref: '#/definitions/tier_info'
+                $ref: '#/definitions/tier_info',
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         update_tier: {
@@ -63,15 +67,21 @@ module.exports = {
                 properties: {
                     name: { $ref: 'common_api#/definitions/tier_name' },
                     new_name: { $ref: 'common_api#/definitions/tier_name' },
-                    chunk_coder_config: { $ref: 'common_api#/definitions/chunk_coder_config' },
+                    chunk_coder_config: {
+                        $ref: 'common_api#/definitions/chunk_coder_config',
+                    },
                     attached_pools: { $ref: '#/definitions/pool_info' },
-                    data_placement: { $ref: '#/definitions/data_placement_enum' },
-                    storage_class: { $ref: 'common_api#/definitions/storage_class_enum' },
-                }
+                    data_placement: {
+                        $ref: '#/definitions/data_placement_enum',
+                    },
+                    storage_class: {
+                        $ref: 'common_api#/definitions/storage_class_enum',
+                    },
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         delete_tier: {
@@ -82,35 +92,32 @@ module.exports = {
                 required: ['name'],
                 properties: {
                     name: { $ref: 'common_api#/definitions/tier_name' },
-                }
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
     },
 
-
     definitions: {
-
         tier_info: {
             type: 'object',
-            required: [
-                'name',
-                'data_placement',
-                'storage',
-                'data'
-            ],
+            required: ['name', 'data_placement', 'storage', 'data'],
             properties: {
                 name: { $ref: 'common_api#/definitions/tier_name' },
-                chunk_coder_config: { $ref: 'common_api#/definitions/chunk_coder_config' },
+                chunk_coder_config: {
+                    $ref: 'common_api#/definitions/chunk_coder_config',
+                },
                 data_placement: { $ref: '#/definitions/data_placement_enum' },
                 attached_pools: { $ref: '#/definitions/pool_info' },
                 mirror_groups: { $ref: '#/definitions/mirror_groups_info' },
                 storage: { $ref: 'common_api#/definitions/storage_info' },
                 data: { $ref: 'common_api#/definitions/storage_info' },
-                storage_class: { $ref: 'common_api#/definitions/storage_class_enum' },
-            }
+                storage_class: {
+                    $ref: 'common_api#/definitions/storage_class_enum',
+                },
+            },
         },
 
         data_placement_enum: {
@@ -122,7 +129,7 @@ module.exports = {
             type: 'array',
             items: {
                 type: 'string',
-            }
+            },
         },
 
         mirror_groups_info: {
@@ -133,10 +140,10 @@ module.exports = {
                     name: { type: 'string' },
                     pools: {
                         type: 'array',
-                        items: { type: 'string' }
-                    }
-                }
-            }
-        }
-    }
+                        items: { type: 'string' },
+                    },
+                },
+            },
+        },
+    },
 };

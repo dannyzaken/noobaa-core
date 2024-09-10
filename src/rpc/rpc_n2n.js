@@ -15,7 +15,6 @@ const Ice = require('./ice');
  *
  */
 class RpcN2NConnection extends RpcBaseConnection {
-
     constructor(addr_url, n2n_agent) {
         if (!n2n_agent) throw new Error('N2N AGENT NOT REGISTERED');
         super(addr_url);
@@ -40,10 +39,13 @@ class RpcN2NConnection extends RpcBaseConnection {
         this.ice.once('connect', session => {
             this.session = session;
             if (session.tcp) {
-                dbg.log1('N2N CONNECTED TO TCP',
+                dbg.log1(
+                    'N2N CONNECTED TO TCP',
                     // session.tcp.localAddress + ':' + session.tcp.localPort, '=>',
-                    session.tcp.remoteAddress + ':' + session.tcp.remotePort);
-                this._send = async msg => session.tcp.frame_stream.send_message(msg);
+                    session.tcp.remoteAddress + ':' + session.tcp.remotePort,
+                );
+                this._send = async msg =>
+                    session.tcp.frame_stream.send_message(msg);
                 session.tcp.on('message', msg => this.emit('message', msg));
                 this.emit('connect');
             } else {
@@ -51,10 +53,13 @@ class RpcN2NConnection extends RpcBaseConnection {
                 this.ice.udp.on('message', msg => this.emit('message', msg));
                 if (this.controlling) {
                     dbg.log1('N2N CONNECTING NUDP', session.key);
-                    P.fromCallback(callback => this.ice.udp.connect(
+                    P.fromCallback(callback =>
+                        this.ice.udp.connect(
                             session.remote.port,
                             session.remote.address,
-                            callback))
+                            callback,
+                        ),
+                    )
                         .then(() => {
                             dbg.log1('N2N CONNECTED TO NUDP', session.key);
                             this.emit('connect');
@@ -93,8 +98,6 @@ class RpcN2NConnection extends RpcBaseConnection {
         // this default error impl will be overridden once ice emit's connect
         throw new Error('N2N NOT CONNECTED');
     }
-
 }
-
 
 module.exports = RpcN2NConnection;

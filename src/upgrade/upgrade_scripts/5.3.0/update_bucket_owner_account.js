@@ -1,5 +1,5 @@
 /* Copyright (C) 2016 NooBaa */
-"use strict";
+'use strict';
 
 const _ = require('lodash');
 
@@ -10,10 +10,12 @@ async function run({ dbg, system_store }) {
             .filter(b => !b.owner_account)
             .map(b => ({
                 _id: b._id,
-                $set: { owner_account: system_owner }
+                $set: { owner_account: system_owner },
             }));
         if (buckets.length > 0) {
-            dbg.log0(`updating owner_account (${system_owner}) to these buckets: ${buckets.map(b => b._id).join(', ')}`);
+            dbg.log0(
+                `updating owner_account (${system_owner}) to these buckets: ${buckets.map(b => b._id).join(', ')}`,
+            );
             await system_store.make_changes({ update: { buckets } });
         } else {
             dbg.log0('there are no buckets that need owner_account update');
@@ -24,8 +26,7 @@ async function run({ dbg, system_store }) {
     }
 }
 
-
 module.exports = {
     run,
-    description: 'Sets the owner_account field for all buckets'
+    description: 'Sets the owner_account field for all buckets',
 };

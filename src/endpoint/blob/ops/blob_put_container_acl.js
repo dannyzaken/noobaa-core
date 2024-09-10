@@ -5,7 +5,7 @@
 
 function get_container_acl(req, res) {
     return {
-        SignedIdentifiers: {}
+        SignedIdentifiers: {},
     };
 }
 

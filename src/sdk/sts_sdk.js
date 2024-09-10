@@ -9,13 +9,14 @@ const { account_cache } = require('./object_sdk');
 const BucketSpaceNB = require('./bucketspace_nb');
 
 class StsSDK {
-
     constructor(rpc_client, internal_rpc_client, bucketspace) {
         this.rpc_client = rpc_client;
         this.internal_rpc_client = internal_rpc_client;
         this.requesting_account = undefined;
         this.auth_token = undefined;
-        this.bucketspace = bucketspace || new BucketSpaceNB({ rpc_client, internal_rpc_client });
+        this.bucketspace =
+            bucketspace ||
+            new BucketSpaceNB({ rpc_client, internal_rpc_client });
     }
 
     set_auth_token(auth_token) {
@@ -27,7 +28,7 @@ class StsSDK {
         return this.auth_token;
     }
 
-     /**
+    /**
      * @returns {nb.BucketSpace}
      */
     _get_bucketspace() {
@@ -45,7 +46,10 @@ class StsSDK {
         } catch (error) {
             dbg.error('authorize_request_account error:', error);
             if (error.rpc_code === 'NO_SUCH_ACCOUNT') {
-                throw new RpcError('INVALID_ACCESS_KEY_ID', `Account with access_key not found`);
+                throw new RpcError(
+                    'INVALID_ACCESS_KEY_ID',
+                    `Account with access_key not found`,
+                );
             }
             throw error;
         }
@@ -63,17 +67,27 @@ class StsSDK {
             access_key: access_key,
         });
         if (!account) {
-            throw new RpcError('NO_SUCH_ACCOUNT', 'No such account with access_key: ' + access_key);
+            throw new RpcError(
+                'NO_SUCH_ACCOUNT',
+                'No such account with access_key: ' + access_key,
+            );
         }
-        if (!account.role_config || account.role_config.role_name !== role_name) {
+        if (
+            !account.role_config ||
+            account.role_config.role_name !== role_name
+        ) {
             throw new RpcError('NO_SUCH_ROLE', `Role not found`);
         }
-        dbg.log0('sts_sdk.get_assumed_role res', account,
-            'account.role_config: ', account.role_config);
+        dbg.log0(
+            'sts_sdk.get_assumed_role res',
+            account,
+            'account.role_config: ',
+            account.role_config,
+        );
 
         return {
             access_key,
-            role_config: account.role_config
+            role_config: account.role_config,
         };
     }
 
@@ -85,7 +99,10 @@ class StsSDK {
         const token = this.get_auth_token();
         // If the request is signed (authenticated)
         if (token) {
-            signature_utils.authorize_request_account_by_token(token, this.requesting_account);
+            signature_utils.authorize_request_account_by_token(
+                token,
+                this.requesting_account,
+            );
             return;
         }
         throw new RpcError('UNAUTHORIZED', `No permission to access bucket`);

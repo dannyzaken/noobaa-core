@@ -4,7 +4,7 @@
 function delete_func(req, res) {
     return req.func_sdk.delete_func({
         name: req.params.func_name,
-        version: req.query.Qualifier || '$LATEST'
+        version: req.query.Qualifier || '$LATEST',
     });
 }
 

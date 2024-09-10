@@ -10,7 +10,6 @@
  *
  */
 module.exports = {
-
     $id: 'system_api',
 
     methods: {
@@ -28,10 +27,10 @@ module.exports = {
                             'INITIALIZING',
                             'COULD_NOT_INITIALIZE',
                             'READY',
-                        ]
+                        ],
                     },
-                    last_state_change: { idate: true }
-                }
+                    last_state_change: { idate: true },
+                },
             },
             auth: {
                 account: false,
@@ -56,16 +55,16 @@ module.exports = {
                     dns_servers: {
                         type: 'array',
                         items: {
-                            type: 'string'
+                            type: 'string',
                         },
                     },
                     dns_name: {
-                        type: 'string'
+                        type: 'string',
                     },
                     // require password change on first login
                     must_change_password: {
-                        type: 'boolean'
-                    }
+                        type: 'boolean',
+                    },
                 },
             },
             reply: {
@@ -73,29 +72,29 @@ module.exports = {
                 required: ['token'],
                 properties: {
                     token: {
-                        type: 'string'
+                        type: 'string',
                     },
                     operator_token: {
-                        type: 'string'
-                    }
-                }
+                        type: 'string',
+                    },
+                },
             },
             auth: {
                 account: false,
                 system: false,
                 anonymous: true,
-            }
+            },
         },
 
         read_system: {
             doc: 'Read the info of the authorized system',
             method: 'GET',
             reply: {
-                $ref: '#/definitions/system_full_info'
+                $ref: '#/definitions/system_full_info',
             },
             auth: {
                 system: 'admin',
-            }
+            },
         },
 
         update_system: {
@@ -112,7 +111,7 @@ module.exports = {
             },
             auth: {
                 system: 'admin',
-            }
+            },
         },
 
         rotate_master_key: {
@@ -127,13 +126,13 @@ module.exports = {
                     entity: { $ref: 'common_api#/definitions/entity' },
                     entity_type: {
                         type: 'string',
-                        enum: ['SYSTEM', 'BUCKET', 'ACCOUNT']
+                        enum: ['SYSTEM', 'BUCKET', 'ACCOUNT'],
                     },
-                }
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         disable_master_key: {
@@ -148,13 +147,13 @@ module.exports = {
                     entity: { $ref: 'common_api#/definitions/entity' },
                     entity_type: {
                         type: 'string',
-                        enum: ['SYSTEM', 'BUCKET', 'ACCOUNT']
+                        enum: ['SYSTEM', 'BUCKET', 'ACCOUNT'],
                     },
-                }
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         enable_master_key: {
@@ -169,13 +168,13 @@ module.exports = {
                     entity: { $ref: 'common_api#/definitions/entity' },
                     entity_type: {
                         type: 'string',
-                        enum: ['SYSTEM', 'BUCKET', 'ACCOUNT']
+                        enum: ['SYSTEM', 'BUCKET', 'ACCOUNT'],
                     },
-                }
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         set_maintenance_mode: {
@@ -189,11 +188,11 @@ module.exports = {
                     duration: {
                         type: 'number',
                     },
-                }
+                },
             },
             auth: {
                 system: 'admin',
-            }
+            },
         },
 
         set_webserver_master_state: {
@@ -206,11 +205,11 @@ module.exports = {
                     is_master: {
                         type: 'boolean',
                     },
-                }
+                },
             },
             auth: {
                 system: 'admin',
-            }
+            },
         },
 
         delete_system: {
@@ -218,9 +217,8 @@ module.exports = {
             method: 'DELETE',
             auth: {
                 system: 'admin',
-            }
+            },
         },
-
 
         list_systems: {
             doc: 'List the systems that the authorized account can access',
@@ -232,14 +230,14 @@ module.exports = {
                     systems: {
                         type: 'array',
                         items: {
-                            $ref: '#/definitions/system_info'
-                        }
-                    }
-                }
+                            $ref: '#/definitions/system_info',
+                        },
+                    },
+                },
             },
             auth: {
                 system: false,
-            }
+            },
         },
 
         add_role: {
@@ -251,13 +249,13 @@ module.exports = {
                 properties: {
                     email: { $ref: 'common_api#/definitions/email' },
                     role: {
-                        $ref: '#/definitions/role_enum'
+                        $ref: '#/definitions/role_enum',
                     },
-                }
+                },
             },
             auth: {
                 system: 'admin',
-            }
+            },
         },
 
         remove_role: {
@@ -269,13 +267,13 @@ module.exports = {
                 properties: {
                     email: { $ref: 'common_api#/definitions/email' },
                     role: {
-                        $ref: '#/definitions/role_enum'
+                        $ref: '#/definitions/role_enum',
                     },
-                }
+                },
             },
             auth: {
                 system: 'admin',
-            }
+            },
         },
 
         set_last_stats_report_time: {
@@ -288,11 +286,11 @@ module.exports = {
                     last_stats_report: {
                         idate: true,
                     },
-                }
+                },
             },
             auth: {
                 system: 'admin',
-            }
+            },
         },
 
         update_n2n_config: {
@@ -302,13 +300,13 @@ module.exports = {
                 required: ['config'],
                 properties: {
                     config: {
-                        $ref: 'common_api#/definitions/n2n_config'
-                    }
-                }
+                        $ref: 'common_api#/definitions/n2n_config',
+                    },
+                },
             },
             auth: {
                 system: 'admin',
-            }
+            },
         },
 
         log_client_console: {
@@ -320,14 +318,14 @@ module.exports = {
                     data: {
                         type: 'array',
                         items: {
-                            type: 'string'
-                        }
+                            type: 'string',
+                        },
                     },
                 },
             },
             auth: {
                 system: 'admin',
-            }
+            },
         },
 
         get_join_cluster_yaml: {
@@ -338,48 +336,42 @@ module.exports = {
                     region: { type: 'string' },
                     endpoints: {
                         type: 'object',
-                        required: [
-                            'min_count'
-                        ],
+                        required: ['min_count'],
                         properties: {
                             min_count: {
                                 type: 'integer',
-                                minimum: 1
+                                minimum: 1,
                             },
                             max_count: {
                                 type: 'integer',
-                                minimum: 1
-                            }
-                        }
-                    }
-                }
+                                minimum: 1,
+                            },
+                        },
+                    },
+                },
             },
             reply: {
-                type: 'string'
+                type: 'string',
             },
             auth: {
                 system: 'admin',
-            }
+            },
         },
 
         update_endpoint_group: {
             method: 'POST',
             params: {
                 type: 'object',
-                required: [
-                    'group_name',
-                    'region',
-                    'endpoint_range'
-                ],
+                required: ['group_name', 'region', 'endpoint_range'],
                 properties: {
                     group_name: {
-                        type: 'string'
+                        type: 'string',
                     },
                     is_remote: {
-                        type: 'boolean'
+                        type: 'boolean',
                     },
                     region: {
-                        type: 'string'
+                        type: 'string',
                     },
                     endpoint_range: {
                         type: 'object',
@@ -387,45 +379,43 @@ module.exports = {
                         properties: {
                             min: {
                                 type: 'integer',
-                                minimum: 1
+                                minimum: 1,
                             },
                             max: {
                                 type: 'integer',
-                                minimum: 1
-                            }
-                        }
-                    }
-                }
+                                minimum: 1,
+                            },
+                        },
+                    },
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         get_endpoints_history: {
             method: 'GET',
             params: {
                 type: 'object',
-                required: [
-                    'since'
-                ],
+                required: ['since'],
                 properties: {
                     since: {
-                        idate: true
+                        idate: true,
                     },
                     till: {
-                        idate: true
+                        idate: true,
                     },
                     step: {
-                        type: 'integer'
+                        type: 'integer',
                     },
                     groups: {
                         type: 'array',
                         items: {
-                            type: 'string'
-                        }
-                    }
-                }
+                            type: 'string',
+                        },
+                    },
+                },
             },
             reply: {
                 type: 'array',
@@ -433,37 +423,36 @@ module.exports = {
                     type: 'object',
                     properties: {
                         timestamp: {
-                            idate: true
+                            idate: true,
                         },
                         endpoint_count: {
-                            type: 'number'
+                            type: 'number',
                         },
                         cpu_count: {
-                            type: 'number'
+                            type: 'number',
                         },
                         cpu_usage: {
-                            type: 'number'
+                            type: 'number',
                         },
                         memory_usage: {
-                            type: 'number'
+                            type: 'number',
                         },
                         read_bytes: {
-                            type: 'number'
+                            type: 'number',
                         },
                         write_bytes: {
-                            type: 'number'
-                        }
-                    }
-                }
+                            type: 'number',
+                        },
+                    },
+                },
             },
             auth: {
-                system: 'admin'
-            }
-        }
+                system: 'admin',
+            },
+        },
     },
 
     definitions: {
-
         system_info: {
             type: 'object',
             required: ['name'],
@@ -473,7 +462,6 @@ module.exports = {
                 },
             },
         },
-
 
         system_full_info: {
             type: 'object',
@@ -489,7 +477,7 @@ module.exports = {
                 'owner',
                 'node_version',
                 's3_service',
-                'endpoint_groups'
+                'endpoint_groups',
             ],
             properties: {
                 name: {
@@ -498,11 +486,11 @@ module.exports = {
                 roles: {
                     type: 'array',
                     items: {
-                        $ref: '#/definitions/role_info'
-                    }
+                        $ref: '#/definitions/role_info',
+                    },
                 },
                 owner: {
-                    $ref: 'account_api#/definitions/account_info'
+                    $ref: 'account_api#/definitions/account_info',
                 },
                 last_stats_report: {
                     idate: true,
@@ -510,60 +498,60 @@ module.exports = {
                 tiers: {
                     type: 'array',
                     items: {
-                        $ref: 'tier_api#/definitions/tier_info'
-                    }
+                        $ref: 'tier_api#/definitions/tier_info',
+                    },
                 },
                 storage: {
-                    $ref: 'common_api#/definitions/storage_info'
+                    $ref: 'common_api#/definitions/storage_info',
                 },
                 nodes_storage: {
-                    $ref: 'common_api#/definitions/storage_info'
+                    $ref: 'common_api#/definitions/storage_info',
                 },
                 nodes: {
-                    $ref: 'node_api#/definitions/nodes_aggregate_info'
+                    $ref: 'node_api#/definitions/nodes_aggregate_info',
                 },
                 // A workaround to return host counters to be used in overview until
                 // rewrite of overview to use proper hosts state.
                 hosts: {
                     type: 'object',
                     additionalProperties: true,
-                    properties: {}
+                    properties: {},
                 },
                 buckets: {
                     type: 'array',
                     items: {
-                        $ref: 'bucket_api#/definitions/bucket_info'
-                    }
+                        $ref: 'bucket_api#/definitions/bucket_info',
+                    },
                 },
                 namespace_resources: {
                     type: 'array',
                     items: {
-                        $ref: 'pool_api#/definitions/namespace_resource_info'
-                    }
+                        $ref: 'pool_api#/definitions/namespace_resource_info',
+                    },
                 },
                 pools: {
                     type: 'array',
                     items: {
-                        $ref: 'pool_api#/definitions/pool_extended_info'
+                        $ref: 'pool_api#/definitions/pool_extended_info',
                     },
                 },
                 accounts: {
                     type: 'array',
                     items: {
-                        $ref: 'account_api#/definitions/account_info'
-                    }
+                        $ref: 'account_api#/definitions/account_info',
+                    },
                 },
                 functions: {
                     type: 'array',
                     items: {
-                        $ref: 'func_api#/definitions/func_info'
-                    }
+                        $ref: 'func_api#/definitions/func_info',
+                    },
                 },
                 objects: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 ssl_port: {
-                    type: 'string'
+                    type: 'string',
                 },
                 maintenance_mode: {
                     type: 'object',
@@ -575,36 +563,36 @@ module.exports = {
                         time_left: {
                             type: 'integer',
                         },
-                    }
+                    },
                 },
                 n2n_config: {
-                    $ref: 'common_api#/definitions/n2n_config'
+                    $ref: 'common_api#/definitions/n2n_config',
                 },
                 phone_home_config: {
                     type: 'object',
                     properties: {
                         upgraded_cap_notification: {
-                            type: 'boolean'
+                            type: 'boolean',
                         },
                         phone_home_unable_comm: {
-                            type: 'boolean'
+                            type: 'boolean',
                         },
-                    }
+                    },
                 },
                 ip_address: {
-                    type: 'string'
+                    type: 'string',
                 },
                 dns_name: {
-                    type: 'string'
+                    type: 'string',
                 },
                 base_address: {
-                    type: 'string'
+                    type: 'string',
                 },
                 version: {
-                    type: 'string'
+                    type: 'string',
                 },
                 node_version: {
-                    type: 'string'
+                    type: 'string',
                 },
                 debug: {
                     type: 'object',
@@ -613,16 +601,17 @@ module.exports = {
                         level: {
                             type: 'integer',
                         },
-                        time_left: { // in ms
-                            type: 'integer'
+                        time_left: {
+                            // in ms
+                            type: 'integer',
                         },
                     },
                 },
                 system_cap: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 has_ssl_cert: {
-                    type: 'boolean'
+                    type: 'boolean',
                 },
                 upgrade: {
                     type: 'object',
@@ -631,14 +620,14 @@ module.exports = {
                             type: 'object',
                             properties: {
                                 timestamp: {
-                                    idate: true
-                                }
-                            }
-                        }
+                                    idate: true,
+                                },
+                            },
+                        },
                     },
                 },
                 cluster: {
-                    $ref: '#/definitions/cluster_info'
+                    $ref: '#/definitions/cluster_info',
                 },
                 defaults: {
                     type: 'object',
@@ -649,16 +638,18 @@ module.exports = {
                                 data_frags: { type: 'integer' },
                                 parity_frags: { type: 'integer' },
                                 replicas: { type: 'integer' },
-                                failure_tolerance_threshold: { type: 'integer' }
-                            }
-                        }
-                    }
+                                failure_tolerance_threshold: {
+                                    type: 'integer',
+                                },
+                            },
+                        },
+                    },
                 },
                 platform_restrictions: {
                     type: 'array',
                     items: {
-                        $ref: '#/definitions/restriction_enum'
-                    }
+                        $ref: '#/definitions/restriction_enum',
+                    },
                 },
                 s3_service: {
                     type: 'object',
@@ -672,15 +663,19 @@ module.exports = {
                                 properties: {
                                     kind: {
                                         type: 'string',
-                                        enum: ['EXTERNAL', 'INTERNAL', 'LOOPBACK']
+                                        enum: [
+                                            'EXTERNAL',
+                                            'INTERNAL',
+                                            'LOOPBACK',
+                                        ],
                                     },
                                     address: {
-                                        type: 'string'
-                                    }
-                                }
-                            }
-                        }
-                    }
+                                        type: 'string',
+                                    },
+                                },
+                            },
+                        },
+                    },
                 },
                 endpoint_groups: {
                     type: 'array',
@@ -695,7 +690,7 @@ module.exports = {
                             'cpu_count',
                             'cpu_usage',
                             'memory_usage',
-                            'last_report_time'
+                            'last_report_time',
                         ],
                         properties: {
                             group_name: { type: 'string' },
@@ -708,23 +703,23 @@ module.exports = {
                             cpu_usage: { type: 'number' },
                             memory_usage: { type: 'number' },
                             last_report_time: { idate: true },
-                        }
-                    }
-                }
-            }
+                        },
+                    },
+                },
+            },
         },
 
         restriction_enum: {
             type: 'string',
             enum: [
-                "dns_name",
-                "dns_server",
-                "time_config",
-                "attach_server",
-                "peer_to_peer_ports",
-                "server_details",
-                "cluster_connectivity_ip",
-                "toggle_endpoint_agent"
+                'dns_name',
+                'dns_server',
+                'time_config',
+                'attach_server',
+                'peer_to_peer_ports',
+                'server_details',
+                'cluster_connectivity_ip',
+                'toggle_endpoint_agent',
             ],
         },
 
@@ -735,8 +730,8 @@ module.exports = {
                 roles: {
                     type: 'array',
                     items: {
-                        $ref: '#/definitions/role_enum'
-                    }
+                        $ref: '#/definitions/role_enum',
+                    },
                 },
                 account: {
                     type: 'object',
@@ -744,17 +739,15 @@ module.exports = {
                     properties: {
                         name: { $ref: 'common_api#/definitions/account_name' },
                         email: { $ref: 'common_api#/definitions/email' },
-                    }
-                }
-            }
+                    },
+                },
+            },
         },
-
 
         role_enum: {
             enum: ['admin', 'user', 'operator'],
             type: 'string',
         },
-
 
         cluster_info: {
             type: 'object',
@@ -777,11 +770,11 @@ module.exports = {
                             servers: {
                                 type: 'array',
                                 items: {
-                                    $ref: '#/definitions/cluster_server_info'
-                                }
-                            }
-                        }
-                    }
+                                    $ref: '#/definitions/cluster_server_info',
+                                },
+                            },
+                        },
+                    },
                 },
                 min_requirements: {
                     type: 'object',
@@ -793,78 +786,78 @@ module.exports = {
                             type: 'number',
                         },
                         cpu_count: {
-                            type: 'integer'
-                        }
-                    }
-                }
-            }
+                            type: 'integer',
+                        },
+                    },
+                },
+            },
         },
 
         cluster_server_info: {
             type: 'object',
             properties: {
                 version: {
-                    type: 'string'
+                    type: 'string',
                 },
                 secret: {
                     type: 'string',
                 },
                 status: {
                     type: 'string',
-                    enum: ['CONNECTED', 'DISCONNECTED', 'IN_PROGRESS']
+                    enum: ['CONNECTED', 'DISCONNECTED', 'IN_PROGRESS'],
                 },
                 hostname: {
-                    type: 'string'
+                    type: 'string',
                 },
                 addresses: {
                     type: 'array',
                     items: {
-                        type: 'string'
-                    }
+                        type: 'string',
+                    },
                 },
                 memory: {
                     type: 'object',
                     required: ['total', 'free', 'used'],
                     properties: {
                         total: {
-                            type: 'number'
+                            type: 'number',
                         },
                         used: {
-                            type: 'number'
+                            type: 'number',
                         },
                         free: {
-                            type: 'number'
-                        }
-                    }
+                            type: 'number',
+                        },
+                    },
                 },
                 storage: {
-                    $ref: 'common_api#/definitions/storage_info'
+                    $ref: 'common_api#/definitions/storage_info',
                 },
                 cpus: {
                     type: 'object',
                     required: ['count', 'usage'],
                     properties: {
                         count: {
-                            type: 'number'
+                            type: 'number',
                         },
                         usage: {
-                            type: 'number'
-                        }
-                    }
+                            type: 'number',
+                        },
+                    },
                 },
                 location: {
-                    type: 'string'
+                    type: 'string',
                 },
                 time_epoch: {
-                    idate: true
+                    idate: true,
                 },
                 timezone: {
-                    type: 'string'
+                    type: 'string',
                 },
                 dns_servers: {
                     type: 'array',
                     items: {
-                        type: 'string'
+                        type: 'string',
                     },
                 },
                 debug: {
@@ -874,22 +867,23 @@ module.exports = {
                         level: {
                             type: 'integer',
                         },
-                        time_left: { // in ms
-                            type: 'integer'
+                        time_left: {
+                            // in ms
+                            type: 'integer',
                         },
                     },
                 },
                 services_status: {
-                    $ref: '#/definitions/services_status'
+                    $ref: '#/definitions/services_status',
                 },
                 upgrade: {
                     type: 'object',
                     properties: {
                         path: {
-                            type: 'string'
+                            type: 'string',
                         },
                         mongo_upgrade: {
-                            type: 'boolean'
+                            type: 'boolean',
                         },
                         status: {
                             type: 'string',
@@ -901,8 +895,8 @@ module.exports = {
                                 'COMPLETED',
                                 'PRE_UPGRADE_PENDING',
                                 'PRE_UPGRADE_READY',
-                                'UPGRADE_FAILED'
-                            ]
+                                'UPGRADE_FAILED',
+                            ],
                         },
                         stage: {
                             type: 'string',
@@ -916,32 +910,34 @@ module.exports = {
                                 'UPDATE_SERVICES',
                                 'CLEANUP',
                                 'UPGRADE_COMPLETED',
-                            ]
+                            ],
                         },
                         error: {
                             type: 'object',
                             properties: {
                                 message: {
-                                    type: 'string'
+                                    type: 'string',
                                 },
                                 report_info: {
-                                    type: 'string'
-                                }
-                            }
+                                    type: 'string',
+                                },
+                            },
                         },
-                        initiator_email: { $ref: 'common_api#/definitions/email' },
+                        initiator_email: {
+                            $ref: 'common_api#/definitions/email',
+                        },
                         tested_date: {
-                            idate: true
+                            idate: true,
                         },
                         staged_package: {
-                            type: 'string'
+                            type: 'string',
                         },
                         package_uploaded: {
-                            idate: true
+                            idate: true,
                         },
                     },
                 },
-            }
+            },
         },
 
         services_status: {
@@ -949,19 +945,19 @@ module.exports = {
             required: ['phonehome_server', 'cluster_communication'],
             properties: {
                 dns_servers: {
-                    $ref: '#/definitions/service_status_enum'
+                    $ref: '#/definitions/service_status_enum',
                 },
                 dns_name_resolution: {
-                    $ref: '#/definitions/service_status_enum'
+                    $ref: '#/definitions/service_status_enum',
                 },
                 phonehome_server: {
-                    $ref: '#/definitions/service_dated_status'
+                    $ref: '#/definitions/service_dated_status',
                 },
                 cluster_communication: {
                     type: 'object',
                     properties: {
                         test_completed: {
-                            type: 'boolean'
+                            type: 'boolean',
                         },
                         results: {
                             type: 'array',
@@ -970,34 +966,34 @@ module.exports = {
                                 required: ['secret', 'status'],
                                 properties: {
                                     secret: {
-                                        type: 'string'
+                                        type: 'string',
                                     },
                                     status: {
-                                        $ref: '#/definitions/service_status_enum'
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+                                        $ref: '#/definitions/service_status_enum',
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
         },
 
         service_status_enum: {
             type: 'string',
-            enum: ['UNKNOWN', 'FAULTY', 'UNREACHABLE', 'OPERATIONAL']
+            enum: ['UNKNOWN', 'FAULTY', 'UNREACHABLE', 'OPERATIONAL'],
         },
 
         service_dated_status: {
             type: 'object',
             properties: {
                 status: {
-                    $ref: '#/definitions/service_status_enum'
+                    $ref: '#/definitions/service_status_enum',
                 },
                 test_time: {
-                    idate: true
+                    idate: true,
                 },
-            }
-        }
-    }
+            },
+        },
+    },
 };

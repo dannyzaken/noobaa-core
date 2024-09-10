@@ -16,27 +16,25 @@ const fs_utils = require('./fs_utils');
 
 const TMP_WORK_DIR = get_tmp_workdir();
 
-
 function prepare_diag_dir() {
-    return P.fcall(function() {
-            return fs_utils.folder_delete(TMP_WORK_DIR);
+    return P.fcall(function () {
+        return fs_utils.folder_delete(TMP_WORK_DIR);
+    })
+        .then(function () {
+            return fs_utils.file_delete(
+                process.cwd() + '/build/public/diagnose.tgz',
+            );
         })
-        .then(function() {
-            return fs_utils.file_delete(process.cwd() + '/build/public/diagnose.tgz');
-        })
-        .then(function() {
+        .then(function () {
             console.log('creating ', TMP_WORK_DIR);
             return fs_utils.create_path(TMP_WORK_DIR);
         });
 }
 
 function collect_basic_diagnostics(limit_logs_size) {
-    return P.fcall(
-            () => fs_utils.file_copy(
-                process.cwd() + '/package.json',
-                TMP_WORK_DIR
-            )
-        )
+    return P.fcall(() =>
+        fs_utils.file_copy(process.cwd() + '/package.json', TMP_WORK_DIR),
+    )
         .then(() => 'ok')
         .catch(err => {
             console.error('Error in collecting basic diagnostics', err);
@@ -59,9 +57,14 @@ function pack_diagnostics(dst, working_dir) {
             //We had a case where it failed due to file change during the file.
             //This flag can help, but not all the distributions support it
             //This is not valid for windows where we have our own executable
-            console.error("failed to tar, an attempt to ignore file changes", err);
+            console.error(
+                'failed to tar, an attempt to ignore file changes',
+                err,
+            );
             return P.resolve()
-                .then(() => fs_utils.tar_pack(dst, work_dir, 'ignore_file_changes'))
+                .then(() =>
+                    fs_utils.tar_pack(dst, work_dir, 'ignore_file_changes'),
+                )
                 .catch(err2 => {
                     console.error('failed to tar with ignore file changes');
                     throw new Error('Error while creating tar package ' + err2);
@@ -82,45 +85,67 @@ function pack_diagnostics(dst, working_dir) {
 
 //Archive the current diagnostics pack, save to
 function archive_diagnostics_pack(dst) {
-    return P.fcall(function() {
-            console.log('archive_diagnostics_pack1');
-            return fs_utils.create_path(config.central_stats.previous_diag_packs_dir);
-        })
-        .then(function() {
+    return P.fcall(function () {
+        console.log('archive_diagnostics_pack1');
+        return fs_utils.create_path(
+            config.central_stats.previous_diag_packs_dir,
+        );
+    })
+        .then(function () {
             console.log('archive_diagnostics_pack2');
-            return fs.promises.readdir(config.central_stats.previous_diag_packs_dir);
+            return fs.promises.readdir(
+                config.central_stats.previous_diag_packs_dir,
+            );
         })
-        .then(function(files) {
+        .then(function (files) {
             console.log('archive_diagnostics_pack3');
 
             //Check if current number of archived packs exceeds the max
-            if (files.length === config.central_stats.previous_diag_packs_count) {
+            if (
+                files.length === config.central_stats.previous_diag_packs_count
+            ) {
                 //Delete the oldest pack
                 console.log('archive_diagnostics_pack4');
 
                 const sorted_files = _.orderBy(files);
-                return fs.promises.unlink(config.central_stats.previous_diag_packs_dir + '/' + sorted_files[0]);
+                return fs.promises.unlink(
+                    config.central_stats.previous_diag_packs_dir +
+                        '/' +
+                        sorted_files[0],
+                );
             } else {
                 console.log('archive_diagnostics_pack5');
             }
         })
-        .then(function() {
+        .then(function () {
             console.log('archive_diagnostics_pack6');
             //Archive the current pack
             const now = new Date();
-            const tail = now.getDate() + '-' + (now.getMonth() + 1) + '_' + now.getHours() + '-' + now.getMinutes();
-            return fs_utils.file_copy(dst, config.central_stats.previous_diag_packs_dir + '/DiagPack_' + tail + '.tgz');
+            const tail =
+                now.getDate() +
+                '-' +
+                (now.getMonth() + 1) +
+                '_' +
+                now.getHours() +
+                '-' +
+                now.getMinutes();
+            return fs_utils.file_copy(
+                dst,
+                config.central_stats.previous_diag_packs_dir +
+                    '/DiagPack_' +
+                    tail +
+                    '.tgz',
+            );
         })
-        .then(null, function(err) {
+        .then(null, function (err) {
             console.error('Error in archive_diagnostics_pack', err, err.stack);
         });
 }
 
 function get_tmp_workdir() {
-    const is_windows = (process.platform === "win32");
+    const is_windows = process.platform === 'win32';
     return is_windows ? process.env.ProgramData + '/diag' : '/tmp/diag';
 }
-
 
 // EXPORTS
 exports.prepare_diag_dir = prepare_diag_dir;

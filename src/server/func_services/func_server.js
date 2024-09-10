@@ -65,7 +65,10 @@ async function create_func(req) {
         }
     }
     const resource_name = `arn:noobaa:lambda:region:${system}:function:${name}:${version}`;
-    const { code, code_sha256, code_size } = await _get_func_code_b64(req, func_code);
+    const { code, code_sha256, code_size } = await _get_func_code_b64(
+        req,
+        func_code,
+    );
 
     const func_id = func_store.instance().make_func_id();
     await func_store.instance().create_func({
@@ -82,7 +85,7 @@ async function create_func(req) {
         pools: pools.map(pool => pool._id),
         code,
         code_sha256,
-        code_size
+        code_size,
     });
 
     Dispatcher.instance().activity({
@@ -91,7 +94,7 @@ async function create_func(req) {
         system: req.system._id,
         actor: req.account && req.account._id,
         func: func_id,
-        desc: ''
+        desc: '',
     });
 
     await _load_func(req);
@@ -109,13 +112,16 @@ async function update_func(req) {
     if (func_config.pools) {
         config_updates.pools = _.map(
             func_config.pools,
-            pool_name => system.pools_by_name[pool_name]._id
+            pool_name => system.pools_by_name[pool_name]._id,
         );
     }
 
     const func_code = params.code;
     if (func_code) {
-        const { code, code_sha256, code_size } = await _get_func_code_b64(req, func_code);
+        const { code, code_sha256, code_size } = await _get_func_code_b64(
+            req,
+            func_code,
+        );
 
         config_updates.code = code;
         config_updates.code_sha256 = code_sha256;
@@ -135,7 +141,7 @@ async function update_func(req) {
         system: req.system._id,
         actor: req.account && req.account._id,
         func: req.func._id,
-        desc: ''
+        desc: '',
     };
     if (code_updated) {
         act.event = 'functions.func_code_edit';
@@ -161,14 +167,16 @@ async function read_func(req) {
     if (req.params.read_code) {
         const system = req.system._id;
         const { name, version } = req.params;
-        const func = await func_store.instance().read_func(system, name, version);
+        const func = await func_store
+            .instance()
+            .read_func(system, name, version);
         const zipfile_b64 = func.code;
         //Converting the base64 string into a zipfile again (stream then buffer).
         const zipfile_stream = new stream.Readable({
             read(size) {
                 this.push(Buffer.from(zipfile_b64, 'base64'));
                 this.push(null);
-            }
+            },
         });
         const zipfile = await buffer_utils.read_stream_join(zipfile_stream);
         reply[RPC_BUFFERS] = { zipfile };
@@ -185,7 +193,7 @@ async function read_func_stats(req) {
         till = Date.now(),
         step,
         percentiles = [0.5, 0.9, 0.99],
-        max_samples = 10000
+        max_samples = 10000,
     } = req.params;
 
     if (till <= since) {
@@ -198,16 +206,17 @@ async function read_func_stats(req) {
 
     const normalized_since = Math.floor(since / step) * step;
     const normalized_till = Math.ceil(till / step) * step;
-    const by_key = _.fromPairs(await func_stats_store.instance()
-        .query_func_stats({
+    const by_key = _.fromPairs(
+        await func_stats_store.instance().query_func_stats({
             system: req.system._id,
             func: req.func._id,
             since: new Date(normalized_since),
             till: new Date(normalized_till),
             step,
             percentiles,
-            max_samples
-        }));
+            max_samples,
+        }),
+    );
 
     const emptyPercentilesArray = percentiles.map(percentile => {
         const value = 0;
@@ -221,37 +230,34 @@ async function read_func_stats(req) {
             since: normalized_since,
             till: normalized_till,
             response_percentiles: emptyPercentilesArray,
-            ...by_key[-1]
+            ...by_key[-1],
         },
         //slices is per since time key for the candles charts
-        slices: _.range(
-            normalized_since,
-            normalized_till,
-            step
-        ).map(since_time => ({
-            ...FUNC_STATS_DEFAULTS,
-            since: since_time,
-            till: since_time + step,
-            response_percentiles: emptyPercentilesArray,
-            ...by_key[since_time]
-        }))
+        slices: _.range(normalized_since, normalized_till, step).map(
+            since_time => ({
+                ...FUNC_STATS_DEFAULTS,
+                since: since_time,
+                till: since_time + step,
+                response_percentiles: emptyPercentilesArray,
+                ...by_key[since_time],
+            }),
+        ),
     };
 }
 
 async function list_funcs(req) {
     const funcs = await func_store.instance().list_funcs(req.system._id);
     return {
-        functions: _.map(funcs, _get_func_info)
+        functions: _.map(funcs, _get_func_info),
     };
 }
 
 async function list_func_versions(req) {
-    const funcs = await func_store.instance().list_func_versions(
-        req.system._id,
-        req.params.name
-    );
+    const funcs = await func_store
+        .instance()
+        .list_func_versions(req.system._id, req.params.name);
     return {
-        versions: _.map(funcs, _get_func_info)
+        versions: _.map(funcs, _get_func_info),
     };
 }
 
@@ -266,7 +272,9 @@ async function invoke_func(req) {
     const time = new Date();
     await _load_func(req);
     check_event_permission(req);
-    await P.map(req.func.pools, pool => node_allocator.refresh_pool_alloc(pool));
+    await P.map(req.func.pools, pool =>
+        node_allocator.refresh_pool_alloc(pool),
+    );
 
     const func = req.func;
     const node = node_allocator.allocate_node({ pools: func.pools });
@@ -278,11 +286,15 @@ async function invoke_func(req) {
     };
     try {
         if (node) {
-            dbg.log0('invoking on node',
-                func.name, req.params.event,
-                node.name, node.pool);
+            dbg.log0(
+                'invoking on node',
+                func.name,
+                req.params.event,
+                node.name,
+                node.pool,
+            );
             res = await server_rpc.client.func_node.invoke_func(params, {
-                address: node.rpc_address
+                address: node.rpc_address,
             });
         } else {
             dbg.log0('invoking on server', func.name, req.params.event);
@@ -310,10 +322,18 @@ function check_event_permission(req) {
     const event = req.params.event;
     if (event && event.Records) {
         _.forEach(event.Records, record => {
-            const bucket_name = record && record.s3 && record.s3.bucket && record.s3.bucket.name;
-            if (typeof(bucket_name) === 'string') {
-                const bucket = req.system.buckets_by_name && req.system.buckets_by_name[bucket_name];
-                if (!bucket || bucket.deleting) throw new RpcError('UNAUTHORIZED', 'No such bucket');
+            const bucket_name =
+                record &&
+                record.s3 &&
+                record.s3.bucket &&
+                record.s3.bucket.name;
+            if (typeof bucket_name === 'string') {
+                const bucket =
+                    req.system.buckets_by_name &&
+                    req.system.buckets_by_name[bucket_name];
+                if (!bucket || bucket.deleting) {
+                    throw new RpcError('UNAUTHORIZED', 'No such bucket');
+                }
             }
         });
     }
@@ -328,12 +348,17 @@ async function _get_func_code_b64(req, func_code) {
         // zipfile is given as base64 string
         code = func_code.zipfile_b64;
         code_size = Buffer.from(func_code.zipfile_b64, 'base64').length;
-    } else if (req.rpc_params[RPC_BUFFERS] && req.rpc_params[RPC_BUFFERS].zipfile) {
+    } else if (
+        req.rpc_params[RPC_BUFFERS] &&
+        req.rpc_params[RPC_BUFFERS].zipfile
+    ) {
         // zipfile is given as buffer
         code = req.rpc_params[RPC_BUFFERS].zipfile.toString('base64');
         code_size = req.rpc_params[RPC_BUFFERS].zipfile.length;
     } else if (func_code.s3_bucket && func_code.s3_key) {
-        console.log(`reading function code from bucket ${func_code.s3_bucket} and key ${func_code.s3_key}`);
+        console.log(
+            `reading function code from bucket ${func_code.s3_bucket} and key ${func_code.s3_key}`,
+        );
         const account_keys = req.account.access_keys[0];
         const s3_endpoint = new AWS.S3({
             endpoint: 'http://localhost',
@@ -341,16 +366,20 @@ async function _get_func_code_b64(req, func_code) {
             secretAccessKey: account_keys.secret_key,
         });
 
-        const get_object_req = await s3_endpoint.getObject({
-            Bucket: func_code.s3_bucket,
-            Key: func_code.s3_key,
-        }).promise();
+        const get_object_req = await s3_endpoint
+            .getObject({
+                Bucket: func_code.s3_bucket,
+                Key: func_code.s3_key,
+            })
+            .promise();
         code = get_object_req.Body.toString('base64');
         code_size = get_object_req.ContentLength;
     } else if (func_code.url) {
         const get_res = await http_utils.http_get(func_code.url);
         if (get_res.statusCode < 200 || get_res.statusCode > 299) {
-            throw new Error(`failed GET request from ${func_code.url}. got status ${get_res.statusCode}`);
+            throw new Error(
+                `failed GET request from ${func_code.url}. got status ${get_res.statusCode}`,
+            );
         }
         const code_buffer = await buffer_utils.read_stream_join(get_res);
         code = code_buffer.toString('base64');
@@ -371,16 +400,20 @@ async function _load_func(req) {
     const version = req.params.version || _.get(req, 'params.config.version');
     const func = await func_store.instance().read_func(system, name, version);
     req.func = func;
-    func.pools = _.map(func.pools, pool_id => system_store.data.get_by_id(pool_id));
+    func.pools = _.map(func.pools, pool_id =>
+        system_store.data.get_by_id(pool_id),
+    );
     return func;
 }
 
 function _get_func_info(func) {
-    const config = _.pick(func,
+    const config = _.pick(
+        func,
         'name',
         'version',
         FUNC_CONFIG_FIELDS_MUTABLE,
-        FUNC_CONFIG_FIELDS_IMMUTABLE);
+        FUNC_CONFIG_FIELDS_IMMUTABLE,
+    );
     config.last_modified = func.last_modified.getTime();
     const account = system_store.data.get_by_id(func.last_modifier);
     config.last_modifier = account ? account.email : '';
@@ -391,11 +424,11 @@ function _get_func_info(func) {
     config.exec_account = system_store.data.get_by_id(func.exec_account).email;
     const code_location = {
         url: '',
-        repository: ''
+        repository: '',
     };
     return {
         config,
-        code_location
+        code_location,
     };
 }
 

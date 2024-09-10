@@ -1,5 +1,5 @@
 /* Copyright (C) 2016 NooBaa */
-"use strict";
+'use strict';
 
 /**
  * This script is used as a part of the CI/CD process to run all Ceph S3 tests.
@@ -15,20 +15,27 @@ const dbg = require('../../../util/debug_module')(__filename);
 dbg.set_process_name('test_ceph_s3');
 const argv = require('minimist')(process.argv.slice(2));
 delete argv._;
-const { CEPH_TEST, DEFAULT_NUMBER_OF_WORKERS, TOX_ARGS, AWS4_TEST_SUFFIX } = require('./test_ceph_s3_constants.js');
+const {
+    CEPH_TEST,
+    DEFAULT_NUMBER_OF_WORKERS,
+    TOX_ARGS,
+    AWS4_TEST_SUFFIX,
+} = require('./test_ceph_s3_constants.js');
 
 const testing_status = {
     pass: [],
     fail: [],
     skip: [],
-    total: 0
+    total: 0,
 };
 
 let tests_list;
 
 const OUT_OF_SCOPE_TESTS = create_out_of_scope_tests_list() || [];
 //Regexp match will be tested per each entry
-const S3_CEPH_TEST_OUT_OF_SCOPE_REGEXP = new RegExp(`(${OUT_OF_SCOPE_TESTS.join('\\b)|(')}\\b)`);
+const S3_CEPH_TEST_OUT_OF_SCOPE_REGEXP = new RegExp(
+    `(${OUT_OF_SCOPE_TESTS.join('\\b)|(')}\\b)`,
+);
 
 async function main() {
     if (argv.help) usage();
@@ -63,22 +70,30 @@ async function run_s3_tests() {
         throw new Error('Running Ceph Tests Failed');
     }
 
-    console.info(`CEPH TEST SUMMARY: Suite contains ${testing_status.total}, ran ${testing_status.pass.length + testing_status.fail.length + testing_status.skip.length} tests, Passed: ${testing_status.pass.length}, Skipped: ${testing_status.skip.length}, Failed: ${testing_status.fail.length}`);
+    console.info(
+        `CEPH TEST SUMMARY: Suite contains ${testing_status.total}, ran ${testing_status.pass.length + testing_status.fail.length + testing_status.skip.length} tests, Passed: ${testing_status.pass.length}, Skipped: ${testing_status.skip.length}, Failed: ${testing_status.fail.length}`,
+    );
     if (testing_status.skip.length) {
-        console.warn(`CEPH TEST SKIPPED TESTS SUMMARY:  ${testing_status.skip.length} skipped tests \n${testing_status.skip.join('\n')}`);
+        console.warn(
+            `CEPH TEST SKIPPED TESTS SUMMARY:  ${testing_status.skip.length} skipped tests \n${testing_status.skip.join('\n')}`,
+        );
     }
     if (testing_status.fail.length) {
-        console.error(`CEPH TEST FAILED TESTS SUMMARY: ${testing_status.fail.length} failed tests \n${testing_status.fail.join('\n')}`);
+        console.error(
+            `CEPH TEST FAILED TESTS SUMMARY: ${testing_status.fail.length} failed tests \n${testing_status.fail.join('\n')}`,
+        );
         throw new Error('Ceph Tests Returned with Failures');
     }
 }
 
 async function run_all_tests() {
     console.info('Running Ceph S3 Tests...');
-    const tests_list_command =
-        `S3TEST_CONF=${process.cwd()}/${CEPH_TEST.test_dir}${CEPH_TEST.ceph_config} tox ${TOX_ARGS} -- -q --collect-only --disable-pytest-warnings  2>&1 | awk '{print $1}' | grep test`;
+    const tests_list_command = `S3TEST_CONF=${process.cwd()}/${CEPH_TEST.test_dir}${CEPH_TEST.ceph_config} tox ${TOX_ARGS} -- -q --collect-only --disable-pytest-warnings  2>&1 | awk '{print $1}' | grep test`;
     try {
-        tests_list = await os_utils.exec(tests_list_command, { ignore_rc: false, return_stdout: true });
+        tests_list = await os_utils.exec(tests_list_command, {
+            ignore_rc: false,
+            return_stdout: true,
+        });
     } catch (err) {
         console.error('Failed getting tests list');
         throw new Error(`Failed getting tests list ${err}`);
@@ -108,7 +123,10 @@ async function run_single_test(test) {
     if (!S3_CEPH_TEST_OUT_OF_SCOPE_REGEXP.test(test)) {
         try {
             const full_test_command = `${base_cmd} ${process.cwd()}/${CEPH_TEST.test_dir}${CEPH_TEST.s3_test_dir}${test}`;
-            const res = await os_utils.exec(full_test_command, { ignore_rc: false, return_stdout: true });
+            const res = await os_utils.exec(full_test_command, {
+                ignore_rc: false,
+                return_stdout: true,
+            });
             if (res.includes('skipped')) {
                 console.warn('Test skipped:', test);
                 testing_status.skip.push(test);
@@ -119,7 +137,7 @@ async function run_single_test(test) {
         } catch (err) {
             // tox will exit with code 1 on error regardless of pytest exit code. pytest exit code 5 means no tests ran.
             // can happen when 'not fails_on_rgw' flag is on for some tests (there are no boto3 tests for the test)
-            if (err.stdout.includes("exited with code 5")) {
+            if (err.stdout.includes('exited with code 5')) {
                 console.warn('Test skipped:', test);
                 testing_status.skip.push(test);
             } else {
@@ -135,10 +153,16 @@ function create_out_of_scope_tests_list() {
     if (ignore_lists_paths && ignore_lists_paths.length >= 1) {
         let out_of_scope_tests_list = [];
         for (const ignore_lists_path of ignore_lists_paths) {
-            const list_content = fs.readFileSync(ignore_lists_path).toString().trim();
-            if (list_content === "") continue; // in case someone added accidentally an empty list we ignore it
-            const ignore_list = list_content.split("\n");
-            out_of_scope_tests_list = _.concat(out_of_scope_tests_list, ignore_list);
+            const list_content = fs
+                .readFileSync(ignore_lists_path)
+                .toString()
+                .trim();
+            if (list_content === '') continue; // in case someone added accidentally an empty list we ignore it
+            const ignore_list = list_content.split('\n');
+            out_of_scope_tests_list = _.concat(
+                out_of_scope_tests_list,
+                ignore_list,
+            );
         }
         return out_of_scope_tests_list;
     }

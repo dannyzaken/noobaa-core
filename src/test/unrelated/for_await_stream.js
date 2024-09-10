@@ -25,7 +25,7 @@ async function test(mode) {
                         this.push(Buffer.allocUnsafe(16));
                     }
                 });
-            }
+            },
         });
 
         const output = new stream.Writable({
@@ -34,7 +34,9 @@ async function test(mode) {
                     w += 1;
                     if (w % K === 0) {
                         const dt = (Date.now() - t) / 1000;
-                        console.log(`${mode}: ${(100 * w / N).toFixed(0)}% speed ${(w / 1000 / dt).toFixed(1)} K-items/sec`);
+                        console.log(
+                            `${mode}: ${((100 * w) / N).toFixed(0)}% speed ${(w / 1000 / dt).toFixed(1)} K-items/sec`,
+                        );
                     }
                     callback();
                 });
@@ -44,11 +46,8 @@ async function test(mode) {
         console.log(`${mode}: starting ...`);
 
         if (mode === 'pipe') {
-
             input.pipe(output);
-
         } else if (mode === 'events') {
-
             input.on('data', async data => {
                 if (output.write(data)) return;
                 input.pause();
@@ -56,21 +55,17 @@ async function test(mode) {
                 input.resume();
             });
             input.on('end', () => output.end());
-
         } else if (mode === 'forawait') {
-
             for await (const data of input) {
                 if (!output.write(data)) {
                     await events.once(output, 'drain');
                 }
             }
             output.end();
-
         }
 
         await stream_finished(output);
         console.log(`${mode}: done.`);
-
     } catch (err) {
         console.error(err);
     }

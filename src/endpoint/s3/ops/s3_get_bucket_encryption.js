@@ -8,23 +8,31 @@ const S3Error = require('../s3_errors').S3Error;
  */
 async function get_bucket_encryption(req) {
     const reply = await req.object_sdk.get_bucket_encryption({
-        name: req.params.bucket
+        name: req.params.bucket,
     });
 
-    if (!reply.encryption) throw new S3Error(S3Error.ServerSideEncryptionConfigurationNotFoundError);
+    if (!reply.encryption) {
+        throw new S3Error(
+            S3Error.ServerSideEncryptionConfigurationNotFoundError,
+        );
+    }
 
     const rule_details = {
-        SSEAlgorithm: reply.encryption.algorithm
+        SSEAlgorithm: reply.encryption.algorithm,
     };
 
-    if (reply.encryption.kms_key_id) rule_details.KMSMasterKeyID = reply.encryption.kms_key_id;
+    if (reply.encryption.kms_key_id) {
+        rule_details.KMSMasterKeyID = reply.encryption.kms_key_id;
+    }
 
     return {
         ServerSideEncryptionConfiguration: {
-            Rule: [{
-                ApplyServerSideEncryptionByDefault: rule_details
-            }]
-        }
+            Rule: [
+                {
+                    ApplyServerSideEncryptionByDefault: rule_details,
+                },
+            ],
+        },
     };
 }
 

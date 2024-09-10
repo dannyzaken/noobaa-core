@@ -16,8 +16,8 @@ function get_func_config(info) {
         LastModified: new Date(info.config.last_modified).toISOString(),
         FunctionArn: info.config.resource_name,
         VpcConfig: {
-            SubnetIds: info.config.pools
-        }
+            SubnetIds: info.config.pools,
+        },
     };
 }
 

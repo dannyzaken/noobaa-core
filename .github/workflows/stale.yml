@@ -11,23 +11,22 @@ on:
 
 jobs:
   stale:
-
     runs-on: ubuntu-latest
     permissions:
       issues: write
       pull-requests: write
 
     steps:
-    - uses: actions/stale@v5
-      with:
-        days-before-stale: 90
-        days-before-pr-stale: 90
-        days-before-issue-stale: 90
-        stale-pr-message: 'This PR had no activity for too long - it will now be labeled stale. Update it to prevent it from getting closed.'
-        stale-issue-message: 'This issue had no activity for too long - it will now be labeled stale. Update it to prevent it from getting closed.'
+      - uses: actions/stale@v5
+        with:
+          days-before-stale: 90
+          days-before-pr-stale: 90
+          days-before-issue-stale: 90
+          stale-pr-message: 'This PR had no activity for too long - it will now be labeled stale. Update it to prevent it from getting closed.'
+          stale-issue-message: 'This issue had no activity for too long - it will now be labeled stale. Update it to prevent it from getting closed.'
 
-        days-before-close: 30
-        days-before-pr-close: 30
-        days-before-issue-close: 30
-        close-pr-message: 'This PR is stale and had no activity for too long - it will now be closed.'
-        close-issue-message: 'This issue is stale and had no activity for too long - it will now be closed.'
+          days-before-close: 30
+          days-before-pr-close: 30
+          days-before-issue-close: 30
+          close-pr-message: 'This PR is stale and had no activity for too long - it will now be closed.'
+          close-issue-message: 'This issue is stale and had no activity for too long - it will now be closed.'

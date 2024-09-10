@@ -12,23 +12,23 @@ const IAM_ACTIONS = Object.freeze({
     GET_ACCESS_KEY_LAST_USED: 'get_access_key_last_used',
     UPDATE_ACCESS_KEY: 'update_access_key',
     DELETE_ACCESS_KEY: 'delete_access_key',
-    LIST_ACCESS_KEYS: 'list_access_keys'
+    LIST_ACCESS_KEYS: 'list_access_keys',
 });
 
 // key: action - the function name on accountspace_fs (snake case style)
 // value: AWS action name (camel case style)
-// we use it for error message to match AWS style 
+// we use it for error message to match AWS style
 const ACTION_MESSAGE_TITLE_MAP = Object.freeze({
-    'create_user': 'CreateUser',
-    'get_user': 'GetUser',
-    'delete_user': 'DeleteUser',
-    'update_user': 'UpdateUser',
-    'list_users': 'ListUsers',
-    'create_access_key': 'CreateAccessKey',
-    'get_access_key_last_used': 'GetAccessKeyLastUsed',
-    'update_access_key': 'UpdateAccessKey',
-    'delete_access_key': 'DeleteAccessKey',
-    'list_access_keys': 'ListAccessKeys',
+    create_user: 'CreateUser',
+    get_user: 'GetUser',
+    delete_user: 'DeleteUser',
+    update_user: 'UpdateUser',
+    list_users: 'ListUsers',
+    create_access_key: 'CreateAccessKey',
+    get_access_key_last_used: 'GetAccessKeyLastUsed',
+    update_access_key: 'UpdateAccessKey',
+    delete_access_key: 'DeleteAccessKey',
+    list_access_keys: 'ListAccessKeys',
 });
 
 const ACCESS_KEY_STATUS_ENUM = Object.freeze({
@@ -57,7 +57,6 @@ const IAM_PARAMETER_NAME = Object.freeze({
     USERNAME: 'UserName',
     NEW_USERNAME: 'NewUserName',
 });
-
 
 // EXPORTS
 exports.IAM_ACTIONS = IAM_ACTIONS;

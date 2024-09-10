@@ -19,7 +19,7 @@ module.exports = {
             type: 'string',
         },
         name: {
-            type: 'string'
+            type: 'string',
         },
         email: {
             type: 'string',
@@ -29,7 +29,7 @@ module.exports = {
         },
         // owner is the account id that owns this account (permission wise)
         owner: {
-            type: 'string'
+            type: 'string',
         },
         // creator is the account id that created this account (internal information)
         creator: {
@@ -37,10 +37,10 @@ module.exports = {
         },
         // AWS IAM path (identifier)
         iam_path: {
-            type: 'string'
+            type: 'string',
         },
         master_key_id: {
-            objectid: true
+            objectid: true,
         },
         allow_bucket_creation: {
             type: 'boolean',
@@ -48,10 +48,10 @@ module.exports = {
         force_md5_etag: {
             type: 'boolean',
         },
-        // account with iam_operate_on_root_account property will create root accounts using the IAM API 
+        // account with iam_operate_on_root_account property will create root accounts using the IAM API
         // (instead of IAM accounts)
         iam_operate_on_root_account: {
-            type: 'boolean'
+            type: 'boolean',
         },
         access_keys: {
             type: 'array',
@@ -71,32 +71,35 @@ module.exports = {
                     deactivated: {
                         type: 'boolean',
                     },
-                }
-            }
+                },
+            },
         },
         nsfs_account_config: {
-            oneOf: [{
-                type: 'object',
-                required: ['uid', 'gid'],
-                properties: {
-                    uid: { type: 'number' },
-                    gid: { type: 'number' },
-                    new_buckets_path: { type: 'string' },
-                    fs_backend: {
-                        $ref: 'common_api#/definitions/fs_backend'
-                    }
-                }
-            }, {
-                type: 'object',
-                required: [ 'distinguished_name'],
-                properties: {
-                    distinguished_name: { type: 'string' },
-                    new_buckets_path: { type: 'string' },
-                    fs_backend: {
-                        $ref: 'common_api#/definitions/fs_backend'
-                    }
-                }
-            }]
+            oneOf: [
+                {
+                    type: 'object',
+                    required: ['uid', 'gid'],
+                    properties: {
+                        uid: { type: 'number' },
+                        gid: { type: 'number' },
+                        new_buckets_path: { type: 'string' },
+                        fs_backend: {
+                            $ref: 'common_api#/definitions/fs_backend',
+                        },
+                    },
+                },
+                {
+                    type: 'object',
+                    required: ['distinguished_name'],
+                    properties: {
+                        distinguished_name: { type: 'string' },
+                        new_buckets_path: { type: 'string' },
+                        fs_backend: {
+                            $ref: 'common_api#/definitions/fs_backend',
+                        },
+                    },
+                },
+            ],
         },
-    }
+    },
 };

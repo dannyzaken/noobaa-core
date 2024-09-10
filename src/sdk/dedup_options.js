@@ -5,7 +5,6 @@ const js_utils = require('../util/js_utils');
 
 // DO NOT CHANGE UNLESS YOU *KNOW* RABIN CHUNKING
 const dedup_config = js_utils.deep_freeze({
-
     // min_chunk bytes are skipped before looking for new boundary.
     // max_chunk is the length which will be chunked if not chunked by context.
     // the context average chunking length will be: min_chunk + (2^avg_chunk_bits)

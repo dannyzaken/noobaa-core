@@ -12,10 +12,8 @@ function log(...args) {
     console.log(...args);
 }
 
-
-mocha.describe('prefetch', function() {
-
-    mocha.it('should work', async function() {
+mocha.describe('prefetch', function () {
+    mocha.it('should work', async function () {
         let id = 0;
         const pr = new Prefetch({
             low_length: 30,
@@ -29,7 +27,7 @@ mocha.describe('prefetch', function() {
                     id += 1;
                     return id;
                 });
-            }
+            },
         });
         await P.delay(10);
         log('A - length', pr.length);
@@ -40,12 +38,13 @@ mocha.describe('prefetch', function() {
         }
         await P.delay(10);
         log('B - length', pr.length);
-        await Promise.all(_.times(10, async () => {
-            const res = await pr.fetch(2);
-            log('B - fetch', res, 'length', pr.length);
-        }));
+        await Promise.all(
+            _.times(10, async () => {
+                const res = await pr.fetch(2);
+                log('B - fetch', res, 'length', pr.length);
+            }),
+        );
         await P.delay(10);
         log('length', pr.length);
     });
-
 });

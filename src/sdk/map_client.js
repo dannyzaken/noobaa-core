@@ -18,22 +18,36 @@ const db_client = require('../util/db_client');
 const nb_native = require('../util/nb_native');
 const Semaphore = require('../util/semaphore');
 const KeysSemaphore = require('../util/keys_semaphore');
-const block_store_client = require('../agent/block_store_services/block_store_client').instance();
-const system_store = require('../server/system_services/system_store').get_instance();
+const block_store_client =
+    require('../agent/block_store_services/block_store_client').instance();
+const system_store =
+    require('../server/system_services/system_store').get_instance();
 
 const { ChunkAPI } = require('./map_api_types');
 const { RpcError, RPC_BUFFERS } = require('../rpc');
 
 // semphores global to the client
-const block_write_sem_global = new Semaphore(config.IO_WRITE_CONCURRENCY_GLOBAL);
-const block_replicate_sem_global = new Semaphore(config.IO_REPLICATE_CONCURRENCY_GLOBAL);
+const block_write_sem_global = new Semaphore(
+    config.IO_WRITE_CONCURRENCY_GLOBAL,
+);
+const block_replicate_sem_global = new Semaphore(
+    config.IO_REPLICATE_CONCURRENCY_GLOBAL,
+);
 const block_read_sem_global = new Semaphore(config.IO_READ_CONCURRENCY_GLOBAL);
 
 // semphores specific to an agent
-const block_write_sem_agent = new KeysSemaphore(config.IO_WRITE_CONCURRENCY_AGENT);
-const block_write_sem_agent_cloud = new KeysSemaphore(config.IO_WRITE_CONCURRENCY_AGENT_CLOUD);
-const block_replicate_sem_agent = new KeysSemaphore(config.IO_REPLICATE_CONCURRENCY_AGENT);
-const block_read_sem_agent = new KeysSemaphore(config.IO_READ_CONCURRENCY_AGENT);
+const block_write_sem_agent = new KeysSemaphore(
+    config.IO_WRITE_CONCURRENCY_AGENT,
+);
+const block_write_sem_agent_cloud = new KeysSemaphore(
+    config.IO_WRITE_CONCURRENCY_AGENT_CLOUD,
+);
+const block_replicate_sem_agent = new KeysSemaphore(
+    config.IO_REPLICATE_CONCURRENCY_AGENT,
+);
+const block_read_sem_agent = new KeysSemaphore(
+    config.IO_READ_CONCURRENCY_AGENT,
+);
 
 const chunk_read_cache = new LRUCache({
     name: 'ChunkReadCache',
@@ -64,7 +78,6 @@ const chunk_read_cache = new LRUCache({
     },
 });
 
-
 /**
  * @param {nb.Chunk[]} res_chunks
  * @param {nb.Chunk[]} chunks
@@ -82,7 +95,6 @@ function map_frag_data(res_chunks, chunks) {
 }
 
 class MapClient {
-
     /**
      * @param {Object} props
      * @param {nb.Chunk[]} [props.chunks]
@@ -132,7 +144,6 @@ class MapClient {
      * @returns {Promise<nb.Chunk[]>}
      */
     async get_mapping(chunks = this.chunks) {
-
         const res = await this.rpc_client.object.get_mapping({
             chunks: chunks.map(chunk => chunk.to_api()),
             location_info: this.location_info,
@@ -140,7 +151,9 @@ class MapClient {
             check_dups: this.check_dups,
         });
         /** @type {nb.Chunk[]} */
-        const res_chunks = res.chunks.map(chunk_info => new ChunkAPI(chunk_info, system_store));
+        const res_chunks = res.chunks.map(
+            chunk_info => new ChunkAPI(chunk_info, system_store),
+        );
         map_frag_data(res_chunks, chunks);
         return res_chunks;
     }
@@ -153,7 +166,9 @@ class MapClient {
     async put_mapping() {
         // TODO should we filter out chunk.had_errors from put mapping?
         await this.rpc_client.object.put_mapping({
-            chunks: this.chunks.filter(chunk => !chunk.had_errors).map(chunk => chunk.to_api()),
+            chunks: this.chunks
+                .filter(chunk => !chunk.had_errors)
+                .map(chunk => chunk.to_api()),
             move_to_tier: this.move_to_tier && this.move_to_tier._id,
         });
     }
@@ -169,8 +184,11 @@ class MapClient {
             } catch (err) {
                 chunk.had_errors = true;
                 this.had_errors = true;
-                dbg.warn('MapClient.process_mapping: chunk ERROR',
-                    err.stack || err, 'chunk', chunk,
+                dbg.warn(
+                    'MapClient.process_mapping: chunk ERROR',
+                    err.stack || err,
+                    'chunk',
+                    chunk,
                     err.chunks ? 'err.chunks ' + util.inspect(err.chunks) : '',
                 );
                 return chunk;
@@ -180,7 +198,7 @@ class MapClient {
     }
 
     /**
-     * @param {nb.Chunk} chunk 
+     * @param {nb.Chunk} chunk
      * @returns {Promise<nb.Chunk>}
      */
     async process_chunk(chunk) {
@@ -202,7 +220,10 @@ class MapClient {
                 done = true;
             } catch (err) {
                 if (chunk.had_errors) throw err;
-                if (Date.now() - start_time > config.IO_WRITE_PART_ATTEMPTS_EXHAUSTED) {
+                if (
+                    Date.now() - start_time >
+                    config.IO_WRITE_PART_ATTEMPTS_EXHAUSTED
+                ) {
                     dbg.error('UPLOAD:', 'write part attempts exhausted', err);
                     throw err;
                 }
@@ -216,8 +237,8 @@ class MapClient {
     }
 
     /**
-     * @param {nb.Chunk} chunk 
-     * @param {nb.Frag} frag 
+     * @param {nb.Chunk} chunk
+     * @param {nb.Frag} frag
      */
     async process_frag(chunk, frag) {
         if (!frag.allocations || !frag.allocations.length) return;
@@ -226,25 +247,41 @@ class MapClient {
         if (frag.data) {
             const first_alloc = frag.allocations[0];
             const rest_allocs = frag.allocations.slice(1);
-            this.add_mapping_info_to_block_md(chunk, frag, first_alloc.block_md);
+            this.add_mapping_info_to_block_md(
+                chunk,
+                frag,
+                first_alloc.block_md,
+            );
             await this.retry_write_block(first_alloc.block_md, frag.data);
-            await P.map(rest_allocs, alloc => this.retry_replicate_blocks(alloc.block_md, first_alloc.block_md));
+            await P.map(rest_allocs, alloc =>
+                this.retry_replicate_blocks(
+                    alloc.block_md,
+                    first_alloc.block_md,
+                ),
+            );
             return;
         }
 
-        const accessible_blocks = frag.blocks.filter(block => block.is_accessible);
+        const accessible_blocks = frag.blocks.filter(
+            block => block.is_accessible,
+        );
         if (accessible_blocks && accessible_blocks.length) {
-            let next_source = Math.floor(Math.random() * accessible_blocks.length);
+            let next_source = Math.floor(
+                Math.random() * accessible_blocks.length,
+            );
             await P.map(frag.allocations, async alloc => {
                 const source_block = accessible_blocks[next_source];
                 next_source = (next_source + 1) % accessible_blocks.length;
-                return this.retry_replicate_blocks(alloc.block_md, source_block.to_block_md());
+                return this.retry_replicate_blocks(
+                    alloc.block_md,
+                    source_block.to_block_md(),
+                );
             });
             return;
         }
 
         // we already know that this chunk cannot be read here
-        // because we already handled missing frags 
+        // because we already handled missing frags
         // and now we still have a frag without data source.
         // so we mark the chunk.had_errors to break from the process_frag loop.
         chunk.had_errors = true;
@@ -255,9 +292,9 @@ class MapClient {
     /**
      * We add mapping info to block_md before sending to block_store
      * in order to provide recovery info in case the database is not available.
-     * @param {nb.Chunk} chunk 
-     * @param {nb.Frag} frag 
-     * @param {nb.BlockMD} block_md 
+     * @param {nb.Chunk} chunk
+     * @param {nb.Frag} frag
+     * @param {nb.BlockMD} block_md
      */
     add_mapping_info_to_block_md(chunk, frag, block_md) {
         if (!config.BLOCK_STORE_FS_MAPPING_INFO_ENABLED) return;
@@ -332,24 +369,41 @@ class MapClient {
      * @param {Buffer} buffer
      */
     async write_block(block_md, buffer) {
-        const write_sem_agent = block_md.node_type === 'BLOCK_STORE_FS' ? block_write_sem_agent : block_write_sem_agent_cloud;
+        const write_sem_agent =
+            block_md.node_type === 'BLOCK_STORE_FS' ?
+                block_write_sem_agent
+            :   block_write_sem_agent_cloud;
         await write_sem_agent.surround_key(String(block_md.node), async () =>
             block_write_sem_global.surround(async () => {
-                dbg.log1('UPLOAD:', this.desc, 'write block',
-                    'buffer', buffer.length,
-                    'to', block_md.id, 'node', block_md.node, block_md.address);
+                dbg.log1(
+                    'UPLOAD:',
+                    this.desc,
+                    'write block',
+                    'buffer',
+                    buffer.length,
+                    'to',
+                    block_md.id,
+                    'node',
+                    block_md.node,
+                    block_md.address,
+                );
 
                 this._error_injection_on_write();
 
-                return block_store_client.write_block(this.rpc_client, {
-                    block_md,
-                    [RPC_BUFFERS]: { data: buffer },
-                }, {
-                    address: block_md.address,
-                    timeout: config.IO_WRITE_BLOCK_TIMEOUT,
-                    auth_token: null // ignore the client options when talking to agents
-                });
-            }));
+                return block_store_client.write_block(
+                    this.rpc_client,
+                    {
+                        block_md,
+                        [RPC_BUFFERS]: { data: buffer },
+                    },
+                    {
+                        address: block_md.address,
+                        timeout: config.IO_WRITE_BLOCK_TIMEOUT,
+                        auth_token: null, // ignore the client options when talking to agents
+                    },
+                );
+            }),
+        );
     }
 
     /**
@@ -359,22 +413,40 @@ class MapClient {
      * @param {nb.BlockMD} source_block_md
      */
     async replicate_block(block_md, source_block_md) {
-        await block_replicate_sem_agent.surround_key(String(block_md.node), async () =>
-            block_replicate_sem_global.surround(async () => {
-                dbg.log1('UPLOAD:', this.desc, 'replicate block',
-                    'from', source_block_md.id, 'node', source_block_md.node, source_block_md.address,
-                    'to', block_md.id, 'node', block_md.node, block_md.address);
+        await block_replicate_sem_agent.surround_key(
+            String(block_md.node),
+            async () =>
+                block_replicate_sem_global.surround(async () => {
+                    dbg.log1(
+                        'UPLOAD:',
+                        this.desc,
+                        'replicate block',
+                        'from',
+                        source_block_md.id,
+                        'node',
+                        source_block_md.node,
+                        source_block_md.address,
+                        'to',
+                        block_md.id,
+                        'node',
+                        block_md.node,
+                        block_md.address,
+                    );
 
-                this._error_injection_on_write();
+                    this._error_injection_on_write();
 
-                return this.rpc_client.block_store.replicate_block({
-                    target: block_md,
-                    source: source_block_md,
-                }, {
-                    address: block_md.address,
-                    timeout: config.IO_REPLICATE_BLOCK_TIMEOUT,
-                });
-            }));
+                    return this.rpc_client.block_store.replicate_block(
+                        {
+                            target: block_md,
+                            source: source_block_md,
+                        },
+                        {
+                            address: block_md.address,
+                            timeout: config.IO_REPLICATE_BLOCK_TIMEOUT,
+                        },
+                    );
+                }),
+        );
     }
 
     async run_read_object() {
@@ -396,7 +468,10 @@ class MapClient {
         });
         return res.chunks.map(chunk_info => {
             // TODO: Maybe move this to map_reader?
-            if (this.object_md.encryption && this.object_md.encryption.key_b64) {
+            if (
+                this.object_md.encryption &&
+                this.object_md.encryption.key_b64
+            ) {
                 chunk_info.cipher_key_b64 = this.object_md.encryption.key_b64;
             }
             return new ChunkAPI(chunk_info, system_store);
@@ -412,8 +487,11 @@ class MapClient {
             } catch (err) {
                 chunk.had_errors = true;
                 this.had_errors = true;
-                dbg.warn('MapClient.read_chunks: chunk ERROR',
-                    err.stack || err, 'chunk', chunk,
+                dbg.warn(
+                    'MapClient.read_chunks: chunk ERROR',
+                    err.stack || err,
+                    'chunk',
+                    chunk,
                     err.chunks ? 'err.chunks ' + util.inspect(err.chunks) : '',
                 );
             }
@@ -451,12 +529,16 @@ class MapClient {
             // verification mode will error if data fragments cannot be decoded
             if (this.verification_mode) throw err;
             if (data_frags.length === all_frags.length) throw err;
-            dbg.warn('READ _read_part: failed to read data frags, trying all frags',
+            dbg.warn(
+                'READ _read_part: failed to read data frags, trying all frags',
                 err.stack || err,
-                'err.chunks', util.inspect(err.chunks, true, null, true)
+                'err.chunks',
+                util.inspect(err.chunks, true, null, true),
             );
 
-            await Promise.all(all_frags.map(frag => this.read_frag(frag, chunk)));
+            await Promise.all(
+                all_frags.map(frag => this.read_frag(frag, chunk)),
+            );
             await this.decode_chunk(chunk);
         }
 
@@ -466,9 +548,15 @@ class MapClient {
             const saved_data = chunk.data;
             chunk.data = undefined;
             for (const frag of data_frags) frag.data = undefined;
-            const parity_frags = all_frags.filter(frag => frag.parity_index >= 0);
-            const verify_frags = parity_frags.concat(data_frags.slice(0, data_frags.length - parity_frags.length));
-            await Promise.all(verify_frags.map(frag => this.read_frag(frag, chunk)));
+            const parity_frags = all_frags.filter(
+                frag => frag.parity_index >= 0,
+            );
+            const verify_frags = parity_frags.concat(
+                data_frags.slice(0, data_frags.length - parity_frags.length),
+            );
+            await Promise.all(
+                verify_frags.map(frag => this.read_frag(frag, chunk)),
+            );
             await this.decode_chunk(chunk);
             assert(chunk.data.equals(saved_data));
         }
@@ -476,23 +564,26 @@ class MapClient {
 
     async decode_chunk(chunk) {
         await new Promise((resolve, reject) =>
-            nb_native().chunk_coder('dec', chunk, err => (err ? reject(err) : resolve()))
+            nb_native().chunk_coder('dec', chunk, err =>
+                err ? reject(err) : resolve(),
+            ),
         );
     }
 
     async encode_chunk(chunk) {
         await new Promise((resolve, reject) =>
-            nb_native().chunk_coder('enc', chunk, err => (err ? reject(err) : resolve()))
+            nb_native().chunk_coder('enc', chunk, err =>
+                err ? reject(err) : resolve(),
+            ),
         );
     }
 
     /**
-     * @param {nb.Frag} frag 
+     * @param {nb.Frag} frag
      * @param {nb.Chunk} chunk
      * @returns {Promise<void>}
      */
     async read_frag(frag, chunk) {
-
         if (frag.data) return;
         if (!frag.blocks) return;
 
@@ -500,15 +591,25 @@ class MapClient {
         if (this.verification_mode) {
             const block_md0 = frag.blocks[0].to_block_md();
             try {
-                const buffers = await P.map(frag.blocks, block => this.read_block(block));
+                const buffers = await P.map(frag.blocks, block =>
+                    this.read_block(block),
+                );
                 frag.data = buffers[0];
                 for (let i = 1; i < buffers.length; ++i) {
                     const buffer = buffers[i];
-                    if (block_md0.digest_type !== chunk.chunk_coder_config.frag_digest_type ||
-                        block_md0.digest_b64 !== frag.digest_b64) {
-                        throw new Error('READ _read_frag: (verification_mode) inconsistent replica digests');
+                    if (
+                        block_md0.digest_type !==
+                            chunk.chunk_coder_config.frag_digest_type ||
+                        block_md0.digest_b64 !== frag.digest_b64
+                    ) {
+                        throw new Error(
+                            'READ _read_frag: (verification_mode) inconsistent replica digests',
+                        );
                     }
-                    assert(buffer.equals(frag.data), 'READ _read_frag: (verification_mode) inconsistent data');
+                    assert(
+                        buffer.equals(frag.data),
+                        'READ _read_frag: (verification_mode) inconsistent data',
+                    );
                 }
             } catch (err) {
                 await this.report_error(block_md0, 'read', err);
@@ -531,64 +632,102 @@ class MapClient {
      */
     async read_block(block) {
         // use semaphore to surround the IO
-        return block_read_sem_agent.surround_key(block.node_id.toHexString(), async () =>
-            block_read_sem_global.surround(async () => {
-                const block_md = block.to_block_md();
-                dbg.log1('read_block:', block._id, 'from', block.address);
+        return block_read_sem_agent.surround_key(
+            block.node_id.toHexString(),
+            async () =>
+                block_read_sem_global.surround(async () => {
+                    const block_md = block.to_block_md();
+                    dbg.log1('read_block:', block._id, 'from', block.address);
 
-                if (!block.address) throw new Error('No block address for node ' + block.node);
-                this._error_injection_on_read();
-
-                const res = await block_store_client.read_block(this.rpc_client, {
-                    block_md,
-                }, {
-                    address: block.address,
-                    timeout: config.IO_READ_BLOCK_TIMEOUT,
-                    auth_token: null // ignore the client options when talking to agents
-                });
-
-                /** @type {Buffer} */
-                const data = res[RPC_BUFFERS].data;
-
-                // verification mode checks here the block digest.
-                // this detects tampering which the agent did not report which means the agent is hacked.
-                // we don't do this in normal mode because our native decoding checks it,
-                // however the native code does not return a TAMPERING error that the system understands.
-                // TODO GUY OPTIMIZE translate tampering errors from native decode (also for normal mode)
-                if (this.verification_mode) {
-                    const digest_b64 = crypto.createHash(block_md.digest_type).update(data).digest('base64');
-                    if (digest_b64 !== block_md.digest_b64) {
-                        throw new RpcError('TAMPERING', 'Block digest varification failed ' + block_md.id);
+                    if (!block.address) {
+                        throw new Error(
+                            'No block address for node ' + block.node,
+                        );
                     }
-                }
+                    this._error_injection_on_read();
 
-                return data;
-            }));
+                    const res = await block_store_client.read_block(
+                        this.rpc_client,
+                        {
+                            block_md,
+                        },
+                        {
+                            address: block.address,
+                            timeout: config.IO_READ_BLOCK_TIMEOUT,
+                            auth_token: null, // ignore the client options when talking to agents
+                        },
+                    );
+
+                    /** @type {Buffer} */
+                    const data = res[RPC_BUFFERS].data;
+
+                    // verification mode checks here the block digest.
+                    // this detects tampering which the agent did not report which means the agent is hacked.
+                    // we don't do this in normal mode because our native decoding checks it,
+                    // however the native code does not return a TAMPERING error that the system understands.
+                    // TODO GUY OPTIMIZE translate tampering errors from native decode (also for normal mode)
+                    if (this.verification_mode) {
+                        const digest_b64 = crypto
+                            .createHash(block_md.digest_type)
+                            .update(data)
+                            .digest('base64');
+                        if (digest_b64 !== block_md.digest_b64) {
+                            throw new RpcError(
+                                'TAMPERING',
+                                'Block digest varification failed ' +
+                                    block_md.id,
+                            );
+                        }
+                    }
+
+                    return data;
+                }),
+        );
     }
 
     async move_blocks_to_storage_class() {
         // Block movement is not done if move_to_tier was not requested or if insufficient
         // previous tier information is provided.
-        dbg.log1('MapClient.move_blocks_to_storage_class',
-            'chunks.length', this.chunks.length,
-            'move_to_tier', this.move_to_tier?.name, this.move_to_tier?.storage_class,
-            'current_tiers.length', this.current_tiers?.length,
+        dbg.log1(
+            'MapClient.move_blocks_to_storage_class',
+            'chunks.length',
+            this.chunks.length,
+            'move_to_tier',
+            this.move_to_tier?.name,
+            this.move_to_tier?.storage_class,
+            'current_tiers.length',
+            this.current_tiers?.length,
         );
-        if (!this.move_to_tier || !this.current_tiers || this.current_tiers?.length === 0) return;
+        if (
+            !this.move_to_tier ||
+            !this.current_tiers ||
+            this.current_tiers?.length === 0
+        ) {
+            return;
+        }
         if (this.current_tiers.length !== this.chunks.length) {
-            throw new Error('current_tiers length does not match chunks length');
+            throw new Error(
+                'current_tiers length does not match chunks length',
+            );
         }
 
         const blocks = [];
         const parts = [];
 
-        const target_storage_class = s3_utils.parse_storage_class(this.move_to_tier.storage_class);
-        const target_attached_pools = this.move_to_tier.mirrors.map(mirror => mirror.spread_pools.map(pool => String(pool._id))).flat();
+        const target_storage_class = s3_utils.parse_storage_class(
+            this.move_to_tier.storage_class,
+        );
+        const target_attached_pools = this.move_to_tier.mirrors
+            .map(mirror => mirror.spread_pools.map(pool => String(pool._id)))
+            .flat();
 
         for (const [idx, chunk] of this.chunks.entries()) {
             const current_tier = this.current_tiers[idx];
-            const current_storage_class = s3_utils.parse_storage_class(current_tier.storage_class);
-            const is_same_class = current_storage_class === target_storage_class;
+            const current_storage_class = s3_utils.parse_storage_class(
+                current_tier.storage_class,
+            );
+            const is_same_class =
+                current_storage_class === target_storage_class;
 
             // skip if the same class and no change is needed
             if (is_same_class) continue;
@@ -598,8 +737,14 @@ class MapClient {
                 parts.push(part);
             }
 
-            const current_attached_pools = current_tier.mirrors.map(mirror => mirror.spread_pools.map(pool => String(pool._id))).flat();
-            const is_same_pools = _.xor(target_attached_pools, current_attached_pools).length === 0;
+            const current_attached_pools = current_tier.mirrors
+                .map(mirror =>
+                    mirror.spread_pools.map(pool => String(pool._id)),
+                )
+                .flat();
+            const is_same_pools =
+                _.xor(target_attached_pools, current_attached_pools).length ===
+                0;
 
             // only update the blocks storage class if the new tier uses the same pools,
             // because when moving to different pools the blocks will eventually be replaced anyway.
@@ -619,58 +764,88 @@ class MapClient {
     }
 
     /**
-     * @param {nb.Part[]} parts 
-     * @param {nb.StorageClass} storage_class 
+     * @param {nb.Part[]} parts
+     * @param {nb.StorageClass} storage_class
      */
     async _set_objects_storage_class(parts, storage_class) {
         const object_ids = db_client.instance().uniq_ids(parts, 'obj_id');
-        if (storage_class && storage_class !== s3_utils.STORAGE_CLASS_STANDARD) {
-            await MDStore.instance().update_objects_by_ids(object_ids, { storage_class });
+        if (
+            storage_class &&
+            storage_class !== s3_utils.STORAGE_CLASS_STANDARD
+        ) {
+            await MDStore.instance().update_objects_by_ids(object_ids, {
+                storage_class,
+            });
         } else {
             // unset the storage_class field
-            await MDStore.instance().update_objects_by_ids(object_ids, undefined, { storage_class: 1 });
+            await MDStore.instance().update_objects_by_ids(
+                object_ids,
+                undefined,
+                { storage_class: 1 },
+            );
         }
     }
 
     /**
-     * @param {nb.Block[]} blocks 
-     * @param {nb.StorageClass} storage_class 
+     * @param {nb.Block[]} blocks
+     * @param {nb.StorageClass} storage_class
      */
     async _move_blocks_to_storage_class(blocks, storage_class) {
         if (!blocks.length) return;
         const blocks_by_agent = _.groupBy(blocks, 'address');
         await P.map(_.keys(blocks_by_agent), async agent_address => {
             const blocks_for_agent = blocks_by_agent[agent_address];
-            const block_ids = _.map(blocks_for_agent, block => block._id?.toString()).filter(Boolean);
+            const block_ids = _.map(blocks_for_agent, block =>
+                block._id?.toString(),
+            ).filter(Boolean);
 
             try {
-                const moved = await this.rpc_client.block_store.move_blocks_to_storage_class({
-                    block_ids,
-                    storage_class
-                }, {
-                    address: agent_address
-                });
-                dbg.log1('MapClient: move_blocks_to_storage_class SUCCEEDED', 'ADDR:', agent_address, 'MOVED:', moved);
+                const moved =
+                    await this.rpc_client.block_store.move_blocks_to_storage_class(
+                        {
+                            block_ids,
+                            storage_class,
+                        },
+                        {
+                            address: agent_address,
+                        },
+                    );
+                dbg.log1(
+                    'MapClient: move_blocks_to_storage_class SUCCEEDED',
+                    'ADDR:',
+                    agent_address,
+                    'MOVED:',
+                    moved,
+                );
             } catch (err) {
-                dbg.error('MapClient: move_blocks_to_storage_class FAILED', 'ADDR:', agent_address, 'ERROR', err,);
+                dbg.error(
+                    'MapClient: move_blocks_to_storage_class FAILED',
+                    'ADDR:',
+                    agent_address,
+                    'ERROR',
+                    err,
+                );
             }
         });
     }
 
     _error_injection_on_write() {
-        if (config.ERROR_INJECTON_ON_WRITE &&
-            config.ERROR_INJECTON_ON_WRITE > Math.random()) {
+        if (
+            config.ERROR_INJECTON_ON_WRITE &&
+            config.ERROR_INJECTON_ON_WRITE > Math.random()
+        ) {
             throw new RpcError('ERROR_INJECTON_ON_WRITE');
         }
     }
 
     _error_injection_on_read() {
-        if (config.ERROR_INJECTON_ON_READ &&
-            config.ERROR_INJECTON_ON_READ > Math.random()) {
+        if (
+            config.ERROR_INJECTON_ON_READ &&
+            config.ERROR_INJECTON_ON_READ > Math.random()
+        ) {
             throw new RpcError('ERROR_INJECTON_ON_READ');
         }
     }
-
 }
 
 exports.MapClient = MapClient;

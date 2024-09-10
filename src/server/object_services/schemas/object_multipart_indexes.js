@@ -12,8 +12,8 @@ module.exports = [
             partialFilterExpression: {
                 obj: { $exists: true },
                 deleted: null,
-            }
-        }
+            },
+        },
     },
     {
         fields: {
@@ -24,7 +24,7 @@ module.exports = [
             partialFilterExpression: {
                 obj: { $exists: true },
                 deleted: { $exists: true },
-            }
-        }
-    }
+            },
+        },
+    },
 ];

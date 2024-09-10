@@ -26,7 +26,7 @@ const {
     password = 'DeMo1',
     system = 'demo',
     skip_report = false,
-    help = false
+    help = false,
 } = argv;
 
 function usage() {
@@ -55,7 +55,12 @@ const cases = [
     'set_debug_level_and_check',
     'set_diagnose_system',
 ];
-report.init_reporter({ suite: test_name, conf: {}, mongo_report: true, cases: cases });
+report.init_reporter({
+    suite: test_name,
+    conf: {},
+    mongo_report: true,
+    cases: cases,
+});
 
 function saveErrorAndResume(message) {
     console.error(message);
@@ -107,8 +112,8 @@ async function update_n2n_config_and_check_single_port(port) {
     await client.system.update_n2n_config({
         config: {
             tcp_active: true,
-            tcp_permanent_passive: { port }
-        }
+            tcp_permanent_passive: { port },
+        },
     });
     const system_info = await client.system.read_system({});
     const tcp_port = system_info.n2n_config.tcp_permanent_passive.port;
@@ -127,8 +132,8 @@ async function update_n2n_config_and_check_range(max, min) {
     await client.system.update_n2n_config({
         config: {
             tcp_active: true,
-            tcp_permanent_passive: { max, min }
-        }
+            tcp_permanent_passive: { max, min },
+        },
     });
     const system_info = await client.system.read_system({});
     const tcp_port_min = system_info.n2n_config.tcp_permanent_passive.min;
@@ -189,11 +194,19 @@ async function set_diagnose_system_and_check() {
         console.log(`Setting Diagnostic`);
         const diagnose_system = await client.cluster_server.diagnose_system({});
         await P.delay(40 * 1000);
-        if (diagnose_system.includes(`/public/${system}_cluster_diagnostics.tgz`)) {
-            console.log(`The diagnose system file is: ${diagnose_system} - as should `);
+        if (
+            diagnose_system.includes(
+                `/public/${system}_cluster_diagnostics.tgz`,
+            )
+        ) {
+            console.log(
+                `The diagnose system file is: ${diagnose_system} - as should `,
+            );
             await report.success(`set_diagnose_system`);
         } else {
-            saveErrorAndResume(`The diagnose system file is: ${diagnose_system}`);
+            saveErrorAndResume(
+                `The diagnose system file is: ${diagnose_system}`,
+            );
             throw new Error('Test set_diagnose_system_and_check Failed');
         }
     } catch (e) {
@@ -203,12 +216,15 @@ async function set_diagnose_system_and_check() {
 }
 
 async function set_rpc_and_create_auth_token() {
-    rpc = api.new_rpc_from_base_address('wss://' + mgmt_ip + ':' + mgmt_port_https, 'EXTERNAL');
+    rpc = api.new_rpc_from_base_address(
+        'wss://' + mgmt_ip + ':' + mgmt_port_https,
+        'EXTERNAL',
+    );
     client = rpc.new_client({});
     const auth_params = {
         email,
         password,
-        system
+        system,
     };
     return client.create_auth_token(auth_params);
 }
@@ -223,9 +239,7 @@ async function main() {
 
         server_ops.init_reporter({
             suite_name: 'system_config',
-            cases: [
-                'create_system'
-            ]
+            cases: ['create_system'],
         });
 
         await set_maintenance_mode_and_check();

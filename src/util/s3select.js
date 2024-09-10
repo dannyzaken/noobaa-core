@@ -12,7 +12,6 @@ const xml_utils = require('./xml_utils');
 https://docs.aws.amazon.com/AmazonS3/latest/API/RESTSelectObjectAppendix.html*/
 
 class S3SelectStream extends Transform {
-
     static prelude_length_bytes = 12;
     static crc_length_bytes = 4;
     static string_type = 7;
@@ -25,7 +24,7 @@ class S3SelectStream extends Transform {
             Buffer.from([key.length]),
             Buffer.from(key),
             Buffer.from([S3SelectStream.string_type, 0, val.length]),
-            Buffer.from(val)
+            Buffer.from(val),
         ]);
     }
 
@@ -38,14 +37,17 @@ class S3SelectStream extends Transform {
         S3SelectStream.header_to_buffer(':message-type', 'event'),
         S3SelectStream.header_to_buffer(':event-type', 'End'),
         //no PAYLOAD (DATA ends)
-        Buffer.from([0xfe, 0x2c, 0xee, 0x99]) //MESSAGE CRC (crc of above)
+        Buffer.from([0xfe, 0x2c, 0xee, 0x99]), //MESSAGE CRC (crc of above)
     ]);
 
     //same for headers of records message
     static records_message_headers = Buffer.concat([
         S3SelectStream.header_to_buffer(':message-type', 'event'),
         S3SelectStream.header_to_buffer(':event-type', 'Records'),
-        S3SelectStream.header_to_buffer(':content-type', 'application/octet-stream'),
+        S3SelectStream.header_to_buffer(
+            ':content-type',
+            'application/octet-stream',
+        ),
     ]);
 
     //error message is always the same, so we allocate and init it once.
@@ -57,14 +59,14 @@ class S3SelectStream extends Transform {
         S3SelectStream.header_to_buffer(':error-code', '500'),
         S3SelectStream.header_to_buffer(':error-message', 'General Error'),
         //no PAYLOAD (DATA ends)
-        Buffer.from([0, 0, 0, 0]) //MESSAGE CRC (crc of above)
+        Buffer.from([0, 0, 0, 0]), //MESSAGE CRC (crc of above)
     ]);
 
     //headers of stat message
     static stats_message_headers = Buffer.concat([
         S3SelectStream.header_to_buffer(':message-type', 'event'),
         S3SelectStream.header_to_buffer(':event-type', 'Stats'),
-        S3SelectStream.header_to_buffer(':content-type', 'text/xml')
+        S3SelectStream.header_to_buffer(':content-type', 'text/xml'),
     ]);
 
     //calculate the two crcs (prelude and message) after content is filled
@@ -72,7 +74,10 @@ class S3SelectStream extends Transform {
         //prelude crc (prelude is first 8 bytes) at offset 8
         message_buff.writeInt32BE(crc32.buf(message_buff.subarray(0, 8)), 8);
         //message crc (entire buffer except last 4 bytes) at last four bytes
-        message_buff.writeInt32BE(crc32.buf(message_buff.subarray(0, message_buff.length - 4)), message_buff.length - 4);
+        message_buff.writeInt32BE(
+            crc32.buf(message_buff.subarray(0, message_buff.length - 4)),
+            message_buff.length - 4,
+        );
     }
 
     //calculate crcs for the two static messages
@@ -90,8 +95,8 @@ class S3SelectStream extends Transform {
             Stats: {
                 BytesProcessed: 0,
                 BytesScanned: 0,
-                BytesReturned: 0
-            }
+                BytesReturned: 0,
+            },
         };
         opts.handle_result = this.handle_result;
         opts.s3select_js = this;
@@ -99,7 +104,7 @@ class S3SelectStream extends Transform {
     }
 
     encode_chunk(select_result) {
-        dbg.log2("select res = ", select_result.select.toString());
+        dbg.log2('select res = ', select_result.select.toString());
 
         const total_length_bytes =
             select_result.select.length +
@@ -113,7 +118,10 @@ class S3SelectStream extends Transform {
 
         //prelude:
         index = buffer.writeUInt32BE(total_length_bytes);
-        index = buffer.writeUInt32BE(S3SelectStream.records_message_headers.length, index);
+        index = buffer.writeUInt32BE(
+            S3SelectStream.records_message_headers.length,
+            index,
+        );
         buffer.writeInt32BE(select_result.prelude_crc, index);
         this.push(buffer);
         //headers:
@@ -154,13 +162,19 @@ class S3SelectStream extends Transform {
 
         //prelude:
         index = buffer.writeUInt32BE(total_length_bytes);
-        index = buffer.writeUInt32BE(S3SelectStream.stats_message_headers.length, index);
+        index = buffer.writeUInt32BE(
+            S3SelectStream.stats_message_headers.length,
+            index,
+        );
         buffer.writeInt32BE(crc32.buf(buffer.subarray(0, index)), index);
         this.push(buffer);
         message_crc = crc32.buf(buffer);
         //headers:
         this.push(S3SelectStream.stats_message_headers);
-        message_crc = crc32.buf(S3SelectStream.stats_message_headers, message_crc);
+        message_crc = crc32.buf(
+            S3SelectStream.stats_message_headers,
+            message_crc,
+        );
         //body:
         this.push(xml_buff);
         message_crc = crc32.buf(xml_buff, message_crc);
@@ -199,13 +213,13 @@ class S3SelectStream extends Transform {
     }
 
     async select_parquet() {
-        dbg.log2("select_parq start");
+        dbg.log2('select_parq start');
         const select_result = await this.s3select.select_parquet();
         //by now query is done. this is the last chunk
         await this.handle_result(select_result);
         //finish up response
         await this.send_stats();
-        dbg.log2("select parq send end message");
+        dbg.log2('select parq send end message');
         this.push(S3SelectStream.end_message);
         this.push(null);
         //we are referencing s3select and it reference us back

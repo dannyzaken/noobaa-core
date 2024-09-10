@@ -15,8 +15,8 @@ const migrate_schema = {
         last_move_size: { type: 'number' },
         total_move_size: { type: 'number' },
         marker: { objectid: true },
-        last_update: { idate: true }
-    }
+        last_update: { idate: true },
+    },
 };
 
 /**
@@ -27,7 +27,6 @@ const migrate_schema = {
  *
  */
 class Migrator {
-
     /**
      * @param {Object[]} collection_list
      * @param {nb.DBClient} from_client
@@ -42,9 +41,14 @@ class Migrator {
     }
 
     async migrate_db() {
-        this.to_client.define_collection({ name: 'migrate_status', schema: migrate_schema });
+        this.to_client.define_collection({
+            name: 'migrate_status',
+            schema: migrate_schema,
+        });
         for (const collection of this.collection_list) {
-            await this.from_client.define_collection(_.omit(collection, 'db_indexes'));
+            await this.from_client.define_collection(
+                _.omit(collection, 'db_indexes'),
+            );
             await this.to_client.define_collection(collection);
         }
         await this.from_client.connect(true);
@@ -67,15 +71,27 @@ class Migrator {
         for (let i = start_index; i < this.collection_list.length; ++i) {
             const collection_name = this.collection_list[i].name;
             if (collection_name === 'system_history') {
-                console.log(`skipping system_history collection migration due to possible heavy queries...`);
+                console.log(
+                    `skipping system_history collection migration due to possible heavy queries...`,
+                );
                 continue;
             }
             this.migrate_status.collection_index = i;
             this.migrate_status.collection_name = collection_name;
-            await P.retry({ attempts: 3, delay_ms: 10000, func: async () => this._migrate_collection(collection_name) });
+            await P.retry({
+                attempts: 3,
+                delay_ms: 10000,
+                func: async () => this._migrate_collection(collection_name),
+            });
             await this._verify_collection(collection_name);
             this.migrate_status.marker = undefined;
-            await this.upgrade_table.updateOne({}, { $set: { collection_index: i + 1, last_update: Date.now() }, $unset: { marker: 1 } });
+            await this.upgrade_table.updateOne(
+                {},
+                {
+                    $set: { collection_index: i + 1, last_update: Date.now() },
+                    $unset: { marker: 1 },
+                },
+            );
         }
         await this.from_client.disconnect();
         await this.to_client.disconnect();
@@ -89,33 +105,51 @@ class Migrator {
         let marker = this.migrate_status.marker;
         let total = 0;
         while (!done) {
-            console.log(`_migrate_collection: start searching docs in ${collection_name}`);
-            const docs = await from_col.find({ _id: marker ? { $gt: marker } : undefined }, { limit: this.batch_size, sort: { _id: 1 } });
-            console.log(`_migrate_collection: found ${docs.length} docs in ${collection_name}`);
+            console.log(
+                `_migrate_collection: start searching docs in ${collection_name}`,
+            );
+            const docs = await from_col.find(
+                { _id: marker ? { $gt: marker } : undefined },
+                { limit: this.batch_size, sort: { _id: 1 } },
+            );
+            console.log(
+                `_migrate_collection: found ${docs.length} docs in ${collection_name}`,
+            );
             if (docs.length > 0) {
                 try {
                     console.log(`_migrate_collection: insertMany started`);
                     await to_col.insertManyUnordered(docs);
-                } catch (err) { // if duplicate key - continue
-                    console.log('_migrate_collection: failed with error: ', err);
+                } catch (err) {
+                    // if duplicate key - continue
+                    console.log(
+                        '_migrate_collection: failed with error: ',
+                        err,
+                    );
                     if (err.code !== '23505') throw err;
                 }
                 total += docs.length;
-                console.log(`migrated ${total} documents to table ${collection_name}`);
+                console.log(
+                    `migrated ${total} documents to table ${collection_name}`,
+                );
                 marker = docs[docs.length - 1]._id;
-                await this.upgrade_table.updateOne({}, {
-                    $set: {
-                        marker,
-                        last_move_size: docs.length,
-                        total_move_size: total,
-                        last_update: Date.now()
-                    }
-                });
+                await this.upgrade_table.updateOne(
+                    {},
+                    {
+                        $set: {
+                            marker,
+                            last_move_size: docs.length,
+                            total_move_size: total,
+                            last_update: Date.now(),
+                        },
+                    },
+                );
             } else {
                 done = true;
             }
         }
-        console.log(`completed migration of ${total} documents to table ${collection_name}`);
+        console.log(
+            `completed migration of ${total} documents to table ${collection_name}`,
+        );
     }
 
     async _verify_collection(collection_name) {

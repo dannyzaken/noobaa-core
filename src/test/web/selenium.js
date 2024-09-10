@@ -5,8 +5,7 @@ const mocha = require('mocha');
 const wd = require('selenium-webdriver');
 
 function init_mocha() {
-
-    mocha.before(function() {
+    mocha.before(function () {
         const self = this; // eslint-disable-line no-invalid-this
         const prefs = new wd.logging.Preferences();
         prefs.setLevel(wd.logging.Type.BROWSER, wd.logging.Level.ALL);
@@ -21,11 +20,10 @@ function init_mocha() {
             .build();
     });
 
-    mocha.after(function() {
+    mocha.after(function () {
         const self = this; // eslint-disable-line no-invalid-this
         return self.driver.quit();
     });
-
 }
 
 exports.init_mocha = init_mocha;

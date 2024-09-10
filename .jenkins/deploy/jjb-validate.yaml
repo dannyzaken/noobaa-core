@@ -9,7 +9,7 @@ objects:
     metadata:
       labels:
         app: jjb-validate
-        jjb/session: "${SESSION}"
+        jjb/session: '${SESSION}'
       name: jjb-validate
     spec:
       ttlSecondsAfterFinished: 0
@@ -18,7 +18,7 @@ objects:
         metadata:
           labels:
             app: jjb-validate
-            jjb/session: "${SESSION}"
+            jjb/session: '${SESSION}'
         spec:
           containers:
             - name: jjb-validate
@@ -27,7 +27,7 @@ objects:
                 - name: GIT_REPO
                   value: https://github.com/noobaa/noobaa-core
                 - name: GIT_REF
-                  value: "${GIT_REF}"
+                  value: '${GIT_REF}'
           restartPolicy: Never
 parameters:
   - name: SESSION

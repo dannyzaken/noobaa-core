@@ -10,7 +10,7 @@
  */
 
 const system_id = db.systems.findOne()._id;
-const pool_id = db.pools.findOne({ resource_type: { $ne: "INTERNAL" } })._id;
+const pool_id = db.pools.findOne({ resource_type: { $ne: 'INTERNAL' } })._id;
 const ccc = db.chunk_configs.findOne()._id;
 const now = Date.now();
 
@@ -24,36 +24,40 @@ for (let j = 0; j < 5; ++j) {
         const bucket_id = new ObjectId();
         array_of_tiers.push({
             _id: tier_id,
-            name: 'tier' + ((j * 1000) + i),
+            name: 'tier' + (j * 1000 + i),
             system: system_id,
             chunk_config: ccc,
             data_placement: 'SPREAD',
-            mirrors: [{
-                _id: new ObjectId(),
-                spread_pools: [pool_id],
-            }],
+            mirrors: [
+                {
+                    _id: new ObjectId(),
+                    spread_pools: [pool_id],
+                },
+            ],
             last_update: now,
         });
         array_of_policies.push({
             _id: policy_id,
-            name: 'policy' + ((j * 1000) + i),
+            name: 'policy' + (j * 1000 + i),
             system: system_id,
-            tiers: [{
-                tier: tier_id,
-                order: 0,
-                spillover: false,
-                disabled: false
-            }],
+            tiers: [
+                {
+                    tier: tier_id,
+                    order: 0,
+                    spillover: false,
+                    disabled: false,
+                },
+            ],
             chunk_split_config: {
                 avg_chunk: 4194304,
-                delta_chunk: 1048576
+                delta_chunk: 1048576,
             },
-            last_update: now
+            last_update: now,
         });
         array_of_buckets.push({
             _id: bucket_id,
-            name: 'bucket' + ((j * 1000) + i),
-            tag: "",
+            name: 'bucket' + (j * 1000 + i),
+            tag: '',
             system: system_id,
             tiering: policy_id,
             storage_stats: {
@@ -64,10 +68,10 @@ for (let j = 0; j < 5; ++j) {
                 blocks_size: 0,
                 pools: {},
                 objects_hist: [],
-                last_update: Date.now() - (2 * 90000)
+                last_update: Date.now() - 2 * 90000,
             },
             lambda_triggers: [],
-            versioning: "DISABLED",
+            versioning: 'DISABLED',
             last_update: now,
         });
     }

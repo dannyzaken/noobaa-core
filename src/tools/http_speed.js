@@ -38,9 +38,10 @@ argv.hash = argv.hash ? String(argv.hash) : '';
 
 // set keep alive to make sure we don't reconnect between requests
 http.globalAgent.keepAlive = true;
-const http_agent = argv.ssl ?
-    new https.Agent({ keepAlive: true }) :
-    new http.Agent({ keepAlive: true });
+const http_agent =
+    argv.ssl ?
+        new https.Agent({ keepAlive: true })
+    :   new http.Agent({ keepAlive: true });
 
 const buffers_pool_sem = new Semaphore(1024 * 1024 * 1024, {
     timeout: 2 * 60 * 1000,
@@ -92,11 +93,13 @@ function usage() {
 }
 
 function run_server() {
-    const server = argv.ssl ?
-        https.createServer(ssl_utils.generate_ssl_certificate()) :
-        http.createServer();
+    const server =
+        argv.ssl ?
+            https.createServer(ssl_utils.generate_ssl_certificate())
+        :   http.createServer();
 
-    server.on('error', err => {
+    server
+        .on('error', err => {
             console.error('HTTP server error', err.message);
             process.exit();
         })
@@ -119,9 +122,9 @@ function run_server() {
 }
 
 /**
- * 
- * @param {http.IncomingMessage} req 
- * @param {http.ServerResponse} res 
+ *
+ * @param {http.IncomingMessage} req
+ * @param {http.ServerResponse} res
  */
 function run_server_request(req, res) {
     const start_time = process.hrtime.bigint();
@@ -172,15 +175,19 @@ function run_client_request() {
                 process.exit();
             }
             res.once('error', err => {
-                    console.error('HTTP client response error', err.message);
-                    process.exit();
-                })
+                console.error('HTTP client response error', err.message);
+                process.exit();
+            })
                 .once('end', () => {
-                    const took_ns = Number(process.hrtime.bigint() - start_time);
+                    const took_ns = Number(
+                        process.hrtime.bigint() - start_time,
+                    );
                     send_speedometer.add_op(took_ns / 1e6);
                 })
                 .once('end', run_client_request)
-                .on('data', data => { /* noop */ });
+                .on('data', data => {
+                    /* noop */
+                });
             // setImmediate(run_client_request);
         });
 
@@ -188,7 +195,7 @@ function run_client_request() {
 }
 
 /**
- * @param {http.ClientRequest} writable 
+ * @param {http.ClientRequest} writable
  */
 function run_sender(writable) {
     const req_size = size_bytes;
@@ -202,7 +209,9 @@ function run_sender(writable) {
         while (ok && n < req_size) {
             // const buffer = Buffer.allocUnsafe(Math.min(buf_size, req_size - n));
             let { buffer, callback } = await buffers_pool.get_buffer();
-            if (buffer.length > req_size - n) buffer = buffer.subarray(0, req_size - n);
+            if (buffer.length > req_size - n) {
+                buffer = buffer.subarray(0, req_size - n);
+            }
             ok = writable.write(buffer, callback);
             n += buffer.length;
             send_speedometer.update(buffer.length);
@@ -212,7 +221,7 @@ function run_sender(writable) {
 }
 
 /**
- * @param {http.IncomingMessage} readable 
+ * @param {http.IncomingMessage} readable
  */
 function run_receiver(readable) {
     const hasher = argv.hash && crypto.createHash(argv.hash);
@@ -236,23 +245,31 @@ function run_receiver(readable) {
             })
             .once('response', res => {
                 if (res.statusCode !== 200) {
-                    console.error('HTTP client response status', res.statusCode);
+                    console.error(
+                        'HTTP client response status',
+                        res.statusCode,
+                    );
                     process.exit();
                 }
                 res.once('error', err => {
-                        console.error('HTTP client response error', err.message);
-                        process.exit();
-                    })
-                    .on('data', data => { /* noop */ });
+                    console.error('HTTP client response error', err.message);
+                    process.exit();
+                }).on('data', data => {
+                    /* noop */
+                });
             });
 
-        readable.pipe(new stream.Transform({
-            transform(data, encoding, callback) {
-                if (hasher) hasher.update(data);
-                recv_speedometer.update(data.length);
-                callback(null, data);
-            }
-        })).pipe(req);
+        readable
+            .pipe(
+                new stream.Transform({
+                    transform(data, encoding, callback) {
+                        if (hasher) hasher.update(data);
+                        recv_speedometer.update(data.length);
+                        callback(null, data);
+                    },
+                }),
+            )
+            .pipe(req);
     } else {
         readable.on('data', data => {
             if (hasher) hasher.update(data);

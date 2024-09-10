@@ -23,19 +23,19 @@ function _new_monitring_stats() {
         read_count: 0,
         total_read_latency: 0,
         write_count: 0,
-        total_write_latency: 0
+        total_write_latency: 0,
     };
 }
 
 function get_block_internal_dir(block_id) {
-    const internal_dir = hex_str_regex.test(block_id) ?
-        block_id.substring(block_id.length - 3) + '.blocks' :
-        'other.blocks';
+    const internal_dir =
+        hex_str_regex.test(block_id) ?
+            block_id.substring(block_id.length - 3) + '.blocks'
+        :   'other.blocks';
     return internal_dir;
 }
 
 class BlockStoreBase {
-
     constructor(options) {
         this.node_name = options.node_name;
         this.client = options.rpc_client;
@@ -101,7 +101,7 @@ class BlockStoreBase {
             this.io_stats.write_bytes += io_stats.write_bytes;
             this._update_usage({
                 size: io_stats.write_bytes,
-                count: io_stats.write_count
+                count: io_stats.write_count,
             });
         }
     }
@@ -145,15 +145,19 @@ class BlockStoreBase {
         // must clone before returning to rpc encoding
         // since it mutates the object for encoding buffers
         this.monitoring_stats.inflight_reads += 1;
-        this.monitoring_stats.max_inflight_reads = Math.max(this.monitoring_stats.inflight_reads, this.monitoring_stats.max_inflight_reads);
+        this.monitoring_stats.max_inflight_reads = Math.max(
+            this.monitoring_stats.inflight_reads,
+            this.monitoring_stats.max_inflight_reads,
+        );
         try {
             const start = time_utils.millistamp();
             const block = await this.block_cache.get_with_cache(block_md);
             this.monitoring_stats.read_count += 1;
-            this.monitoring_stats.total_read_latency += time_utils.millistamp() - start;
+            this.monitoring_stats.total_read_latency +=
+                time_utils.millistamp() - start;
             return {
                 block_md,
-                [RPC_BUFFERS]: { data: block.data }
+                [RPC_BUFFERS]: { data: block.data },
             };
         } finally {
             this.monitoring_stats.inflight_reads -= 1;
@@ -172,7 +176,9 @@ class BlockStoreBase {
 
     async verify_blocks(req) {
         const { verify_blocks } = req.rpc_params;
-        await P.map_with_concurrency(10, verify_blocks, block_md => this.verify_block(block_md));
+        await P.map_with_concurrency(10, verify_blocks, block_md =>
+            this.verify_block(block_md),
+        );
     }
 
     /**
@@ -182,19 +188,30 @@ class BlockStoreBase {
         try {
             const [block_from_store, block_from_cache] = await Promise.all([
                 this._read_block_md(block_md),
-                this.block_cache.peek_cache(block_md)
+                this.block_cache.peek_cache(block_md),
             ]);
             if (block_from_store) {
-                this._verify_block(block_md, block_from_store.data, block_from_store.block_md);
+                this._verify_block(
+                    block_md,
+                    block_from_store.data,
+                    block_from_store.block_md,
+                );
             } else {
                 // TODO: Should trigger further action in order to resolve the issue
-                dbg.error('verify_blocks BLOCK NOT EXISTS',
-                    ' on block:', block_md);
+                dbg.error(
+                    'verify_blocks BLOCK NOT EXISTS',
+                    ' on block:',
+                    block_md,
+                );
                 return;
             }
 
             if (block_from_cache) {
-                this._verify_block(block_md, block_from_cache.data, block_from_cache.block_md);
+                this._verify_block(
+                    block_md,
+                    block_from_cache.data,
+                    block_from_cache.block_md,
+                );
             }
         } catch (err) {
             // TODO: Should trigger further action in order to resolve the issue
@@ -213,15 +230,19 @@ class BlockStoreBase {
 
     /**
      * throws error if `data_length` cannot fit into the block store
-     * 
+     *
      * NOTE: This method may get overridden by block store implementations (eg. block_store_fs)
-     * @param {*} data_length 
+     * @param {*} data_length
      */
     async _check_write_space(data_length) {
-        const required_space = data_length + (1024 * 1024); // require some spare space
+        const required_space = data_length + 1024 * 1024; // require some spare space
         if (this.usage_limit - this._usage.size < required_space) {
-            throw new RpcError('NO_BLOCK_STORE_SPACE', 'used space exceeded the total capacity of ' +
-                this.usage_limit + ' bytes');
+            throw new RpcError(
+                'NO_BLOCK_STORE_SPACE',
+                'used space exceeded the total capacity of ' +
+                    this.usage_limit +
+                    ' bytes',
+            );
         }
     }
 
@@ -233,11 +254,19 @@ class BlockStoreBase {
 
     /**
      * @param {nb.BlockMD} block_md
-     * @param {Buffer} data 
+     * @param {Buffer} data
      */
     async write_block_internal(block_md, data) {
-        dbg.log1('write_block', block_md.id, data.length, block_md.digest_b64, 'node', this.node_name);
-        if (!block_md.is_preallocated) { // no need to verify space
+        dbg.log1(
+            'write_block',
+            block_md.id,
+            data.length,
+            block_md.digest_b64,
+            'node',
+            this.node_name,
+        );
+        if (!block_md.is_preallocated) {
+            // no need to verify space
             await this._check_write_space(data.length);
         }
         this._verify_block(block_md, data);
@@ -245,17 +274,21 @@ class BlockStoreBase {
         this.monitoring_stats.inflight_writes += 1;
         this.monitoring_stats.max_inflight_writes = Math.max(
             this.monitoring_stats.inflight_writes,
-            this.monitoring_stats.max_inflight_writes
+            this.monitoring_stats.max_inflight_writes,
         );
         try {
             const start = time_utils.millistamp();
-            await this.block_modify_lock.surround_keys([String(block_md.id)], async () => {
-                await this._write_block(block_md, data);
-                this.block_cache.put_in_cache(block_md, { block_md, data });
-            });
+            await this.block_modify_lock.surround_keys(
+                [String(block_md.id)],
+                async () => {
+                    await this._write_block(block_md, data);
+                    this.block_cache.put_in_cache(block_md, { block_md, data });
+                },
+            );
             this.monitoring_stats.write_count += 1;
             this._update_write_stats(data.length);
-            this.monitoring_stats.total_write_latency += time_utils.millistamp() - start;
+            this.monitoring_stats.total_write_latency +=
+                time_utils.millistamp() - start;
         } finally {
             this.monitoring_stats.inflight_writes -= 1;
         }
@@ -263,12 +296,19 @@ class BlockStoreBase {
 
     async preallocate_block(req) {
         const block_md = req.rpc_params.block_md;
-        dbg.log0('preallocate_block', block_md.id, block_md.size, block_md.digest_b64, 'node', this.node_name);
+        dbg.log0(
+            'preallocate_block',
+            block_md.id,
+            block_md.size,
+            block_md.digest_b64,
+            'node',
+            this.node_name,
+        );
         await this._check_write_space(block_md.size);
         const block_size = block_md.size;
         const usage = {
             size: block_size,
-            count: 1
+            count: 1,
         };
         return this._update_usage(usage);
     }
@@ -276,9 +316,18 @@ class BlockStoreBase {
     sample_stats() {
         const old_stats = this.monitoring_stats;
         // zero all but the inflight
-        this.monitoring_stats = _.defaults(_.pick(old_stats, ['inflight_reads', 'inflight_writes']), _new_monitring_stats());
-        old_stats.avg_read_latency = old_stats.read_count === 0 ? 0 : old_stats.total_read_latency / old_stats.read_count;
-        old_stats.avg_write_latency = old_stats.write_count === 0 ? 0 : old_stats.total_write_latency / old_stats.write_count;
+        this.monitoring_stats = _.defaults(
+            _.pick(old_stats, ['inflight_reads', 'inflight_writes']),
+            _new_monitring_stats(),
+        );
+        old_stats.avg_read_latency =
+            old_stats.read_count === 0 ?
+                0
+            :   old_stats.total_read_latency / old_stats.read_count;
+        old_stats.avg_write_latency =
+            old_stats.write_count === 0 ?
+                0
+            :   old_stats.total_write_latency / old_stats.write_count;
         return old_stats;
     }
 
@@ -294,11 +343,14 @@ class BlockStoreBase {
         dbg.log1('replicate_block', target_md.id, 'node', this.node_name);
 
         // read from source agent
-        const res = await this.client.block_store.read_block({
-            block_md: source_md
-        }, {
-            address: source_md.address,
-        });
+        const res = await this.client.block_store.read_block(
+            {
+                block_md: source_md,
+            },
+            {
+                address: source_md.address,
+            },
+        );
         await this.write_block_internal(target_md, res[RPC_BUFFERS].data);
     }
 
@@ -308,31 +360,41 @@ class BlockStoreBase {
         this.block_cache.multi_invalidate_keys(block_ids);
         return this.block_modify_lock.surround_keys(
             block_ids.map(block_id => String(block_id)),
-            async () => this._delete_blocks(block_ids)
+            async () => this._delete_blocks(block_ids),
         );
     }
 
     async move_blocks_to_storage_class(req) {
         const block_ids = req.rpc_params.block_ids;
         const storage_class = req.rpc_params.storage_class;
-        dbg.log1('move_blocks_to_storage_class', block_ids, 'node', this.node_name, 'storage_class', storage_class);
+        dbg.log1(
+            'move_blocks_to_storage_class',
+            block_ids,
+            'node',
+            this.node_name,
+            'storage_class',
+            storage_class,
+        );
         // Do not invalidate the cache here, as we don't necessarily have to lose the data
         // if we are moving it to another storage class.
         return this.block_modify_lock.surround_keys(
             block_ids.map(block_id => String(block_id)),
-            async () => this._move_blocks_to_storage_class(block_ids, storage_class)
+            async () =>
+                this._move_blocks_to_storage_class(block_ids, storage_class),
         );
     }
 
     /**
      * Abstract method - override me.
-     * 
+     *
      * @param {string[]} block_ids
      * @param {string} storage_class
      * @returns {Promise<{ moved_block_ids: string[] }>}
      */
     async _move_blocks_to_storage_class(block_ids, storage_class) {
-        throw new Error('BlockStoreBase._move_blocks_to_storage_class is ABSTRACT');
+        throw new Error(
+            'BlockStoreBase._move_blocks_to_storage_class is ABSTRACT',
+        );
     }
 
     /**
@@ -343,10 +405,15 @@ class BlockStoreBase {
     _verify_block(block_md, data, block_md_from_store) {
         // verify block md from store match
         if (block_md_from_store) {
-            if (block_md_from_store.id !== block_md.id ||
+            if (
+                block_md_from_store.id !== block_md.id ||
                 block_md_from_store.digest_type !== block_md.digest_type ||
-                block_md_from_store.digest_b64 !== block_md.digest_b64) {
-                throw new RpcError('TAMPERING', 'Block md mismatch ' + block_md.id);
+                block_md_from_store.digest_b64 !== block_md.digest_b64
+            ) {
+                throw new RpcError(
+                    'TAMPERING',
+                    'Block md mismatch ' + block_md.id,
+                );
             }
         }
 
@@ -357,22 +424,34 @@ class BlockStoreBase {
 
             // verify data digest
             if (block_md.digest_type) {
-                const digest_b64 = crypto.createHash(block_md.digest_type).update(data).digest('base64');
+                const digest_b64 = crypto
+                    .createHash(block_md.digest_type)
+                    .update(data)
+                    .digest('base64');
                 if (digest_b64 !== block_md.digest_b64) {
-                    throw new RpcError('TAMPERING', 'Block digest mismatch ' + block_md.id);
+                    throw new RpcError(
+                        'TAMPERING',
+                        'Block digest mismatch ' + block_md.id,
+                    );
                 }
             }
         }
     }
 
-    async cleanup_target_path() { _.noop(); }
+    async cleanup_target_path() {
+        _.noop();
+    }
 
     _handle_delegator_error(error, usage, op_type) {
         throw new Error('this block store does not delegate');
     }
 
     handle_delegator_error(req) {
-        return this._handle_delegator_error(req.rpc_params.error, req.rpc_params.usage, req.rpc_params.op_type);
+        return this._handle_delegator_error(
+            req.rpc_params.error,
+            req.rpc_params.usage,
+            req.rpc_params.op_type,
+        );
     }
 
     _update_usage(usage) {
@@ -384,7 +463,10 @@ class BlockStoreBase {
         // we will not forget this last update
         this.update_usage_needed = true;
         if (!this.update_usage_work_item) {
-            this.update_usage_work_item = setTimeout(() => this._write_usage(), 3000);
+            this.update_usage_work_item = setTimeout(
+                () => this._write_usage(),
+                3000,
+            );
         }
     }
 
@@ -401,7 +483,10 @@ class BlockStoreBase {
         } finally {
             if (this.update_usage_needed) {
                 // trigger a new update
-                this.update_usage_work_item = setTimeout(() => this._write_usage(), 3000);
+                this.update_usage_work_item = setTimeout(
+                    () => this._write_usage(),
+                    3000,
+                );
             } else {
                 // write is successful, allow new writes
                 this.update_usage_work_item = null;
@@ -414,27 +499,52 @@ class BlockStoreBase {
             const reply = {};
             const delay_ms = 200;
             const data = crypto.randomBytes(1024);
-            const digest_type = get_config_or_default(config.CHUNK_CODER_FRAG_DIGEST_TYPE, 'sha1');
+            const digest_type = get_config_or_default(
+                config.CHUNK_CODER_FRAG_DIGEST_TYPE,
+                'sha1',
+            );
             const block_md = {
                 id: '_test_store_perf',
                 digest_type,
-                digest_b64: crypto.createHash(digest_type).update(data).digest('base64')
+                digest_b64: crypto
+                    .createHash(digest_type)
+                    .update(data)
+                    .digest('base64'),
             };
-            reply.write = await test_average_latency(count, delay_ms, async () => {
-                await this._write_block(block_md, data, { ignore_usage: true });
-                this._update_write_stats(data.length);
-            });
-            reply.read = await test_average_latency(count, delay_ms, async () => {
-                const block = await this._read_block(block_md);
-                if (block.data) this._update_read_stats(block.data.length);
-                this._verify_block(block_md, block.data, block.block_md);
-                if (!data.equals(block.data)) throw new Error('test_store_perf: unexpected data on read');
-            });
+            reply.write = await test_average_latency(
+                count,
+                delay_ms,
+                async () => {
+                    await this._write_block(block_md, data, {
+                        ignore_usage: true,
+                    });
+                    this._update_write_stats(data.length);
+                },
+            );
+            reply.read = await test_average_latency(
+                count,
+                delay_ms,
+                async () => {
+                    const block = await this._read_block(block_md);
+                    if (block.data) this._update_read_stats(block.data.length);
+                    this._verify_block(block_md, block.data, block.block_md);
+                    if (!data.equals(block.data)) {
+                        throw new Error(
+                            'test_store_perf: unexpected data on read',
+                        );
+                    }
+                },
+            );
             // cleanup old versions for block stores that have versioning enabled
-            if (this._delete_block_past_versions) await this._delete_block_past_versions(block_md);
+            if (this._delete_block_past_versions) {
+                await this._delete_block_past_versions(block_md);
+            }
             return reply;
         } catch (err) {
-            if (err.rpc_code !== 'AUTH_FAILED' && err.rpc_code !== 'STORAGE_NOT_EXIST') {
+            if (
+                err.rpc_code !== 'AUTH_FAILED' &&
+                err.rpc_code !== 'STORAGE_NOT_EXIST'
+            ) {
                 dbg.warn(`encountered unknown error in test_store_perf`, err);
             }
             throw err;
@@ -471,7 +581,7 @@ class BlockStoreBase {
 
     /**
      * Abstract method - override me.
-     * 
+     *
      * @param {nb.BlockMD} block_md
      * @returns {Promise<{ block_md: nb.BlockMD, data: Buffer }>}
      */
@@ -481,7 +591,7 @@ class BlockStoreBase {
 
     /**
      * Abstract method - override me.
-     * 
+     *
      * @param {nb.BlockMD} block_md
      * @param {Buffer} data
      * @param {{ ignore_usage?: boolean }} [options]
@@ -493,7 +603,7 @@ class BlockStoreBase {
 
     /**
      * Abstract method - override me.
-     * 
+     *
      * @param {string[]} block_ids
      * @returns {Promise<{ succeeded_block_ids: string[], failed_block_ids: string[] }>}
      */
@@ -503,13 +613,12 @@ class BlockStoreBase {
 
     /**
      * Abstract method - override me.
-     * 
+     *
      * @returns {Promise<void>}
      */
     async _write_usage_internal() {
         throw new Error('BlockStoreBase._write_usage_internal() is ABSTRACT');
     }
-
 }
 
 async function test_average_latency(count, delay_ms, async_func) {
@@ -537,7 +646,7 @@ async function test_average_latency(count, delay_ms, async_func) {
  * @returns {string}
  */
 function get_config_or_default(config_val, default_val) {
-    return (config_val && config_val !== 'none') ? config_val : default_val;
+    return config_val && config_val !== 'none' ? config_val : default_val;
 }
 
 // EXPORTS

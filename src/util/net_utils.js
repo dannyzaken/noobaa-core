@@ -12,13 +12,15 @@ const pinger = require('ping');
 const P = require('./promise');
 const dbg = require('./debug_module')(__filename);
 const os_utils = require('./os_utils');
-const hostname_regexp = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-const fqdn_regexp = /^(?=^.{1,253}$)(^(((?!-)[a-zA-Z0-9-]{0,62}[a-zA-Z0-9])|((?!-)[a-zA-Z0-9-]{0,62}[a-zA-Z0-9]\.)+[a-zA-Z]{2,63})$)/;
+const hostname_regexp =
+    /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+const fqdn_regexp =
+    /^(?=^.{1,253}$)(^(((?!-)[a-zA-Z0-9-]{0,62}[a-zA-Z0-9])|((?!-)[a-zA-Z0-9-]{0,62}[a-zA-Z0-9]\.)+[a-zA-Z]{2,63})$)/;
 
 const DEFAULT_PING_OPTIONS = {
     timeout: 5000,
     retries: 0,
-    packetSize: 64
+    packetSize: 64,
 };
 
 async function ping(target, options) {
@@ -51,7 +53,10 @@ function _ping_ip(session, ip) {
 async function dns_resolve(target, options) {
     const modified_target = url.parse(target).hostname || target;
     await os_utils.get_dns_config(); // unused? needed?
-    const res = await dns.promises.resolve(modified_target, (options && options.rrtype) || 'A');
+    const res = await dns.promises.resolve(
+        modified_target,
+        (options && options.rrtype) || 'A',
+    );
     return res;
 }
 
@@ -106,7 +111,10 @@ function find_ifc_containing_address(address) {
     if (!family) return;
     for (const [ifc, arr] of Object.entries(os.networkInterfaces())) {
         for (const info of arr) {
-            if (info.family === family && ip_module.cidrSubnet(info.cidr).contains(address)) {
+            if (
+                info.family === family &&
+                ip_module.cidrSubnet(info.cidr).contains(address)
+            ) {
                 return { ifc, info };
             }
         }

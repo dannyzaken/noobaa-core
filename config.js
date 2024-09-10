@@ -25,7 +25,10 @@ config.event_emitter = new EventEmitter();
 config.ENDPOINT_FORKS = Number(process.env.ENDPOINT_FORKS) || 0;
 config.OS_MEM_RESERVED = 2 * 1024 * 1024 * 1024;
 config.OS_MEM_LIMIT_TOTAL = os.totalmem() - config.OS_MEM_RESERVED;
-config.OS_MEM_LIMIT = config.ENDPOINT_FORKS > 0 ? config.OS_MEM_LIMIT_TOTAL / config.ENDPOINT_FORKS : config.OS_MEM_LIMIT_TOTAL;
+config.OS_MEM_LIMIT =
+    config.ENDPOINT_FORKS > 0 ?
+        config.OS_MEM_LIMIT_TOTAL / config.ENDPOINT_FORKS
+    :   config.OS_MEM_LIMIT_TOTAL;
 
 // The REQUEST is the "minimal" or "guaranteed" amount required for the container's operation.
 // The LIMIT is the "maximal" or "burst" amount that the container can use for extended operations.
@@ -43,8 +46,10 @@ config.OS_MEM_LIMIT = config.ENDPOINT_FORKS > 0 ? config.OS_MEM_LIMIT_TOTAL / co
 // - Less common and is currently unused
 // - Might be needed when limiting pinned memory like DB caches.
 
-config.CONTAINER_MEM_LIMIT = Number(process.env.CONTAINER_MEM_LIMIT || '') || config.OS_MEM_LIMIT;
-config.CONTAINER_CPU_LIMIT = Number(process.env.CONTAINER_CPU_LIMIT || '') || os.cpus().length;
+config.CONTAINER_MEM_LIMIT =
+    Number(process.env.CONTAINER_MEM_LIMIT || '') || config.OS_MEM_LIMIT;
+config.CONTAINER_CPU_LIMIT =
+    Number(process.env.CONTAINER_CPU_LIMIT || '') || os.cpus().length;
 config.CONTAINER_MEM_REQUEST = Number(process.env.CONTAINER_MEM_REQUEST || '');
 config.CONTAINER_CPU_REQUEST = Number(process.env.CONTAINER_CPU_REQUEST || '');
 
@@ -64,7 +69,10 @@ config.BUFFERS_MEM_LIMIT_MIN = 32 * 1024 * 1024; // just some workable minimum s
 config.BUFFERS_MEM_LIMIT_MAX = 4 * 1024 * 1024 * 1024;
 config.BUFFERS_MEM_LIMIT = Math.min(
     config.BUFFERS_MEM_LIMIT_MAX,
-    Math.max(Math.floor(config.CONTAINER_MEM_LIMIT / 4), config.BUFFERS_MEM_LIMIT_MIN,)
+    Math.max(
+        Math.floor(config.CONTAINER_MEM_LIMIT / 4),
+        config.BUFFERS_MEM_LIMIT_MIN,
+    ),
 );
 
 ////////////////////////
@@ -85,10 +93,11 @@ config.NODES_MIN_COUNT = 3;
 config.NODES_PER_CLOUD_POOL = 1;
 config.NODES_PER_MONGO_POOL = 1;
 // in kubernetes use reserve of 100MB instead of 10GB
-config.NODES_FREE_SPACE_RESERVE = 100 * (1024 ** 2);
+config.NODES_FREE_SPACE_RESERVE = 100 * 1024 ** 2;
 
 // don't use agents with less than reserve + 5 GB
-config.MINIMUM_AGENT_TOTAL_STORAGE = config.NODES_FREE_SPACE_RESERVE + (5 * (1024 ** 3));
+config.MINIMUM_AGENT_TOTAL_STORAGE =
+    config.NODES_FREE_SPACE_RESERVE + 5 * 1024 ** 3;
 
 config.NODE_IO_DETENTION_DISABLE = false;
 config.NODE_IO_DETENTION_THRESHOLD = 60 * 1000;
@@ -107,7 +116,8 @@ config.AGENT_TEST_CONNECTION_TIMEOUT = 1 * 60 * 1000;
 config.STORE_PERF_TEST_INTERVAL = 60 * 60 * 1000; // perform test_store_perf every 1 hour
 config.CLOUD_MAX_ALLOWED_IO_TEST_ERRORS = 3;
 
-config.ENABLE_DEV_RANDOM_SEED = process.env.DISABLE_DEV_RANDOM_SEED === 'false' || false;
+config.ENABLE_DEV_RANDOM_SEED =
+    process.env.DISABLE_DEV_RANDOM_SEED === 'false' || false;
 
 ////////////////
 // RPC CONFIG //
@@ -121,7 +131,8 @@ config.RPC_SEND_TIMEOUT = 120 * 1000;
 
 config.RPC_PING_INTERVAL_MS = 20000;
 // setting number of pings above the time it takes to get connect timeout
-config.RPC_PING_EXHAUSTED_COUNT = (config.RPC_CONNECT_TIMEOUT / config.RPC_PING_INTERVAL_MS) + 2;
+config.RPC_PING_EXHAUSTED_COUNT =
+    config.RPC_CONNECT_TIMEOUT / config.RPC_PING_INTERVAL_MS + 2;
 
 config.RECONN_BACKOFF_BASE = 250;
 config.RECONN_BACKOFF_MAX = 5000;
@@ -161,13 +172,9 @@ config.ENDPOINT_HTTP_MAX_REQUESTS_PER_SOCKET = 0; // 0 = no limit
 config.S3_CORS_ENABLED = true;
 config.S3_CORS_ALLOW_ORIGIN = '*';
 config.S3_CORS_ALLOW_CREDENTIAL = 'true';
-config.S3_CORS_ALLOW_METHODS = [
-    'GET',
-    'POST',
-    'PUT',
-    'DELETE',
-    'OPTIONS'
-].join(',');
+config.S3_CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'].join(
+    ',',
+);
 config.S3_CORS_ALLOW_HEADERS = [
     'Content-Type',
     'Content-MD5',
@@ -179,10 +186,7 @@ config.S3_CORS_ALLOW_HEADERS = [
     'amz-sdk-invocation-id',
     'amz-sdk-request',
 ].join(',');
-config.S3_CORS_EXPOSE_HEADERS = [
-    'ETag',
-    'X-Amz-Version-Id'
-].join(',');
+config.S3_CORS_EXPOSE_HEADERS = ['ETag', 'X-Amz-Version-Id'].join(',');
 config.STS_CORS_EXPOSE_HEADERS = 'ETag';
 
 config.DENY_UPLOAD_TO_STORAGE_CLASS_STANDARD = false;
@@ -202,9 +206,14 @@ config.S3_RESTORE_REQUEST_MAX_DAYS_BEHAVIOUR = 'TRUNCATE';
 // SECRETS CONFIG  //
 /////////////////////
 if (process.env.CONTAINER_PLATFORM || process.env.LOCAL_MD_SERVER) {
-    config.JWT_SECRET = process.env.JWT_SECRET || _get_data_from_file(`/etc/noobaa-server/jwt`);
-    config.SERVER_SECRET = process.env.SERVER_SECRET || _get_data_from_file(`/etc/noobaa-server/server_secret`);
-    config.NOOBAA_AUTH_TOKEN = process.env.NOOBAA_AUTH_TOKEN || _get_data_from_file(`/etc/noobaa-auth-token/auth_token`);
+    config.JWT_SECRET =
+        process.env.JWT_SECRET || _get_data_from_file(`/etc/noobaa-server/jwt`);
+    config.SERVER_SECRET =
+        process.env.SERVER_SECRET ||
+        _get_data_from_file(`/etc/noobaa-server/server_secret`);
+    config.NOOBAA_AUTH_TOKEN =
+        process.env.NOOBAA_AUTH_TOKEN ||
+        _get_data_from_file(`/etc/noobaa-auth-token/auth_token`);
 }
 
 config.ROOT_KEY_MOUNT = '/etc/noobaa-server/root_keys';
@@ -215,7 +224,7 @@ config.ROOT_KEY_MOUNT = '/etc/noobaa-server/root_keys';
 
 config.DB_TYPE = /** @type {nb.DBType} */ (process.env.DB_TYPE || 'postgres');
 
-config.POSTGRES_MAX_CLIENTS = (process.env.LOCAL_MD_SERVER === 'true') ? 80 : 10;
+config.POSTGRES_MAX_CLIENTS = process.env.LOCAL_MD_SERVER === 'true' ? 80 : 10;
 
 ///////////////////
 // SYSTEM CONFIG //
@@ -369,7 +378,6 @@ config.OBJECT_RECLAIMER_BATCH_SIZE = 100;
 config.OBJECT_RECLAIMER_BATCH_DELAY = 100;
 config.OBJECT_RECLAIMER_ERROR_DELAY = 3000;
 
-
 //////////////////
 // CHUNK CONFIG //
 //////////////////
@@ -381,7 +389,8 @@ config.CHUNK_SPLIT_DELTA_CHUNK = config.CHUNK_SPLIT_AVG_CHUNK / 4;
 // CODER
 config.CHUNK_CODER_DIGEST_TYPE = 'sha384';
 config.CHUNK_CODER_FRAG_DIGEST_TYPE = 'sha1';
-config.CHUNK_CODER_COMPRESS_TYPE = process.env.NOOBAA_DISABLE_COMPRESSION === 'true' ? undefined : 'snappy';
+config.CHUNK_CODER_COMPRESS_TYPE =
+    process.env.NOOBAA_DISABLE_COMPRESSION === 'true' ? undefined : 'snappy';
 config.CHUNK_CODER_CIPHER_TYPE = 'aes-256-gcm';
 
 // ERASURE CODES
@@ -417,7 +426,8 @@ config.DB_CLEANER_MAX_TOTAL_DOCS = 10000;
 // CLOUD RESOURCES //
 /////////////////////
 // This parameter is used to toggle pool deletion checks that enforce that only the pool and system owners can delete the pool
-config.RESTRICT_RESOURCE_DELETION = process.env.RESTRICT_RESOURCE_DELETION === 'true';
+config.RESTRICT_RESOURCE_DELETION =
+    process.env.RESTRICT_RESOURCE_DELETION === 'true';
 // EXPERIMENTAL!! switch to turn off the use of signed urls to delegate cloud read\writes to object_io (s3 compatible only)
 // when this is set to true, block_store_s3 will return s3 credentials to the block_store_client so it can
 // connect directly to the cloud target (and not via a signed url)
@@ -459,11 +469,18 @@ config.STATISTICS_COLLECTOR_EXPIRATION = 31 * 24 * 60 * 60 * 1000; // 1 month
 ///////////////////
 // USAGE REPORTS //
 ///////////////////
-config.SERVICES_TYPES = Object.freeze(['AWS', 'AWSSTS', 'AZURE', 'S3_COMPATIBLE', 'GOOGLE', 'FLASHBLADE', 'IBM_COS']);
+config.SERVICES_TYPES = Object.freeze([
+    'AWS',
+    'AWSSTS',
+    'AZURE',
+    'S3_COMPATIBLE',
+    'GOOGLE',
+    'FLASHBLADE',
+    'IBM_COS',
+]);
 config.USAGE_AGGREGATOR_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
 
 config.BLOCK_STORE_USAGE_INTERVAL = 1 * 60 * 1000; // 1 minute
-
 
 //////////////////
 // DEBUG CONFIG //
@@ -480,26 +497,31 @@ config.EVENT_LEVEL = 5;
 config.LOG_TO_STDERR_ENABLED = true;
 config.LOG_TO_SYSLOG_ENABLED = false;
 
-config.LOG_COLOR_ENABLED = process.env.NOOBAA_LOG_COLOR ? process.env.NOOBAA_LOG_COLOR === 'true' : true;
+config.LOG_COLOR_ENABLED =
+    process.env.NOOBAA_LOG_COLOR ?
+        process.env.NOOBAA_LOG_COLOR === 'true'
+    :   true;
 
 // TEST Mode
 config.test_mode = false;
 
 // On Premise NVA params
 config.on_premise = {
-    base_url: "https://s3-eu-west-1.amazonaws.com/noobaa-download/on_premise/v_",
-    nva_part: "NVA_Upgrade.tgz"
+    base_url:
+        'https://s3-eu-west-1.amazonaws.com/noobaa-download/on_premise/v_',
+    nva_part: 'NVA_Upgrade.tgz',
 };
 
 // the threshold in ms for logging long running queries
-config.LONG_DB_QUERY_THRESHOLD = parseInt(process.env.LONG_DB_QUERY_THRESHOLD, 10) || 5000;
+config.LONG_DB_QUERY_THRESHOLD =
+    parseInt(process.env.LONG_DB_QUERY_THRESHOLD, 10) || 5000;
 config.INVALID_SCHEMA_DB_INSPECT_ENABLED = true;
 
 /*
   Central Stats Collection & Diagnostics
 */
 
-const is_windows = (process.platform === 'win32');
+const is_windows = process.platform === 'win32';
 
 if (!is_windows) {
     process.env.ProgramData = '/tmp';
@@ -511,7 +533,7 @@ config.central_stats = {
     partial_send_time_cycle: 5 * 60 * 1000, //5 min
     full_cycle_ratio: 6, // One full cycle per 5 partial cycles
     previous_diag_packs_dir: process.env.ProgramData + '/prev_diags',
-    previous_diag_packs_count: 2 //TODO: We might want to split between agent and server
+    previous_diag_packs_count: 2, //TODO: We might want to split between agent and server
 };
 
 /*
@@ -535,7 +557,7 @@ config.CLUSTERING_PATHS = {
 };
 
 config.NAMED_DEFAULTS = {
-    FORWARDERS_OPTION_FILE: '/etc/noobaa_configured_dns.conf'
+    FORWARDERS_OPTION_FILE: '/etc/noobaa_configured_dns.conf',
 };
 
 config.CLUSTER_HB_INTERVAL = 1 * 60000;
@@ -545,15 +567,14 @@ config.SUPERVISOR_PROGRAM_SEPERATOR = '#endprogram';
 
 config.SUPERVISOR_DEFAULTS = {
     STOPSIGNAL: 'KILL',
-    DIRECTORY: '/root/node_modules/noobaa-core'
+    DIRECTORY: '/root/node_modules/noobaa-core',
 };
-
 
 config.SERVER_MIN_REQUIREMENTS = {
     // Should be synced with the container requirements
     RAM_GB: 2,
     STORAGE_GB: 50,
-    CPU_COUNT: 1
+    CPU_COUNT: 1,
 };
 
 // we currently use ~600MB during the upgrade process. use twice as much as a limit
@@ -581,20 +602,19 @@ config.EP_METRICS_SERVER_PORT = 7004;
 
 config.OAUTH_REDIRECT_ENDPOINT = 'fe/oauth/callback';
 config.OAUTH_REQUIRED_SCOPE = 'user:info';
-config.OAUTH_REQUIRED_GROUPS = [
-    'system:cluster-admins',
-    'cluster-admins'
-];
+config.OAUTH_REQUIRED_GROUPS = ['system:cluster-admins', 'cluster-admins'];
 
 //////////////////////////////
 // KUBERNETES RELATES       //
 //////////////////////////////
 
 config.KUBE_APP_LABEL = 'noobaa';
-config.KUBE_SA_TOKEN_FILE = '/var/run/secrets/kubernetes.io/serviceaccount/token';
-config.KUBE_NAMESPACE_FILE = '/var/run/secrets/kubernetes.io/serviceaccount/namespace';
+config.KUBE_SA_TOKEN_FILE =
+    '/var/run/secrets/kubernetes.io/serviceaccount/token';
+config.KUBE_NAMESPACE_FILE =
+    '/var/run/secrets/kubernetes.io/serviceaccount/namespace';
 config.KUBE_API_ENDPOINTS = {
-    TOKEN_REVIEW: '/apis/authentication.k8s.io/v1/tokenreviews'
+    TOKEN_REVIEW: '/apis/authentication.k8s.io/v1/tokenreviews',
 };
 
 //////////////////////////////
@@ -602,7 +622,7 @@ config.KUBE_API_ENDPOINTS = {
 //////////////////////////////
 
 config.DEFAULT_ACCOUNT_PREFERENCES = {
-    ui_theme: 'DARK'
+    ui_theme: 'DARK',
 };
 
 ///////////////////////////////////
@@ -666,7 +686,8 @@ config.BUCKET_DIFF_FOR_REPLICATION = true;
 
 config.BUCKET_LOG_UPLOAD_ENABLED = true;
 config.BUCKET_LOG_UPLOADER_DELAY = 5 * 60 * 1000;
-config.BUCKET_LOG_TYPE = process.env.GUARANTEED_LOGS_PATH ? 'PERSISTENT' : 'BEST_EFFORT';
+config.BUCKET_LOG_TYPE =
+    process.env.GUARANTEED_LOGS_PATH ? 'PERSISTENT' : 'BEST_EFFORT';
 config.PERSISTENT_BUCKET_LOG_DIR = process.env.GUARANTEED_LOGS_PATH;
 config.PERSISTENT_BUCKET_LOG_NS = 'bucket_logging';
 config.BUCKET_LOG_CONCURRENCY = 10;
@@ -698,8 +719,13 @@ config.NAMESPACE_CACHING = {
     ACL_HANDLING: /** @type { 'reject' | 'pass-through' | '' } */ (''),
 };
 
-assert(config.NAMESPACE_CACHING.DEFAULT_BLOCK_SIZE <= config.NAMESPACE_CACHING.DEFAULT_MAX_CACHE_OBJECT_SIZE);
-assert(config.NAMESPACE_CACHING.DEFAULT_BLOCK_SIZE <= config.MAX_OBJECT_PART_SIZE);
+assert(
+    config.NAMESPACE_CACHING.DEFAULT_BLOCK_SIZE <=
+        config.NAMESPACE_CACHING.DEFAULT_MAX_CACHE_OBJECT_SIZE,
+);
+assert(
+    config.NAMESPACE_CACHING.DEFAULT_BLOCK_SIZE <= config.MAX_OBJECT_PART_SIZE,
+);
 assert(config.NAMESPACE_CACHING.DEFAULT_BLOCK_SIZE > config.INLINE_MAX_SIZE);
 
 //////////////////
@@ -720,18 +746,32 @@ config.NSFS_MAX_MEM_SIZE_XS = 8 * 1024 * 1024;
 config.NSFS_MAX_MEM_SIZE_S = 32 * 1024 * 1024;
 
 // Semaphore size will give the amount of XS buffers that fits in 8MB up to 512 buffers
-config.NSFS_BUF_POOL_MEM_LIMIT_XS = Math.min(Math.floor(config.NSFS_MAX_MEM_SIZE_XS / config.NSFS_BUF_SIZE_XS),
-    config.NSFS_WANTED_BUFFERS_NUMBER) * config.NSFS_BUF_SIZE_XS;
+config.NSFS_BUF_POOL_MEM_LIMIT_XS =
+    Math.min(
+        Math.floor(config.NSFS_MAX_MEM_SIZE_XS / config.NSFS_BUF_SIZE_XS),
+        config.NSFS_WANTED_BUFFERS_NUMBER,
+    ) * config.NSFS_BUF_SIZE_XS;
 // Semaphore size will give the amount of small buffers that fits in 32MB up to 512 buffers
-config.NSFS_BUF_POOL_MEM_LIMIT_S = Math.min(Math.floor(config.NSFS_MAX_MEM_SIZE_S / config.NSFS_BUF_SIZE_S),
-    config.NSFS_WANTED_BUFFERS_NUMBER) * config.NSFS_BUF_SIZE_S;
+config.NSFS_BUF_POOL_MEM_LIMIT_S =
+    Math.min(
+        Math.floor(config.NSFS_MAX_MEM_SIZE_S / config.NSFS_BUF_SIZE_S),
+        config.NSFS_WANTED_BUFFERS_NUMBER,
+    ) * config.NSFS_BUF_SIZE_S;
 // Semaphore size will give 90% of remainning memory to large buffer size, 10% to medium
-config.NSFS_BUF_POOL_MEM_LIMIT_M = range_utils.align_down((config.BUFFERS_MEM_LIMIT -
-    config.NSFS_BUF_POOL_MEM_LIMIT_S - config.NSFS_BUF_POOL_MEM_LIMIT_XS) * 0.1,
-    config.NSFS_BUF_SIZE_M);
-config.NSFS_BUF_POOL_MEM_LIMIT_L = range_utils.align_down((config.BUFFERS_MEM_LIMIT -
-    config.NSFS_BUF_POOL_MEM_LIMIT_S - config.NSFS_BUF_POOL_MEM_LIMIT_XS) * 0.9,
-    config.NSFS_BUF_SIZE_L);
+config.NSFS_BUF_POOL_MEM_LIMIT_M = range_utils.align_down(
+    (config.BUFFERS_MEM_LIMIT -
+        config.NSFS_BUF_POOL_MEM_LIMIT_S -
+        config.NSFS_BUF_POOL_MEM_LIMIT_XS) *
+        0.1,
+    config.NSFS_BUF_SIZE_M,
+);
+config.NSFS_BUF_POOL_MEM_LIMIT_L = range_utils.align_down(
+    (config.BUFFERS_MEM_LIMIT -
+        config.NSFS_BUF_POOL_MEM_LIMIT_S -
+        config.NSFS_BUF_POOL_MEM_LIMIT_XS) *
+        0.9,
+    config.NSFS_BUF_SIZE_L,
+);
 
 config.NSFS_BUF_WARMUP_SPARSE_FILE_READS = true;
 
@@ -846,7 +886,7 @@ config.NSFS_LOW_FREE_SPACE_MB_UNLEASH = 10 * 1024;
 // NSFS_LOW_FREE_SPACE_PERCENT_UNLEASH controls how much much space in of
 // percentage does NooBaa consider to be enough to perform `PUT`
 // operations safely.
-config.NSFS_LOW_FREE_SPACE_PERCENT_UNLEASH = 0.10;
+config.NSFS_LOW_FREE_SPACE_PERCENT_UNLEASH = 0.1;
 
 // anonymous account name
 config.ANONYMOUS_ACCOUNT_NAME = 'anonymous';
@@ -868,7 +908,7 @@ config.ENDPOINT_SSL_PORT = Number(process.env.ENDPOINT_SSL_PORT) || 6443;
 config.ENDPOINT_SSL_STS_PORT = Number(process.env.ENDPOINT_SSL_STS_PORT) || -1;
 config.ENDPOINT_SSL_IAM_PORT = Number(process.env.ENDPOINT_SSL_IAM_PORT) || -1;
 config.ALLOW_HTTP = false;
-// config files should allow access to the owner of the files 
+// config files should allow access to the owner of the files
 config.BASE_MODE_CONFIG_FILE = 0o600;
 config.BASE_MODE_CONFIG_DIR = 0o700;
 
@@ -877,7 +917,6 @@ config.VIRTUAL_HOSTS = process.env.VIRTUAL_HOSTS || '';
 
 config.NC_HEALTH_ENDPOINT_RETRY_COUNT = 3;
 config.NC_HEALTH_ENDPOINT_RETRY_DELAY = 10;
-
 
 /** @type {'file' | 'executable'} */
 config.NC_MASTER_KEYS_STORE_TYPE = 'file';
@@ -893,7 +932,6 @@ config.NC_DISABLE_SCHEMA_CHECK = false;
 
 ////////// GPFS //////////
 config.GPFS_DOWN_DELAY = 1000;
-
 
 //Quota
 config.QUOTA_LOW_THRESHOLD = 80;
@@ -968,7 +1006,9 @@ function load_config_local() {
             const local_config_obj = /** @type {object} */ (local_config);
             Object.assign(config, local_config_obj);
         } else {
-            throw new Error(`Expected object or function to be exported from config-local - ${typeof local_config}`);
+            throw new Error(
+                `Expected object or function to be exported from config-local - ${typeof local_config}`,
+            );
         }
     } catch (err) {
         if (err.code !== 'MODULE_NOT_FOUND') throw err;
@@ -981,41 +1021,55 @@ function load_config_env_overrides() {
     for (const [key, val] of Object.entries(process.env)) {
         if (!key.startsWith(ENV_PREFIX)) continue;
         try {
-            const conf_name = key.substring(ENV_PREFIX.length).replace(/__/g, '.');
+            const conf_name = key
+                .substring(ENV_PREFIX.length)
+                .replace(/__/g, '.');
             const prev_val = config[conf_name];
             const type = typeof prev_val;
 
             if (type === 'number') {
                 const n = Number(val);
                 if (isNaN(n)) throw new Error(`${val} should be a number`);
-                console.warn(`Overriding config.js from ENV with ${conf_name}=${n} (number)`);
+                console.warn(
+                    `Overriding config.js from ENV with ${conf_name}=${n} (number)`,
+                );
                 config[conf_name] = n;
-
             } else if (type === 'boolean') {
                 if (val === 'true') {
-                    console.warn(`Overriding config.js from ENV with ${conf_name}=true (bool)`);
+                    console.warn(
+                        `Overriding config.js from ENV with ${conf_name}=true (bool)`,
+                    );
                     config[conf_name] = true;
                 } else if (val === 'false') {
-                    console.warn(`Overriding config.js from ENV with ${conf_name}=false (bool)`);
+                    console.warn(
+                        `Overriding config.js from ENV with ${conf_name}=false (bool)`,
+                    );
                     config[conf_name] = false;
                 } else {
                     throw new Error(`${val} should be true|false`);
                 }
-
             } else if (type === 'string' || type === 'undefined') {
-                console.warn(`Overriding config.js from ENV with ${conf_name}=${val} (string)`);
+                console.warn(
+                    `Overriding config.js from ENV with ${conf_name}=${val} (string)`,
+                );
                 config[conf_name] = val;
-
             } else if (type === 'object') {
                 // TODO: Validation checks, more complex type casting for values if needed
-                config[conf_name] = Array.isArray(prev_val) ? val.split(',') : JSON.parse(val);
-                console.warn(`Overriding config.js from ENV with ${conf_name}=${val} (object of type ${Array.isArray(prev_val) ? 'array' : 'json'})`);
+                config[conf_name] =
+                    Array.isArray(prev_val) ? val.split(',') : JSON.parse(val);
+                console.warn(
+                    `Overriding config.js from ENV with ${conf_name}=${val} (object of type ${Array.isArray(prev_val) ? 'array' : 'json'})`,
+                );
             } else {
-                console.warn(`Unknown type or mismatch between existing ${type} and provided type for ${conf_name}, skipping ...`);
+                console.warn(
+                    `Unknown type or mismatch between existing ${type} and provided type for ${conf_name}, skipping ...`,
+                );
             }
-
         } catch (err) {
-            console.warn(`load_config_env_overrides: failed to load ${key}`, err);
+            console.warn(
+                `load_config_env_overrides: failed to load ${key}`,
+                err,
+            );
         }
     }
 }
@@ -1025,7 +1079,9 @@ function _get_data_from_file(file_name) {
     try {
         data = fs.readFileSync(file_name).toString();
     } catch (e) {
-        console.warn(`Error accrued while getting the data from ${file_name}: ${e}`);
+        console.warn(
+            `Error accrued while getting the data from ${file_name}: ${e}`,
+        );
         return;
     }
     return data;
@@ -1037,41 +1093,59 @@ function _get_data_from_file(file_name) {
 function _get_config_root() {
     let config_root = config.NSFS_NC_DEFAULT_CONF_DIR;
     try {
-        const redirect_path = path.join(config.NSFS_NC_DEFAULT_CONF_DIR, config.NSFS_NC_CONF_DIR_REDIRECT_FILE);
+        const redirect_path = path.join(
+            config.NSFS_NC_DEFAULT_CONF_DIR,
+            config.NSFS_NC_CONF_DIR_REDIRECT_FILE,
+        );
         const data = _get_data_from_file(redirect_path);
         config_root = data.toString().trim();
     } catch (err) {
-        console.warn('config.get_config_root - could not find custom config_root, will use the default config_root ', config_root);
+        console.warn(
+            'config.get_config_root - could not find custom config_root, will use the default config_root ',
+            config_root,
+        );
     }
     return config_root;
 }
 
 /**
- * validate_nc_master_keys_config validates the following - 
+ * validate_nc_master_keys_config validates the following -
  * 1. if type is file -
  *    1.1. no GET/PUT executables provided
- * 2. if type is executable - 
+ * 2. if type is executable -
  *    2.1. no file location provided
  *    2.2. GET & PUT executables exist and executables
  */
 function validate_nc_master_keys_config(config_data) {
     if (config_data.NC_MASTER_KEYS_STORE_TYPE === 'file') {
-        if (config_data.NC_MASTER_KEYS_GET_EXECUTABLE ||
-            config_data.NC_MASTER_KEYS_PUT_EXECUTABLE) {
-            throw new Error('Invalid master keys config, can not specify executables when store type is file');
+        if (
+            config_data.NC_MASTER_KEYS_GET_EXECUTABLE ||
+            config_data.NC_MASTER_KEYS_PUT_EXECUTABLE
+        ) {
+            throw new Error(
+                'Invalid master keys config, can not specify executables when store type is file',
+            );
         }
     } else if (config_data.NC_MASTER_KEYS_STORE_TYPE === 'executable') {
         if (config_data.NC_MASTER_KEYS_FILE_LOCATION) {
-            throw new Error('Invalid master keys config, can not specify executables when store type is executable');
+            throw new Error(
+                'Invalid master keys config, can not specify executables when store type is executable',
+            );
         }
-        if (!config_data.NC_MASTER_KEYS_GET_EXECUTABLE ||
-            !config_data.NC_MASTER_KEYS_PUT_EXECUTABLE) {
-            throw new Error('Invalid master keys config, must specify GET & PUT executables when store type is executable');
+        if (
+            !config_data.NC_MASTER_KEYS_GET_EXECUTABLE ||
+            !config_data.NC_MASTER_KEYS_PUT_EXECUTABLE
+        ) {
+            throw new Error(
+                'Invalid master keys config, must specify GET & PUT executables when store type is executable',
+            );
         }
         _validate_executable(config_data.NC_MASTER_KEYS_GET_EXECUTABLE);
         _validate_executable(config_data.NC_MASTER_KEYS_PUT_EXECUTABLE);
     } else {
-        throw new Error(`Invalid master keys config, invalid master keys store type ${config_data.NC_MASTER_KEYS_STORE_TYPE}`);
+        throw new Error(
+            `Invalid master keys config, invalid master keys store type ${config_data.NC_MASTER_KEYS_STORE_TYPE}`,
+        );
     }
 }
 
@@ -1083,7 +1157,10 @@ function load_nsfs_nc_config() {
     try {
         if (!config.NSFS_NC_CONF_DIR) {
             config.NSFS_NC_CONF_DIR = _get_config_root();
-            console.warn('load_nsfs_nc_config.setting config.NSFS_NC_CONF_DIR', config.NSFS_NC_CONF_DIR);
+            console.warn(
+                'load_nsfs_nc_config.setting config.NSFS_NC_CONF_DIR',
+                config.NSFS_NC_CONF_DIR,
+            );
         }
         const config_path = path.join(config.NSFS_NC_CONF_DIR, 'config.json');
         const config_data = require(config_path);
@@ -1094,8 +1171,12 @@ function load_nsfs_nc_config() {
         const node_config = config_data.host_customization?.[node_name];
         const merged_config = _.merge(shared_config, node_config || {});
 
-        Object.keys(merged_config).forEach(function(key) {
-            const config_to_env = ['NOOBAA_LOG_LEVEL', 'UV_THREADPOOL_SIZE', 'GPFS_DL_PATH'];
+        Object.keys(merged_config).forEach(function (key) {
+            const config_to_env = [
+                'NOOBAA_LOG_LEVEL',
+                'UV_THREADPOOL_SIZE',
+                'GPFS_DL_PATH',
+            ];
             if (config_to_env.includes(key)) {
                 process.env[key] = merged_config[key];
                 return;
@@ -1104,12 +1185,16 @@ function load_nsfs_nc_config() {
         });
         console.warn(`nsfs: config_dir_path=${config.NSFS_NC_CONF_DIR}`);
         console.warn(`nsfs: config.json= ${util.inspect(config_data)}`);
-        console.warn(`nsfs: merged config.json= ${util.inspect(merged_config)}`);
+        console.warn(
+            `nsfs: merged config.json= ${util.inspect(merged_config)}`,
+        );
         validate_nc_master_keys_config(config);
-        config.event_emitter.emit("config_updated");
+        config.event_emitter.emit('config_updated');
     } catch (err) {
         if (err.code !== 'MODULE_NOT_FOUND' && err.code !== 'ENOENT') throw err;
-        console.warn('config.load_nsfs_nc_config could not find config.json... skipping');
+        console.warn(
+            'config.load_nsfs_nc_config could not find config.json... skipping',
+        );
     }
 }
 /**
@@ -1119,26 +1204,34 @@ function reload_nsfs_nc_config() {
     if (process.env.CONTAINER_PLATFORM) return;
     try {
         const config_path = path.join(config.NSFS_NC_CONF_DIR, 'config.json');
-        fs.watchFile(config_path, {
-            interval: config.NC_RELOAD_CONFIG_INTERVAL
-        }, () => {
-            delete require.cache[config_path];
-            try {
-                load_nsfs_nc_config();
-            } catch (err) {
-                // we cannot rethrow, next watch event will try to load again
-            }
-        }).unref();
+        fs.watchFile(
+            config_path,
+            {
+                interval: config.NC_RELOAD_CONFIG_INTERVAL,
+            },
+            () => {
+                delete require.cache[config_path];
+                try {
+                    load_nsfs_nc_config();
+                } catch (err) {
+                    // we cannot rethrow, next watch event will try to load again
+                }
+            },
+        ).unref();
     } catch (e) {
         if (e.code === 'ENOENT') {
-            console.warn('config.load_nsfs_nc_config could not find config.json... skipping');
+            console.warn(
+                'config.load_nsfs_nc_config could not find config.json... skipping',
+            );
             return;
         }
-        console.warn('config.load_nsfs_nc_config failed to set config.json to config.js ', e);
+        console.warn(
+            'config.load_nsfs_nc_config failed to set config.json to config.js ',
+            e,
+        );
         throw e;
     }
 }
-
 
 /**
  * _validate_executable validates executable file exist and executables
@@ -1149,10 +1242,15 @@ function _validate_executable(file_name) {
     try {
         stat = fs.statSync(file_name);
     } catch (e) {
-        throw new Error(`Invalid master keys config, executable file was not found ${file_name}`, { cause: e });
+        throw new Error(
+            `Invalid master keys config, executable file was not found ${file_name}`,
+            { cause: e },
+        );
     }
     if (!(stat.mode & fs.constants.S_IXUSR)) {
-        throw new Error(`Invalid master keys config, executable file can not be executed ${file_name}`);
+        throw new Error(
+            `Invalid master keys config, executable file can not be executed ${file_name}`,
+        );
     }
 }
 

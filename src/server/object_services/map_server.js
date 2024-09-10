@@ -44,7 +44,6 @@ const ensure_room_barrier = new Barrier({
  *
  */
 class GetMapping {
-
     /**
      * @param {Object} props
      * @param {nb.Chunk[]} props.chunks
@@ -58,7 +57,10 @@ class GetMapping {
         this.check_dups = props.check_dups;
         this.location_info = props.location_info;
 
-        this.chunks_per_bucket = _.groupBy(this.chunks, chunk => chunk.bucket_id);
+        this.chunks_per_bucket = _.groupBy(
+            this.chunks,
+            chunk => chunk.bucket_id,
+        );
         Object.seal(this);
     }
 
@@ -71,8 +73,12 @@ class GetMapping {
         try {
             await this.find_dups();
             await this.do_allocations();
-            dbg.log1('GetMapping: DONE. chunks', this.chunks.length,
-                'took', time_utils.millitook(millistamp));
+            dbg.log1(
+                'GetMapping: DONE. chunks',
+                this.chunks.length,
+                'took',
+                time_utils.millitook(millistamp),
+            );
             return this.chunks;
         } catch (err) {
             dbg.error('GetMapping: ERROR', err.stack || err);
@@ -83,55 +89,88 @@ class GetMapping {
     async find_dups() {
         if (!this.check_dups) return;
         if (!config.DEDUP_ENABLED) return;
-        await Promise.all(Object.values(this.chunks_per_bucket).map(async chunks => {
-            const bucket = chunks[0].bucket;
-            const dedup_keys = _.compact(_.map(chunks,
-                chunk => chunk.digest_b64 && Buffer.from(chunk.digest_b64, 'base64')));
-            if (!dedup_keys.length) return;
-            dbg.log0('GetMapping.find_dups: found keys', dedup_keys.length);
-            const dup_chunks_db = await MDStore.instance().find_chunks_by_dedup_key(bucket, dedup_keys);
-            const dup_chunks = dup_chunks_db.map(chunk_db => new ChunkDB(chunk_db));
-            dbg.log0('GetMapping.find_dups: dup_chunks', dup_chunks);
-            await _prepare_chunks_group({ chunks: dup_chunks, location_info: this.location_info });
-            for (const dup_chunk of dup_chunks) {
-                if (mapper.is_chunk_good_for_dedup(dup_chunk)) {
-                    for (const chunk of chunks) {
-                        if (chunk.size === dup_chunk.size &&
-                            chunk.digest_b64 === dup_chunk.digest_b64) {
-                            chunk.dup_chunk_id = dup_chunk._id;
+        await Promise.all(
+            Object.values(this.chunks_per_bucket).map(async chunks => {
+                const bucket = chunks[0].bucket;
+                const dedup_keys = _.compact(
+                    _.map(
+                        chunks,
+                        chunk =>
+                            chunk.digest_b64 &&
+                            Buffer.from(chunk.digest_b64, 'base64'),
+                    ),
+                );
+                if (!dedup_keys.length) return;
+                dbg.log0('GetMapping.find_dups: found keys', dedup_keys.length);
+                const dup_chunks_db =
+                    await MDStore.instance().find_chunks_by_dedup_key(
+                        bucket,
+                        dedup_keys,
+                    );
+                const dup_chunks = dup_chunks_db.map(
+                    chunk_db => new ChunkDB(chunk_db),
+                );
+                dbg.log0('GetMapping.find_dups: dup_chunks', dup_chunks);
+                await _prepare_chunks_group({
+                    chunks: dup_chunks,
+                    location_info: this.location_info,
+                });
+                for (const dup_chunk of dup_chunks) {
+                    if (mapper.is_chunk_good_for_dedup(dup_chunk)) {
+                        for (const chunk of chunks) {
+                            if (
+                                chunk.size === dup_chunk.size &&
+                                chunk.digest_b64 === dup_chunk.digest_b64
+                            ) {
+                                chunk.dup_chunk_id = dup_chunk._id;
+                            }
                         }
                     }
                 }
-            }
-        }));
+            }),
+        );
     }
 
     async do_allocations() {
-        await Promise.all(Object.values(this.chunks_per_bucket).map(async chunks => {
-            const bucket = chunks[0].bucket;
-            const total_size = _.sumBy(chunks, 'size');
-            await _prepare_chunks_group({ chunks, move_to_tier: this.move_to_tier, location_info: this.location_info });
-            let done = false;
-            let retries = 0;
-            while (!done) {
-                const start_alloc_time = Date.now();
-                done = await this.allocate_chunks(chunks);
-                map_reporter.add_event(`allocate_chunks(${bucket.name})`, total_size, Date.now() - start_alloc_time);
-                if (!done) {
-                    retries += 1;
-                    if (retries > config.IO_WRITE_BLOCK_RETRIES) {
-                        const err = new Error('Couldn\'t allocate chunk - Will stop retries');
-                        err.rpc_code = 'NOT_ENOUGH_SPACE';
-                        throw err;
+        await Promise.all(
+            Object.values(this.chunks_per_bucket).map(async chunks => {
+                const bucket = chunks[0].bucket;
+                const total_size = _.sumBy(chunks, 'size');
+                await _prepare_chunks_group({
+                    chunks,
+                    move_to_tier: this.move_to_tier,
+                    location_info: this.location_info,
+                });
+                let done = false;
+                let retries = 0;
+                while (!done) {
+                    const start_alloc_time = Date.now();
+                    done = await this.allocate_chunks(chunks);
+                    map_reporter.add_event(
+                        `allocate_chunks(${bucket.name})`,
+                        total_size,
+                        Date.now() - start_alloc_time,
+                    );
+                    if (!done) {
+                        retries += 1;
+                        if (retries > config.IO_WRITE_BLOCK_RETRIES) {
+                            const err = new Error(
+                                "Couldn't allocate chunk - Will stop retries",
+                            );
+                            err.rpc_code = 'NOT_ENOUGH_SPACE';
+                            throw err;
+                        }
+                        const uniq_tiers = _.uniq(_.map(chunks, 'tier'));
+                        await P.map(uniq_tiers, tier =>
+                            ensure_room_in_tier(tier, bucket),
+                        );
+                        await P.delay(config.ALLOCATE_RETRY_DELAY_MS);
+                        // TODO Decide if we want to update the chunks mappings when looping
+                        // await _prepare_chunks_group({ chunks, move_to_tier: this.move_to_tier, location_info: this.location_info });
                     }
-                    const uniq_tiers = _.uniq(_.map(chunks, 'tier'));
-                    await P.map(uniq_tiers, tier => ensure_room_in_tier(tier, bucket));
-                    await P.delay(config.ALLOCATE_RETRY_DELAY_MS);
-                    // TODO Decide if we want to update the chunks mappings when looping
-                    // await _prepare_chunks_group({ chunks, move_to_tier: this.move_to_tier, location_info: this.location_info });
                 }
-            }
-        }));
+            }),
+        );
     }
 
     /**
@@ -150,9 +189,11 @@ class GetMapping {
      * @param {nb.Chunk} chunk
      */
     async allocate_chunk(chunk) {
-        const avoid_blocks = _.flatMap(chunk.frags, frag => frag.blocks.filter(block =>
-            block.node.node_type === 'BLOCK_STORE_FS'
-        ));
+        const avoid_blocks = _.flatMap(chunk.frags, frag =>
+            frag.blocks.filter(
+                block => block.node.node_type === 'BLOCK_STORE_FS',
+            ),
+        );
         const avoid_nodes = avoid_blocks.map(block => String(block.node._id));
         const allocated_hosts = avoid_blocks.map(block => block.node.host_id);
         const preallocate_list = [];
@@ -160,11 +201,16 @@ class GetMapping {
         const has_room = enough_room_in_tier(chunk.tier, chunk.bucket);
         for (const frag of chunk.frags) {
             for (const alloc of frag.allocations) {
-                const node = node_allocator.allocate_node({ pools: alloc.pools, avoid_nodes, allocated_hosts });
+                const node = node_allocator.allocate_node({
+                    pools: alloc.pools,
+                    avoid_nodes,
+                    allocated_hosts,
+                });
                 if (!node) {
-                    dbg.warn(`GetMapping allocate_blocks: no nodes for allocation ` +
-                        `avoid_nodes ${avoid_nodes.join(',')} ` +
-                        `allocation_pools [${alloc.pools ? alloc.pools.join(',') : ''}]`
+                    dbg.warn(
+                        `GetMapping allocate_blocks: no nodes for allocation ` +
+                            `avoid_nodes ${avoid_nodes.join(',')} ` +
+                            `allocation_pools [${alloc.pools ? alloc.pools.join(',') : ''}]`,
                     );
                     return false;
                 }
@@ -179,7 +225,9 @@ class GetMapping {
                         alloc.locality_level = 4;
                     } else if (this.location_info.host_id === node.host_id) {
                         alloc.locality_level = 3;
-                    } else if (this.location_info.pool_id === alloc.block_md.pool) {
+                    } else if (
+                        this.location_info.pool_id === alloc.block_md.pool
+                    ) {
                         alloc.locality_level = 2;
                     } else if (this.location_info.region === pool.region) {
                         alloc.locality_level = 1;
@@ -192,26 +240,35 @@ class GetMapping {
                 if (!has_room) preallocate_list.push(alloc);
             }
             // sort allocations by location_info
-            frag.allocations.sort((alloc1, alloc2) => alloc2.locality_level - alloc1.locality_level);
+            frag.allocations.sort(
+                (alloc1, alloc2) =>
+                    alloc2.locality_level - alloc1.locality_level,
+            );
         }
 
         if (preallocate_list.length) {
             let ok = true;
             await P.map(preallocate_list, async alloc => {
                 try {
-                    await server_rpc.client.block_store.preallocate_block({
-                        block_md: alloc.block_md,
-                    }, {
-                        address: alloc.block_md.address,
-                        timeout: config.IO_REPLICATE_BLOCK_TIMEOUT,
-                        auth_token: auth_server.make_auth_token({
-                            system_id: chunk.bucket.system._id,
-                            role: 'admin',
-                        })
-                    });
+                    await server_rpc.client.block_store.preallocate_block(
+                        {
+                            block_md: alloc.block_md,
+                        },
+                        {
+                            address: alloc.block_md.address,
+                            timeout: config.IO_REPLICATE_BLOCK_TIMEOUT,
+                            auth_token: auth_server.make_auth_token({
+                                system_id: chunk.bucket.system._id,
+                                role: 'admin',
+                            }),
+                        },
+                    );
                     alloc.block_md.is_preallocated = true;
                 } catch (err) {
-                    dbg.warn('GetMapping: preallocate_block failed, will retry', alloc.block_md);
+                    dbg.warn(
+                        'GetMapping: preallocate_block failed, will retry',
+                        alloc.block_md,
+                    );
                     ok = false;
                 }
             });
@@ -220,11 +277,7 @@ class GetMapping {
 
         return true;
     }
-
-
-
 }
-
 
 /**
  *
@@ -232,7 +285,6 @@ class GetMapping {
  *
  */
 class PutMapping {
-
     /**
      * @param {Object} props
      * @param {nb.Chunk[]} props.chunks
@@ -261,8 +313,12 @@ class PutMapping {
         try {
             this.add_chunks();
             await this.update_db();
-            dbg.log1('PutMapping: DONE. chunks', this.chunks.length,
-                'took', time_utils.millitook(millistamp));
+            dbg.log1(
+                'PutMapping: DONE. chunks',
+                this.chunks.length,
+                'took',
+                time_utils.millitook(millistamp),
+            );
             return this.chunks;
         } catch (err) {
             dbg.error('PutMapping: ERROR', err.stack || err);
@@ -272,7 +328,8 @@ class PutMapping {
 
     add_chunks() {
         for (const chunk of this.chunks) {
-            if (chunk.dup_chunk_id) { // duplicated chunk
+            if (chunk.dup_chunk_id) {
+                // duplicated chunk
                 this.add_new_parts(chunk.parts, chunk);
             } else if (chunk._id) {
                 this.add_existing_chunk(chunk);
@@ -343,13 +400,31 @@ class PutMapping {
         const bucket = chunk.bucket;
         const now = Date.now();
         const block_id_time = block._id.getTimestamp().getTime();
-        if (block_id_time < now - (config.MD_GRACE_IN_MILLISECONDS - config.MD_AGGREGATOR_INTERVAL)) {
-            dbg.error('PutMapping: A big gap was found between id creation and addition to DB:',
-                block, bucket.name, block_id_time, now);
+        if (
+            block_id_time <
+            now -
+                (config.MD_GRACE_IN_MILLISECONDS -
+                    config.MD_AGGREGATOR_INTERVAL)
+        ) {
+            dbg.error(
+                'PutMapping: A big gap was found between id creation and addition to DB:',
+                block,
+                bucket.name,
+                block_id_time,
+                now,
+            );
         }
-        if (block_id_time < bucket.storage_stats.last_update + config.MD_AGGREGATOR_INTERVAL) {
-            dbg.error('PutMapping: A big gap was found between id creation and bucket last update:',
-                block, bucket.name, block_id_time, bucket.storage_stats.last_update);
+        if (
+            block_id_time <
+            bucket.storage_stats.last_update + config.MD_AGGREGATOR_INTERVAL
+        ) {
+            dbg.error(
+                'PutMapping: A big gap was found between id creation and bucket last update:',
+                block,
+                bucket.name,
+                block_id_time,
+                bucket.storage_stats.last_update,
+            );
         }
         if (!block.node_id || !block.pool_id) {
             dbg.error('PutMapping: Missing node/pool for block', block);
@@ -367,10 +442,8 @@ class PutMapping {
 
             // TODO
             // (upload_size > obj.upload_size) && MDStore.instance().update_object_by_id(obj._id, { upload_size: upload_size })
-
         ]);
     }
-
 }
 
 /**
@@ -387,13 +460,23 @@ async function select_tier_for_write(bucket) {
     // in this case new writes are automatically assigned to the second tier
     // right as blocks are written to TMFS in block_store_fs.
     let start_tier_order;
-    if (config.BUCKET_AUTOCONF_TIER2_ENABLED && config.BLOCK_STORE_FS_TMFS_ENABLED) {
-        const tier_and_order = tiering.tiers.find(t =>
-            t.tier.storage_class && t.tier.storage_class !== STORAGE_CLASS_STANDARD);
+    if (
+        config.BUCKET_AUTOCONF_TIER2_ENABLED &&
+        config.BLOCK_STORE_FS_TMFS_ENABLED
+    ) {
+        const tier_and_order = tiering.tiers.find(
+            t =>
+                t.tier.storage_class &&
+                t.tier.storage_class !== STORAGE_CLASS_STANDARD,
+        );
         start_tier_order = tier_and_order?.order;
     }
 
-    return mapper.select_tier_for_write(tiering, tiering_status, start_tier_order);
+    return mapper.select_tier_for_write(
+        tiering,
+        tiering_status,
+        start_tier_order,
+    );
 }
 
 /**
@@ -417,9 +500,13 @@ async function select_tier_for_read(bucket) {
 async function select_mirror_for_write(tier, tiering, location_info) {
     await node_allocator.refresh_tiering_alloc(tiering);
     const tiering_status = node_allocator.get_tiering_status(tiering);
-    return mapper.select_mirror_for_write(tier, tiering, tiering_status, location_info);
+    return mapper.select_mirror_for_write(
+        tier,
+        tiering,
+        tiering_status,
+        location_info,
+    );
 }
-
 
 /**
  * @param {nb.ID} tier_id
@@ -432,35 +519,51 @@ async function make_room_in_tier(tier_id, bucket_id) {
         /** @type {nb.Bucket} */
         const bucket = bucket_id && system_store.data.get_by_id(bucket_id);
         const tiering = bucket.tiering;
-        const tier_and_order = tiering.tiers.find(t => String(t.tier._id) === String(tier_id));
+        const tier_and_order = tiering.tiers.find(
+            t => String(t.tier._id) === String(tier_id),
+        );
 
         await node_allocator.refresh_tiering_alloc(tiering);
         if (enough_room_in_tier(tier, bucket)) return;
 
         const tiering_status = node_allocator.get_tiering_status(tiering);
-        const next_tier = mapper.select_tier_for_write(tiering, tiering_status, tier_and_order.order + 1);
+        const next_tier = mapper.select_tier_for_write(
+            tiering,
+            tiering_status,
+            tier_and_order.order + 1,
+        );
         if (!next_tier) {
-            dbg.warn(`make_room_in_tier: No next tier to move data to`, tier.name);
+            dbg.warn(
+                `make_room_in_tier: No next tier to move data to`,
+                tier.name,
+            );
             return;
         }
 
         const chunk_ids = await MDStore.instance().find_oldest_tier_chunk_ids({
             tier: tier._id,
             limit: config.CHUNK_MOVE_LIMIT,
-            sort_direction: 1
+            sort_direction: 1,
         });
         const start_alloc_time = Date.now();
-        await server_rpc.client.scrubber.build_chunks({
-            chunk_ids,
-            tier: next_tier._id,
-            current_tiers: chunk_ids.map(() => tier._id),
-        }, {
-            auth_token: auth_server.make_auth_token({
-                system_id: bucket.system._id,
-                role: 'admin'
-            })
-        });
-        map_reporter.add_event(`scrubber.build_chunks(${tier.name})`, chunk_ids.length, Date.now() - start_alloc_time);
+        await server_rpc.client.scrubber.build_chunks(
+            {
+                chunk_ids,
+                tier: next_tier._id,
+                current_tiers: chunk_ids.map(() => tier._id),
+            },
+            {
+                auth_token: auth_server.make_auth_token({
+                    system_id: bucket.system._id,
+                    role: 'admin',
+                }),
+            },
+        );
+        map_reporter.add_event(
+            `scrubber.build_chunks(${tier.name})`,
+            chunk_ids.length,
+            Date.now() - start_alloc_time,
+        );
         dbg.log0(`make_room_in_tier: moved ${chunk_ids.length} to next tier`);
 
         // TODO avoid multiple calls, maybe plan how much to move before and refresh after moving enough
@@ -473,15 +576,18 @@ async function make_room_in_tier(tier_id, bucket_id) {
 async function ensure_room_barrier_process(tiers_and_buckets) {
     const uniq_tiers_and_buckets = _.uniqBy(tiers_and_buckets, 'tier');
     await P.map(uniq_tiers_and_buckets, async ({ tier, bucket }) => {
-        await server_rpc.client.scrubber.make_room_in_tier({
-            tier: tier._id,
-            bucket: bucket._id,
-        }, {
-            auth_token: auth_server.make_auth_token({
-                system_id: bucket.system._id,
-                role: 'admin'
-            })
-        });
+        await server_rpc.client.scrubber.make_room_in_tier(
+            {
+                tier: tier._id,
+                bucket: bucket._id,
+            },
+            {
+                auth_token: auth_server.make_auth_token({
+                    system_id: bucket.system._id,
+                    role: 'admin',
+                }),
+            },
+        );
         await node_allocator.refresh_tiering_alloc(bucket.tiering, 'force');
         enough_room_in_tier(tier, bucket); // calling just to do the log prints
     });
@@ -496,7 +602,11 @@ async function ensure_room_in_tier(tier, bucket) {
     if (enough_room_in_tier(tier, bucket)) return;
     const start_time = Date.now();
     await ensure_room_barrier.call({ tier, bucket });
-    map_reporter.add_event(`ensure_room_in_tier(${tier.name})`, 0, Date.now() - start_time);
+    map_reporter.add_event(
+        `ensure_room_in_tier(${tier.name})`,
+        0,
+        Date.now() - start_time,
+    );
 }
 
 /**
@@ -508,23 +618,49 @@ function enough_room_in_tier(tier, bucket) {
     const tier_id_str = tier._id.toHexString();
     const tiering_status = node_allocator.get_tiering_status(tiering);
     const tier_status = tiering_status[tier_id_str];
-    const tier_in_tiering = _.find(tiering.tiers, t => String(t.tier._id) === tier_id_str);
-    if (!tier_in_tiering || !tier_status) throw new Error(`Can't find current tier in bucket`);
-    const available_to_upload = size_utils.json_to_bigint(size_utils.reduce_minimum(
-        'free', tier_status.mirrors_storage.map(storage => (storage.free || 0))
-    ));
-    if (available_to_upload && available_to_upload.greater(config.ENOUGH_ROOM_IN_TIER_THRESHOLD)) {
-        dbg.log1('enough_room_in_tier: has enough room', tier.name, available_to_upload.toJSNumber(), '>', config.ENOUGH_ROOM_IN_TIER_THRESHOLD);
-        map_reporter.add_event(`has_enough_room(${tier.name})`, available_to_upload.toJSNumber(), 0);
+    const tier_in_tiering = _.find(
+        tiering.tiers,
+        t => String(t.tier._id) === tier_id_str,
+    );
+    if (!tier_in_tiering || !tier_status) {
+        throw new Error(`Can't find current tier in bucket`);
+    }
+    const available_to_upload = size_utils.json_to_bigint(
+        size_utils.reduce_minimum(
+            'free',
+            tier_status.mirrors_storage.map(storage => storage.free || 0),
+        ),
+    );
+    if (
+        available_to_upload &&
+        available_to_upload.greater(config.ENOUGH_ROOM_IN_TIER_THRESHOLD)
+    ) {
+        dbg.log1(
+            'enough_room_in_tier: has enough room',
+            tier.name,
+            available_to_upload.toJSNumber(),
+            '>',
+            config.ENOUGH_ROOM_IN_TIER_THRESHOLD,
+        );
+        map_reporter.add_event(
+            `has_enough_room(${tier.name})`,
+            available_to_upload.toJSNumber(),
+            0,
+        );
         return true;
     } else {
-        dbg.log0_throttled(`enough_room_in_tier: not enough room ${tier.name}:`,
-            `${available_to_upload && available_to_upload.toJSNumber()} < ${config.ENOUGH_ROOM_IN_TIER_THRESHOLD} should move chunks to next tier`);
-        map_reporter.add_event(`enough_room_in_tier: not_enough_room(${tier.name})`, available_to_upload && available_to_upload.toJSNumber(), 0);
+        dbg.log0_throttled(
+            `enough_room_in_tier: not enough room ${tier.name}:`,
+            `${available_to_upload && available_to_upload.toJSNumber()} < ${config.ENOUGH_ROOM_IN_TIER_THRESHOLD} should move chunks to next tier`,
+        );
+        map_reporter.add_event(
+            `enough_room_in_tier: not_enough_room(${tier.name})`,
+            available_to_upload && available_to_upload.toJSNumber(),
+            0,
+        );
         return false;
     }
 }
-
 
 /**
  * @param {Object} params
@@ -535,11 +671,17 @@ function enough_room_in_tier(tier, bucket) {
  */
 async function prepare_chunks({ chunks, move_to_tier, location_info }) {
     const chunks_per_bucket = _.groupBy(chunks, chunk => chunk.bucket_id);
-    if (move_to_tier) assert.strictEqual(Object.keys(chunks_per_bucket).length, 1);
+    if (move_to_tier) {
+        assert.strictEqual(Object.keys(chunks_per_bucket).length, 1);
+    }
     await Promise.all(
         Object.values(chunks_per_bucket).map(chunks_group =>
-            _prepare_chunks_group({ chunks: chunks_group, move_to_tier, location_info })
-        )
+            _prepare_chunks_group({
+                chunks: chunks_group,
+                move_to_tier,
+                location_info,
+            }),
+        ),
     );
 }
 
@@ -563,7 +705,6 @@ async function _prepare_chunks_group({ chunks, move_to_tier, location_info }) {
     const tiering_status = node_allocator.get_tiering_status(bucket.tiering);
 
     for (const chunk of chunks) {
-
         chunk.is_accessible = false;
         chunk.is_building_blocks = false;
         chunk.is_building_frags = false;
@@ -591,13 +732,28 @@ async function _prepare_chunks_group({ chunks, move_to_tier, location_info }) {
         if (move_to_tier) {
             selected_tier = move_to_tier;
         } else if (chunk.tier) {
-            const tier_and_order = bucket.tiering.tiers.find(t => String(t.tier._id) === String(chunk.tier._id));
-            selected_tier = mapper.select_tier_for_write(bucket.tiering, tiering_status, tier_and_order.order);
+            const tier_and_order = bucket.tiering.tiers.find(
+                t => String(t.tier._id) === String(chunk.tier._id),
+            );
+            selected_tier = mapper.select_tier_for_write(
+                bucket.tiering,
+                tiering_status,
+                tier_and_order.order,
+            );
         } else {
-            selected_tier = mapper.select_tier_for_write(bucket.tiering, tiering_status);
+            selected_tier = mapper.select_tier_for_write(
+                bucket.tiering,
+                tiering_status,
+            );
         }
 
-        mapper.map_chunk(chunk, selected_tier, bucket.tiering, tiering_status, location_info);
+        mapper.map_chunk(
+            chunk,
+            selected_tier,
+            bucket.tiering,
+            tiering_status,
+            location_info,
+        );
     }
 }
 
@@ -607,12 +763,15 @@ async function _prepare_chunks_group({ chunks, move_to_tier, location_info }) {
  */
 async function prepare_blocks(blocks) {
     if (!blocks || !blocks.length) return;
-    const node_ids = _.uniqBy(blocks.map(block => block.node_id), id => id.toHexString());
+    const node_ids = _.uniqBy(
+        blocks.map(block => block.node_id),
+        id => id.toHexString(),
+    );
     const system_id = blocks[0].system._id;
     const { nodes } = await nodes_client.instance().list_nodes_by_identity(
         system_id,
         node_ids.map(id => ({ id: id.toHexString() })),
-        nodes_client.NODE_FIELDS_FOR_MAP
+        nodes_client.NODE_FIELDS_FOR_MAP,
     );
     const nodes_by_id = _.keyBy(nodes, '_id');
     for (const block of blocks) {
@@ -634,15 +793,16 @@ async function prepare_blocks_from_db(blocks) {
     const chunks_by_id = _.keyBy(chunks, '_id');
     const db_blocks = blocks.map(block => {
         const chunk_db = new ChunkDB(chunks_by_id[block.chunk.toHexString()]);
-        const frag_db = _.find(chunk_db.frags, frag =>
-            frag._id.toHexString() === block.frag.toHexString());
+        const frag_db = _.find(
+            chunk_db.frags,
+            frag => frag._id.toHexString() === block.frag.toHexString(),
+        );
         const block_db = new BlockDB(block, frag_db, chunk_db);
         return block_db;
     });
     await prepare_blocks(db_blocks);
     return db_blocks;
 }
-
 
 exports.GetMapping = GetMapping;
 exports.PutMapping = PutMapping;

@@ -10,7 +10,7 @@ async function put_bucket_encryption(req) {
     const encryption = s3_utils.parse_body_encryption_xml(req);
     return req.object_sdk.put_bucket_encryption({
         name: req.params.bucket,
-        encryption
+        encryption,
     });
 }
 

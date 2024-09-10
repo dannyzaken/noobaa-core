@@ -33,33 +33,52 @@ const GRID_FS_CHUNK_SIZE = 8 * 1024 * 1024;
 const GRID_FS_CHUNK_COLLECTION_OPTIONS = {
     storageEngine: {
         wiredTiger: {
-            configString: "memory_page_max=512,os_cache_dirty_max=1,os_cache_max=1"
-        }
-    }
+            configString:
+                'memory_page_max=512,os_cache_dirty_max=1,os_cache_max=1',
+        },
+    },
 };
 
 class BlockStoreMongo extends BlockStoreBase {
-
     constructor(options) {
         super(options);
         this.base_path = options.mongo_path;
         this.blocks_path = this.base_path + '/blocks_tree';
         this._blocks_fs = mongo_client.instance().define_gridfs({
             name: GRID_FS_BUCKET_NAME,
-            chunk_size: GRID_FS_CHUNK_SIZE
+            chunk_size: GRID_FS_CHUNK_SIZE,
         });
         this.usage_limit = 5 * size_utils.GIGABYTE;
     }
 
     _init_chunks_collection() {
         return P.resolve()
-            .then(() => mongo_client.instance().db().createCollection(GRID_FS_BUCKET_NAME_CHUNKS, GRID_FS_CHUNK_COLLECTION_OPTIONS))
+            .then(() =>
+                mongo_client
+                    .instance()
+                    .db()
+                    .createCollection(
+                        GRID_FS_BUCKET_NAME_CHUNKS,
+                        GRID_FS_CHUNK_COLLECTION_OPTIONS,
+                    ),
+            )
             .catch(err => {
-                if (!mongo_client.instance().is_err_namespace_exists(err)) throw err;
+                if (!mongo_client.instance().is_err_namespace_exists(err)) {
+                    throw err;
+                }
             })
-            .then(() => dbg.log0('_init_chunks_collection: created collection', GRID_FS_BUCKET_NAME_CHUNKS))
+            .then(() =>
+                dbg.log0(
+                    '_init_chunks_collection: created collection',
+                    GRID_FS_BUCKET_NAME_CHUNKS,
+                ),
+            )
             .catch(err => {
-                dbg.error('_init_chunks_collection: FAILED', GRID_FS_BUCKET_NAME_CHUNKS, err);
+                dbg.error(
+                    '_init_chunks_collection: FAILED',
+                    GRID_FS_BUCKET_NAME_CHUNKS,
+                    err,
+                );
                 throw err;
             });
     }
@@ -67,28 +86,42 @@ class BlockStoreMongo extends BlockStoreBase {
     read_usage_gridfs() {
         // Notice that I do not worry about PETABYTES because this is for local use only
         // We should not write PETABYTES to mongo so there should be no problems
-        return P.resolve()
-            .then(() => Promise.all([
-                mongo_client.instance().collection(GRID_FS_BUCKET_NAME_FILES).stats(),
-                mongo_client.instance().collection(GRID_FS_BUCKET_NAME_CHUNKS).stats()
-            ]))
-            .then(([files_res, chunks_res]) => ({
-                // Notice that storageSize includes actual storage size and not only block sizes
-                size: ((files_res && files_res.storageSize) || 0) + ((chunks_res && chunks_res.storageSize) || 0),
-                count: (files_res && files_res.count) || 0
-            }))
-            // You will always see errors on initialization when there was no GridFS collection prior
-            .catch(err => {
-                dbg.error('read_usage_gridfs had error: ', err);
-                return {
-                    size: 0,
-                    count: 0
-                };
-            });
+        return (
+            P.resolve()
+                .then(() =>
+                    Promise.all([
+                        mongo_client
+                            .instance()
+                            .collection(GRID_FS_BUCKET_NAME_FILES)
+                            .stats(),
+                        mongo_client
+                            .instance()
+                            .collection(GRID_FS_BUCKET_NAME_CHUNKS)
+                            .stats(),
+                    ]),
+                )
+                .then(([files_res, chunks_res]) => ({
+                    // Notice that storageSize includes actual storage size and not only block sizes
+                    size:
+                        ((files_res && files_res.storageSize) || 0) +
+                        ((chunks_res && chunks_res.storageSize) || 0),
+                    count: (files_res && files_res.count) || 0,
+                }))
+                // You will always see errors on initialization when there was no GridFS collection prior
+                .catch(err => {
+                    dbg.error('read_usage_gridfs had error: ', err);
+                    return {
+                        size: 0,
+                        count: 0,
+                    };
+                })
+        );
     }
 
     init() {
-        return mongo_client.instance().connect()
+        return mongo_client
+            .instance()
+            .connect()
             .then(() => this._init_chunks_collection())
             .then(() => this.read_usage_gridfs())
             .then(usage_metadata => {
@@ -104,12 +137,11 @@ class BlockStoreMongo extends BlockStoreBase {
     }
 
     get_storage_info() {
-        return P.resolve(this._get_usage())
-            .then(usage => ({
-                total: Math.max(this.usage_limit, usage.size),
-                free: Math.max(this.usage_limit - usage.size, 0),
-                used: usage.size
-            }));
+        return P.resolve(this._get_usage()).then(usage => ({
+            total: Math.max(this.usage_limit, usage.size),
+            free: Math.max(this.usage_limit - usage.size, 0),
+            used: usage.size,
+        }));
     }
 
     _get_usage() {
@@ -124,17 +156,21 @@ class BlockStoreMongo extends BlockStoreBase {
         const block_name = this._block_key(block_md.id);
         return sem_read.surround(() =>
             Promise.all([
-                buffer_utils.read_stream_join(this._blocks_fs.gridfs().openDownloadStreamByName(block_name)),
-                this.head_block(block_name)
+                buffer_utils.read_stream_join(
+                    this._blocks_fs
+                        .gridfs()
+                        .openDownloadStreamByName(block_name),
+                ),
+                this.head_block(block_name),
             ])
-            .then(([data, head]) => ({
-                data,
-                block_md: this._decode_block_md(head.metadata)
-            }))
-            .catch(err => {
-                dbg.error('_read_block failed:', err, this.base_path);
-                throw err;
-            })
+                .then(([data, head]) => ({
+                    data,
+                    block_md: this._decode_block_md(head.metadata),
+                }))
+                .catch(err => {
+                    dbg.error('_read_block failed:', err, this.base_path);
+                    throw err;
+                }),
         );
     }
 
@@ -145,37 +181,49 @@ class BlockStoreMongo extends BlockStoreBase {
         // check to see if the object already exists
         return sem_write.surround(() =>
             this.head_block(block_name)
-            .then(head => {
-                if (block_md.id !== '_test_store_perf') {
-                    dbg.warn('block already found in mongo, will overwrite. id =', block_md.id);
-                }
-                return this._blocks_fs.gridfs().delete(head._id);
-            }, err => {
-                if (err.code === 'NOT_FOUND') {
-                    dbg.log0('_head_block: Block ', block_name, ' was not found');
-                } else {
-                    dbg.error('got error on _head_block:', err);
-                    throw err;
-                }
-            })
-            .then(() => {
-                dbg.log3('writing block id to mongo: ', block_name);
-                return new Promise((resolve, reject) => {
-                    const upload_stream = this._blocks_fs.gridfs().openUploadStream(block_name, {
-                        metadata: block_metadata
+                .then(
+                    head => {
+                        if (block_md.id !== '_test_store_perf') {
+                            dbg.warn(
+                                'block already found in mongo, will overwrite. id =',
+                                block_md.id,
+                            );
+                        }
+                        return this._blocks_fs.gridfs().delete(head._id);
+                    },
+                    err => {
+                        if (err.code === 'NOT_FOUND') {
+                            dbg.log0(
+                                '_head_block: Block ',
+                                block_name,
+                                ' was not found',
+                            );
+                        } else {
+                            dbg.error('got error on _head_block:', err);
+                            throw err;
+                        }
+                    },
+                )
+                .then(() => {
+                    dbg.log3('writing block id to mongo: ', block_name);
+                    return new Promise((resolve, reject) => {
+                        const upload_stream = this._blocks_fs
+                            .gridfs()
+                            .openUploadStream(block_name, {
+                                metadata: block_metadata,
+                            });
+                        upload_stream.once('error', reject).once('finish', () =>
+                            resolve({
+                                id: upload_stream.id,
+                            }),
+                        );
+                        upload_stream.end(block_data);
                     });
-                    upload_stream
-                        .once('error', reject)
-                        .once('finish', () => resolve({
-                            id: upload_stream.id,
-                        }));
-                    upload_stream.end(block_data);
-                });
-            })
-            .catch(err => {
-                dbg.error('_write_block failed:', err, this.base_path);
-                throw err;
-            })
+                })
+                .catch(err => {
+                    dbg.error('_write_block failed:', err, this.base_path);
+                    throw err;
+                }),
         );
     }
 
@@ -187,52 +235,75 @@ class BlockStoreMongo extends BlockStoreBase {
 
     _delete_blocks(block_ids) {
         const failed_to_delete_block_ids = [];
-        const block_names = _.map(block_ids, block_id => this._block_key(block_id));
+        const block_names = _.map(block_ids, block_id =>
+            this._block_key(block_id),
+        );
         return sem_delete.surround(() =>
             P.map_with_concurrency(10, block_names, block_name =>
-                this._blocks_fs.gridfs().find({ filename: block_name })
-                .toArray()
-                .then(blocks => P.map_with_concurrency(10, blocks, block =>
-                    this._blocks_fs.gridfs().delete(block._id)
-                    .catch(err => {
-                        dbg.error('_delete_blocks: could not delete', block, err);
-                        failed_to_delete_block_ids.push(this._block_id_from_key(block.filename));
-                        throw err;
-                    })
-                ))
+                this._blocks_fs
+                    .gridfs()
+                    .find({ filename: block_name })
+                    .toArray()
+                    .then(blocks =>
+                        P.map_with_concurrency(10, blocks, block =>
+                            this._blocks_fs
+                                .gridfs()
+                                .delete(block._id)
+                                .catch(err => {
+                                    dbg.error(
+                                        '_delete_blocks: could not delete',
+                                        block,
+                                        err,
+                                    );
+                                    failed_to_delete_block_ids.push(
+                                        this._block_id_from_key(block.filename),
+                                    );
+                                    throw err;
+                                }),
+                        ),
+                    ),
             )
-            .catch(err => {
-                dbg.error('_delete_blocks failed:', err);
-            })
-            .then(() => ({
-                failed_block_ids: failed_to_delete_block_ids,
-                succeeded_block_ids: _.difference(block_ids, failed_to_delete_block_ids)
-            }))
+                .catch(err => {
+                    dbg.error('_delete_blocks failed:', err);
+                })
+                .then(() => ({
+                    failed_block_ids: failed_to_delete_block_ids,
+                    succeeded_block_ids: _.difference(
+                        block_ids,
+                        failed_to_delete_block_ids,
+                    ),
+                })),
         );
     }
 
     head_block(block_name) {
         return sem_head.surround(() =>
-            P.resolve(this._blocks_fs.gridfs().find({
-                    filename: block_name
-                }, {
-                    limit: 1
-                })
-                .toArray()
-            )
-            .then(usage_file_res => {
+            P.resolve(
+                this._blocks_fs
+                    .gridfs()
+                    .find(
+                        {
+                            filename: block_name,
+                        },
+                        {
+                            limit: 1,
+                        },
+                    )
+                    .toArray(),
+            ).then(usage_file_res => {
                 if (usage_file_res && usage_file_res[0]) {
                     return usage_file_res[0];
                 }
 
-                const err = new Error(`head_block: Block ${block_name} response ${usage_file_res}`);
+                const err = new Error(
+                    `head_block: Block ${block_name} response ${usage_file_res}`,
+                );
                 Object.assign(err, { code: 'NOT_FOUND' });
                 throw err;
                 // throw new RpcError('NOT_FOUND', `head_block: Block ${block_name} response ${usage_file_res}`);
-            })
+            }),
         );
     }
-
 }
 
 // EXPORTS

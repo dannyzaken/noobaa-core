@@ -42,116 +42,151 @@ const db_client = require('../../util/db_client');
 const { RpcError } = require('../../rpc');
 const master_key_manager = require('./master_key_manager');
 
-const COLLECTIONS = [{
-    name: 'clusters',
-    schema: cluster_schema,
-    mem_indexes: [{
-        name: 'cluster_by_server',
-        key: 'owner_secret'
-    }],
-    db_indexes: cluster_indexes,
-}, {
-    name: 'namespace_resources',
-    schema: namespace_resource_schema,
-    mem_indexes: [{
-        name: 'namespace_resources_by_name',
-        context: 'system',
-        key: 'name'
-    }],
-    db_indexes: namespace_resource_indexes,
-}, {
-    name: 'systems',
-    schema: system_schema,
-    mem_indexes: [{
-        name: 'systems_by_name',
-        key: 'name'
-    }],
-    db_indexes: system_indexes,
-}, {
-    name: 'roles',
-    schema: role_schema,
-    mem_indexes: [{
-        name: 'roles_by_account',
-        context: 'system',
-        key: 'account._id',
-        val: 'role',
-        val_array: true,
-    }, {
-        name: 'roles_by_system',
-        context: 'account',
-        key: 'system._id',
-        val: 'role',
-        val_array: true,
-    }],
-}, {
-    name: 'accounts',
-    schema: account_schema,
-    mem_indexes: [{
-        name: 'accounts_by_email',
-        key: 'email'
-    }],
-    db_indexes: account_indexes,
-}, {
-    name: 'buckets',
-    schema: bucket_schema,
-    mem_indexes: [{
-        name: 'buckets_by_name',
-        context: 'system',
-        key: 'name'
-    }],
-    db_indexes: bucket_indexes,
-}, {
-    name: 'tieringpolicies',
-    schema: tiering_policy_schema,
-    mem_indexes: [{
-        name: 'tiering_policies_by_name',
-        context: 'system',
-        key: 'name'
-    }],
-    db_indexes: tiering_policy_indexes,
-}, {
-    name: 'tiers',
-    schema: tier_schema,
-    mem_indexes: [{
-        name: 'tiers_by_name',
-        context: 'system',
-        key: 'name'
-    }],
-    db_indexes: tier_indexes,
-}, {
-    name: 'pools',
-    schema: pool_schema,
-    mem_indexes: [{
-        name: 'pools_by_name',
-        context: 'system',
-        key: 'name'
-    }],
-    db_indexes: pool_indexes,
-}, {
-    name: 'agent_configs',
-    schema: agent_config_schema,
-    db_indexes: agent_config_indexes,
-}, {
-    name: 'chunk_configs',
-    schema: chunk_config_schema,
-    mem_indexes: [{
-        name: 'chunk_configs_by_id',
-        context: 'system',
-        key: '_id'
-    }],
-}, {
-    name: 'master_keys',
-    schema: master_key_schema,
-    mem_indexes: [{
-        name: 'master_keys_by_id',
-        key: '_id'
-    }],
-}];
+const COLLECTIONS = [
+    {
+        name: 'clusters',
+        schema: cluster_schema,
+        mem_indexes: [
+            {
+                name: 'cluster_by_server',
+                key: 'owner_secret',
+            },
+        ],
+        db_indexes: cluster_indexes,
+    },
+    {
+        name: 'namespace_resources',
+        schema: namespace_resource_schema,
+        mem_indexes: [
+            {
+                name: 'namespace_resources_by_name',
+                context: 'system',
+                key: 'name',
+            },
+        ],
+        db_indexes: namespace_resource_indexes,
+    },
+    {
+        name: 'systems',
+        schema: system_schema,
+        mem_indexes: [
+            {
+                name: 'systems_by_name',
+                key: 'name',
+            },
+        ],
+        db_indexes: system_indexes,
+    },
+    {
+        name: 'roles',
+        schema: role_schema,
+        mem_indexes: [
+            {
+                name: 'roles_by_account',
+                context: 'system',
+                key: 'account._id',
+                val: 'role',
+                val_array: true,
+            },
+            {
+                name: 'roles_by_system',
+                context: 'account',
+                key: 'system._id',
+                val: 'role',
+                val_array: true,
+            },
+        ],
+    },
+    {
+        name: 'accounts',
+        schema: account_schema,
+        mem_indexes: [
+            {
+                name: 'accounts_by_email',
+                key: 'email',
+            },
+        ],
+        db_indexes: account_indexes,
+    },
+    {
+        name: 'buckets',
+        schema: bucket_schema,
+        mem_indexes: [
+            {
+                name: 'buckets_by_name',
+                context: 'system',
+                key: 'name',
+            },
+        ],
+        db_indexes: bucket_indexes,
+    },
+    {
+        name: 'tieringpolicies',
+        schema: tiering_policy_schema,
+        mem_indexes: [
+            {
+                name: 'tiering_policies_by_name',
+                context: 'system',
+                key: 'name',
+            },
+        ],
+        db_indexes: tiering_policy_indexes,
+    },
+    {
+        name: 'tiers',
+        schema: tier_schema,
+        mem_indexes: [
+            {
+                name: 'tiers_by_name',
+                context: 'system',
+                key: 'name',
+            },
+        ],
+        db_indexes: tier_indexes,
+    },
+    {
+        name: 'pools',
+        schema: pool_schema,
+        mem_indexes: [
+            {
+                name: 'pools_by_name',
+                context: 'system',
+                key: 'name',
+            },
+        ],
+        db_indexes: pool_indexes,
+    },
+    {
+        name: 'agent_configs',
+        schema: agent_config_schema,
+        db_indexes: agent_config_indexes,
+    },
+    {
+        name: 'chunk_configs',
+        schema: chunk_config_schema,
+        mem_indexes: [
+            {
+                name: 'chunk_configs_by_id',
+                context: 'system',
+                key: '_id',
+            },
+        ],
+    },
+    {
+        name: 'master_keys',
+        schema: master_key_schema,
+        mem_indexes: [
+            {
+                name: 'master_keys_by_id',
+                key: '_id',
+            },
+        ],
+    },
+];
 
 const COLLECTIONS_BY_NAME = _.keyBy(COLLECTIONS, 'name');
 
 const accounts_by_email_lowercase = [];
-
 
 /**
  *
@@ -159,7 +194,6 @@ const accounts_by_email_lowercase = [];
  *
  */
 class SystemStoreData {
-
     constructor(data) {
         this.time = Date.now();
 
@@ -208,7 +242,7 @@ class SystemStoreData {
         if (res) {
             return {
                 record: res,
-                linkable: true
+                linkable: true,
             };
         }
         //Query deleted !== null
@@ -216,23 +250,27 @@ class SystemStoreData {
         const find_res = await collection.findOne({
             _id: id,
             deleted: {
-                $ne: null
-            }
+                $ne: null,
+            },
         });
         if (find_res) {
             return {
                 record: find_res,
-                linkable: false
+                linkable: false,
             };
         }
     }
 
     resolve_object_ids_paths(item, paths, allow_missing) {
-        return db_client.instance().resolve_object_ids_paths(this.idmap, item, paths, allow_missing);
+        return db_client
+            .instance()
+            .resolve_object_ids_paths(this.idmap, item, paths, allow_missing);
     }
 
     resolve_object_ids_recursive(item) {
-        return db_client.instance().resolve_object_ids_recursive(this.idmap, item);
+        return db_client
+            .instance()
+            .resolve_object_ids_recursive(this.idmap, item);
     }
 
     rebuild() {
@@ -280,15 +318,22 @@ class SystemStoreData {
                     }
                     const key = field.valueOf();
                     const val = index.val ? _.get(item, index.val) : item;
-                    const context = index.context ? _.get(item, index.context) : this;
+                    const context =
+                        index.context ? _.get(item, index.context) : this;
                     const map = context[index.name] || {};
                     context[index.name] = map;
                     if (index.val_array) {
                         map[key] = map[key] || [];
                         map[key].push(val);
                     } else if (key in map) {
-                        dbg.error('SystemStoreData:', index.name,
-                            'collision on key', key, val._id, map[key]._id);
+                        dbg.error(
+                            'SystemStoreData:',
+                            index.name,
+                            'collision on key',
+                            key,
+                            val._id,
+                            map[key]._id,
+                        );
                     } else {
                         map[key] = val;
                     }
@@ -299,10 +344,10 @@ class SystemStoreData {
 
     rebuild_accounts_by_email_lowercase() {
         _.each(this.accounts, account => {
-            accounts_by_email_lowercase[account.email.unwrap().toLowerCase()] = account.email.unwrap();
+            accounts_by_email_lowercase[account.email.unwrap().toLowerCase()] =
+                account.email.unwrap();
         });
     }
-
 
     check_indexes(col, item) {
         _.each(col.mem_indexes, index => {
@@ -313,14 +358,15 @@ class SystemStoreData {
             if (!index.val_array) {
                 const existing = map && map[key];
                 if (existing && String(existing._id) !== String(item._id)) {
-                    throw new RpcError('CONFLICT', index.name + ' collision on key ' + key);
+                    throw new RpcError(
+                        'CONFLICT',
+                        index.name + ' collision on key ' + key,
+                    );
                 }
             }
         });
     }
-
 }
-
 
 /**
  *
@@ -330,13 +376,13 @@ class SystemStoreData {
  *
  */
 class SystemStore extends EventEmitter {
-
     /**
      * @returns {SystemStore}
      */
     static get_instance(options = {}) {
         const { standalone } = options;
-        SystemStore._instance = SystemStore._instance || new SystemStore({ standalone });
+        SystemStore._instance =
+            SystemStore._instance || new SystemStore({ standalone });
         return SystemStore._instance;
     }
 
@@ -351,7 +397,9 @@ class SystemStore extends EventEmitter {
         this.is_finished_initial_load = false;
         this.START_REFRESH_THRESHOLD = 10 * 60 * 1000;
         this.FORCE_REFRESH_THRESHOLD = 60 * 60 * 1000;
-        this._load_serial = new Semaphore(1, { warning_timeout: this.START_REFRESH_THRESHOLD });
+        this._load_serial = new Semaphore(1, {
+            warning_timeout: this.START_REFRESH_THRESHOLD,
+        });
         for (const col of COLLECTIONS) {
             db_client.instance().define_collection(col);
         }
@@ -361,14 +409,16 @@ class SystemStore extends EventEmitter {
         this.initial_load();
     }
 
-    [util.inspect.custom]() { return 'SystemStore'; }
+    [util.inspect.custom]() {
+        return 'SystemStore';
+    }
 
     async initial_load_from_mount() {
         if (!process.env.NOOBAA_ROOT_SECRET) {
             await P.retry({
                 attempts: 3,
                 delay_ms: 1000,
-                func: () => this.master_key_manager.load_root_keys_from_mount()
+                func: () => this.master_key_manager.load_root_keys_from_mount(),
             });
         }
         if (db_client.instance().is_connected()) {
@@ -377,7 +427,9 @@ class SystemStore extends EventEmitter {
     }
 
     initial_load() {
-        db_client.instance().on('reconnect', () => this.initial_load_from_mount());
+        db_client
+            .instance()
+            .on('reconnect', () => this.initial_load_from_mount());
         P.delay(100)
             .then(() => this.initial_load_from_mount())
             .catch(_.noop);
@@ -397,11 +449,15 @@ class SystemStore extends EventEmitter {
         if (since_load < this.START_REFRESH_THRESHOLD) {
             return this.data;
         } else if (since_load < this.FORCE_REFRESH_THRESHOLD) {
-            dbg.warn(`system_store.refresh: system_store.data.time > START_REFRESH_THRESHOLD, since_load = ${since_load}, START_REFRESH_THRESHOLD = ${this.START_REFRESH_THRESHOLD}`);
+            dbg.warn(
+                `system_store.refresh: system_store.data.time > START_REFRESH_THRESHOLD, since_load = ${since_load}, START_REFRESH_THRESHOLD = ${this.START_REFRESH_THRESHOLD}`,
+            );
             this.load().catch(_.noop);
             return this.data;
         } else {
-            dbg.warn(`system_store.refresh: system_store.data.time > FORCE_REFRESH_THRESHOLD, since_load = ${since_load}, FORCE_REFRESH_THRESHOLD = ${this.FORCE_REFRESH_THRESHOLD}`);
+            dbg.warn(
+                `system_store.refresh: system_store.data.time > FORCE_REFRESH_THRESHOLD, since_load = ${since_load}, FORCE_REFRESH_THRESHOLD = ${this.FORCE_REFRESH_THRESHOLD}`,
+            );
             return this.load();
         }
     }
@@ -416,7 +472,9 @@ class SystemStore extends EventEmitter {
                 // If we get a load request with an timestamp older then our last update time
                 // we ensure we load everyting from that timestamp by updating our last_update_time.
                 if (!_.isUndefined(since) && since < this.last_update_time) {
-                    dbg.log0('SystemStore.load: Got load request with a timestamp older then my last update time');
+                    dbg.log0(
+                        'SystemStore.load: Got load request with a timestamp older then my last update time',
+                    );
                     this.last_update_time = since;
                 }
                 this.master_key_manager.load_root_key();
@@ -426,23 +484,42 @@ class SystemStore extends EventEmitter {
                 await this._read_new_data_from_db(new_data);
                 const secret = await os_utils.read_server_secret();
                 this._server_secret = secret;
-                dbg.log1('SystemStore: fetch took', time_utils.millitook(millistamp));
-                dbg.log1('SystemStore: fetch size', size_utils.human_size(JSON.stringify(new_data).length));
-                dbg.log1('SystemStore: fetch data', util.inspect(new_data, {
-                    depth: 4
-                }));
-                this.old_db_data = this._update_data_from_new(this.old_db_data || {}, new_data);
+                dbg.log1(
+                    'SystemStore: fetch took',
+                    time_utils.millitook(millistamp),
+                );
+                dbg.log1(
+                    'SystemStore: fetch size',
+                    size_utils.human_size(JSON.stringify(new_data).length),
+                );
+                dbg.log1(
+                    'SystemStore: fetch data',
+                    util.inspect(new_data, {
+                        depth: 4,
+                    }),
+                );
+                this.old_db_data = this._update_data_from_new(
+                    this.old_db_data || {},
+                    new_data,
+                );
                 this.data = _.cloneDeep(this.old_db_data);
                 millistamp = time_utils.millistamp();
                 this.data.rebuild();
-                dbg.log1('SystemStore: rebuild took', time_utils.millitook(millistamp));
+                dbg.log1(
+                    'SystemStore: rebuild took',
+                    time_utils.millitook(millistamp),
+                );
                 if (this.data.master_keys_by_id) {
-                    this.master_key_manager.update_master_keys(this.data.master_keys_by_id);
-                    await this.master_key_manager.decrypt_all_accounts_secret_keys({
-                        accounts: this.data.accounts,
-                        pools: this.data.pools,
-                        namespace_resources: this.data.namespace_resources
-                    });
+                    this.master_key_manager.update_master_keys(
+                        this.data.master_keys_by_id,
+                    );
+                    await this.master_key_manager.decrypt_all_accounts_secret_keys(
+                        {
+                            accounts: this.data.accounts,
+                            pools: this.data.pools,
+                            namespace_resources: this.data.namespace_resources,
+                        },
+                    );
                 }
                 this.emit('load');
                 this.is_finished_initial_load = true;
@@ -458,16 +535,19 @@ class SystemStore extends EventEmitter {
         COLLECTIONS.forEach(col => {
             const old_items = data[col.name];
             const new_items = new_data[col.name];
-            const u = _.unionBy(new_items, old_items, doc => doc._id.toString());
+            const u = _.unionBy(new_items, old_items, doc =>
+                doc._id.toString(),
+            );
             new_data[col.name] = u.filter(doc => !doc.deleted);
         });
         return new_data;
     }
 
-
     async _register_for_changes() {
         if (this.is_standalone) {
-            dbg.log0('system_store is running in standalone mode. skip _register_for_changes');
+            dbg.log0(
+                'system_store is running in standalone mode. skip _register_for_changes',
+            );
             return;
         }
         if (!this._registered_for_reconnect) {
@@ -486,11 +566,14 @@ class SystemStore extends EventEmitter {
 
     async _read_data_from_db(target) {
         const non_deleted_query = {
-            deleted: null
+            deleted: null,
         };
         await db_client.instance().connect();
         return P.map(COLLECTIONS, async col => {
-            const res = await db_client.instance().collection(col.name).find(non_deleted_query);
+            const res = await db_client
+                .instance()
+                .collection(col.name)
+                .find(non_deleted_query);
             for (const item of res) {
                 this._check_schema(col, item, 'warn');
             }
@@ -503,13 +586,15 @@ class SystemStore extends EventEmitter {
         const newly_updated_query = {
             last_update: {
                 $gte: this.last_update_time,
-            }
+            },
         };
         await db_client.instance().connect();
         await P.map(COLLECTIONS, async col => {
-            const res = await db_client.instance().collection(col.name)
+            const res = await db_client
+                .instance()
+                .collection(col.name)
                 .find(newly_updated_query, {
-                    projection: { last_update: 0 }
+                    projection: { last_update: 0 },
                 });
             for (const item of res) {
                 this._check_schema(col, item, 'warn');
@@ -548,7 +633,10 @@ class SystemStore extends EventEmitter {
         return dump;
     }
 
-    async make_changes_with_retries(changes, { max_retries = 3, delay = 1000 } = {}) {
+    async make_changes_with_retries(
+        changes,
+        { max_retries = 3, delay = 1000 } = {},
+    ) {
         let retries = 0;
         let changes_updated = false;
         while (!changes_updated) {
@@ -557,14 +645,20 @@ class SystemStore extends EventEmitter {
                 changes_updated = true;
             } catch (err) {
                 if (retries === max_retries) {
-                    dbg.error(`make_changes_with_retries failed. aborting after ${max_retries} retries. changes=`,
+                    dbg.error(
+                        `make_changes_with_retries failed. aborting after ${max_retries} retries. changes=`,
                         util.inspect(changes, { depth: 5 }),
-                        'error=', err);
+                        'error=',
+                        err,
+                    );
                     throw err;
                 }
-                dbg.warn(`make_changes failed. will retry in ${delay / 1000} seconds. changes=`,
+                dbg.warn(
+                    `make_changes failed. will retry in ${delay / 1000} seconds. changes=`,
                     util.inspect(changes, { depth: 5 }),
-                    'error=', err);
+                    'error=',
+                    err,
+                );
                 retries += 1;
                 await P.delay(delay);
             }
@@ -602,8 +696,8 @@ class SystemStore extends EventEmitter {
         // Refreshing must be done outside the semapore lock because refresh
         // might call load that is locking on the same semaphore.
         await this.refresh();
-        const { any_news, last_update } = await this._load_serial.surround(
-            () => this._make_changes_internal(changes)
+        const { any_news, last_update } = await this._load_serial.surround(() =>
+            this._make_changes_internal(changes),
         );
 
         // Reloading must be done outside the semapore lock because the load is
@@ -617,7 +711,7 @@ class SystemStore extends EventEmitter {
                     method_api: 'server_inter_process_api',
                     method_name: 'load_system_store',
                     target: '',
-                    request_params: { since: last_update }
+                    request_params: { since: last_update },
                 });
             }
         }
@@ -628,20 +722,29 @@ class SystemStore extends EventEmitter {
         const now = new Date();
         const last_update = now.getTime();
         let any_news = false;
-        dbg.log0('SystemStore.make_changes:', util.inspect(changes, {
-            depth: 5
-        }));
+        dbg.log0(
+            'SystemStore.make_changes:',
+            util.inspect(changes, {
+                depth: 5,
+            }),
+        );
 
         const get_collection = name => {
             const col = COLLECTIONS_BY_NAME[name];
             if (!col) {
-                throw new Error('SystemStore: make_changes bad collection name - ' + name);
+                throw new Error(
+                    'SystemStore: make_changes bad collection name - ' + name,
+                );
             }
             return col;
         };
         const get_bulk = name => {
-            const bulk = bulk_per_collection[name] ||
-                db_client.instance().collection(name).initializeUnorderedBulkOp();
+            const bulk =
+                bulk_per_collection[name] ||
+                db_client
+                    .instance()
+                    .collection(name)
+                    .initializeUnorderedBulkOp();
             bulk_per_collection[name] = bulk;
             return bulk;
         };
@@ -662,19 +765,34 @@ class SystemStore extends EventEmitter {
             const col = get_collection(name);
             _.each(list, item => {
                 data.check_indexes(col, item);
-                const dont_change_last_update = Boolean(item.dont_change_last_update);
-                let updates = _.omit(item, '_id', '$find', 'dont_change_last_update');
+                const dont_change_last_update = Boolean(
+                    item.dont_change_last_update,
+                );
+                let updates = _.omit(
+                    item,
+                    '_id',
+                    '$find',
+                    'dont_change_last_update',
+                );
                 const find_id = _.pick(item, '_id');
-                const finds = item.$find || (db_client.instance().is_object_id(find_id._id) && find_id);
+                const finds =
+                    item.$find ||
+                    (db_client.instance().is_object_id(find_id._id) && find_id);
                 if (_.isEmpty(updates)) return;
-                if (!finds) throw new Error(`SystemStore: make_changes id is not of type object_id: ${find_id._id}`);
+                if (!finds) {
+                    throw new Error(
+                        `SystemStore: make_changes id is not of type object_id: ${find_id._id}`,
+                    );
+                }
                 const keys = _.keys(updates);
 
                 if (_.first(keys)[0] === '$') {
                     for (const key of keys) {
                         // Validate that all update keys are mongo operators.
                         if (!db_client.instance().operators.has(key)) {
-                            throw new Error(`SystemStore: make_changes invalid mix of operators and bare value: ${key}`);
+                            throw new Error(
+                                `SystemStore: make_changes invalid mix of operators and bare value: ${key}`,
+                            );
                         }
 
                         // Delete operators with empty value to comply with
@@ -685,7 +803,7 @@ class SystemStore extends EventEmitter {
                     }
                 } else {
                     updates = {
-                        $set: updates
+                        $set: updates,
                     };
                 }
 
@@ -707,16 +825,20 @@ class SystemStore extends EventEmitter {
         _.each(changes.remove, (list, name) => {
             get_collection(name);
             _.each(list, id => {
-                if (!db_client.instance().is_object_id(id)) throw new Error(`SystemStore: make_changes id is not of type object_id: ${id}`);
+                if (!db_client.instance().is_object_id(id)) {
+                    throw new Error(
+                        `SystemStore: make_changes id is not of type object_id: ${id}`,
+                    );
+                }
                 any_news = true;
                 const query = {
-                    _id: id
+                    _id: id,
                 };
                 const update = {
                     $set: {
                         deleted: now,
                         last_update: last_update,
-                    }
+                    },
                 };
                 get_bulk(name).find(query).updateOne(update);
                 // .find({
@@ -734,10 +856,14 @@ class SystemStore extends EventEmitter {
         _.each(changes.db_delete, (list, name) => {
             get_collection(name);
             _.each(list, id => {
-                if (!db_client.instance().is_object_id(id)) throw new Error(`SystemStore: make_changes id is not of type object_id: ${id}`);
+                if (!db_client.instance().is_object_id(id)) {
+                    throw new Error(
+                        `SystemStore: make_changes id is not of type object_id: ${id}`,
+                    );
+                }
                 const query = {
                     _id: id,
-                    deleted: { $exists: true }
+                    deleted: { $exists: true },
                 };
                 get_bulk(name).find(query).removeOne();
                 //     .find({
@@ -748,9 +874,11 @@ class SystemStore extends EventEmitter {
             });
         });
 
-        const bulk_results = await Promise.all(Object.values(bulk_per_collection).map(
-            bulk => bulk.length && bulk.execute({ j: true })
-        ));
+        const bulk_results = await Promise.all(
+            Object.values(bulk_per_collection).map(
+                bulk => bulk.length && bulk.execute({ j: true }),
+            ),
+        );
 
         for (const res of bulk_results) {
             if (res && !res.ok) {
@@ -786,9 +914,10 @@ class SystemStore extends EventEmitter {
     get_local_cluster_info(get_hb) {
         const owner_secret = this.get_server_secret();
         let reply;
-        _.each(this.data && this.data.clusters, function(cluster_info) {
+        _.each(this.data && this.data.clusters, function (cluster_info) {
             if (cluster_info.owner_secret === owner_secret) {
-                reply = get_hb ? cluster_info : _.omit(cluster_info, ['heartbeat']);
+                reply =
+                    get_hb ? cluster_info : _.omit(cluster_info, ['heartbeat']);
             }
         });
         return reply;
@@ -806,16 +935,26 @@ class SystemStore extends EventEmitter {
 
     get_account_by_access_key(access_key_id) {
         return _.find(this.data.accounts, acc =>
-            _.find(acc.access_keys, key => key.access_key.unwrap() === access_key_id.unwrap())
+            _.find(
+                acc.access_keys,
+                key => key.access_key.unwrap() === access_key_id.unwrap(),
+            ),
         );
     }
 
     get_accounts_by_nsfs_account_config(nsfs_account_config) {
         if (this.data && !_.isEmpty(this.data.accounts)) {
-            return this.data.accounts.filter(account => account.nsfs_account_config &&
-                    _.isEqual(account.nsfs_account_config.distinguished_name, nsfs_account_config.distinguished_name) &&
-                    account.nsfs_account_config.uid === nsfs_account_config.uid &&
-                    account.nsfs_account_config.gid === nsfs_account_config.gid);
+            return this.data.accounts.filter(
+                account =>
+                    account.nsfs_account_config &&
+                    _.isEqual(
+                        account.nsfs_account_config.distinguished_name,
+                        nsfs_account_config.distinguished_name,
+                    ) &&
+                    account.nsfs_account_config.uid ===
+                        nsfs_account_config.uid &&
+                    account.nsfs_account_config.gid === nsfs_account_config.gid,
+            );
         }
     }
 
@@ -823,15 +962,15 @@ class SystemStore extends EventEmitter {
         const collection = db_client.instance().collection(name);
         const query = {
             deleted: {
-                $lt: new Date(max_delete_time)
+                $lt: new Date(max_delete_time),
             },
         };
         const docs = await collection.find(query, {
             limit: Math.min(limit, 1000),
             projection: {
                 _id: 1,
-                deleted: 1
-            }
+                deleted: 1,
+            },
         });
         return db_client.instance().uniq_ids(docs, '_id');
     }

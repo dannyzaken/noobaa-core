@@ -22,7 +22,6 @@ util.inspect.defaultOptions.breakLength = 60;
 const speedo = new Speedometer('Mapper Speed');
 
 async function main() {
-
     /** @type {nb.System} */
     const system = {
         _id: db_client.instance().new_object_id(),
@@ -70,10 +69,12 @@ async function main() {
         system,
         chunk_config,
         data_placement: 'SPREAD',
-        mirrors: [{
-            _id: db_client.instance().new_object_id(),
-            spread_pools: [pool]
-        }],
+        mirrors: [
+            {
+                _id: db_client.instance().new_object_id(),
+                spread_pools: [pool],
+            },
+        ],
     };
 
     /** @type {nb.Tiering} */
@@ -99,7 +100,7 @@ async function main() {
     const FULL_STORAGE = {
         free: { peta: 2, n: 0 },
         regular_free: { peta: 1, n: 0 },
-        redundant_free: { peta: 1, n: 0 }
+        redundant_free: { peta: 1, n: 0 },
     };
 
     /** @type {nb.TieringStatus} */
@@ -123,13 +124,19 @@ async function main() {
     const system_store = /** @type {SystemStore} */ (
         /** @type {unknown} */
         ({
-            [util.inspect.custom]() { return 'SystemStore'; },
+            [util.inspect.custom]() {
+                return 'SystemStore';
+            },
             data: {
-                get_by_id(id_str) { return this.idmap[id_str]; },
-                get_by_id_include_deleted(id_str, name) { return this.idmap[id_str]; },
+                get_by_id(id_str) {
+                    return this.idmap[id_str];
+                },
+                get_by_id_include_deleted(id_str, name) {
+                    return this.idmap[id_str];
+                },
                 systems: [system],
                 systems_by_name: {
-                    [system.name]: system
+                    [system.name]: system,
                 },
                 pools: [pool],
                 tiers: [tier],
@@ -152,14 +159,30 @@ async function main() {
                 namespace_resources: [],
                 accounts_by_email: {},
                 cluster_by_server: {},
-                check_indexes() { /*empty*/ },
-                rebuild() { /*empty*/ },
-                rebuild_accounts_by_email_lowercase() { /*empty*/ },
-                rebuild_idmap() { /*empty*/ },
-                rebuild_indexes() { /*empty*/ },
-                rebuild_object_links() { /*empty*/ },
-                resolve_object_ids_paths() { /*empty*/ },
-                resolve_object_ids_recursive() { /*empty*/ },
+                check_indexes() {
+                    /*empty*/
+                },
+                rebuild() {
+                    /*empty*/
+                },
+                rebuild_accounts_by_email_lowercase() {
+                    /*empty*/
+                },
+                rebuild_idmap() {
+                    /*empty*/
+                },
+                rebuild_indexes() {
+                    /*empty*/
+                },
+                rebuild_object_links() {
+                    /*empty*/
+                },
+                resolve_object_ids_paths() {
+                    /*empty*/
+                },
+                resolve_object_ids_recursive() {
+                    /*empty*/
+                },
             },
         })
     );
@@ -175,23 +198,44 @@ async function main() {
                 chunk_coder_config,
                 size: CHUNK_SIZE,
                 frag_size: CHUNK_SIZE,
-                frags: [{
-                    _id: db_client.instance().new_object_id().toHexString(),
-                    data_index: 0,
-                    digest_b64: crypto.createHash(chunk_coder_config.frag_digest_type).digest('base64'),
-                    blocks: [],
-                }],
-                parts: [{
-                    start: 0,
-                    end: CHUNK_SIZE,
-                    seq: 0,
-                    obj_id: db_client.instance().new_object_id().toHexString(),
-                    chunk_id: db_client.instance().new_object_id().toHexString(),
-                    multipart_id: db_client.instance().new_object_id().toHexString(),
-                }]
+                frags: [
+                    {
+                        _id: db_client.instance().new_object_id().toHexString(),
+                        data_index: 0,
+                        digest_b64: crypto
+                            .createHash(chunk_coder_config.frag_digest_type)
+                            .digest('base64'),
+                        blocks: [],
+                    },
+                ],
+                parts: [
+                    {
+                        start: 0,
+                        end: CHUNK_SIZE,
+                        seq: 0,
+                        obj_id: db_client
+                            .instance()
+                            .new_object_id()
+                            .toHexString(),
+                        chunk_id: db_client
+                            .instance()
+                            .new_object_id()
+                            .toHexString(),
+                        multipart_id: db_client
+                            .instance()
+                            .new_object_id()
+                            .toHexString(),
+                    },
+                ],
             };
             const chunk = new ChunkAPI(chunk_info, system_store);
-            mapper.map_chunk(chunk, tier, tiering, tiering_status, location_info);
+            mapper.map_chunk(
+                chunk,
+                tier,
+                tiering,
+                tiering_status,
+                location_info,
+            );
 
             console.log(chunk.chunk_info);
             for (const part of chunk.parts) {

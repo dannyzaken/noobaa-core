@@ -19,21 +19,21 @@ const crypto = require('crypto');
  *
  */
 class RandStream extends stream.Readable {
-
     /**
-     * 
+     *
      * @param {number} max_length when to stop generating random bytes
      * @param {{
      *      highWaterMark?: number;
      *      generator?: 'crypto' | 'cipher' | 'fake' | 'zeros' | 'fill' | 'noinit';
      *      cipher_seed?: Buffer;
-     *  }?} options 
+     *  }?} options
      */
     constructor(max_length, options) {
         super(options);
         this.max_length = max_length;
         this.chunk_size = (options && options.highWaterMark) || 1024 * 1024;
-        this.generator = this[`generate_${(options && options.generator) || 'cipher'}`];
+        this.generator =
+            this[`generate_${(options && options.generator) || 'cipher'}`];
         this.cipher_seed = options && options.cipher_seed;
         this.pos = 0;
         this.ticks = 0;
@@ -43,7 +43,7 @@ class RandStream extends stream.Readable {
      * generate_crypto:
      *
      * crypto.randomBytes() used to be slow ~50 MB/sec - BUT it is no longer so...
-     * 
+     *
      * The speed of this mode is ~2000 MB/sec.
      */
     generate_crypto(size) {
@@ -78,7 +78,9 @@ class RandStream extends stream.Readable {
             const key_len = 16;
             const iv_len = 12;
             if (this.cipher) {
-                this.cipher_seed = this.cipher.update(this.zero_buffer.slice(0, key_len + iv_len));
+                this.cipher_seed = this.cipher.update(
+                    this.zero_buffer.slice(0, key_len + iv_len),
+                );
             } else if (!this.cipher_seed) {
                 this.cipher_seed = crypto.randomBytes(key_len + iv_len);
             }
@@ -86,9 +88,10 @@ class RandStream extends stream.Readable {
             const iv = this.cipher_seed.slice(key_len, key_len + iv_len);
             this.cipher = crypto.createCipheriv('aes-128-gcm', key, iv);
         }
-        const zero_bytes = size >= this.zero_buffer.length ?
-            this.zero_buffer :
-            this.zero_buffer.slice(0, size);
+        const zero_bytes =
+            size >= this.zero_buffer.length ?
+                this.zero_buffer
+            :   this.zero_buffer.slice(0, size);
         this.cipher_bytes += zero_bytes.length;
         return this.cipher.update(zero_bytes);
     }
@@ -120,13 +123,16 @@ class RandStream extends stream.Readable {
             this.fake_buf_size = this.fake_factor * this.fake_slice;
             this.fake_offset_range = {
                 min: 0,
-                max: this.fake_buf_size - this.fake_slice
+                max: this.fake_buf_size - this.fake_slice,
             };
             this.fake_bytes = 0;
             this.fake_limit = this.fake_factor * this.fake_buf_size;
             this.fake_buf = crypto.randomBytes(this.fake_buf_size);
         }
-        const offset = crypto.randomInt(0, this.fake_buf_size - this.fake_slice);
+        const offset = crypto.randomInt(
+            0,
+            this.fake_buf_size - this.fake_slice,
+        );
         const buf = this.fake_buf.slice(offset, offset + this.fake_slice);
         this.fake_bytes += buf.length;
         return buf;
@@ -134,7 +140,7 @@ class RandStream extends stream.Readable {
 
     /**
      * generate_zeros:
-     * 
+     *
      * The speed of this mode is ~7000 MB/sec.
      */
     generate_zeros(size) {
@@ -143,7 +149,7 @@ class RandStream extends stream.Readable {
 
     /**
      * generate_fill:
-     * 
+     *
      * The speed of this mode is ~7000 MB/sec.
      */
     generate_fill(size) {
@@ -152,10 +158,10 @@ class RandStream extends stream.Readable {
 
     /**
      * generate_noinit:
-     * 
+     *
      * Just allocates memory, no initialization.
      * Do not use if your process memory might contain sensitive data.
-     * 
+     *
      * The speed of this mode is ~100,000 MB/sec.
      */
     generate_noinit(size) {
@@ -184,7 +190,6 @@ class RandStream extends stream.Readable {
             this.ticks = 0;
         }
     }
-
 }
 
 module.exports = RandStream;

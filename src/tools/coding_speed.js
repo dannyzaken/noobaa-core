@@ -24,9 +24,9 @@ require('../util/console_wrapper').original_console();
 
 argv.forks = argv.forks || 1;
 argv.size = argv.size || 10240;
-argv.encode = (argv.encode !== false); // default is true, use --no-encode for false
+argv.encode = argv.encode !== false; // default is true, use --no-encode for false
 argv.decode = Boolean(argv.encode && argv.decode); // default is false, use --decode
-argv.erase = Boolean(argv.decode && (argv.erase !== false)); // default is true (if decode), use --no-erase for false
+argv.erase = Boolean(argv.decode && argv.erase !== false); // default is true (if decode), use --no-erase for false
 argv.ec = Boolean(argv.ec); // default is false, use --ec
 argv.md5 = Boolean(argv.md5); // default is false, use --md5
 argv.sha256 = Boolean(argv.sha256); // default is false
@@ -52,20 +52,26 @@ function main() {
         delta_chunk: config.CHUNK_SPLIT_DELTA_CHUNK,
     };
 
-    const chunk_coder_config = _.omitBy({
-        digest_type: config.CHUNK_CODER_DIGEST_TYPE,
-        frag_digest_type: config.CHUNK_CODER_FRAG_DIGEST_TYPE,
-        compress_type: config.CHUNK_CODER_COMPRESS_TYPE,
-        cipher_type: config.CHUNK_CODER_CIPHER_TYPE,
-        data_frags: 1,
-        ...(argv.ec ? {
-            data_frags: config.CHUNK_CODER_EC_DATA_FRAGS,
-            parity_frags: config.CHUNK_CODER_EC_PARITY_FRAGS,
-            parity_type: config.CHUNK_CODER_EC_PARITY_TYPE,
-        } : null)
-    }, val => val === undefined || val === 'none');
+    const chunk_coder_config = _.omitBy(
+        {
+            digest_type: config.CHUNK_CODER_DIGEST_TYPE,
+            frag_digest_type: config.CHUNK_CODER_FRAG_DIGEST_TYPE,
+            compress_type: config.CHUNK_CODER_COMPRESS_TYPE,
+            cipher_type: config.CHUNK_CODER_CIPHER_TYPE,
+            data_frags: 1,
+            ...(argv.ec ?
+                {
+                    data_frags: config.CHUNK_CODER_EC_DATA_FRAGS,
+                    parity_frags: config.CHUNK_CODER_EC_PARITY_FRAGS,
+                    parity_type: config.CHUNK_CODER_EC_PARITY_TYPE,
+                }
+            :   null),
+        },
+        val => val === undefined || val === 'none',
+    );
 
-    const cipher_key_b64 = argv.sse_c ? crypto.randomBytes(32).toString('base64') : undefined;
+    const cipher_key_b64 =
+        argv.sse_c ? crypto.randomBytes(32).toString('base64') : undefined;
 
     console.log('chunk_split_config', chunk_split_config);
     console.log('chunk_coder_config', chunk_coder_config);
@@ -119,14 +125,11 @@ function main() {
             num_parts += 1;
             speedometer.update(chunk.size);
             callback();
-        }
+        },
     });
 
     /** @type {stream.Stream[]} */
-    const transforms = [
-        input,
-        splitter,
-    ];
+    const transforms = [input, splitter];
     if (argv.encode) {
         transforms.push(coder);
         transforms.push(new FlattenStream());
@@ -137,9 +140,13 @@ function main() {
         transforms.push(new FlattenStream());
     }
     transforms.push(reporter);
-    return stream_utils.pipeline(transforms)
+    return stream_utils
+        .pipeline(transforms)
         .then(() => {
-            console.log('AVERAGE CHUNK SIZE', (total_size / num_parts).toFixed(0));
+            console.log(
+                'AVERAGE CHUNK SIZE',
+                (total_size / num_parts).toFixed(0),
+            );
             if (splitter.md5) {
                 console.log('MD5 =', splitter.md5.toString('base64'));
             }

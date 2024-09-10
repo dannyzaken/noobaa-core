@@ -1,12 +1,12 @@
 /* Copyright (C) 2016 NooBaa */
-/* eslint max-lines-per-function: ['error', 700] */
+
 'use strict';
 // setup coretest first to prepare the env
 const coretest = require('./coretest');
 const buffer_utils = require('../../util/buffer_utils');
 coretest.setup({ pools_to_create: coretest.POOL_LIST });
 const { S3 } = require('@aws-sdk/client-s3');
-const { NodeHttpHandler } = require("@smithy/node-http-handler");
+const { NodeHttpHandler } = require('@smithy/node-http-handler');
 const http_utils = require('../../util/http_utils');
 const mocha = require('mocha');
 const assert = require('assert');
@@ -16,28 +16,32 @@ const BUCKET = 'first.bucket';
 const CONNECTION_NAME = 'ns_auth_con';
 const NAMESPACE_RESOURCE_NAME = 'nsr_auth';
 const NS_BUCKET = 'nsb';
-const BODY = "THE_MAJESTIC_SLOTH";
+const BODY = 'THE_MAJESTIC_SLOTH';
 const FKEY = 'ns_auth_file';
 const config = require('../../../config');
 
-mocha.describe('Namespace Auth', function() {
-
+mocha.describe('Namespace Auth', function () {
     let s3;
-    mocha.before(async function() {
+    mocha.before(async function () {
         const self = this; // eslint-disable-line no-invalid-this
         self.timeout(60000);
 
-        const account_info = await rpc_client.account.read_account({ email: EMAIL, });
+        const account_info = await rpc_client.account.read_account({
+            email: EMAIL,
+        });
         s3 = new S3({
             endpoint: coretest.get_http_address(),
             credentials: {
                 accessKeyId: account_info.access_keys[0].access_key.unwrap(),
-                secretAccessKey: account_info.access_keys[0].secret_key.unwrap(),
+                secretAccessKey:
+                    account_info.access_keys[0].secret_key.unwrap(),
             },
             forcePathStyle: true,
             region: config.DEFAULT_REGION,
             requestHandler: new NodeHttpHandler({
-                httpAgent: http_utils.get_unsecured_agent(coretest.get_http_address())
+                httpAgent: http_utils.get_unsecured_agent(
+                    coretest.get_http_address(),
+                ),
             }),
         });
         coretest.log('S3 CONFIG', s3.config);
@@ -54,20 +58,23 @@ mocha.describe('Namespace Auth', function() {
         await rpc_client.pool.create_namespace_resource({
             name: NAMESPACE_RESOURCE_NAME,
             connection: CONNECTION_NAME,
-            target_bucket: BUCKET
+            target_bucket: BUCKET,
         });
-        await rpc_client.bucket.create_bucket({ name: NS_BUCKET, namespace: { read_resources, write_resource } });
+        await rpc_client.bucket.create_bucket({
+            name: NS_BUCKET,
+            namespace: { read_resources, write_resource },
+        });
     });
 
-    mocha.it('Put object', async function() {
+    mocha.it('Put object', async function () {
         await s3.putObject({ Bucket: NS_BUCKET, Key: FKEY, Body: BODY });
     });
 
-    mocha.it('Get object', async function() {
+    mocha.it('Get object', async function () {
         await s3.getObject({ Bucket: NS_BUCKET, Key: FKEY });
     });
 
-    mocha.it('Get object without auth', async function() {
+    mocha.it('Get object without auth', async function () {
         let response;
         let parsed_body;
         try {
@@ -87,9 +94,14 @@ mocha.describe('Namespace Auth', function() {
             throw new Error('Expected to get a response with XML failure');
         }
         assert(parsed_body.Error, 'Did not get error');
-        assert(parsed_body.Error.Code[0] === 'AccessDenied', 'Did not get error code AccessDenied');
-        assert(parsed_body.Error.Message[0] === 'Access Denied', 'Did not get error message Access Denied');
+        assert(
+            parsed_body.Error.Code[0] === 'AccessDenied',
+            'Did not get error code AccessDenied',
+        );
+        assert(
+            parsed_body.Error.Message[0] === 'Access Denied',
+            'Did not get error message Access Denied',
+        );
         assert(response.statusCode === 403, 'Did not get status code 403');
     });
-
 });

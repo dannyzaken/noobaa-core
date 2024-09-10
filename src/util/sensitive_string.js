@@ -5,7 +5,6 @@ const util = require('util');
 const crypto = require('crypto');
 
 class SensitiveString {
-
     /**
      * @param {SensitiveString | string} [val]
      */
@@ -16,13 +15,18 @@ class SensitiveString {
             this.val = val.unwrap();
         } else if (type === 'string') {
             this.val = val;
-            const sha = crypto.createHash('sha512').update(this.val).digest('hex');
+            const sha = crypto
+                .createHash('sha512')
+                .update(this.val)
+                .digest('hex');
             this.hash = sha.slice(0, 16);
         } else if (type === 'undefined') {
             this.val = undefined;
             this.hash = 'undefined';
         } else {
-            throw new TypeError(`SensitiveString should be a string, got ${type}`);
+            throw new TypeError(
+                `SensitiveString should be a string, got ${type}`,
+            );
         }
         if (process.env.DISABLE_SENSITIVE_STRING === 'true') {
             this.sensitive_val = this.val;
@@ -58,7 +62,6 @@ class SensitiveString {
     static can_wrap(val) {
         return typeof val === 'string';
     }
-
 }
 
 module.exports = SensitiveString;

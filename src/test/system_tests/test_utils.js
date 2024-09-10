@@ -10,7 +10,7 @@ const nb_native = require('../../util/nb_native');
 const native_fs_utils = require('../../util/native_fs_utils');
 const config = require('../../../config');
 const { S3 } = require('@aws-sdk/client-s3');
-const { NodeHttpHandler } = require("@smithy/node-http-handler");
+const { NodeHttpHandler } = require('@smithy/node-http-handler');
 const path = require('path');
 const { CONFIG_TYPES } = require('../../sdk/config_fs');
 
@@ -26,14 +26,20 @@ const TMP_PATH = os_utils.IS_MAC ? '/private/tmp/' : '/tmp/';
 const is_nc_coretest = process.env.NC_CORETEST === 'true';
 
 /**
- * 
- * @param {*} need_to_exist 
- * @param {*} pool_id 
- * @param {*} bucket_name 
- * @param {*} blocks 
- * @param {AWS.S3} s3 
+ *
+ * @param {*} need_to_exist
+ * @param {*} pool_id
+ * @param {*} bucket_name
+ * @param {*} blocks
+ * @param {AWS.S3} s3
  */
-function blocks_exist_on_cloud(need_to_exist, pool_id, bucket_name, blocks, s3) {
+function blocks_exist_on_cloud(
+    need_to_exist,
+    pool_id,
+    bucket_name,
+    blocks,
+    s3,
+) {
     console.log('blocks_exist_on_cloud::', need_to_exist, pool_id, bucket_name);
     let isDone = true;
     // Time in seconds to wait, notice that it will only check once a second.
@@ -42,15 +48,21 @@ function blocks_exist_on_cloud(need_to_exist, pool_id, bucket_name, blocks, s3) 
     let wait_counter = 1;
 
     return P.pwhile(
-            () => isDone,
-            () => Promise.allSettled(_.map(blocks, block => {
-                console.log(`noobaa_blocks/${pool_id}/blocks_tree/${block.slice(block.length - 3)}.blocks/${block}`);
-                return s3.headObject({
-                    Bucket: bucket_name,
-                    Key: `noobaa_blocks/${pool_id}/blocks_tree/${block.slice(block.length - 3)}.blocks/${block}`
-                }).promise();
-            }))
-            .then(response => {
+        () => isDone,
+        () =>
+            Promise.allSettled(
+                _.map(blocks, block => {
+                    console.log(
+                        `noobaa_blocks/${pool_id}/blocks_tree/${block.slice(block.length - 3)}.blocks/${block}`,
+                    );
+                    return s3
+                        .headObject({
+                            Bucket: bucket_name,
+                            Key: `noobaa_blocks/${pool_id}/blocks_tree/${block.slice(block.length - 3)}.blocks/${block}`,
+                        })
+                        .promise();
+                }),
+            ).then(response => {
                 let condition_correct;
                 if (need_to_exist) {
                     condition_correct = true;
@@ -87,8 +99,8 @@ function blocks_exist_on_cloud(need_to_exist, pool_id, bucket_name, blocks, s3) 
                         return P.delay(1000);
                     }
                 }
-            })
-        )
+            }),
+    )
         .then(() => true)
         .catch(err => {
             console.error('blocks_exist_on_cloud::Final Error', err);
@@ -100,55 +112,71 @@ async function create_hosts_pool(
     rpc_client,
     pool_name,
     host_count = 3,
-    timeout_ms = 5 * 60 * 1000 // 5min
+    timeout_ms = 5 * 60 * 1000, // 5min
 ) {
-    console.log(`test_utils::create_hosts_pool: creating new pool '${pool_name} with ${host_count} agents'`);
+    console.log(
+        `test_utils::create_hosts_pool: creating new pool '${pool_name} with ${host_count} agents'`,
+    );
     await rpc_client.pool.create_hosts_pool({
         is_managed: true,
         name: pool_name,
-        host_count: host_count
+        host_count: host_count,
     });
 
-    console.log(`test_utils::create_hosts_pool: waiting for ${pool_name} hosts (${host_count}) to be in optimal state`);
-    await P.timeout(timeout_ms, (
-        async () => {
+    console.log(
+        `test_utils::create_hosts_pool: waiting for ${pool_name} hosts (${host_count}) to be in optimal state`,
+    );
+    await P.timeout(
+        timeout_ms,
+        (async () => {
             let all_hosts_ready = false;
             while (!all_hosts_ready) {
                 const res = await rpc_client.host.list_hosts({
                     query: {
                         pools: [pool_name],
                         mode: ['OPTIMAL'],
-                    }
+                    },
                 });
 
                 await P.delay(2500);
                 all_hosts_ready = res.hosts.length === host_count;
             }
-        }
-    )());
-    console.log(`test_utils::create_hosts_pool: all ${pool_name} hosts (${host_count}) are in optimal state`);
+        })(),
+    );
+    console.log(
+        `test_utils::create_hosts_pool: all ${pool_name} hosts (${host_count}) are in optimal state`,
+    );
 }
 
 async function delete_hosts_pool(
     rpc_client,
     pool_name,
-    timeout_ms = 10 * 60 * 1000 // 10min
+    timeout_ms = 10 * 60 * 1000, // 10min
 ) {
-    console.log(`test_utils::delete_hosts_pool: Initiate deletion of ${pool_name}`);
+    console.log(
+        `test_utils::delete_hosts_pool: Initiate deletion of ${pool_name}`,
+    );
     await rpc_client.pool.delete_pool({ name: pool_name });
 
-    console.log(`test_utils::delete_hosts_pool: Waiting for ${pool_name} to be evacuated and delete`);
-    await P.timeout(timeout_ms, (
-        async () => {
+    console.log(
+        `test_utils::delete_hosts_pool: Waiting for ${pool_name} to be evacuated and delete`,
+    );
+    await P.timeout(
+        timeout_ms,
+        (async () => {
             let pool_exists = true;
             while (pool_exists) {
                 await P.delay(30 * 1000); // 30sec
                 const system = await rpc_client.system.read_system({});
-                pool_exists = system.pools.find(pool => pool.name === pool_name);
+                pool_exists = system.pools.find(
+                    pool => pool.name === pool_name,
+                );
             }
-        }
-    )());
-    console.log(`test_utils::delete_hosts_pool: ${pool_name} was evacuated and deleted`);
+        })(),
+    );
+    console.log(
+        `test_utils::delete_hosts_pool: ${pool_name} was evacuated and deleted`,
+    );
 }
 
 async function empty_and_delete_buckets(rpc_client, bucket_names) {
@@ -159,13 +187,15 @@ async function empty_and_delete_buckets(rpc_client, bucket_names) {
 
     await Promise.all(
         bucket_names.map(async bucket => {
-            const { objects } = await rpc_client.object.list_objects({ bucket });
+            const { objects } = await rpc_client.object.list_objects({
+                bucket,
+            });
             await rpc_client.object.delete_multiple_objects({
                 bucket: bucket,
-                objects: objects.map(obj => _.pick(obj, ['key', 'version_id']))
+                objects: objects.map(obj => _.pick(obj, ['key', 'version_id'])),
             });
             await rpc_client.bucket.delete_bucket({ name: bucket });
-        })
+        }),
     );
 }
 
@@ -175,23 +205,25 @@ async function disable_accounts_s3_access(rpc_client, accounts_emails) {
         accounts_emails = accounts.map(account => account.email);
     }
 
-    await Promise.all(accounts_emails.map(email =>
-        rpc_client.account.update_account_s3_access({
-            email: email,
-            s3_access: false
-        })
-    ));
+    await Promise.all(
+        accounts_emails.map(email =>
+            rpc_client.account.update_account_s3_access({
+                email: email,
+                s3_access: false,
+            }),
+        ),
+    );
 }
 
 /**
  * generate_s3_policy generates S3 buket policy for the given principal
- * 
+ *
  * @param {string} principal - The principal to grant access to.
  * @param {string} bucket - The bucket to grant access to.
  * @param {Array<string>} action - The action to grant access to.
- * @returns {{ 
+ * @returns {{
  *  policy: Record<string, any>,
- *  params: { bucket: string, action: Array<string>, principal: string } 
+ *  params: { bucket: string, action: Array<string>, principal: string }
  * }}
  */
 function generate_s3_policy(principal, bucket, action) {
@@ -205,16 +237,16 @@ function generate_s3_policy(principal, bucket, action) {
                     Action: action,
                     Resource: [
                         `arn:aws:s3:::${bucket}/*`,
-                        `arn:aws:s3:::${bucket}`
-                    ]
-                }
-            ]
+                        `arn:aws:s3:::${bucket}`,
+                    ],
+                },
+            ],
         },
         params: {
             bucket,
             action,
             principal,
-        }
+        },
     };
 }
 
@@ -228,7 +260,7 @@ function invalid_nsfs_root_permissions() {
 
 /**
  * get_coretest_path returns coretest path according to process.env.NC_CORETEST value
- * @returns {string} 
+ * @returns {string}
  */
 function get_coretest_path() {
     return process.env.NC_CORETEST ? './nc_coretest' : './coretest';
@@ -255,7 +287,10 @@ async function exec_manage_cli(type, action, options, is_silent, env) {
                 continue;
             }
             if (key === 'bucket_policy') {
-                value = typeof options[key] === 'string' ? `'${options[key]}'` : `'${JSON.stringify(options[key])}'`;
+                value =
+                    typeof options[key] === 'string' ?
+                        `'${options[key]}'`
+                    :   `'${JSON.stringify(options[key])}'`;
             } else if (key === 'fs_backend' || key === 'ips') {
                 value = `'${options[key]}'`;
             }
@@ -319,23 +354,30 @@ async function delete_fs_user_by_platform(name) {
     }
 }
 
-/** 
+/**
  * set_path_permissions_and_owner sets path permissions and owner and group
  * @param {string} p
  * @param {object} owner_options
  * @param {number} permissions
  */
-async function set_path_permissions_and_owner(p, owner_options, permissions = 0o700) {
+async function set_path_permissions_and_owner(
+    p,
+    owner_options,
+    permissions = 0o700,
+) {
     if (owner_options.uid !== undefined && owner_options.gid !== undefined) {
         await fs.promises.chown(p, owner_options.uid, owner_options.gid);
     } else {
-        const { uid, gid } = await native_fs_utils.get_user_by_distinguished_name({ distinguished_name: owner_options.user });
+        const { uid, gid } =
+            await native_fs_utils.get_user_by_distinguished_name({
+                distinguished_name: owner_options.user,
+            });
         await fs.promises.chown(owner_options.new_buckets_path, uid, gid);
     }
     await fs.promises.chmod(p, permissions);
 }
 
-/** 
+/**
  * set_nc_config_dir_in_config sets given config_root to be config.NSFS_NC_CONF_DIR
  * @param {string} config_root
  */
@@ -349,7 +391,7 @@ function generate_anon_s3_client(endpoint) {
         region: config.DEFAULT_REGION,
         signer: { sign: async request => request },
         requestHandler: new NodeHttpHandler({
-            httpAgent: new http.Agent({ keepAlive: false })
+            httpAgent: new http.Agent({ keepAlive: false }),
         }),
         endpoint,
         credentials: {
@@ -364,42 +406,56 @@ function generate_s3_client(access_key, secret_key, endpoint) {
         forcePathStyle: true,
         region: config.DEFAULT_REGION,
         requestHandler: new NodeHttpHandler({
-            httpAgent: new http.Agent({ keepAlive: false })
+            httpAgent: new http.Agent({ keepAlive: false }),
         }),
         credentials: {
             accessKeyId: access_key,
             secretAccessKey: secret_key,
         },
-        endpoint
+        endpoint,
     });
 }
 /**
  * generate_nsfs_account generate an nsfs account and returns its credentials
- * if the admin flag is received (in the options object) the function will not create 
+ * if the admin flag is received (in the options object) the function will not create
  * the account (it was already created in the system) and only return the credentials.
- * @param {nb.APIClient} rpc_client 
- * @param {String} EMAIL 
- * @param {String} default_new_buckets_path 
- * @param {Object} options 
+ * @param {nb.APIClient} rpc_client
+ * @param {String} EMAIL
+ * @param {String} default_new_buckets_path
+ * @param {Object} options
  * @returns {Promise<Object>}
  */
-async function generate_nsfs_account(rpc_client, EMAIL, default_new_buckets_path, options = {}) {
-    const { uid, gid, new_buckets_path, nsfs_only, admin, default_resource, account_name } = options;
+async function generate_nsfs_account(
+    rpc_client,
+    EMAIL,
+    default_new_buckets_path,
+    options = {},
+) {
+    const {
+        uid,
+        gid,
+        new_buckets_path,
+        nsfs_only,
+        admin,
+        default_resource,
+        account_name,
+    } = options;
     if (admin) {
         const account = await rpc_client.account.read_account({
             email: EMAIL,
         });
         return {
             access_key: account.access_keys[0].access_key.unwrap(),
-            secret_key: account.access_keys[0].secret_key.unwrap()
+            secret_key: account.access_keys[0].secret_key.unwrap(),
         };
     }
-    const random_name = account_name || (Math.random() + 1).toString(36).substring(7);
+    const random_name =
+        account_name || (Math.random() + 1).toString(36).substring(7);
     const nsfs_account_config = {
         uid: uid || process.getuid(),
         gid: gid || process.getgid(),
         new_buckets_path: new_buckets_path || default_new_buckets_path,
-        nsfs_only: nsfs_only || false
+        nsfs_only: nsfs_only || false,
     };
 
     const account = await rpc_client.account.create_account({
@@ -408,12 +464,12 @@ async function generate_nsfs_account(rpc_client, EMAIL, default_new_buckets_path
         email: `${random_name}@noobaa.com`,
         name: random_name,
         nsfs_account_config,
-        default_resource
+        default_resource,
     });
     return {
         access_key: account.access_keys[0].access_key.unwrap(),
         secret_key: account.access_keys[0].secret_key.unwrap(),
-        email: `${random_name}@noobaa.com`
+        email: `${random_name}@noobaa.com`,
     };
 }
 
@@ -421,65 +477,89 @@ async function generate_nsfs_account(rpc_client, EMAIL, default_new_buckets_path
  * get_new_buckets_path_by_test_env returns new_buckets_path value
  * on NC - new_buckets_path is full absolute path
  * on Containerized - new_buckets_path is the directory
- * Example - 
+ * Example -
  * On NC - /private/tmp/new_buckets_path/
  * On Continerized - new_buckets_path/
- * @param {string} new_buckets_full_path 
- * @param {string} new_buckets_dir 
+ * @param {string} new_buckets_full_path
+ * @param {string} new_buckets_dir
  * @returns {string}
  */
-function get_new_buckets_path_by_test_env(new_buckets_full_path, new_buckets_dir) {
-    return is_nc_coretest ? path.join(new_buckets_full_path, new_buckets_dir) : new_buckets_dir;
+function get_new_buckets_path_by_test_env(
+    new_buckets_full_path,
+    new_buckets_dir,
+) {
+    return is_nc_coretest ?
+            path.join(new_buckets_full_path, new_buckets_dir)
+        :   new_buckets_dir;
 }
 
 /**
  * write_manual_config_file writes config file directly to the file system without using config FS
  * used for creating backward compatibility tests, invalid config files etc
  * @param {import('../../sdk/config_fs').ConfigFS} config_fs
- * @param {Object} config_data 
+ * @param {Object} config_data
  * @param {String} [invalid_str]
  * @returns {Promise<Void>}
  */
-async function write_manual_config_file(type, config_fs, config_data, invalid_str = '') {
-    const config_path = type === CONFIG_TYPES.BUCKET ?
-        config_fs.get_bucket_path_by_name(config_data.name) :
-        config_fs.get_identity_path_by_id(config_data._id);
+async function write_manual_config_file(
+    type,
+    config_fs,
+    config_data,
+    invalid_str = '',
+) {
+    const config_path =
+        type === CONFIG_TYPES.BUCKET ?
+            config_fs.get_bucket_path_by_name(config_data.name)
+        :   config_fs.get_identity_path_by_id(config_data._id);
     if (type === CONFIG_TYPES.ACCOUNT) {
         const dir_path = config_fs.get_identity_dir_path_by_id(config_data._id);
-        await nb_native().fs.mkdir(config_fs.fs_context, dir_path, native_fs_utils.get_umasked_mode(config.BASE_MODE_DIR));
+        await nb_native().fs.mkdir(
+            config_fs.fs_context,
+            dir_path,
+            native_fs_utils.get_umasked_mode(config.BASE_MODE_DIR),
+        );
     }
     await nb_native().fs.writeFile(
         config_fs.fs_context,
         config_path,
         Buffer.from(JSON.stringify(config_data) + invalid_str),
         {
-            mode: native_fs_utils.get_umasked_mode(config.BASE_MODE_FILE)
-        }
+            mode: native_fs_utils.get_umasked_mode(config.BASE_MODE_FILE),
+        },
     );
 
     if (type === CONFIG_TYPES.ACCOUNT) {
-        const id_relative_path = config_fs.get_account_relative_path_by_id(config_data._id);
-        const name_symlink_path = config_fs.get_account_or_user_path_by_name(config_data.name);
-        await nb_native().fs.symlink(config_fs.fs_context, id_relative_path, name_symlink_path);
+        const id_relative_path = config_fs.get_account_relative_path_by_id(
+            config_data._id,
+        );
+        const name_symlink_path = config_fs.get_account_or_user_path_by_name(
+            config_data.name,
+        );
+        await nb_native().fs.symlink(
+            config_fs.fs_context,
+            id_relative_path,
+            name_symlink_path,
+        );
     }
 }
-
 
 /**
  * write_manual_old_account_config_file writes account config file directly to the old file system account path without using config FS
  * @param {import('../../sdk/config_fs').ConfigFS} config_fs
- * @param {Object} config_data 
+ * @param {Object} config_data
  * @returns {Promise<Void>}
  */
 async function write_manual_old_account_config_file(config_fs, config_data) {
-    const config_path = config_fs._get_old_account_path_by_name(config_data.name);
+    const config_path = config_fs._get_old_account_path_by_name(
+        config_data.name,
+    );
     await nb_native().fs.writeFile(
         config_fs.fs_context,
         config_path,
         Buffer.from(JSON.stringify(config_data)),
         {
-            mode: native_fs_utils.get_umasked_mode(config.BASE_MODE_FILE)
-        }
+            mode: native_fs_utils.get_umasked_mode(config.BASE_MODE_FILE),
+        },
     );
 }
 
@@ -503,5 +583,5 @@ exports.is_nc_coretest = is_nc_coretest;
 exports.generate_nsfs_account = generate_nsfs_account;
 exports.get_new_buckets_path_by_test_env = get_new_buckets_path_by_test_env;
 exports.write_manual_config_file = write_manual_config_file;
-exports.write_manual_old_account_config_file = write_manual_old_account_config_file;
-
+exports.write_manual_old_account_config_file =
+    write_manual_old_account_config_file;

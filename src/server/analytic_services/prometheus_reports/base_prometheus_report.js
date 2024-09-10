@@ -35,4 +35,3 @@ class BasePrometheusReport {
 }
 
 exports.BasePrometheusReport = BasePrometheusReport;
-

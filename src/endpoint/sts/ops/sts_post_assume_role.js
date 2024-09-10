@@ -5,7 +5,9 @@ const dbg = require('../../../util/debug_module')(__filename);
 const { StsError } = require('../sts_errors');
 const jwt_utils = require('../../../util/jwt_utils');
 const config = require('../../../../config');
-const { CONTENT_TYPE_APP_FORM_URLENCODED } = require('../../../util/http_utils');
+const {
+    CONTENT_TYPE_APP_FORM_URLENCODED,
+} = require('../../../util/http_utils');
 
 /**
  * https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html
@@ -30,21 +32,24 @@ async function assume_role(req) {
             AssumeRoleResult: {
                 AssumedRoleUser: {
                     Arn: `arn:aws:sts::${assumed_role.access_key}:assumed-role/${assumed_role.role_config.role_name}/${req.body.role_session_name}`,
-                    AssumedRoleId: `${assumed_role.access_key}:${req.body.role_session_name}`
+                    AssumedRoleId: `${assumed_role.access_key}:${req.body.role_session_name}`,
                 },
                 Credentials: {
                     AccessKeyId: access_keys.access_key.unwrap(),
                     SecretAccessKey: access_keys.secret_key.unwrap(),
                     Expiration: expiry,
-                    SessionToken: generate_session_token({
-                        access_key: access_keys.access_key.unwrap(),
-                        secret_key: access_keys.secret_key.unwrap(),
-                        assumed_role_access_key: assumed_role.access_key
-                    }, expiry)
+                    SessionToken: generate_session_token(
+                        {
+                            access_key: access_keys.access_key.unwrap(),
+                            secret_key: access_keys.secret_key.unwrap(),
+                            assumed_role_access_key: assumed_role.access_key,
+                        },
+                        expiry,
+                    ),
                 },
-                PackedPolicySize: 0
-            }
-        }
+                PackedPolicySize: 0,
+            },
+        },
     };
 }
 

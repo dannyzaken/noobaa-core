@@ -27,7 +27,7 @@ const _ = require('lodash');
 
 function euclidianDistance(a, b) {
     if (a.length !== b.length) {
-        return (new Error('The vectors must have the same length'));
+        return new Error('The vectors must have the same length');
     }
     let d = 0.0;
     for (let i = 0, max = a.length; i < max; ++i) {
@@ -52,19 +52,25 @@ class Group {
      *  - otherwise, randomly choose one existing item
      */
     defineCentroid(indexes, v) {
-        this.centroidOld = (this.centroid) ? this.centroid : [];
+        this.centroidOld = this.centroid ? this.centroid : [];
         if (this.centroid && this.cluster.length > 0) {
             this.calculateCentroid();
-        } else { // random selection
+        } else {
+            // random selection
             const i = Math.floor(Math.random() * indexes.length);
             this.centroidIndex = indexes[i];
             indexes.splice(i, 1);
             this.centroid = [];
             if (_.isArray(v[this.centroidIndex])) {
-                for (let j = 0, max = v[this.centroidIndex].length; j < max; ++j) {
+                for (
+                    let j = 0, max = v[this.centroidIndex].length;
+                    j < max;
+                    ++j
+                ) {
                     this.centroid[j] = v[this.centroidIndex][j];
                 }
-            } else { // only one dimension
+            } else {
+                // only one dimension
                 this.centroid[0] = v[this.centroidIndex];
             }
         }
@@ -74,11 +80,14 @@ class Group {
 
     calculateCentroid() {
         this.centroid = [];
-        for (let i = 0; i < this.cluster.length; ++i) { // loop through the cluster elements
-            for (let j = 0, max = this.cluster[i].length; j < max; ++j) { // loop through the dimensions
-                this.centroid[j] = this.centroid[j] ?
-                    this.centroid[j] + this.cluster[i][j] :
-                    this.cluster[i][j];
+        for (let i = 0; i < this.cluster.length; ++i) {
+            // loop through the cluster elements
+            for (let j = 0, max = this.cluster[i].length; j < max; ++j) {
+                // loop through the dimensions
+                this.centroid[j] =
+                    this.centroid[j] ?
+                        this.centroid[j] + this.cluster[i][j]
+                    :   this.cluster[i][j];
             }
         }
         for (let i = 0, max = this.centroid.length; i < max; ++i) {
@@ -105,9 +114,14 @@ class Clusterize {
         if (!options.k || options.k < 1) {
             throw new Error('Provide a correct number k of clusters');
         }
-        if (options.distance &&
-            (typeof options.distance !== 'function' || options.distance.length !== 2)) {
-            throw new Error('options.distance must be a function with two arguments');
+        if (
+            options.distance &&
+            (typeof options.distance !== 'function' ||
+                options.distance.length !== 2)
+        ) {
+            throw new Error(
+                'options.distance must be a function with two arguments',
+            );
         }
         if (!_.isArray(vector)) {
             throw new Error('Provide an array of data');
@@ -124,7 +138,6 @@ class Clusterize {
         }
 
         this.initialize(); // initialize the group arrays
-
     }
 
     iterate(first_step) {
@@ -155,7 +168,9 @@ class Clusterize {
         for (let i = 0, max = v.length; i < max; ++i) {
             if (_.isArray(v[i])) {
                 if (v[i].length !== dim) {
-                    throw new Error('All the elements must have the same dimension');
+                    throw new Error(
+                        'All the elements must have the same dimension',
+                    );
                 }
                 for (let j = 0, max2 = v[i].length; j < max2; ++j) {
                     v[i][j] = Number(v[i][j]);
@@ -165,7 +180,9 @@ class Clusterize {
                 }
             } else {
                 if (dim !== 1) {
-                    throw new Error('All the elements must have the same dimension');
+                    throw new Error(
+                        'All the elements must have the same dimension',
+                    );
                 }
                 v[i] = Number(v[i]);
                 if (isNaN(v[i])) {
@@ -210,7 +227,12 @@ class Clusterize {
     output() {
         const out = [];
         for (let j = 0, max = this.groups.length; j < max; ++j) {
-            out[j] = _.pick(this.groups[j], 'centroid', 'cluster', 'clusterInd');
+            out[j] = _.pick(
+                this.groups[j],
+                'centroid',
+                'cluster',
+                'clusterInd',
+            );
         }
         return out;
     }

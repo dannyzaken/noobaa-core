@@ -4,7 +4,7 @@
 'use strict';
 
 const { S3 } = require('@aws-sdk/client-s3');
-const { NodeHttpHandler } = require("@smithy/node-http-handler");
+const { NodeHttpHandler } = require('@smithy/node-http-handler');
 const util = require('util');
 const mocha = require('mocha');
 const assert = require('assert');
@@ -28,28 +28,32 @@ const TagValue = 'tagvalue';
 const TagValue2 = 'tagvalue2';
 
 mocha.describe('lifecycle', () => {
-
     let s3;
-    mocha.before(async function() {
+    mocha.before(async function () {
         this.timeout(60000);
 
-        const account_info = await rpc_client.account.read_account({ email: EMAIL, });
+        const account_info = await rpc_client.account.read_account({
+            email: EMAIL,
+        });
         s3 = new S3({
             endpoint: coretest.get_http_address(),
             credentials: {
                 accessKeyId: account_info.access_keys[0].access_key.unwrap(),
-                secretAccessKey: account_info.access_keys[0].secret_key.unwrap(),
+                secretAccessKey:
+                    account_info.access_keys[0].secret_key.unwrap(),
             },
             forcePathStyle: true,
             region: config.DEFAULT_REGION,
             requestHandler: new NodeHttpHandler({
-                httpAgent: http_utils.get_unsecured_agent(coretest.get_http_address())
+                httpAgent: http_utils.get_unsecured_agent(
+                    coretest.get_http_address(),
+                ),
             }),
         });
         coretest.log('S3 CONFIG', s3.config);
     });
 
-    mocha.describe('bucket-lifecycle-data-representation', function() {
+    mocha.describe('bucket-lifecycle-data-representation', function () {
         this.timeout(60000);
 
         mocha.it('test rules length', async () => {
@@ -71,10 +75,25 @@ mocha.describe('lifecycle', () => {
             await commonTests.test_filter_tag(Bucket, TagName, TagValue, s3);
         });
         mocha.it('test and tag', async () => {
-            await commonTests.test_and_tag(Bucket, TagName, TagValue, TagName2, TagValue2, s3);
+            await commonTests.test_and_tag(
+                Bucket,
+                TagName,
+                TagValue,
+                TagName2,
+                TagValue2,
+                s3,
+            );
         });
         mocha.it('test and tags prefix days', async () => {
-            await commonTests.test_and_tag_prefix(Bucket, Key, TagName, TagValue, TagName2, TagValue2, s3);
+            await commonTests.test_and_tag_prefix(
+                Bucket,
+                Key,
+                TagName,
+                TagValue,
+                TagName2,
+                TagValue2,
+                s3,
+            );
         });
         mocha.it('test rule id', async () => {
             await commonTests.test_rule_id(Bucket, Key, s3);
@@ -87,15 +106,31 @@ mocha.describe('lifecycle', () => {
         });
     });
 
-    mocha.describe('bucket-lifecycle-bg-worker', function() {
+    mocha.describe('bucket-lifecycle-bg-worker', function () {
         this.timeout(60000);
 
         async function create_mock_object(key, bucket, age, size, tagging) {
             const content_type = 'application/octet-stream';
-            console.log('create_object_upload bucket', bucket, 'key', key, 'content-type', content_type);
-            const { obj_id } = await rpc_client.object.create_object_upload({ bucket, key, content_type });
+            console.log(
+                'create_object_upload bucket',
+                bucket,
+                'key',
+                key,
+                'content-type',
+                content_type,
+            );
+            const { obj_id } = await rpc_client.object.create_object_upload({
+                bucket,
+                key,
+                content_type,
+            });
             console.log('create_object_upload obj_id', obj_id);
-            const completeUploadResult = await rpc_client.object.complete_object_upload({ obj_id, bucket, key });
+            const completeUploadResult =
+                await rpc_client.object.complete_object_upload({
+                    obj_id,
+                    bucket,
+                    key,
+                });
             console.log('completeUploadResult', completeUploadResult);
 
             // go back in time
@@ -107,29 +142,63 @@ mocha.describe('lifecycle', () => {
             if (size) update.size = size;
             if (tagging) update.tagging = tagging;
 
-            console.log('create_mock_object bucket', bucket, 'key', key, 'update', util.inspect(update));
+            console.log(
+                'create_mock_object bucket',
+                bucket,
+                'key',
+                key,
+                'update',
+                util.inspect(update),
+            );
             const id = new mongodb.ObjectId(obj_id);
             console.log('create_mock_object id', id, 'obj_id', obj_id);
 
-            const updateResult = await MDStore.instance().update_object_by_id(id, update);
+            const updateResult = await MDStore.instance().update_object_by_id(
+                id,
+                update,
+            );
             console.log('update_object_by_id', updateResult);
 
-            const object_md = await rpc_client.object.read_object_md({ bucket, key, adminfo: {} });
+            const object_md = await rpc_client.object.read_object_md({
+                bucket,
+                key,
+                adminfo: {},
+            });
             console.log('read_object_md object_md', object_md);
             const actual_create_time = object_md.create_time;
             const actual_size = object_md.size;
             const actual_tags = object_md.tagging;
-            assert.strictEqual(actual_create_time, create_time.getTime(), `object create_time/getTime actual ${actual_create_time} !== expected ${create_time.getTime()}`);
-            assert((size === undefined) || (size === actual_size), `object size actual ${actual_size} !== expected ${size}`);
-            assert((tagging === undefined) || (JSON.stringify(actual_tags) === JSON.stringify(tagging)), `object tags actual ${util.inspect(actual_tags)} !== expected ${util.inspect(tagging)}`);
+            assert.strictEqual(
+                actual_create_time,
+                create_time.getTime(),
+                `object create_time/getTime actual ${actual_create_time} !== expected ${create_time.getTime()}`,
+            );
+            assert(
+                size === undefined || size === actual_size,
+                `object size actual ${actual_size} !== expected ${size}`,
+            );
+            assert(
+                tagging === undefined ||
+                    JSON.stringify(actual_tags) === JSON.stringify(tagging),
+                `object tags actual ${util.inspect(actual_tags)} !== expected ${util.inspect(tagging)}`,
+            );
         }
 
         async function verify_object_deleted(key) {
             await P.delay(100); // 0.1sec
-            const listObjectResult = await rpc_client.object.list_objects_admin({ bucket: Bucket, prefix: key });
-            console.log('list_objects_admin objects: ', util.inspect(listObjectResult.objects));
+            const listObjectResult = await rpc_client.object.list_objects_admin(
+                { bucket: Bucket, prefix: key },
+            );
+            console.log(
+                'list_objects_admin objects: ',
+                util.inspect(listObjectResult.objects),
+            );
             const actualLength = listObjectResult.objects.length;
-            assert.strictEqual(actualLength, 0, `listObjectResult actual ${actualLength} !== expected 0`);
+            assert.strictEqual(
+                actualLength,
+                0,
+                `listObjectResult actual ${actualLength} !== expected 0`,
+            );
         }
 
         mocha.it('test prefix, absolute date expiration', async () => {
@@ -140,7 +209,10 @@ mocha.describe('lifecycle', () => {
 
             await create_mock_object(key, bucket, age);
 
-            const putLifecycleParams = commonTests.date_lifecycle_configuration(bucket, prefix);
+            const putLifecycleParams = commonTests.date_lifecycle_configuration(
+                bucket,
+                prefix,
+            );
             await s3.putBucketLifecycleConfiguration(putLifecycleParams);
             await lifecycle.background_worker();
             await verify_object_deleted(key);
@@ -150,12 +222,24 @@ mocha.describe('lifecycle', () => {
             const prefix = key.split('-')[0];
             const age = 17;
             const bucket = Bucket;
-            const tagging = [{ key: 'tagname1', value: 'tagvalue1' }, { key: 'tagname2', value: 'tagvalue2' }, { key: 'tagname3', value: 'tagvalue3' }];
+            const tagging = [
+                { key: 'tagname1', value: 'tagvalue1' },
+                { key: 'tagname2', value: 'tagvalue2' },
+                { key: 'tagname3', value: 'tagvalue3' },
+            ];
 
             await create_mock_object(key, bucket, age, undefined, tagging);
             // match by tags subset, out of order
-            const filter_tagging = [{ key: 'tagname3', value: 'tagvalue3' }, { key: 'tagname2', value: 'tagvalue2' }];
-            const putLifecycleParams = commonTests.date_lifecycle_configuration_and_tags(bucket, prefix, filter_tagging);
+            const filter_tagging = [
+                { key: 'tagname3', value: 'tagvalue3' },
+                { key: 'tagname2', value: 'tagvalue2' },
+            ];
+            const putLifecycleParams =
+                commonTests.date_lifecycle_configuration_and_tags(
+                    bucket,
+                    prefix,
+                    filter_tagging,
+                );
             await s3.putBucketLifecycleConfiguration(putLifecycleParams);
             await lifecycle.background_worker();
             await verify_object_deleted(key);
@@ -167,7 +251,8 @@ mocha.describe('lifecycle', () => {
             const bucket = Bucket;
 
             await create_mock_object(key, bucket, age);
-            const putLifecycleParams = commonTests.size_less_lifecycle_configuration(bucket, size);
+            const putLifecycleParams =
+                commonTests.size_less_lifecycle_configuration(bucket, size);
             await s3.putBucketLifecycleConfiguration(putLifecycleParams);
             await lifecycle.background_worker();
             await verify_object_deleted(key);
@@ -181,7 +266,8 @@ mocha.describe('lifecycle', () => {
             const bucket = Bucket;
 
             await create_mock_object(key, bucket, age, size_object);
-            const putLifecycleParams = commonTests.size_gt_lt_lifecycle_configuration(bucket, gt, lt);
+            const putLifecycleParams =
+                commonTests.size_gt_lt_lifecycle_configuration(bucket, gt, lt);
             await s3.putBucketLifecycleConfiguration(putLifecycleParams);
             await lifecycle.background_worker();
             await verify_object_deleted(key);
@@ -194,7 +280,12 @@ mocha.describe('lifecycle', () => {
             const bucket = Bucket;
 
             await create_mock_object(key, bucket, object_age);
-            const putLifecycleParams = commonTests.size_less_days_lifecycle_configuration(bucket, size, days);
+            const putLifecycleParams =
+                commonTests.size_less_days_lifecycle_configuration(
+                    bucket,
+                    size,
+                    days,
+                );
             await s3.putBucketLifecycleConfiguration(putLifecycleParams);
             await lifecycle.background_worker();
             await verify_object_deleted(key);
@@ -207,8 +298,15 @@ mocha.describe('lifecycle', () => {
             const tagging = [tag];
             const bucket = Bucket;
 
-            await create_mock_object(key, bucket, object_age, undefined, tagging);
-            const putLifecycleParams = commonTests.tag_days_lifecycle_configuration(bucket, days, tag);
+            await create_mock_object(
+                key,
+                bucket,
+                object_age,
+                undefined,
+                tagging,
+            );
+            const putLifecycleParams =
+                commonTests.tag_days_lifecycle_configuration(bucket, days, tag);
             await s3.putBucketLifecycleConfiguration(putLifecycleParams);
             await lifecycle.background_worker();
             await verify_object_deleted(key);

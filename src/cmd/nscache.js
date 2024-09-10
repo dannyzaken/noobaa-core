@@ -131,12 +131,19 @@ async function main(argv = minimist(process.argv.slice(2))) {
         await endpoint.main({
             http_port,
             https_port,
-            init_request_sdk: (req, res) => { req.object_sdk = object_sdk; },
+            init_request_sdk: (req, res) => {
+                req.object_sdk = object_sdk;
+            },
         });
 
-        console.log('nscache: listening on', util.inspect(`http://localhost:${http_port}`));
-        console.log('nscache: listening on', util.inspect(`https://localhost:${https_port}`));
-
+        console.log(
+            'nscache: listening on',
+            util.inspect(`http://localhost:${http_port}`),
+        );
+        console.log(
+            'nscache: listening on',
+            util.inspect(`https://localhost:${https_port}`),
+        );
     } catch (err) {
         console.error('nscache: exit on error', err.stack || err);
         process.exit(2);

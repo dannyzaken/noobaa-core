@@ -16,7 +16,8 @@ function main() {
     if (argv.server) {
         run_server(argv.port);
     } else if (argv.client) {
-        argv.client = (typeof(argv.client) === 'string' && argv.client) || 'localhost';
+        argv.client =
+            (typeof argv.client === 'string' && argv.client) || 'localhost';
         run_client(argv.port, argv.client);
     } else {
         return usage();
@@ -36,10 +37,10 @@ function run_server(port) {
         setup_conn(conn);
         run_receiver(conn);
     });
-    server.on('listening', function() {
+    server.on('listening', function () {
         console.log('listening for connections ...');
     });
-    server.on('error', function(err) {
+    server.on('error', function (err) {
         console.error('server error', err.message);
         process.exit();
     });
@@ -55,10 +56,10 @@ function run_client(port, host) {
 
 function setup_conn(conn) {
     g_connections.push(conn);
-    conn.on('error', function(err) {
+    conn.on('error', function (err) {
         console.log('connection error', err.message);
     });
-    conn.on('close', function() {
+    conn.on('close', function () {
         console.log('done.');
         process.exit();
     });

@@ -12,7 +12,7 @@ const shasum = crypto.createHash('sha1');
 shasum.update(Date.now().toString());
 
 const testName = 'agents_matrix';
-const POOL_NAME = "first-pool";
+const POOL_NAME = 'first-pool';
 const dbg = require('../../util/debug_module')(__filename);
 dbg.set_process_name(testName);
 
@@ -20,13 +20,7 @@ dbg.set_process_name(testName);
 const argv = require('minimist')(process.argv);
 console.log(JSON.stringify(argv));
 
-const {
-    mgmt_ip,
-    mgmt_port,
-    s3_ip,
-    s3_port,
-    bucket = 'first.bucket',
-} = argv;
+const { mgmt_ip, mgmt_port, s3_ip, s3_port, bucket = 'first.bucket' } = argv;
 
 const agent_functions = new AgentFunctions();
 const s3ops = new S3OPS({ ip: s3_ip, port: s3_port });
@@ -47,7 +41,10 @@ if (argv.help) {
 
 //noobaa rpc
 const api = require('../../api');
-const rpc = api.new_rpc_from_base_address(`wss://${mgmt_ip}:${mgmt_port}`, 'EXTERNAL');
+const rpc = api.new_rpc_from_base_address(
+    `wss://${mgmt_ip}:${mgmt_port}`,
+    'EXTERNAL',
+);
 const client = rpc.new_client({});
 
 const nodes = [];
@@ -76,7 +73,7 @@ async function runAgentDebug() {
         try {
             await client.node.set_debug_node({
                 node: {
-                    name
+                    name,
                 },
                 level: 5,
             });
@@ -109,7 +106,7 @@ async function main() {
         await client.create_auth_token({
             email: 'demo@noobaa.com',
             password: 'DeMo1',
-            system: 'demo'
+            system: 'demo',
         });
     } catch (e) {
         console.error(`create_auth_token has failed`, e);
@@ -134,7 +131,6 @@ async function main() {
         console.log('Failures in test - exiting...');
         process.exit(1);
     }
-
 }
 
 main();

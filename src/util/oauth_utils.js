@@ -16,7 +16,7 @@ async function trade_grant_code_for_access_token(
     client_secret,
     redirect_host,
     grant_code,
-    make_error = _default_error_factory
+    make_error = _default_error_factory,
 ) {
     const token_endpoint = new URL(token_endpoint_addr);
     const redirect_uri = new URL(config.OAUTH_REDIRECT_ENDPOINT, redirect_host);
@@ -31,21 +31,24 @@ async function trade_grant_code_for_access_token(
                 path: token_endpoint.pathname,
                 rejectUnauthorized: false,
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8',
-                    'X-CSRF-Token': 'not-empty'
-                }
+                    'Content-Type':
+                        'application/x-www-form-urlencoded; charset=utf-8',
+                    'X-CSRF-Token': 'not-empty',
+                },
             },
             querystring.stringify({
                 grant_type: 'authorization_code',
                 code: grant_code,
                 client_id: client_id,
                 client_secret: client_secret,
-                redirect_uri: redirect_uri.toString()
+                redirect_uri: redirect_uri.toString(),
             }),
-            'utf8'
+            'utf8',
         );
     } catch (err) {
-        throw make_error(`OpenShift api endpoint does not response, got: ${err.message}`);
+        throw make_error(
+            `OpenShift api endpoint does not response, got: ${err.message}`,
+        );
     }
 
     const status_code = response.statusCode;
@@ -53,24 +56,25 @@ async function trade_grant_code_for_access_token(
     const body = buffer.toString('utf8');
 
     if (status_code !== 200) {
-        throw make_error(`could not acquire an oauth access token, response status code was ${
-            status_code
-        } with a body of ${
-            body
-        }`);
+        throw make_error(
+            `could not acquire an oauth access token, response status code was ${
+                status_code
+            } with a body of ${body}`,
+        );
     }
 
     try {
         const token_info = JSON.parse(body);
         const required_scope = config.OAUTH_REQUIRED_SCOPE;
         if (token_info.scope !== required_scope) {
-             throw make_error(`user did not grant access for "${required_scope}" scope`);
+            throw make_error(
+                `user did not grant access for "${required_scope}" scope`,
+            );
         }
         if (token_info.token_type !== 'Bearer') {
             throw make_error('access token is not a of type "Bearer"');
         }
         return token_info;
-
     } catch (err) {
         throw make_error('mailformed access token json response');
     }
@@ -81,7 +85,7 @@ async function review_token(
     sa_token,
     oauth_access_token,
     api_port = '443',
-    make_error = _default_error_factory
+    make_error = _default_error_factory,
 ) {
     let response;
     try {
@@ -95,17 +99,16 @@ async function review_token(
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
-                    Authorization: `Bearer ${sa_token}`
-                }
+                    Authorization: `Bearer ${sa_token}`,
+                },
             },
             JSON.stringify({
                 apiVersion: 'authentication.k8s.io/v1',
                 kind: 'TokenReview',
-                spec: { token: oauth_access_token }
+                spec: { token: oauth_access_token },
             }),
-            'utf8'
-       );
-
+            'utf8',
+        );
     } catch (err) {
         throw make_error('token review api endpoint does not response');
     }
@@ -115,16 +118,15 @@ async function review_token(
     const body = buffer.toString('utf8');
 
     if (status_code !== 200 && status_code !== 201) {
-        throw make_error(`could not review oauth access token, response status code was ${
-            status_code
-        } with a body of ${
-            body
-        }`);
+        throw make_error(
+            `could not review oauth access token, response status code was ${
+                status_code
+            } with a body of ${body}`,
+        );
     }
 
     try {
         return JSON.parse(body);
-
     } catch (err) {
         throw make_error('malformed token review json response');
     }

@@ -9,7 +9,6 @@ const noobaa_s3_client = require('../sdk/noobaa_s3_client/noobaa_s3_client');
  * @implements {nb.BucketSpace}
  */
 class BucketSpaceS3 {
-
     constructor({ s3_params }) {
         this.s3 = noobaa_s3_client.get_s3_client_v3_params(s3_params);
     }
@@ -22,7 +21,6 @@ class BucketSpaceS3 {
         return {};
     }
 
-
     ////////////
     // BUCKET //
     ////////////
@@ -32,7 +30,9 @@ class BucketSpaceS3 {
             console.log(`bss3: list_buckets`);
             const res = await this.s3.listBuckets({});
             const buckets = res.Buckets ?? [];
-            const buckets_with_name_change = buckets.map(b => ({ name: new SensitiveString(b.Name) }));
+            const buckets_with_name_change = buckets.map(b => ({
+                name: new SensitiveString(b.Name),
+            }));
             return { buckets_with_name_change };
         } catch (err) {
             noobaa_s3_client.fix_error_object(err);
@@ -192,7 +192,6 @@ class BucketSpaceS3 {
     async put_object_lock_configuration(params, object_sdk) {
         // TODO
     }
-
 
     _translate_error_code(err) {
         // TODO

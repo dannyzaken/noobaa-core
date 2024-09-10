@@ -4,22 +4,19 @@
 module.exports = {
     $id: 'cluster_schema',
     type: 'object',
-    required: [
-        'owner_secret',
-        'cluster_id',
-    ],
+    required: ['owner_secret', 'cluster_id'],
     properties: {
         _id: {
-            objectid: true
+            objectid: true,
         },
         is_clusterized: {
-            type: 'boolean'
+            type: 'boolean',
         },
         owner_secret: {
-            type: 'string'
+            type: 'string',
         },
         cluster_id: {
-            type: 'string'
+            type: 'string',
         },
         owner_address: {
             type: 'string',
@@ -31,7 +28,7 @@ module.exports = {
             type: 'string',
         },
         location: {
-            type: 'string'
+            type: 'string',
         },
         shards: {
             type: 'array',
@@ -73,22 +70,22 @@ module.exports = {
 
         //timezone configuration
         timezone: {
-            type: 'string'
+            type: 'string',
         },
 
         dns_servers: {
             type: 'array',
             items: {
-                type: 'string'
+                type: 'string',
             },
         },
 
         debug_level: {
-            type: 'integer'
+            type: 'integer',
         },
 
         debug_mode: {
-            idate: true
+            idate: true,
         },
 
         heartbeat: {
@@ -96,71 +93,71 @@ module.exports = {
             required: ['version', 'time'],
             properties: {
                 version: {
-                    type: 'string'
+                    type: 'string',
                 },
                 time: {
-                    idate: true
+                    idate: true,
                 },
                 health: {
                     type: 'object',
                     properties: {
                         usage: {
-                            type: 'number'
+                            type: 'number',
                         },
                         os_info: {
                             type: 'object',
                             properties: {
                                 hostname: {
-                                    type: 'string'
+                                    type: 'string',
                                 },
                                 ostype: {
-                                    type: 'string'
+                                    type: 'string',
                                 },
                                 platform: {
-                                    type: 'string'
+                                    type: 'string',
                                 },
                                 arch: {
-                                    type: 'string'
+                                    type: 'string',
                                 },
                                 release: {
-                                    type: 'string'
+                                    type: 'string',
                                 },
                                 uptime: {
-                                    idate: true
+                                    idate: true,
                                 },
                                 loadavg: {
                                     type: 'array',
                                     items: {
-                                        type: 'number'
-                                    }
+                                        type: 'number',
+                                    },
                                 },
                                 totalmem: {
-                                    type: 'number'
+                                    type: 'number',
                                 },
                                 freemem: {
-                                    type: 'number'
+                                    type: 'number',
                                 },
                                 cpus: {
                                     type: 'array',
                                     items: {
                                         type: 'object',
                                         properties: {},
-                                        additionalProperties: true
-                                    }
+                                        additionalProperties: true,
+                                    },
                                 },
                                 networkInterfaces: {
                                     type: 'object',
                                     properties: {},
-                                    additionalProperties: true
-                                }
-                            }
+                                    additionalProperties: true,
+                                },
+                            },
                         },
                         storage: {
-                            $ref: 'common_api#/definitions/storage_info'
-                        }
-                    }
+                            $ref: 'common_api#/definitions/storage_info',
+                        },
+                    },
                 },
-            }
+            },
         },
         services_status: {
             type: 'object',
@@ -168,68 +165,78 @@ module.exports = {
             properties: {
                 dns_status: {
                     type: 'string',
-                    enum: ['UNKNOWN', 'FAULTY', 'UNREACHABLE', 'OPERATIONAL']
+                    enum: ['UNKNOWN', 'FAULTY', 'UNREACHABLE', 'OPERATIONAL'],
                 },
                 ph_status: {
                     type: 'object',
                     properties: {
                         status: {
                             type: 'string',
-                            enum: ['UNKNOWN', 'FAULTY', 'UNREACHABLE', 'OPERATIONAL']
+                            enum: [
+                                'UNKNOWN',
+                                'FAULTY',
+                                'UNREACHABLE',
+                                'OPERATIONAL',
+                            ],
                         },
                         test_time: {
-                            idate: true
-                        }
-                    }
+                            idate: true,
+                        },
+                    },
                 },
                 dns_name: {
                     type: 'string',
-                    enum: ['UNKNOWN', 'FAULTY', 'UNREACHABLE', 'OPERATIONAL']
+                    enum: ['UNKNOWN', 'FAULTY', 'UNREACHABLE', 'OPERATIONAL'],
                 },
                 internet_connectivity: {
                     type: 'string',
-                    enum: ['FAULTY']
+                    enum: ['FAULTY'],
                 },
                 cluster_status: {
-                    anyOf: [{
-                        type: 'string',
-                        enum: ['UNKNOWN']
-                    }, {
-                        type: 'array',
-                        items: {
-                            type: 'object',
-                            required: ['secret', 'status'],
-                            properties: {
-                                secret: {
-                                    type: 'string'
+                    anyOf: [
+                        {
+                            type: 'string',
+                            enum: ['UNKNOWN'],
+                        },
+                        {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                required: ['secret', 'status'],
+                                properties: {
+                                    secret: {
+                                        type: 'string',
+                                    },
+                                    status: {
+                                        type: 'string',
+                                        enum: [
+                                            'UNKNOWN',
+                                            'FAULTY',
+                                            'UNREACHABLE',
+                                            'OPERATIONAL',
+                                        ],
+                                    },
                                 },
-                                status: {
-                                    type: 'string',
-                                    enum: ['UNKNOWN', 'FAULTY', 'UNREACHABLE', 'OPERATIONAL']
-                                }
-                            }
-                        }
-                    }]
-                }
-            }
+                            },
+                        },
+                    ],
+                },
+            },
         },
         endpoint_groups: {
             type: 'array',
             items: {
                 type: 'object',
-                required: [
-                    'name',
-                    'endpoint_range'
-                ],
+                required: ['name', 'endpoint_range'],
                 properties: {
                     name: {
-                        type: 'string'
+                        type: 'string',
                     },
                     is_remote: {
-                        type: 'boolean'
+                        type: 'boolean',
                     },
                     region: {
-                        type: 'string'
+                        type: 'string',
                     },
                     endpoint_range: {
                         type: 'object',
@@ -237,16 +244,16 @@ module.exports = {
                         properties: {
                             min: {
                                 type: 'integer',
-                                minimum: 1
+                                minimum: 1,
                             },
                             max: {
                                 type: 'integer',
-                                minimum: 1
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+                                minimum: 1,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
 };

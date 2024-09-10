@@ -2,7 +2,6 @@
 'use strict';
 
 class LinkedList {
-
     constructor(name) {
         name = name || '';
         this.next = '_lln_' + name;
@@ -132,7 +131,6 @@ class LinkedList {
 
         return str;
     }
-
 }
 
 module.exports = LinkedList;

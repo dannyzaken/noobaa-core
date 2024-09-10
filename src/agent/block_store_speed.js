@@ -40,14 +40,20 @@ async function main() {
     const rpc = api.new_rpc();
     const client = rpc.new_client();
     const signal_client = rpc.new_client();
-    const n2n_agent = rpc.register_n2n_agent(((...args) => signal_client.node.n2n_signal(...args)));
+    const n2n_agent = rpc.register_n2n_agent((...args) =>
+        signal_client.node.n2n_signal(...args),
+    );
     n2n_agent.set_any_rpc_address();
     await client.create_auth_token({
         email: argv.email,
         password: argv.password,
         system: argv.system,
     });
-    await Promise.all(Array(argv.concur).fill(0).map(() => worker(client)));
+    await Promise.all(
+        Array(argv.concur)
+            .fill(0)
+            .map(() => worker(client)),
+    );
     process.exit();
 }
 
@@ -61,15 +67,18 @@ async function worker(client) {
 
 async function write_block(client) {
     const block_id = new mongodb.ObjectId();
-    return client.block_store.write_block({
-        [RPC_BUFFERS]: { data: Buffer.allocUnsafe(argv.size) },
-        block_md: {
-            id: block_id,
-            size: argv.size,
-            address: argv.address,
+    return client.block_store.write_block(
+        {
+            [RPC_BUFFERS]: { data: Buffer.allocUnsafe(argv.size) },
+            block_md: {
+                id: block_id,
+                size: argv.size,
+                address: argv.address,
+            },
         },
-    }, {
-        address: argv.address,
-        timeout: argv.timeout,
-    });
+        {
+            address: argv.address,
+            timeout: argv.timeout,
+        },
+    );
 }

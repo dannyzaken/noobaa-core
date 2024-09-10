@@ -17,7 +17,9 @@ class CloudVendor {
     }
 
     async list_objects(_bucket) {
-        throw new Error("Method 'async list_objects(bucket)' must be implemented.");
+        throw new Error(
+            "Method 'async list_objects(bucket)' must be implemented.",
+        );
     }
 
     /**
@@ -29,15 +31,21 @@ class CloudVendor {
     }
 
     async head_object(_bucket, _key) {
-        throw new Error("Method 'async head_object(bucket, key)' must be implemented.");
+        throw new Error(
+            "Method 'async head_object(bucket, key)' must be implemented.",
+        );
     }
 
     async write_object(_bucket, _key) {
-        throw new Error("Method 'async write_object(bucket, key)' must be implemented.");
+        throw new Error(
+            "Method 'async write_object(bucket, key)' must be implemented.",
+        );
     }
 
     async delete_object(_bucket, _key) {
-        throw new Error("Method 'async delete_object(bucket, key' must be implemented.");
+        throw new Error(
+            "Method 'async delete_object(bucket, key' must be implemented.",
+        );
     }
 }
 

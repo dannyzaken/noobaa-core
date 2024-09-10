@@ -4,7 +4,6 @@
 const cluster = require('cluster');
 
 class Speedometer {
-
     constructor(name) {
         this.name = name || 'Speed';
 
@@ -75,22 +74,40 @@ class Speedometer {
         if (this.worker_mode) {
             process.send(this.num_bytes - this.last_bytes);
         } else {
-            const speed = (this.num_bytes - this.last_bytes) /
-                Math.max(0.001, now - this.last_time) * 1000 / 1024 / 1024;
-            const avg_speed = this.num_bytes /
-                Math.max(0.001, now - this.start_time) * 1000 / 1024 / 1024;
+            const speed =
+                (((this.num_bytes - this.last_bytes) /
+                    Math.max(0.001, now - this.last_time)) *
+                    1000) /
+                1024 /
+                1024;
+            const avg_speed =
+                ((this.num_bytes / Math.max(0.001, now - this.start_time)) *
+                    1000) /
+                1024 /
+                1024;
             const ops = this.num_ops - this.last_ops;
             const avg_latency = this.sum_latency - this.last_latency;
             console.log(
-                this.name + ': ' +
-                speed.toFixed(1) + ' MB/sec' +
-                ' (average ' + avg_speed.toFixed(1) + ')' +
-                (ops ? (
-                    ' | OPS: ' + ops +
-                    ' min:' + this.min_latency.toFixed(1) + 'ms' +
-                    ' max:' + this.max_latency.toFixed(1) + 'ms' +
-                    ' avg:' + (avg_latency / ops).toFixed(1) + 'ms'
-                ) : '')
+                this.name +
+                    ': ' +
+                    speed.toFixed(1) +
+                    ' MB/sec' +
+                    ' (average ' +
+                    avg_speed.toFixed(1) +
+                    ')' +
+                    (ops ?
+                        ' | OPS: ' +
+                        ops +
+                        ' min:' +
+                        this.min_latency.toFixed(1) +
+                        'ms' +
+                        ' max:' +
+                        this.max_latency.toFixed(1) +
+                        'ms' +
+                        ' avg:' +
+                        (avg_latency / ops).toFixed(1) +
+                        'ms'
+                    :   ''),
             );
         }
         this.last_time = now;

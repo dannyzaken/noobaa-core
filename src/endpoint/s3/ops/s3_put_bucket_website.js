@@ -10,7 +10,7 @@ async function put_bucket_website(req) {
     const website = s3_utils.parse_body_website_xml(req);
     await req.object_sdk.put_bucket_website({
         name: req.params.bucket,
-        website
+        website,
     });
 }
 

@@ -8,15 +8,14 @@ const Semaphore = require('../../util/semaphore');
 
 const setImmediateAsync = util.promisify(setImmediate);
 
-mocha.describe('semaphore', function() {
-
-    mocha.it('should create ok', function() {
+mocha.describe('semaphore', function () {
+    mocha.it('should create ok', function () {
         const sem = new Semaphore(0);
         assert.strictEqual(sem.length, 0);
         assert.strictEqual(sem.value, 0);
     });
 
-    mocha.it('should handle single item', async function() {
+    mocha.it('should handle single item', async function () {
         let woke = 0;
 
         function do_wake() {
@@ -73,32 +72,45 @@ mocha.describe('semaphore', function() {
         assert.strictEqual(woke, 4);
     });
 
-    mocha.it('should surround', async function() {
+    mocha.it('should surround', async function () {
         const throw_err = new Error();
         const sem = new Semaphore(10);
         assert.strictEqual(sem.length, 0);
         assert.strictEqual(sem.value, 10);
 
         const results = await Promise.all([
+            sem
+                .surround(function () {
+                    assert.strictEqual(sem.length, 2);
+                    assert.strictEqual(sem.value, 9);
+                    return 11;
+                })
+                .then(
+                    res => ({ res }),
+                    err => ({ err }),
+                ),
 
-            sem.surround(function() {
-                assert.strictEqual(sem.length, 2);
-                assert.strictEqual(sem.value, 9);
-                return 11;
-            }).then(res => ({ res }), err => ({ err })),
+            sem
+                .surround_count(10, function () {
+                    assert.strictEqual(sem.length, 1);
+                    assert.strictEqual(sem.value, 0);
+                    throw throw_err;
+                })
+                .then(
+                    res => ({ res }),
+                    err => ({ err }),
+                ),
 
-            sem.surround_count(10, function() {
-                assert.strictEqual(sem.length, 1);
-                assert.strictEqual(sem.value, 0);
-                throw throw_err;
-            }).then(res => ({ res }), err => ({ err })),
-
-            sem.surround_count(4, function() {
-                assert.strictEqual(sem.length, 0);
-                assert.strictEqual(sem.value, 6);
-                return 22;
-            }).then(res => ({ res }), err => ({ err })),
-
+            sem
+                .surround_count(4, function () {
+                    assert.strictEqual(sem.length, 0);
+                    assert.strictEqual(sem.value, 6);
+                    return 22;
+                })
+                .then(
+                    res => ({ res }),
+                    err => ({ err }),
+                ),
         ]);
 
         assert.strictEqual(results[0].res, 11);
@@ -111,21 +123,26 @@ mocha.describe('semaphore', function() {
         assert.strictEqual(sem.value, 10);
     });
 
-    mocha.it('should fail on timeout in surround', async function() {
+    mocha.it('should fail on timeout in surround', async function () {
         const sem = new Semaphore(1, {
             // Just using the minimum timeout without any place inside the semaphore
             // This means that we are just interested in failing as quickly as we can
             // With the item inside the waiting queue
             timeout: 1,
-            timeout_error_code: 'MAJESTIC_SLOTH'
+            timeout_error_code: 'MAJESTIC_SLOTH',
         });
         assert.strictEqual(sem.length, 0);
         assert.strictEqual(sem.value, 1);
 
         const results = await Promise.all([
-            sem.surround_count(2604, function() {
-                return 'MAGIC';
-            }).then(res => ({ res }), err => ({ err })),
+            sem
+                .surround_count(2604, function () {
+                    return 'MAGIC';
+                })
+                .then(
+                    res => ({ res }),
+                    err => ({ err }),
+                ),
         ]);
 
         assert.strictEqual(results[0].err.code, 'MAJESTIC_SLOTH');
@@ -134,18 +151,22 @@ mocha.describe('semaphore', function() {
         assert.strictEqual(sem.waiting_value, 0);
     });
 
-    mocha.it('should release value on non settled worker', async function() {
+    mocha.it('should release value on non settled worker', async function () {
         const sem = new Semaphore(1, {
             work_timeout: 1,
-            work_timeout_error_code: 'MAJESTIC_SLOTH_TIMEOUT'
+            work_timeout_error_code: 'MAJESTIC_SLOTH_TIMEOUT',
         });
         assert.strictEqual(sem.length, 0);
         assert.strictEqual(sem.value, 1);
         try {
-            await sem.surround_count(1, async function() {
-                return new Promise((resolve, reject) => setTimeout(resolve, 500));
+            await sem.surround_count(1, async function () {
+                return new Promise((resolve, reject) =>
+                    setTimeout(resolve, 500),
+                );
             });
-            throw new Error('Semaphore did not throw an error on non settled worker');
+            throw new Error(
+                'Semaphore did not throw an error on non settled worker',
+            );
         } catch (error) {
             assert.strictEqual(error.code, 'MAJESTIC_SLOTH_TIMEOUT');
             assert.strictEqual(error.message, 'Semaphore Worker Timeout');
@@ -154,5 +175,4 @@ mocha.describe('semaphore', function() {
         assert.strictEqual(sem.value, 1);
         assert.strictEqual(sem.waiting_value, 0);
     });
-
 });

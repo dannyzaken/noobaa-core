@@ -21,7 +21,7 @@ async function put_object_legal_hold(req) {
         bucket: req.params.bucket,
         key: req.params.key,
         version_id: s3_utils.parse_version_id(req.query.versionId),
-        legal_hold: { status: legal_hold_status }
+        legal_hold: { status: legal_hold_status },
     });
 }
 

@@ -10,8 +10,8 @@ function get_service_stats(req, res) {
             GeoReplication: {
                 Status: 'unavailable',
                 LastSyncTime: 'empty',
-            }
-        }
+            },
+        },
     };
 }
 

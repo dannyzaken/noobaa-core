@@ -4,13 +4,15 @@
 const _ = require('lodash');
 const js_utils = require('../util/js_utils');
 
-function Clazz() { /* Clazz? */ }
+function Clazz() {
+    /* Clazz? */
+}
 
-Clazz.prototype.func = function() {
+Clazz.prototype.func = function () {
     return this;
 };
 
-Clazz.prototype.measure = function() {
+Clazz.prototype.measure = function () {
     const self = this;
     const start = Date.now();
     let now = Date.now();
@@ -30,7 +32,10 @@ Clazz.prototype.measure = function() {
             run = false;
         }
     }
-    console.log('Calls per second', (count * 1000 / (now - start)).toFixed(1));
+    console.log(
+        'Calls per second',
+        ((count * 1000) / (now - start)).toFixed(1),
+    );
 };
 
 console.log('\nBIND');
@@ -45,7 +50,7 @@ binded.measure();
 
 console.log('\nCLOSURE');
 const closure = new Clazz();
-closure.func = function() {
+closure.func = function () {
     return Clazz.prototype.func.apply(closure, arguments);
 };
 closure.measure();

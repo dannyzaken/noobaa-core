@@ -11,13 +11,16 @@ const SensitiveString = require('../util/sensitive_string');
  *
  */
 module.exports = {
-
     $id: 'common_api',
 
     definitions: {
-
-        bucket_trigger_event: { // Based on AWS: https://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html#supported-notification-event-types
-            enum: ['ObjectCreated', 'ObjectRemoved', 'ObjectRead', /* 'ObjectCreated:Put', 'ObjectCreated:CompleteMultipartUpload', ... */ ],
+        bucket_trigger_event: {
+            // Based on AWS: https://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html#supported-notification-event-types
+            enum: [
+                'ObjectCreated',
+                'ObjectRemoved',
+                'ObjectRead' /* 'ObjectCreated:Put', 'ObjectCreated:CompleteMultipartUpload', ... */,
+            ],
             type: 'string',
         },
 
@@ -27,73 +30,70 @@ module.exports = {
             properties: {
                 // Total Capacity
                 total: {
-                    $ref: '#/definitions/bigint'
+                    $ref: '#/definitions/bigint',
                 },
                 // "Online/Available" free space
                 free: {
-                    $ref: '#/definitions/bigint'
+                    $ref: '#/definitions/bigint',
                 },
                 // spillover_free: {
                 //     $ref: '#/definitions/bigint'
                 // },
                 // "Offline/Issues" free space
                 unavailable_free: {
-                    $ref: '#/definitions/bigint'
+                    $ref: '#/definitions/bigint',
                 },
                 // "Offline/Issues" used space
                 unavailable_used: {
-                    $ref: '#/definitions/bigint'
+                    $ref: '#/definitions/bigint',
                 },
                 // Used By NooBaa
                 used: {
-                    $ref: '#/definitions/bigint'
+                    $ref: '#/definitions/bigint',
                 },
                 // Used By NooBaa
                 used_other: {
-                    $ref: '#/definitions/bigint'
+                    $ref: '#/definitions/bigint',
                 },
                 // Physical NooBaa capacity after compression including dedup, disregarding replicas and policies
                 // Example: Sum compressed size of chunks in bucket
                 used_reduced: {
-                    $ref: '#/definitions/bigint'
+                    $ref: '#/definitions/bigint',
                 },
                 alloc: {
-                    $ref: '#/definitions/bigint'
+                    $ref: '#/definitions/bigint',
                 },
                 limit: {
-                    $ref: '#/definitions/bigint'
+                    $ref: '#/definitions/bigint',
                 },
                 reserved: {
-                    $ref: '#/definitions/bigint'
+                    $ref: '#/definitions/bigint',
                 },
                 // real - after calculating dedup reduction or redundancy overheads
                 real: {
-                    $ref: '#/definitions/bigint'
+                    $ref: '#/definitions/bigint',
                 },
-            }
+            },
         },
 
         tag: {
             type: 'object',
-            required: [
-                'key',
-                'value'
-            ],
+            required: ['key', 'value'],
             properties: {
                 key: {
-                    type: 'string'
+                    type: 'string',
                 },
                 value: {
-                    type: 'string'
+                    type: 'string',
                 },
-            }
+            },
         },
 
         tagging: {
             type: 'array',
             items: {
-                $ref: '#/definitions/tag'
-            }
+                $ref: '#/definitions/tag',
+            },
         },
 
         bucket_encryption: {
@@ -101,17 +101,17 @@ module.exports = {
             properties: {
                 algorithm: {
                     type: 'string',
-                    enum: ['AES256', 'aws:kms']
+                    enum: ['AES256', 'aws:kms'],
                 },
                 kms_key_id: {
-                    type: 'string'
-                }
-            }
+                    type: 'string',
+                },
+            },
         },
 
         versioning: {
             type: 'string',
-            enum: ['DISABLED', 'SUSPENDED', 'ENABLED']
+            enum: ['DISABLED', 'SUSPENDED', 'ENABLED'],
         },
 
         assume_role_policy: {
@@ -127,24 +127,24 @@ module.exports = {
                         properties: {
                             effect: {
                                 enum: ['allow', 'deny'],
-                                type: 'string'
+                                type: 'string',
                             },
                             action: {
                                 type: 'array',
                                 items: {
-                                    type: 'string'
-                                }
+                                    type: 'string',
+                                },
                             },
                             principal: {
                                 type: 'array',
                                 items: {
                                     $ref: '#/definitions/email',
-                                }
-                            }
-                        }
-                    }
+                                },
+                            },
+                        },
+                    },
                 },
-            }
+            },
         },
 
         // bucket lifecycle
@@ -154,27 +154,27 @@ module.exports = {
             properties: {
                 days: {
                     minimum: 1,
-                    type: 'integer'
+                    type: 'integer',
                 },
                 date: {
-                    idate: true
+                    idate: true,
                 },
                 /*
                 expired_object_delete_marker: {
                     type: 'boolean'
                 }
                 */
-            }
+            },
         },
         bucket_lifecycle_rule_status: {
             enum: ['Enabled', 'Disabled'],
-            type: 'string'
+            type: 'string',
         },
         bucket_lifecycle_rule_filter: {
             type: 'object',
             properties: {
                 prefix: {
-                    type: 'string'
+                    type: 'string',
                 },
                 tags: {
                     type: 'array',
@@ -183,42 +183,42 @@ module.exports = {
                     },
                 },
                 object_size_greater_than: {
-                    type: 'number'
+                    type: 'number',
                 },
                 object_size_less_than: {
-                    type: 'number'
+                    type: 'number',
                 },
                 // conditional and filter operator, used to reconstruct
                 // the original XML S3 REST interface rule representation.
                 and: {
-                    type: 'boolean'
-                }
-            }
+                    type: 'boolean',
+                },
+            },
         },
         bucket_lifecycle_configuration: {
             type: 'array',
             items: {
-                $ref: '#/definitions/bucket_lifecycle_rule'
-            }
+                $ref: '#/definitions/bucket_lifecycle_rule',
+            },
         },
         bucket_lifecycle_rule: {
             type: 'object',
             required: ['id', 'filter', 'expiration', 'status'],
             properties: {
                 id: {
-                    type: 'string'
+                    type: 'string',
                 },
                 status: {
-                    $ref: '#/definitions/bucket_lifecycle_rule_status'
+                    $ref: '#/definitions/bucket_lifecycle_rule_status',
                 },
                 filter: {
-                    $ref: '#/definitions/bucket_lifecycle_rule_filter'
+                    $ref: '#/definitions/bucket_lifecycle_rule_filter',
                 },
                 expiration: {
-                    $ref: '#/definitions/bucket_lifecycle_rule_expiration'
+                    $ref: '#/definitions/bucket_lifecycle_rule_expiration',
                 },
                 last_sync: {
-                    idate: true
+                    idate: true,
                 },
                 /*
                 abort_incomplete_multipart_upload: {
@@ -260,55 +260,62 @@ module.exports = {
                     }
                 },
                 */
-            }
+            },
         },
 
         bucket_policy_principal: {
-            anyOf: [{
-                wrapper: SensitiveString
-            }, {
-                type: 'object',
-                required: ['AWS'],
-                properties: {
-                    AWS: {
-                        anyOf: [{
-                            wrapper: SensitiveString
-                        }, {
-                            type: 'array',
-                            items: {
-                                wrapper: SensitiveString
-                            }
-                        }]
-                    }
-                }
-            }]
+            anyOf: [
+                {
+                    wrapper: SensitiveString,
+                },
+                {
+                    type: 'object',
+                    required: ['AWS'],
+                    properties: {
+                        AWS: {
+                            anyOf: [
+                                {
+                                    wrapper: SensitiveString,
+                                },
+                                {
+                                    type: 'array',
+                                    items: {
+                                        wrapper: SensitiveString,
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                },
+            ],
         },
         string_or_string_array: {
-            anyOf: [{
-                    type: 'string'
+            anyOf: [
+                {
+                    type: 'string',
                 },
                 {
                     type: 'array',
                     items: {
-                        type: 'string'
-                    }
-                }
-            ]
+                        type: 'string',
+                    },
+                },
+            ],
         },
 
         bucket_policy_string_condition: {
             type: 'object',
             additionalProperties: {
-                type: 'string'
-            }
+                type: 'string',
+            },
         },
 
         bucket_policy_null_condition: {
             type: 'object',
             additionalProperties: {
                 enum: ['true', 'false'],
-                type: 'string'
-            }
+                type: 'string',
+            },
         },
 
         bucket_policy: {
@@ -319,62 +326,63 @@ module.exports = {
                 Statement: {
                     type: 'array',
                     items: {
-                        allOf: [{
+                        allOf: [
+                            {
                                 type: 'object',
                                 required: ['Effect'],
                                 properties: {
                                     Sid: {
-                                        type: 'string'
+                                        type: 'string',
                                     },
                                     Principal: {
-                                        $ref: '#/definitions/bucket_policy_principal'
+                                        $ref: '#/definitions/bucket_policy_principal',
                                     },
                                     NotPrincipal: {
-                                        $ref: '#/definitions/bucket_policy_principal'
+                                        $ref: '#/definitions/bucket_policy_principal',
                                     },
                                     Action: {
-                                        $ref: '#/definitions/string_or_string_array'
+                                        $ref: '#/definitions/string_or_string_array',
                                     },
                                     NotAction: {
-                                        $ref: '#/definitions/string_or_string_array'
+                                        $ref: '#/definitions/string_or_string_array',
                                     },
                                     Resource: {
-                                        $ref: '#/definitions/string_or_string_array'
+                                        $ref: '#/definitions/string_or_string_array',
                                     },
                                     NotResource: {
-                                        $ref: '#/definitions/string_or_string_array'
+                                        $ref: '#/definitions/string_or_string_array',
                                     },
                                     Effect: {
                                         enum: ['Allow', 'Deny'],
-                                        type: 'string'
+                                        type: 'string',
                                     },
                                     Condition: {
                                         type: 'object',
                                         properties: {
                                             StringEquals: {
-                                                $ref: '#/definitions/bucket_policy_string_condition'
+                                                $ref: '#/definitions/bucket_policy_string_condition',
                                             },
                                             StringNotEquals: {
-                                                $ref: '#/definitions/bucket_policy_string_condition'
+                                                $ref: '#/definitions/bucket_policy_string_condition',
                                             },
                                             StringEqualsIgnoreCase: {
-                                                $ref: '#/definitions/bucket_policy_string_condition'
+                                                $ref: '#/definitions/bucket_policy_string_condition',
                                             },
                                             StringNotEqualsIgnoreCase: {
-                                                $ref: '#/definitions/bucket_policy_string_condition'
+                                                $ref: '#/definitions/bucket_policy_string_condition',
                                             },
                                             StringLike: {
-                                                $ref: '#/definitions/bucket_policy_string_condition'
+                                                $ref: '#/definitions/bucket_policy_string_condition',
                                             },
                                             StringNotLike: {
-                                                $ref: '#/definitions/bucket_policy_string_condition'
+                                                $ref: '#/definitions/bucket_policy_string_condition',
                                             },
                                             Null: {
-                                                $ref: '#/definitions/bucket_policy_null_condition'
-                                            }
-                                        }
-                                    }
-                                }
+                                                $ref: '#/definitions/bucket_policy_null_condition',
+                                            },
+                                        },
+                                    },
+                                },
                             },
                             // these schemas accept every object that has oneof the argument in the required field (e.g. Action / notAction, Principal/ NotPrincipal),
                             // the additionalProperties field was added to fit all of the statement properties without rewriting them.
@@ -382,54 +390,57 @@ module.exports = {
                             // the schema above. these schemas are only here to validate the mutually exclusive required fields
                             // they should be replaced once we support allOf for individual fields
                             {
-                                oneOf: [{
+                                oneOf: [
+                                    {
                                         type: 'object',
-                                        required: ["Principal"],
+                                        required: ['Principal'],
                                         additionalProperties: true,
-                                        properties: {}
+                                        properties: {},
                                     },
                                     {
                                         type: 'object',
-                                        required: ["NotPrincipal"],
+                                        required: ['NotPrincipal'],
                                         additionalProperties: true,
-                                        properties: {}
-                                    }
+                                        properties: {},
+                                    },
                                 ],
                             },
                             {
-                                oneOf: [{
+                                oneOf: [
+                                    {
                                         type: 'object',
-                                        required: ["Action"],
+                                        required: ['Action'],
                                         additionalProperties: true,
-                                        properties: {}
+                                        properties: {},
                                     },
                                     {
                                         type: 'object',
-                                        required: ["NotAction"],
+                                        required: ['NotAction'],
                                         additionalProperties: true,
-                                        properties: {}
-                                    }
+                                        properties: {},
+                                    },
                                 ],
                             },
                             {
-                                oneOf: [{
+                                oneOf: [
+                                    {
                                         type: 'object',
-                                        required: ["Resource"],
+                                        required: ['Resource'],
                                         additionalProperties: true,
-                                        properties: {}
+                                        properties: {},
                                     },
                                     {
                                         type: 'object',
-                                        required: ["NotResource"],
+                                        required: ['NotResource'],
                                         additionalProperties: true,
-                                        properties: {}
-                                    }
+                                        properties: {},
+                                    },
                                 ],
                             },
-                        ]
-                    }
+                        ],
+                    },
                 },
-            }
+            },
         },
 
         object_encryption: {
@@ -437,114 +448,117 @@ module.exports = {
             properties: {
                 algorithm: {
                     type: 'string',
-                    enum: ['AES256', 'aws:kms']
+                    enum: ['AES256', 'aws:kms'],
                 },
                 kms_key_id: {
-                    type: 'string'
+                    type: 'string',
                 },
                 context_b64: {
-                    type: 'string'
+                    type: 'string',
                 },
                 key_md5_b64: {
-                    type: 'string'
+                    type: 'string',
                 },
                 key_b64: {
-                    type: 'string'
-                }
-            }
+                    type: 'string',
+                },
+            },
         },
-
 
         bucket_website: {
             type: 'object',
             required: ['website_configuration'],
             properties: {
                 website_configuration: {
-                    anyOf: [{
-                        type: 'object',
-                        required: ['redirect_all_requests_to'],
-                        properties: {
-                            redirect_all_requests_to: {
-                                type: 'object',
-                                required: ['host_name'],
-                                properties: {
-                                    host_name: {
-                                        type: 'string'
-                                    },
-                                    protocol: {
-                                        type: 'string',
-                                        enum: ['HTTP', 'HTTPS']
-                                    }
-                                }
-                            }
-                        }
-                    }, {
-                        type: 'object',
-                        required: ['index_document'],
-                        properties: {
-                            index_document: {
-                                type: 'object',
-                                required: ['suffix'],
-                                properties: {
-                                    suffix: {
-                                        type: 'string'
-                                    },
-                                }
-                            },
-                            error_document: {
-                                type: 'object',
-                                required: ['key'],
-                                properties: {
-                                    key: {
-                                        type: 'string'
-                                    },
-                                }
-                            },
-                            // Must be atleast one routing rule
-                            routing_rules: {
-                                type: 'array',
-                                items: {
+                    anyOf: [
+                        {
+                            type: 'object',
+                            required: ['redirect_all_requests_to'],
+                            properties: {
+                                redirect_all_requests_to: {
                                     type: 'object',
-                                    required: ['redirect'],
+                                    required: ['host_name'],
                                     properties: {
-                                        condition: {
-                                            type: 'object',
-                                            // required: ['key_prefix_equals', 'http_error_code_returned_equals'],
-                                            properties: {
-                                                key_prefix_equals: {
-                                                    type: 'string'
-                                                },
-                                                http_error_code_returned_equals: {
-                                                    type: 'string'
-                                                },
-                                            }
+                                        host_name: {
+                                            type: 'string',
                                         },
-                                        redirect: {
-                                            type: 'object',
-                                            // required: ['protocol', 'host_name'],
-                                            properties: {
-                                                protocol: {
-                                                    type: 'string'
-                                                },
-                                                host_name: {
-                                                    type: 'string'
-                                                },
-                                                replace_key_prefix_with: {
-                                                    type: 'string'
-                                                },
-                                                replace_key_with: {
-                                                    type: 'string'
-                                                },
-                                                http_redirect_code: {
-                                                    type: 'string'
-                                                },
-                                            }
+                                        protocol: {
+                                            type: 'string',
+                                            enum: ['HTTP', 'HTTPS'],
                                         },
-                                    }
-                                }
+                                    },
+                                },
                             },
-                        }
-                    }]
+                        },
+                        {
+                            type: 'object',
+                            required: ['index_document'],
+                            properties: {
+                                index_document: {
+                                    type: 'object',
+                                    required: ['suffix'],
+                                    properties: {
+                                        suffix: {
+                                            type: 'string',
+                                        },
+                                    },
+                                },
+                                error_document: {
+                                    type: 'object',
+                                    required: ['key'],
+                                    properties: {
+                                        key: {
+                                            type: 'string',
+                                        },
+                                    },
+                                },
+                                // Must be atleast one routing rule
+                                routing_rules: {
+                                    type: 'array',
+                                    items: {
+                                        type: 'object',
+                                        required: ['redirect'],
+                                        properties: {
+                                            condition: {
+                                                type: 'object',
+                                                // required: ['key_prefix_equals', 'http_error_code_returned_equals'],
+                                                properties: {
+                                                    key_prefix_equals: {
+                                                        type: 'string',
+                                                    },
+                                                    http_error_code_returned_equals:
+                                                        {
+                                                            type: 'string',
+                                                        },
+                                                },
+                                            },
+                                            redirect: {
+                                                type: 'object',
+                                                // required: ['protocol', 'host_name'],
+                                                properties: {
+                                                    protocol: {
+                                                        type: 'string',
+                                                    },
+                                                    host_name: {
+                                                        type: 'string',
+                                                    },
+                                                    replace_key_prefix_with: {
+                                                        type: 'string',
+                                                    },
+                                                    replace_key_with: {
+                                                        type: 'string',
+                                                    },
+                                                    http_redirect_code: {
+                                                        type: 'string',
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    ],
                 },
             },
         },
@@ -554,15 +568,15 @@ module.exports = {
             // required: [],
             properties: {
                 mount: {
-                    type: 'string'
+                    type: 'string',
                 },
                 drive_id: {
-                    type: 'string'
+                    type: 'string',
                 },
                 storage: {
-                    $ref: '#/definitions/storage_info'
+                    $ref: '#/definitions/storage_info',
                 },
-            }
+            },
         },
 
         os_info: {
@@ -570,73 +584,76 @@ module.exports = {
             // required: [],
             properties: {
                 last_update: {
-                    idate: true
+                    idate: true,
                 },
                 hostname: {
-                    type: 'string'
+                    type: 'string',
                 },
                 ostype: {
-                    type: 'string'
+                    type: 'string',
                 },
                 platform: {
-                    type: 'string'
+                    type: 'string',
                 },
                 arch: {
-                    type: 'string'
+                    type: 'string',
                 },
                 release: {
-                    type: 'string'
+                    type: 'string',
                 },
                 uptime: {
-                    idate: true
+                    idate: true,
                 },
                 loadavg: {
                     type: 'array',
                     items: {
-                        type: 'number'
-                    }
+                        type: 'number',
+                    },
                 },
                 totalmem: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 freemem: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 cpus: {
                     type: 'array',
                     items: {
                         type: 'object',
                         additionalProperties: true,
-                        properties: {}
-                    }
+                        properties: {},
+                    },
                 },
                 cpu_usage: {
-                    type: 'number'
+                    type: 'number',
                 },
                 networkInterfaces: {
                     type: 'object',
                     additionalProperties: true,
-                    properties: {}
-                }
-            }
+                    properties: {},
+                },
+            },
         },
 
         bigint: {
-            oneOf: [{
-                type: 'integer'
-            }, {
-                type: 'object',
-                properties: {
-                    n: {
-                        type: 'integer',
+            oneOf: [
+                {
+                    type: 'integer',
+                },
+                {
+                    type: 'object',
+                    properties: {
+                        n: {
+                            type: 'integer',
+                        },
+                        // to support bigger integers we can specify a peta field
+                        // which is considered to be based from 2^50
+                        peta: {
+                            type: 'integer',
+                        },
                     },
-                    // to support bigger integers we can specify a peta field
-                    // which is considered to be based from 2^50
-                    peta: {
-                        type: 'integer',
-                    }
-                }
-            }]
+                },
+            ],
         },
 
         n2n_config: {
@@ -645,58 +662,58 @@ module.exports = {
             properties: {
                 // ip options
                 offer_ipv4: {
-                    type: 'boolean'
+                    type: 'boolean',
                 },
                 offer_ipv6: {
-                    type: 'boolean'
+                    type: 'boolean',
                 },
                 accept_ipv4: {
-                    type: 'boolean'
+                    type: 'boolean',
                 },
                 accept_ipv6: {
-                    type: 'boolean'
+                    type: 'boolean',
                 },
                 offer_internal: {
-                    type: 'boolean'
+                    type: 'boolean',
                 },
 
                 // tcp options
                 tcp_active: {
-                    type: 'boolean'
+                    type: 'boolean',
                 },
                 tcp_permanent_passive: {
-                    $ref: '#/definitions/port_range_config'
+                    $ref: '#/definitions/port_range_config',
                 },
                 tcp_transient_passive: {
-                    $ref: '#/definitions/port_range_config'
+                    $ref: '#/definitions/port_range_config',
                 },
                 tcp_simultaneous_open: {
-                    $ref: '#/definitions/port_range_config'
+                    $ref: '#/definitions/port_range_config',
                 },
                 tcp_tls: {
-                    type: 'boolean'
+                    type: 'boolean',
                 },
 
                 // udp options
                 udp_port: {
-                    type: 'boolean'
+                    type: 'boolean',
                 },
                 udp_dtls: {
-                    type: 'boolean'
+                    type: 'boolean',
                 },
                 stun_servers: {
                     type: 'array',
                     items: {
-                        type: 'string'
-                    }
+                        type: 'string',
+                    },
                 },
                 public_ips: {
                     type: 'array',
                     items: {
-                        type: 'string'
-                    }
-                }
-            }
+                        type: 'string',
+                    },
+                },
+            },
         },
 
         // false means disable the port.
@@ -704,28 +721,32 @@ module.exports = {
         // object with port means single port.
         // object with min-max means port range.
         port_range_config: {
-            oneOf: [{
-                type: 'boolean'
-            }, {
-                type: 'object',
-                required: ['port'],
-                properties: {
-                    port: {
-                        type: 'integer'
-                    }
-                }
-            }, {
-                type: 'object',
-                required: ['min', 'max'],
-                properties: {
-                    min: {
-                        type: 'integer'
+            oneOf: [
+                {
+                    type: 'boolean',
+                },
+                {
+                    type: 'object',
+                    required: ['port'],
+                    properties: {
+                        port: {
+                            type: 'integer',
+                        },
                     },
-                    max: {
-                        type: 'integer'
-                    }
-                }
-            }]
+                },
+                {
+                    type: 'object',
+                    required: ['min', 'max'],
+                    properties: {
+                        min: {
+                            type: 'integer',
+                        },
+                        max: {
+                            type: 'integer',
+                        },
+                    },
+                },
+            ],
         },
 
         undeletable_enum: {
@@ -736,14 +757,23 @@ module.exports = {
                 'CONNECTED_BUCKET_DELETING',
                 'DEFAULT_RESOURCE',
                 'BEING_DELETED',
-                'IS_BACKINGSTORE'
+                'IS_BACKINGSTORE',
             ],
             type: 'string',
         },
 
         endpoint_type: {
             type: 'string',
-            enum: ['AWSSTS', 'AWS', 'AZURE', 'S3_COMPATIBLE', 'GOOGLE', 'FLASHBLADE', 'NET_STORAGE', 'IBM_COS']
+            enum: [
+                'AWSSTS',
+                'AWS',
+                'AZURE',
+                'S3_COMPATIBLE',
+                'GOOGLE',
+                'FLASHBLADE',
+                'NET_STORAGE',
+                'IBM_COS',
+            ],
         },
 
         block_md: {
@@ -775,9 +805,9 @@ module.exports = {
                         data_index: { type: 'integer' },
                         parity_index: { type: 'integer' },
                         lrc_index: { type: 'integer' },
-                    }
+                    },
                 },
-            }
+            },
         },
 
         node_type: {
@@ -787,50 +817,40 @@ module.exports = {
                 'BLOCK_STORE_MONGO',
                 'BLOCK_STORE_AZURE',
                 'BLOCK_STORE_GOOGLE',
-                'BLOCK_STORE_FS'
-            ]
+                'BLOCK_STORE_FS',
+            ],
         },
 
         block_action: {
             type: 'string',
-            enum: [
-                'read',
-                'write',
-                'replicate',
-                'delete'
-            ]
+            enum: ['read', 'write', 'replicate', 'delete'],
         },
 
         blocks_report: {
             type: 'array',
             items: {
                 type: 'object',
-                required: [
-                    'block_md',
-                    'action',
-                    'rpc_code',
-                    'error_message'
-                ],
+                required: ['block_md', 'action', 'rpc_code', 'error_message'],
                 properties: {
                     block_md: {
-                        $ref: '#/definitions/block_md'
+                        $ref: '#/definitions/block_md',
                     },
                     action: {
-                        $ref: '#/definitions/block_action'
+                        $ref: '#/definitions/block_action',
                     },
                     rpc_code: {
-                        type: 'string'
+                        type: 'string',
                     },
                     error_message: {
-                        type: 'string'
+                        type: 'string',
                     },
-                }
-            }
+                },
+            },
         },
 
         cloud_auth_method: {
             type: 'string',
-            enum: ['AWS_V2', 'AWS_V4']
+            enum: ['AWS_V2', 'AWS_V4'],
         },
 
         proxy_params: {
@@ -838,13 +858,13 @@ module.exports = {
             required: ['target', 'method_api', 'method_name'],
             properties: {
                 target: {
-                    type: 'string'
+                    type: 'string',
                 },
                 method_api: {
-                    type: 'string'
+                    type: 'string',
                 },
                 method_name: {
-                    type: 'string'
+                    type: 'string',
                 },
                 stop_proxy: {
                     type: 'boolean',
@@ -852,7 +872,7 @@ module.exports = {
                 request_params: {
                     type: 'object',
                     additionalProperties: true,
-                    properties: {}
+                    properties: {},
                 },
             },
         },
@@ -863,9 +883,9 @@ module.exports = {
                 proxy_reply: {
                     type: 'object',
                     additionalProperties: true,
-                    properties: {}
+                    properties: {},
                 },
-            }
+            },
         },
 
         access_key: { wrapper: SensitiveString },
@@ -877,7 +897,7 @@ module.exports = {
             properties: {
                 access_key: { $ref: '#/definitions/access_key' },
                 secret_key: { $ref: '#/definitions/secret_key' },
-            }
+            },
         },
 
         secret_enc_key: { wrapper: SensitiveString },
@@ -889,13 +909,22 @@ module.exports = {
 
         azure_log_access_keys: {
             type: 'object',
-            required: ['azure_tenant_id', 'azure_client_id', 'azure_client_secret', 'azure_logs_analytics_workspace_id'],
+            required: [
+                'azure_tenant_id',
+                'azure_client_id',
+                'azure_client_secret',
+                'azure_logs_analytics_workspace_id',
+            ],
             properties: {
                 azure_tenant_id: { $ref: '#/definitions/azure_tenant_id' },
                 azure_client_id: { $ref: '#/definitions/azure_client_id' },
-                azure_client_secret: { $ref: '#/definitions/azure_client_secret' },
-                azure_logs_analytics_workspace_id: { $ref: '#/definitions/azure_logs_analytics_workspace_id' },
-            }
+                azure_client_secret: {
+                    $ref: '#/definitions/azure_client_secret',
+                },
+                azure_logs_analytics_workspace_id: {
+                    $ref: '#/definitions/azure_logs_analytics_workspace_id',
+                },
+            },
         },
 
         ip_range: {
@@ -907,33 +936,33 @@ module.exports = {
                 },
                 end: {
                     type: 'string',
-                }
-            }
+                },
+            },
         },
 
         agent_roles_enum: {
             type: 'string',
-            enum: ['STORAGE', 'S3']
+            enum: ['STORAGE', 'S3'],
         },
 
         digest_type: {
             type: 'string',
-            enum: ['sha1', 'sha256', 'sha384', 'sha512', 'none']
+            enum: ['sha1', 'sha256', 'sha384', 'sha512', 'none'],
         },
 
         compress_type: {
             type: 'string',
-            enum: ['snappy', 'zlib', 'none']
+            enum: ['snappy', 'zlib', 'none'],
         },
 
         cipher_type: {
             type: 'string',
-            enum: ['aes-256-gcm', 'none']
+            enum: ['aes-256-gcm', 'none'],
         },
 
         parity_type: {
             type: 'string',
-            enum: ['isa-c1', 'isa-rs', 'cm256']
+            enum: ['isa-c1', 'isa-rs', 'cm256'],
         },
 
         chunk_split_config: {
@@ -941,7 +970,7 @@ module.exports = {
             properties: {
                 avg_chunk: { type: 'integer' },
                 delta_chunk: { type: 'integer' },
-            }
+            },
         },
 
         chunk_coder_config: {
@@ -961,215 +990,215 @@ module.exports = {
                 lrc_group: { type: 'integer' },
                 lrc_frags: { type: 'integer' },
                 lrc_type: { $ref: '#/definitions/parity_type' },
-            }
+            },
         },
 
         location_info: {
             type: 'object',
             properties: {
                 node_id: {
-                    objectid: true
+                    objectid: true,
                 },
                 host_id: {
-                    type: 'string'
+                    type: 'string',
                 },
                 pool_id: {
-                    objectid: true
+                    objectid: true,
                 },
                 region: {
-                    type: 'string'
+                    type: 'string',
                 },
-            }
+            },
         },
 
         io_stats: {
             type: 'object',
             properties: {
                 read_count: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 write_count: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 read_bytes: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 write_bytes: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 error_read_count: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 error_write_count: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 error_read_bytes: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 error_write_bytes: {
-                    type: 'integer'
+                    type: 'integer',
                 },
-            }
+            },
         },
 
         op_stats: {
             type: 'object',
             properties: {
                 create_bucket: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 list_buckets: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 delete_bucket: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 upload_object: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 delete_object: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 list_objects: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 head_object: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 read_object: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 initiate_multipart: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 upload_part: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 complete_object_upload: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
-            }
+            },
         },
 
         fs_workers_stats: {
             type: 'object',
             properties: {
                 stat: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 lstat: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 statfs: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 checkaccess: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 unlink: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 unlinkat: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 link: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 linkat: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 mkdir: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 rmdir: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 rename: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 writefile: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 readfile: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 readdir: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 fsync: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 fileopen: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 fileclose: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 fileread: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 filewrite: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 filewritev: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 filereplacexattr: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 finkfileat: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 filegetxattr: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 filestat: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 filefsync: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 realpath: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 getsinglexattr: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 diropen: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 dirclose: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 dirreadentry: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 safelink: {
-                    $ref: 'common_api#/definitions/op_stats_val'
+                    $ref: 'common_api#/definitions/op_stats_val',
                 },
                 safeunlink: {
-                    $ref: 'common_api#/definitions/op_stats_val'
-                }
-            }
+                    $ref: 'common_api#/definitions/op_stats_val',
+                },
+            },
         },
 
         op_stats_val: {
             type: 'object',
             properties: {
                 min_time: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 max_time: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 sum_time: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 count: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 error_count: {
-                    type: 'integer'
+                    type: 'integer',
                 },
             },
         },
@@ -1205,12 +1234,12 @@ module.exports = {
         port: {
             type: 'integer',
             minimum: 0,
-            maximum: 65535
+            maximum: 65535,
         },
 
         hostname_list: {
             type: 'array',
-            items: { type: 'string' }
+            items: { type: 'string' },
         },
         bucket_mode: {
             type: 'string',
@@ -1230,8 +1259,8 @@ module.exports = {
                 'NO_CAPACITY',
                 'NOT_ENOUGH_HEALTHY_RESOURCES',
                 'NOT_ENOUGH_RESOURCES',
-                'NO_RESOURCES'
-            ]
+                'NO_RESOURCES',
+            ],
         },
 
         bucket_cache_ttl: {
@@ -1247,9 +1276,9 @@ module.exports = {
             required: [],
             properties: {
                 ttl_ms: {
-                    $ref: '#/definitions/bucket_cache_ttl'
-                }
-            }
+                    $ref: '#/definitions/bucket_cache_ttl',
+                },
+            },
         },
 
         lock_settings: {
@@ -1260,22 +1289,22 @@ module.exports = {
                     properties: {
                         mode: { type: 'string' },
                         retain_until_date: { date: true },
-                    }
+                    },
                 },
                 legal_hold: {
                     type: 'object',
                     properties: {
                         status: { type: 'string' },
                     },
-                }
-            }
+                },
+            },
         },
 
         // nsfs
 
         fs_backend: {
             type: 'string',
-            enum: ['CEPH_FS', 'GPFS', 'NFSv4']
+            enum: ['CEPH_FS', 'GPFS', 'NFSv4'],
         },
 
         nsfs_config: {
@@ -1283,32 +1312,39 @@ module.exports = {
             required: ['fs_root_path'],
             properties: {
                 fs_root_path: {
-                    type: 'string'
+                    type: 'string',
                 },
                 fs_backend: {
-                    $ref: '#/definitions/fs_backend'
-                }
-            }
+                    $ref: '#/definitions/fs_backend',
+                },
+            },
         },
         nsfs_account_config: {
-            oneOf: [{
-                type: 'object',
-                required: ['uid', 'gid', 'new_buckets_path', 'nsfs_only'],
-                properties: {
-                    uid: { type: 'number' },
-                    gid: { type: 'number' },
-                    new_buckets_path: { type: 'string' },
-                    nsfs_only: { type: 'boolean' }
-                }
-            }, {
-                type: 'object',
-                required: ['distinguished_name', 'new_buckets_path', 'nsfs_only'],
-                properties: {
-                    distinguished_name: { wrapper: SensitiveString },
-                    new_buckets_path: { type: 'string' },
-                    nsfs_only: { type: 'boolean' }
-                }
-            }]
+            oneOf: [
+                {
+                    type: 'object',
+                    required: ['uid', 'gid', 'new_buckets_path', 'nsfs_only'],
+                    properties: {
+                        uid: { type: 'number' },
+                        gid: { type: 'number' },
+                        new_buckets_path: { type: 'string' },
+                        nsfs_only: { type: 'boolean' },
+                    },
+                },
+                {
+                    type: 'object',
+                    required: [
+                        'distinguished_name',
+                        'new_buckets_path',
+                        'nsfs_only',
+                    ],
+                    properties: {
+                        distinguished_name: { wrapper: SensitiveString },
+                        new_buckets_path: { type: 'string' },
+                        nsfs_only: { type: 'boolean' },
+                    },
+                },
+            ],
         },
         quota_config: {
             type: 'object',
@@ -1319,11 +1355,11 @@ module.exports = {
                     properties: {
                         value: {
                             type: 'number',
-                            "minimum": 1
+                            minimum: 1,
                         },
                         unit: {
                             type: 'string',
-                            enum: ['G', 'T', 'P']
+                            enum: ['G', 'T', 'P'],
                         },
                     },
                 },
@@ -1333,28 +1369,28 @@ module.exports = {
                     properties: {
                         value: {
                             type: 'integer',
-                            "minimum": 1
-                        }
+                            minimum: 1,
+                        },
                     },
-                }
-            }
+                },
+            },
         },
         role_config: {
             type: 'object',
             required: ['role_name', 'assume_role_policy'],
             properties: {
                 role_name: {
-                    type: 'string'
+                    type: 'string',
                 },
                 assume_role_policy: {
-                    $ref: '#/definitions/assume_role_policy'
-                }
+                    $ref: '#/definitions/assume_role_policy',
+                },
             },
         },
 
         storage_class_enum: {
             type: 'string',
-            enum: ['STANDARD', 'GLACIER', 'GLACIER_IR']
+            enum: ['STANDARD', 'GLACIER', 'GLACIER_IR'],
         },
         bucket_logging: {
             type: 'object',
@@ -1366,7 +1402,7 @@ module.exports = {
                 log_prefix: {
                     type: 'string',
                 },
-            }
-        }
-    }
+            },
+        },
+    },
 };

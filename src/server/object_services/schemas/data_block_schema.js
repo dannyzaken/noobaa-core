@@ -4,16 +4,8 @@
 module.exports = {
     $id: 'data_block_schema',
     type: 'object',
-    required: [
-        '_id',
-        'system',
-        'bucket',
-        'node',
-        'chunk',
-        'size',
-    ],
+    required: ['_id', 'system', 'bucket', 'node', 'chunk', 'size'],
     properties: {
-
         _id: { objectid: true },
         system: { objectid: true },
         deleted: { date: true },
@@ -35,6 +27,5 @@ module.exports = {
         // this is the same as the chunk size when not using erasure coding since the chunk has a single fragment
         size: { type: 'integer' },
         reclaimed: { date: true },
-
-    }
+    },
 };

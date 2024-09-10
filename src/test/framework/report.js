@@ -9,7 +9,8 @@ const P = require('../../util/promise');
 //const report_schema = require('./report_schema'); //NBNB TODO add schema verification
 require('../../util/dotenv').load();
 
-const REMOTE_MONGO_URL = 'mongodb://reporter:4*pRw3-vZb@ds139841.mlab.com:39841/test_reports'; // gitleaks:allow
+const REMOTE_MONGO_URL =
+    'mongodb://reporter:4*pRw3-vZb@ds139841.mlab.com:39841/test_reports'; // gitleaks:allow
 const REMOTE_MONGO_CONFIG = {
     promiseLibrary: P,
     reconnectTries: -1,
@@ -21,7 +22,19 @@ const REMOTE_MONGO_CONFIG = {
     socketTimeoutMS: 0,
     ignoreUndefined: true,
 };
-const OMITTED_TEST_CONF = ['server_ip', 'server', 'bucket', 'id', 'location', 'resource', 'storage', 'vnet', 'upgrade_pack', 'access_key', 'secret_key'];
+const OMITTED_TEST_CONF = [
+    'server_ip',
+    'server',
+    'bucket',
+    'id',
+    'location',
+    'resource',
+    'storage',
+    'vnet',
+    'upgrade_pack',
+    'access_key',
+    'secret_key',
+];
 
 class Reporter {
     static get REMOTE_MONGO_URL() {
@@ -61,19 +74,27 @@ class Reporter {
             this._prefix = prefix;
         }
         if (cases) {
-            this._cases_map = _.clone(cases.map(c => (this._prefix ? this._prefix + '_' + c : c)));
+            this._cases_map = _.clone(
+                cases.map(c => (this._prefix ? this._prefix + '_' + c : c)),
+            );
         }
     }
 
     add_test_cases(cases) {
         this._cases_map = _.uniq(
-            this._cases_map.concat(cases.map(c => (this._prefix ? this._prefix + '_' + c : c))));
+            this._cases_map.concat(
+                cases.map(c => (this._prefix ? this._prefix + '_' + c : c)),
+            ),
+        );
     }
 
     success(step) {
         const updated_step = this._prefix ? this._prefix + '_' + step : step;
         if (_.findIndex(this._cases_map, c => c === updated_step) === -1) {
-            assert(false, `Trying to add success for non existent case ${updated_step}`);
+            assert(
+                false,
+                `Trying to add success for non existent case ${updated_step}`,
+            );
         }
         this._passed_cases.push(updated_step);
         console.log(`successful case reported: ${step}`);
@@ -82,7 +103,10 @@ class Reporter {
     fail(step) {
         const updated_step = this._prefix ? this._prefix + '_' + step : step;
         if (_.findIndex(this._cases_map, c => c === updated_step) === -1) {
-            assert(false, `Trying to add failure for non existent case ${updated_step}`);
+            assert(
+                false,
+                `Trying to add failure for non existent case ${updated_step}`,
+            );
         }
         this._failed_cases.push(updated_step);
         console.warn(`failed case reported: ${step}`);
@@ -102,15 +126,25 @@ class Reporter {
 
     async report() {
         if (!this._paused) {
-            console.log(`----- SUITE ${this._suite_name} -----\nconf ${JSON.stringify(this._conf, null, 4)}` + (this._env ? `\n\tenv ${this._env}` : ''));
-            if (this._passed_cases.length > 0 || this._failed_cases.length > 0) {
+            console.log(
+                `----- SUITE ${this._suite_name} -----\nconf ${JSON.stringify(this._conf, null, 4)}` +
+                    (this._env ? `\n\tenv ${this._env}` : ''),
+            );
+            if (
+                this._passed_cases.length > 0 ||
+                this._failed_cases.length > 0
+            ) {
                 console.log(`Passed cases: ${JSON.stringify(_.countBy(this._passed_cases), null, 4)}
 Failed cases: ${JSON.stringify(_.countBy(this._failed_cases), null, 4)}
 Didn't Run: ${JSON.stringify(
-                        this._cases_map.filter(c =>
+                    this._cases_map.filter(
+                        c =>
                             !_.includes(this._passed_cases, c) &&
-                            !_.includes(this._failed_cases, c)),
-                        null, 4)}`);
+                            !_.includes(this._failed_cases, c),
+                    ),
+                    null,
+                    4,
+                )}`);
                 await this._send_report();
             }
         }
@@ -125,10 +159,14 @@ Didn't Run: ${JSON.stringify(
             results: {
                 passed_cases: _.countBy(this._passed_cases),
                 failed_cases: _.countBy(this._failed_cases),
-                didnt_run: _.countBy(this._cases_map.filter(c =>
-                    !_.includes(this._passed_cases, c) &&
-                    !_.includes(this._failed_cases, c)))
-            }
+                didnt_run: _.countBy(
+                    this._cases_map.filter(
+                        c =>
+                            !_.includes(this._passed_cases, c) &&
+                            !_.includes(this._failed_cases, c),
+                    ),
+                ),
+            },
         };
     }
 
@@ -136,12 +174,18 @@ Didn't Run: ${JSON.stringify(
         let retries = 5;
         while (retries > 0) {
             try {
-                this._mongo_client = await mongodb.MongoClient.connect(REMOTE_MONGO_URL, REMOTE_MONGO_CONFIG);
+                this._mongo_client = await mongodb.MongoClient.connect(
+                    REMOTE_MONGO_URL,
+                    REMOTE_MONGO_CONFIG,
+                );
                 break;
             } catch (err) {
                 retries -= 1;
                 if (retries) {
-                    console.error(`Failed connecting to mongo, will retry in 30s retry`, err);
+                    console.error(
+                        `Failed connecting to mongo, will retry in 30s retry`,
+                        err,
+                    );
                     await P.delay(this._mongo_connect_delay);
                 } else {
                     throw new Error('Error connecting to remote mongo');
@@ -184,7 +228,6 @@ Didn't Run: ${JSON.stringify(
             console.error('failed sending report', err);
         }
     }
-
 }
 
 module.exports = Reporter;

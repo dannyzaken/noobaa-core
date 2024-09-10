@@ -65,7 +65,8 @@ async function main(argv = minimist(process.argv.slice(2))) {
         if (!api_name) return print_usage();
         if (!method_name) return print_usage();
 
-        const final_api_name = api_name.endsWith('_api') ? api_name.slice(0, -4) : api_name;
+        const final_api_name =
+            api_name.endsWith('_api') ? api_name.slice(0, -4) : api_name;
         const rpc = api.new_rpc();
         const client = rpc.new_client();
         await client.create_auth_token({
@@ -73,11 +74,20 @@ async function main(argv = minimist(process.argv.slice(2))) {
             email: process.env.CREATE_SYS_EMAIL,
             password: process.env.CREATE_SYS_PASSWD,
         });
-        const res = await client[final_api_name][method_name](params, { address });
+        const res = await client[final_api_name][method_name](params, {
+            address,
+        });
         if (argv.json) {
             console.log(JSON.stringify(res));
         } else {
-            console.log(util.inspect(res, { colors: true, depth: null, showHidden: true, breakLength: 80 }));
+            console.log(
+                util.inspect(res, {
+                    colors: true,
+                    depth: null,
+                    showHidden: true,
+                    breakLength: 80,
+                }),
+            );
         }
         process.exit(0);
     } catch (err) {

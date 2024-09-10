@@ -30,8 +30,8 @@ const DEFAULT_FS_CONFIG = {
 
 const DUMMY_RPC = {
     object: {
-        update_endpoint_stats: (...params) => null
-    }
+        update_endpoint_stats: (...params) => null,
+    },
 };
 
 const XATTR_USER_PREFIX = 'user.';
@@ -59,7 +59,7 @@ function get_umasked_mode(mode) {
 function assign_md5_to_fs_xattr(md5_digest, fs_xattr) {
     // TODO: Assign content_md5_mtime
     fs_xattr = Object.assign(fs_xattr || {}, {
-        [XATTR_MD5_KEY]: md5_digest
+        [XATTR_MD5_KEY]: md5_digest,
     });
     return fs_xattr;
 }
@@ -69,17 +69,19 @@ async function hash_target() {
         const data = crypto.randomBytes(PART_SIZE);
         const content_md5 = crypto.createHash('md5').update(data).digest('hex');
         // Using async generator function in order to push data in small chunks
-        const source_stream = stream.Readable.from(async function*() {
-            for (let i = 0; i < data.length; i += CHUNK) {
-                yield data.slice(i, i + CHUNK);
-            }
-        }());
+        const source_stream = stream.Readable.from(
+            (async function* () {
+                for (let i = 0; i < data.length; i += CHUNK) {
+                    yield data.slice(i, i + CHUNK);
+                }
+            })(),
+        );
         const target = new TargetHash();
         const chunk_fs = new ChunkFS({
             target_file: target,
             fs_context: DEFAULT_FS_CONFIG,
             rpc_client: DUMMY_RPC,
-            namespace_resource_id: 'MajesticSloth'
+            namespace_resource_id: 'MajesticSloth',
         });
         await stream_utils.pipeline([source_stream, chunk_fs]);
         await stream_utils.wait_finished(chunk_fs);
@@ -106,29 +108,39 @@ async function file_target(chunk_size = CHUNK, parts = PARTS) {
         const content_md5 = crypto.createHash('md5').update(data).digest('hex');
         const F_TARGET = path.join(F_PREFIX, content_md5);
         try {
-            target_file = await nb_native().fs.open(DEFAULT_FS_CONFIG, F_TARGET, 'w', get_umasked_mode(config.BASE_MODE_FILE));
+            target_file = await nb_native().fs.open(
+                DEFAULT_FS_CONFIG,
+                F_TARGET,
+                'w',
+                get_umasked_mode(config.BASE_MODE_FILE),
+            );
             // Using async generator function in order to push data in small chunks
-            const source_stream = stream.Readable.from(async function*() {
-                for (let i = 0; i < data.length; i += chunk_size) {
-                    yield data.slice(i, i + chunk_size);
-                }
-            }());
+            const source_stream = stream.Readable.from(
+                (async function* () {
+                    for (let i = 0; i < data.length; i += chunk_size) {
+                        yield data.slice(i, i + chunk_size);
+                    }
+                })(),
+            );
             const chunk_fs = new ChunkFS({
                 target_file,
                 fs_context: DEFAULT_FS_CONFIG,
                 rpc_client: DUMMY_RPC,
-                namespace_resource_id: 'MajesticSloth'
+                namespace_resource_id: 'MajesticSloth',
             });
             await stream_utils.pipeline([source_stream, chunk_fs]);
             await stream_utils.wait_finished(chunk_fs);
             if (XATTR) {
                 await target_file.replacexattr(
                     DEFAULT_FS_CONFIG,
-                    assign_md5_to_fs_xattr(chunk_fs.digest, {})
+                    assign_md5_to_fs_xattr(chunk_fs.digest, {}),
                 );
             }
             if (FSYNC) await target_file.fsync(DEFAULT_FS_CONFIG);
-            const write_hash = crypto.createHash('md5').update(fs.readFileSync(F_TARGET)).digest('hex');
+            const write_hash = crypto
+                .createHash('md5')
+                .update(fs.readFileSync(F_TARGET))
+                .digest('hex');
             console.log(
                 'File target',
                 `NativeMD5=${chunk_fs.digest}`,

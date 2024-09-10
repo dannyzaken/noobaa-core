@@ -7,16 +7,16 @@ module.exports = {
     required: ['_id', 'system', 'bucket', 'content_type'],
     properties: {
         _id: {
-            objectid: true
+            objectid: true,
         },
         system: {
-            objectid: true
+            objectid: true,
         },
         bucket: {
-            objectid: true
+            objectid: true,
         },
         content_type: {
-            type: 'string'
+            type: 'string',
         },
         reads: {
             type: 'integer',
@@ -25,10 +25,10 @@ module.exports = {
             type: 'integer',
         },
         last_read: {
-            idate: true
+            idate: true,
         },
         last_write: {
-            idate: true
+            idate: true,
         },
-    }
+    },
 };

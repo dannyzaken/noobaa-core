@@ -33,7 +33,6 @@ const builder_lock = new KeysLock();
  *
  */
 class MapBuilder {
-
     /**
      * @param {nb.ID[]} chunk_ids
      * @param {nb.Tier} [move_to_tier]
@@ -55,22 +54,33 @@ class MapBuilder {
 
     async run() {
         this.start_run = Date.now();
-        dbg.log1('MapBuilder.run:', 'batch start', this.chunk_ids, 'move_to_tier', this.move_to_tier && this.move_to_tier.name);
+        dbg.log1(
+            'MapBuilder.run:',
+            'batch start',
+            this.chunk_ids,
+            'move_to_tier',
+            this.move_to_tier && this.move_to_tier.name,
+        );
         if (!this.chunk_ids.length) return;
 
-        await builder_lock.surround_keys(_.map(this.chunk_ids, String), async () => {
+        await builder_lock.surround_keys(
+            _.map(this.chunk_ids, String),
+            async () => {
+                if (this.move_to_tier) {
+                    await MDStore.instance().update_chunks_by_ids(
+                        this.chunk_ids,
+                        { tier: this.move_to_tier._id },
+                    );
+                }
+                // we run the build twice. first time to perform all allocation, second time to perform deletions
+                await this.run_build(this.chunk_ids);
 
-            if (this.move_to_tier) {
-                await MDStore.instance().update_chunks_by_ids(this.chunk_ids, { tier: this.move_to_tier._id });
-            }
-            // we run the build twice. first time to perform all allocation, second time to perform deletions
-            await this.run_build(this.chunk_ids);
-
-            // run build a second time on chunks that had future_deletions before but now might delete them
-            if (this.second_pass_chunk_ids.length) {
-                await this.run_build(this.second_pass_chunk_ids);
-            }
-        });
+                // run build a second time on chunks that had future_deletions before but now might delete them
+                if (this.second_pass_chunk_ids.length) {
+                    await this.run_build(this.second_pass_chunk_ids);
+                }
+            },
+        );
     }
 
     /**
@@ -91,28 +101,36 @@ class MapBuilder {
      * @returns {Promise<nb.Chunk[]>}
      */
     async reload_chunks(chunk_ids) {
-        const loaded_chunks_db = await MDStore.instance().find_chunks_by_ids(chunk_ids);
+        const loaded_chunks_db =
+            await MDStore.instance().find_chunks_by_ids(chunk_ids);
         await Promise.all([
             MDStore.instance().load_parts_objects_for_chunks(loaded_chunks_db),
-            MDStore.instance().load_blocks_for_chunks(loaded_chunks_db)
+            MDStore.instance().load_blocks_for_chunks(loaded_chunks_db),
         ]);
         /** @type {nb.Chunk[]} */
-        const loaded_chunks = loaded_chunks_db.map(chunk_db => new ChunkDB(chunk_db));
+        const loaded_chunks = loaded_chunks_db.map(
+            chunk_db => new ChunkDB(chunk_db),
+        );
         dbg.log1('MapBuilder.reload_chunks:', loaded_chunks);
-
 
         /** @type {nb.Block[]} */
         const blocks_to_delete = [];
 
         // first look for deleted chunks, and set it's blocks for deletion
-        const [deleted_chunks, live_chunks] = _.partition(loaded_chunks, chunk => Boolean(chunk.to_db().deleted));
+        const [deleted_chunks, live_chunks] = _.partition(
+            loaded_chunks,
+            chunk => Boolean(chunk.to_db().deleted),
+        );
 
         // mark all live blocks of deleted chunks for deletion
         for (const chunk of deleted_chunks) {
             for (const frag of chunk.frags) {
                 for (const block of frag.blocks) {
                     if (!block.to_db().deleted) {
-                        dbg.log0('found unreferenced blocks of a deleted chunk', block.to_db());
+                        dbg.log0(
+                            'found unreferenced blocks of a deleted chunk',
+                            block.to_db(),
+                        );
                         blocks_to_delete.push(block);
                     }
                 }
@@ -127,7 +145,6 @@ class MapBuilder {
 
         await P.map(live_chunks, async chunk => {
             try {
-
                 // TODO JACKY handle deleted tier
 
                 // if (!chunk.tier) {
@@ -140,41 +157,55 @@ class MapBuilder {
                     return;
                 }
                 if (!chunk.parts || !chunk.parts.length || !chunk.bucket) {
-                    const last_hour = this.start_run - (60 * 60 * 1000); // chunks that were created in the last hour will not be deleted
+                    const last_hour = this.start_run - 60 * 60 * 1000; // chunks that were created in the last hour will not be deleted
                     dbg.log0('unreferenced chunk to delete', chunk);
                     if (chunk._id.getTimestamp().getTime() > last_hour) return;
                     chunks_to_delete.push(chunk);
                     return;
                 }
-                const rotate_checked_chunk = await this.handle_chunk_master_keys(chunk);
+                const rotate_checked_chunk =
+                    await this.handle_chunk_master_keys(chunk);
                 chunks_to_build.push(rotate_checked_chunk);
-
             } catch (err) {
                 dbg.error(`failed to load chunk ${chunk._id} for builder`, err);
             }
         });
 
-        const chunks_to_delete_uniq = _.uniqBy(chunks_to_delete, chunk => chunk._id.toHexString());
+        const chunks_to_delete_uniq = _.uniqBy(chunks_to_delete, chunk =>
+            chunk._id.toHexString(),
+        );
 
-        dbg.log1('MapBuilder.update_db:',
-            'chunks_to_build', chunks_to_build.length,
-            'chunks_to_delete_uniq', chunks_to_delete_uniq.length,
-            'blocks_to_delete', blocks_to_delete.length);
+        dbg.log1(
+            'MapBuilder.update_db:',
+            'chunks_to_build',
+            chunks_to_build.length,
+            'chunks_to_delete_uniq',
+            chunks_to_delete_uniq.length,
+            'blocks_to_delete',
+            blocks_to_delete.length,
+        );
 
         await Promise.all([
-            this.evict && map_deleter.delete_parts_by_chunks(chunks_to_delete_uniq),
+            this.evict &&
+                map_deleter.delete_parts_by_chunks(chunks_to_delete_uniq),
             map_deleter.delete_blocks(blocks_to_delete),
             map_deleter.delete_chunks(chunks_to_delete_uniq),
-
         ]);
 
         // Deleting objects with no parts here as the delete_parts_by_chunks need to finish before
         // any attempt is made to delete the objects.
         if (this.evict) {
-            const objects_to_gc = _.uniq(loaded_chunks_db.flatMap(chunk => chunk.objects));
+            const objects_to_gc = _.uniq(
+                loaded_chunks_db.flatMap(chunk => chunk.objects),
+            );
             if (objects_to_gc.length) {
-                dbg.log1('MapBuilder.delete_objects_if_no_parts:', objects_to_gc);
-                await Promise.all(objects_to_gc.map(map_deleter.delete_object_if_no_parts));
+                dbg.log1(
+                    'MapBuilder.delete_objects_if_no_parts:',
+                    objects_to_gc,
+                );
+                await Promise.all(
+                    objects_to_gc.map(map_deleter.delete_object_if_no_parts),
+                );
             }
         }
         return chunks_to_build;
@@ -184,7 +215,6 @@ class MapBuilder {
      * @param {nb.Chunk[]} chunks
      */
     async build_chunks(chunks) {
-
         // TODO JACKY check if the populate inside map server is enough
 
         // const all_blocks = get_all_chunks_blocks(chunks);
@@ -201,7 +231,7 @@ class MapBuilder {
                 auth_token: auth_server.make_auth_token({
                     system_id: system_store.data.systems[0]._id,
                     role: 'admin',
-                })
+                }),
             }),
             desc: 'MapBuilder',
             current_tiers: this.current_tiers,
@@ -223,15 +253,21 @@ class MapBuilder {
     }
 
     async handle_chunk_master_keys(chunk_db_obj) {
-
         const chunk = chunk_db_obj.chunk_db;
         const mkm = system_store.master_key_manager;
-        const cipher_key_string = chunk.cipher_key && chunk.cipher_key.toString('base64');
-        const chunk_master_key_id = chunk.master_key_id && chunk.master_key_id.toString();
-        const chunk_m_key = chunk.master_key_id && system_store.data.master_keys.find(
-            m_key => m_key._id.toString() === chunk_master_key_id);
+        const cipher_key_string =
+            chunk.cipher_key && chunk.cipher_key.toString('base64');
+        const chunk_master_key_id =
+            chunk.master_key_id && chunk.master_key_id.toString();
+        const chunk_m_key =
+            chunk.master_key_id &&
+            system_store.data.master_keys.find(
+                m_key => m_key._id.toString() === chunk_master_key_id,
+            );
 
-        const bucket = system_store.data.buckets.find(buck => buck._id.toString() === chunk.bucket.toString());
+        const bucket = system_store.data.buckets.find(
+            buck => buck._id.toString() === chunk.bucket.toString(),
+        );
         if (!bucket) {
             console.log('chunk.bucket does not exist: ', chunk.bucket);
             return chunk_db_obj;
@@ -240,28 +276,62 @@ class MapBuilder {
 
         // check if chunk master_key is disabled
         if (chunk_m_key && chunk_m_key.disabled === true) {
-            const decrypted_cipher_key = mkm.decrypt_value_with_master_key_id(cipher_key_string, chunk_master_key_id);
-            await MDStore.instance().update_chunk_by_id(chunk._id, { cipher_key: decrypted_cipher_key}, { master_key_id: 1 });
+            const decrypted_cipher_key = mkm.decrypt_value_with_master_key_id(
+                cipher_key_string,
+                chunk_master_key_id,
+            );
+            await MDStore.instance().update_chunk_by_id(
+                chunk._id,
+                { cipher_key: decrypted_cipher_key },
+                { master_key_id: 1 },
+            );
             chunk.cipher_key = decrypted_cipher_key;
             chunk.master_key_id = undefined;
 
-        // check if chunk master_key is rotated 
-        } else if (chunk_master_key_id && bucket_m_key && chunk_master_key_id !== bucket_m_key._id.toString()) {
-            const decrypted_cipher_key = mkm.decrypt_value_with_master_key_id(cipher_key_string, chunk_master_key_id);
-            const buffer_dec_cipher_key = Buffer.from(decrypted_cipher_key, 'base64');
-            const reencrypted_cipher = mkm.encrypt_buffer_with_master_key_id(buffer_dec_cipher_key, bucket_m_key._id);
-            await MDStore.instance().update_chunk_by_id(chunk._id,
-                { cipher_key: reencrypted_cipher, master_key_id: bucket_m_key._id });
+            // check if chunk master_key is rotated
+        } else if (
+            chunk_master_key_id &&
+            bucket_m_key &&
+            chunk_master_key_id !== bucket_m_key._id.toString()
+        ) {
+            const decrypted_cipher_key = mkm.decrypt_value_with_master_key_id(
+                cipher_key_string,
+                chunk_master_key_id,
+            );
+            const buffer_dec_cipher_key = Buffer.from(
+                decrypted_cipher_key,
+                'base64',
+            );
+            const reencrypted_cipher = mkm.encrypt_buffer_with_master_key_id(
+                buffer_dec_cipher_key,
+                bucket_m_key._id,
+            );
+            await MDStore.instance().update_chunk_by_id(chunk._id, {
+                cipher_key: reencrypted_cipher,
+                master_key_id: bucket_m_key._id,
+            });
             chunk.cipher_key = reencrypted_cipher;
             chunk.master_key_id = bucket_m_key._id;
 
-        // check if bucket master_key is enabled and chunk master keys disabled
-        } else if (!chunk_master_key_id && bucket_m_key && bucket_m_key.disabled === false) {
+            // check if bucket master_key is enabled and chunk master keys disabled
+        } else if (
+            !chunk_master_key_id &&
+            bucket_m_key &&
+            bucket_m_key.disabled === false
+        ) {
             // TODO: Or we can check if chunk.cipher_key instanceof mongodb.Binary
-            const cipher_key_buffer = config.DB_TYPE === 'mongodb' ? chunk.cipher_key.buffer : chunk.cipher_key;
-            const encrypted_cipher = mkm.encrypt_buffer_with_master_key_id(cipher_key_buffer, bucket_m_key._id);
-            await MDStore.instance().update_chunk_by_id(chunk._id,
-                { cipher_key: encrypted_cipher, master_key_id: bucket_m_key._id });
+            const cipher_key_buffer =
+                config.DB_TYPE === 'mongodb' ?
+                    chunk.cipher_key.buffer
+                :   chunk.cipher_key;
+            const encrypted_cipher = mkm.encrypt_buffer_with_master_key_id(
+                cipher_key_buffer,
+                bucket_m_key._id,
+            );
+            await MDStore.instance().update_chunk_by_id(chunk._id, {
+                cipher_key: encrypted_cipher,
+                master_key_id: bucket_m_key._id,
+            });
             chunk.cipher_key = encrypted_cipher;
             chunk.master_key_id = bucket_m_key._id;
         }

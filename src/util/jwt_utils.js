@@ -9,7 +9,9 @@ function get_jwt_secret() {
     if (config.JWT_SECRET) return config.JWT_SECRET;
     // in kubernetes we must have JWT_SECRET loaded from a kubernetes secret
     if (process.env.CONTAINER_PLATFORM === 'KUBERNETES') {
-        throw new Error('jwt_secret mounted to a file was not found. it must exist when running in kubernetes');
+        throw new Error(
+            'jwt_secret mounted to a file was not found. it must exist when running in kubernetes',
+        );
     }
     // for all non kubernetes platforms (docker, local, etc.) return a dummy secret
     return 'abcdefgh';

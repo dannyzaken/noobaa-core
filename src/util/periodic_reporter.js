@@ -5,7 +5,6 @@ const util = require('util');
 const size_utils = require('./size_utils');
 
 class PeriodicReporter {
-
     constructor(name, enabled = false) {
         this.name = name;
         this.events = [];
@@ -36,7 +35,12 @@ class PeriodicReporter {
         for (const { name, bytes, time } of this.events) {
             let event = event_map.get(name);
             if (!event) {
-                event = { name, count: 0, bytes: { total: 0, min: Infinity, max: -Infinity }, times: [] };
+                event = {
+                    name,
+                    count: 0,
+                    bytes: { total: 0, min: Infinity, max: -Infinity },
+                    times: [],
+                };
                 event_map.set(name, event);
             }
             event.count += 1;
@@ -45,21 +49,22 @@ class PeriodicReporter {
             if (bytes > event.bytes.max) event.bytes.max = bytes;
             event.times.push(time);
         }
-        for (const {name, count, bytes, times} of event_map.values()) {
+        for (const { name, count, bytes, times } of event_map.values()) {
             const len = times.length;
             if (!len) continue;
             times.sort((a, b) => a - b);
             const percentiles = {
                 min: times[0],
-                med: times[Math.floor(len * 0.50)],
-                90: times[Math.floor(len * 0.90)],
+                med: times[Math.floor(len * 0.5)],
+                90: times[Math.floor(len * 0.9)],
                 95: times[Math.floor(len * 0.95)],
                 99: times[Math.floor(len * 0.99)],
                 max: times[len - 1],
             };
-            console.log(`PeriodicReporter:: ${this.name}: ${name} count=${count}`,
+            console.log(
+                `PeriodicReporter:: ${this.name}: ${name} count=${count}`,
                 `bytes={total:${size_utils.human_size(bytes.total)}, min:${size_utils.human_size(bytes.min)}, max:${size_utils.human_size(bytes.max)}}`,
-                `percentiles=${util.inspect(percentiles, { breakLength: Infinity })}`
+                `percentiles=${util.inspect(percentiles, { breakLength: Infinity })}`,
             );
         }
         this.events = [];

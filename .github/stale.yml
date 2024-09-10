@@ -4,8 +4,8 @@ daysUntilStale: 1095
 daysUntilClose: 14
 # Issues with these labels will never be considered stale
 exemptLabels:
-  - "Type:Enhancement"
-  - "Type: Technical Debt"
+  - 'Type:Enhancement'
+  - 'Type: Technical Debt'
 # Label to use when marking an issue as stale
 staleLabel: "Closed Won't Fix"
 # Comment to post when marking an issue as stale. Set to `false` to disable

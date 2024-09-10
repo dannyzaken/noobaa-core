@@ -1,7 +1,6 @@
 /* Copyright (C) 2016 NooBaa */
 'use strict';
 
-
 const coretest = require('./coretest');
 coretest.setup({ incomplete_rpc_coverage: 'show' });
 
@@ -9,7 +8,7 @@ coretest.setup({ incomplete_rpc_coverage: 'show' });
 // Tests that does not require hosts pools
 // ---------------------------------------
 
-//JSON SCHEMA 
+//JSON SCHEMA
 require('./test_schema_keywords');
 
 // UTILS
@@ -39,7 +38,6 @@ require('./test_buffer_pool');
 require('./test_md_store');
 require('./test_nodes_store');
 require('./test_system_store');
-
 
 // // CORE
 // require('./test_mapper');
@@ -80,7 +78,7 @@ require('./test_host_server');
 require('./test_node_server');
 
 // CORE
-require('./test_map_builder'); // Requires pools 
+require('./test_map_builder'); // Requires pools
 require('./test_map_reader'); /////////////
 require('./test_object_io');
 require('./test_agent_blocks_reclaimer');
@@ -101,7 +99,7 @@ require('./test_tiering_ttl_worker');
 require('./test_bucket_logging');
 
 // UPGRADE
-// require('./test_postgres_upgrade'); // TODO currently working with mongo -> once changing to postgres - need to uncomment  
+// require('./test_postgres_upgrade'); // TODO currently working with mongo -> once changing to postgres - need to uncomment
 
 // Lifecycle
 require('./test_lifecycle');

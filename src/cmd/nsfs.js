@@ -2,7 +2,7 @@
 'use strict';
 /* eslint-disable complexity */
 
-// DO NOT PUT NEW REQUIREMENTS BEFORE SETTING process.env.NC_NSFS_NO_DB_ENV = 'true' 
+// DO NOT PUT NEW REQUIREMENTS BEFORE SETTING process.env.NC_NSFS_NO_DB_ENV = 'true'
 // NC nsfs deployments specifying process.env.LOCAL_MD_SERVER=true deployed together with a db
 // when a system_store object is initialized VaccumAnalyzer is being called once a day.
 // when NC nsfs deployed without db we would like to avoid running VaccumAnalyzer in any flow there is
@@ -25,7 +25,9 @@ const util = require('util');
 const minimist = require('minimist');
 
 if (process.env.LOCAL_MD_SERVER === 'true') {
-    require('../server/system_services/system_store').get_instance({ standalone: true });
+    require('../server/system_services/system_store').get_instance({
+        standalone: true,
+    });
 }
 
 //const js_utils = require('../util/js_utils');
@@ -45,7 +47,8 @@ const json_utils = require('../util/json_utils');
 const pkg = require('../../package.json');
 const AccountSDK = require('../sdk/account_sdk');
 const AccountSpaceFS = require('../sdk/accountspace_fs');
-const NoobaaEvent = require('../manage_nsfs/manage_nsfs_events_utils').NoobaaEvent;
+const NoobaaEvent =
+    require('../manage_nsfs/manage_nsfs_events_utils').NoobaaEvent;
 const { set_debug_level } = require('../manage_nsfs/manage_nsfs_cli_utils');
 
 const HELP = `
@@ -136,7 +139,10 @@ class NsfsObjectSDK extends ObjectSDK {
         // };
         let bucketspace;
         if (config_root) {
-            bucketspace = new BucketSpaceFS({ config_root }, endpoint_stats_collector.instance());
+            bucketspace = new BucketSpaceFS(
+                { config_root },
+                endpoint_stats_collector.instance(),
+            );
         } else {
             bucketspace = new BucketSpaceSimpleFS({ fs_root });
         }
@@ -154,9 +160,12 @@ class NsfsObjectSDK extends ObjectSDK {
         this.nsfs_versioning = versioning;
         this.nsfs_namespaces = {};
         if (!config_root) {
-            this._get_bucket_namespace = bucket_name => this._simple_get_single_bucket_namespace(bucket_name);
-            this.load_requesting_account = auth_req => this._simple_load_requesting_account(auth_req);
-            this.read_bucket_sdk_policy_info = bucket_name => this._simple_read_bucket_sdk_policy_info(bucket_name);
+            this._get_bucket_namespace = bucket_name =>
+                this._simple_get_single_bucket_namespace(bucket_name);
+            this.load_requesting_account = auth_req =>
+                this._simple_load_requesting_account(auth_req);
+            this.read_bucket_sdk_policy_info = bucket_name =>
+                this._simple_read_bucket_sdk_policy_info(bucket_name);
             this.read_bucket_sdk_config_info = () => undefined;
             this.read_bucket_usage_info = () => undefined;
             this.read_bucket_sdk_website_info = () => undefined;
@@ -187,10 +196,16 @@ class NsfsObjectSDK extends ObjectSDK {
         if (access_key) {
             const token = this.get_auth_token();
             if (!token) {
-                throw new RpcError('UNAUTHORIZED', `Anonymous access to bucket not allowed`);
+                throw new RpcError(
+                    'UNAUTHORIZED',
+                    `Anonymous access to bucket not allowed`,
+                );
             }
             if (token.access_key !== access_key.unwrap()) {
-                throw new RpcError('INVALID_ACCESS_KEY_ID', `Account with access_key not found`);
+                throw new RpcError(
+                    'INVALID_ACCESS_KEY_ID',
+                    `Account with access_key not found`,
+                );
             }
         }
         this.requesting_account = this.nsfs_account;
@@ -200,12 +215,14 @@ class NsfsObjectSDK extends ObjectSDK {
         return {
             s3_policy: {
                 Version: '2012-10-17',
-                Statement: [{
-                    Effect: 'Allow',
-                    Action: ['*'],
-                    Resource: ['*'],
-                    Principal: [new SensitiveString('*')],
-                }]
+                Statement: [
+                    {
+                        Effect: 'Allow',
+                        Action: ['*'],
+                        Resource: ['*'],
+                        Principal: [new SensitiveString('*')],
+                    },
+                ],
             },
             bucket_owner: new SensitiveString('nsfs'),
             owner_account: new SensitiveString('nsfs-id'), // temp
@@ -220,7 +237,10 @@ class NsfsAccountSDK extends AccountSDK {
         let bucketspace;
         let accountspace;
         if (config_root) {
-            bucketspace = new BucketSpaceFS({ config_root }, endpoint_stats_collector.instance());
+            bucketspace = new BucketSpaceFS(
+                { config_root },
+                endpoint_stats_collector.instance(),
+            );
             accountspace = new AccountSpaceFS({ config_root });
         } else {
             bucketspace = new BucketSpaceSimpleFS({ fs_root });
@@ -256,9 +276,9 @@ async function init_nsfs_system(config_root) {
                 current_version: pkg.version,
                 upgrade_history: {
                     successful_upgrades: [],
-                    last_failure: undefined
-                }
-            }
+                    last_failure: undefined,
+                },
+            },
         });
         console.log('created NSFS system data with version: ', pkg.version);
     } catch (err) {
@@ -290,16 +310,22 @@ async function main(argv = minimist(process.argv.slice(2))) {
         }
         const http_port = Number(argv.http_port) || config.ENDPOINT_PORT;
         const https_port = Number(argv.https_port) || config.ENDPOINT_SSL_PORT;
-        const https_port_sts = Number(argv.https_port_sts) || config.ENDPOINT_SSL_STS_PORT;
-        const https_port_iam = Number(argv.https_port_iam) || config.ENDPOINT_SSL_IAM_PORT;
-        const metrics_port = Number(argv.metrics_port) || config.EP_METRICS_SERVER_PORT;
+        const https_port_sts =
+            Number(argv.https_port_sts) || config.ENDPOINT_SSL_STS_PORT;
+        const https_port_iam =
+            Number(argv.https_port_iam) || config.ENDPOINT_SSL_IAM_PORT;
+        const metrics_port =
+            Number(argv.metrics_port) || config.EP_METRICS_SERVER_PORT;
         const forks = Number(argv.forks) || config.ENDPOINT_FORKS;
         if (forks > 0) process.env.ENDPOINT_FORKS = forks.toString(); // used for argv.forks to take effect
         const uid = Number(argv.uid) || process.getuid();
         const gid = Number(argv.gid) || process.getgid();
-        const access_key = argv.access_key && new SensitiveString(String(argv.access_key));
-        const secret_key = argv.secret_key && new SensitiveString(String(argv.secret_key));
-        const backend = argv.backend || (process.env.GPFS_DL_PATH ? 'GPFS' : '');
+        const access_key =
+            argv.access_key && new SensitiveString(String(argv.access_key));
+        const secret_key =
+            argv.secret_key && new SensitiveString(String(argv.secret_key));
+        const backend =
+            argv.backend || (process.env.GPFS_DL_PATH ? 'GPFS' : '');
         const versioning = argv.versioning || 'DISABLED';
         const fs_root = argv._[0] || '';
 
@@ -321,11 +347,15 @@ async function main(argv = minimist(process.argv.slice(2))) {
             return print_usage();
         }
         if (nsfs_config_root && access_key) {
-            console.error('Error: Access key and IAM dir cannot be used together');
+            console.error(
+                'Error: Access key and IAM dir cannot be used together',
+            );
             return print_usage();
         }
         if (Boolean(access_key) !== Boolean(secret_key)) {
-            console.error('Error: Access and secret keys should be either both set or else both unset');
+            console.error(
+                'Error: Access and secret keys should be either both set or else both unset',
+            );
             return print_usage();
         }
         if (!access_key && !nsfs_config_root) {
@@ -360,35 +390,63 @@ async function main(argv = minimist(process.argv.slice(2))) {
             forks,
             nsfs_config_root,
             init_request_sdk: (req, res) => {
-                req.object_sdk = new NsfsObjectSDK(fs_root, fs_config, account, versioning, nsfs_config_root);
-                req.account_sdk = new NsfsAccountSDK(fs_root, fs_config, account, nsfs_config_root);
-            }
+                req.object_sdk = new NsfsObjectSDK(
+                    fs_root,
+                    fs_config,
+                    account,
+                    versioning,
+                    nsfs_config_root,
+                );
+                req.account_sdk = new NsfsAccountSDK(
+                    fs_root,
+                    fs_config,
+                    account,
+                    nsfs_config_root,
+                );
+            },
         });
         if (config.ALLOW_HTTP) {
-            console.log('nsfs: listening on', util.inspect(`http://localhost:${http_port}`));
+            console.log(
+                'nsfs: listening on',
+                util.inspect(`http://localhost:${http_port}`),
+            );
         }
-        console.log('nsfs: listening on', util.inspect(`https://localhost:${https_port}`));
+        console.log(
+            'nsfs: listening on',
+            util.inspect(`https://localhost:${https_port}`),
+        );
         if (https_port_iam > 0) {
-            console.log('nsfs: IAM listening on', util.inspect(`https://localhost:${https_port_iam}`));
+            console.log(
+                'nsfs: IAM listening on',
+                util.inspect(`https://localhost:${https_port_iam}`),
+            );
         }
     } catch (err) {
         console.error('nsfs: exit on error', err.stack || err);
         //noobaa crashed
-        new NoobaaEvent(NoobaaEvent.S3_CRASHED).create_event(undefined, undefined, err);
+        new NoobaaEvent(NoobaaEvent.S3_CRASHED).create_event(
+            undefined,
+            undefined,
+            err,
+        );
         process.exit(2);
     }
 }
 
 function verify_gpfslib() {
     if (!nb_native().fs.gpfs) {
-        new NoobaaEvent(NoobaaEvent.GPFSLIB_MISSING).create_event(undefined, { gpfs_dl_path: process.env.GPFS_DL_PATH }, undefined);
+        new NoobaaEvent(NoobaaEvent.GPFSLIB_MISSING).create_event(
+            undefined,
+            { gpfs_dl_path: process.env.GPFS_DL_PATH },
+            undefined,
+        );
         return;
     }
     if (cluster.isPrimary) {
         const gpfs_noobaa_args = {
             version: 0,
             delay: Number(config.GPFS_DOWN_DELAY),
-            flags: 0
+            flags: 0,
         };
         nb_native().fs.gpfs.register_gpfs_noobaa(gpfs_noobaa_args);
     }
@@ -437,7 +495,7 @@ function verify_gpfslib() {
 //         },
 //     };
 // }
-// 
+//
 
 exports.main = main;
 

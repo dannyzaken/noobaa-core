@@ -12,29 +12,37 @@ shasum.update(Date.now().toString());
 const auth_params = {
     email: 'demo@noobaa.com',
     password: 'DeMo1',
-    system: 'demo'
+    system: 'demo',
 };
 //define colors
-const Yellow = "\x1b[33;1m";
-const NC = "\x1b[0m";
+const Yellow = '\x1b[33;1m';
+const NC = '\x1b[0m';
 
 class AgentFunctions {
-
     constructor(client) {
         this._client = client;
     }
 
     async list_nodes(mgmt_ip, mgmt_port_https) {
-        const rpc = api.new_rpc_from_base_address(`wss://${mgmt_ip}:${mgmt_port_https}`, 'EXTERNAL');
+        const rpc = api.new_rpc_from_base_address(
+            `wss://${mgmt_ip}:${mgmt_port_https}`,
+            'EXTERNAL',
+        );
         const client = rpc.new_client({});
         await client.create_auth_token(auth_params);
         const listHosts = await client.host.list_hosts({});
-        const online_agents = _.flatMap(listHosts.hosts, host => host.storage_nodes_info.nodes).filter(node => node.online);
+        const online_agents = _.flatMap(
+            listHosts.hosts,
+            host => host.storage_nodes_info.nodes,
+        ).filter(node => node.online);
         return online_agents;
     }
 
     async number_offline_nodes(mgmt_ip, mgmt_port_https) {
-        const rpc = api.new_rpc_from_base_address(`wss://${mgmt_ip}:${mgmt_port_https}`, 'EXTERNAL');
+        const rpc = api.new_rpc_from_base_address(
+            `wss://${mgmt_ip}:${mgmt_port_https}`,
+            'EXTERNAL',
+        );
         const client = rpc.new_client({});
         await client.create_auth_token(auth_params);
         const listHosts = await client.host.list_hosts({});
@@ -80,19 +88,31 @@ class AgentFunctions {
         return test_optimal_nodes_names;
     }
 
-    async get_agents_yaml(mgmt_ip, mgmt_port_https, pool, rpc_hint = 'EXTERNAL') {
-        const rpc = api.new_rpc_from_base_address(`wss://${mgmt_ip}:${mgmt_port_https}`, rpc_hint);
+    async get_agents_yaml(
+        mgmt_ip,
+        mgmt_port_https,
+        pool,
+        rpc_hint = 'EXTERNAL',
+    ) {
+        const rpc = api.new_rpc_from_base_address(
+            `wss://${mgmt_ip}:${mgmt_port_https}`,
+            rpc_hint,
+        );
         const client = rpc.new_client({});
         await client.create_auth_token(auth_params);
-        const installationString = await client.system.get_node_installation_string({
-            pool: pool,
-            exclude_drives: []
-        });
+        const installationString =
+            await client.system.get_node_installation_string({
+                pool: pool,
+                exclude_drives: [],
+            });
         return installationString.KUBERNETES;
     }
 
     async deactivateAgents(mgmt_ip, mgmt_port_https, activated_nodes_list) {
-        const rpc = api.new_rpc_from_base_address(`wss://${mgmt_ip}:${mgmt_port_https}`, 'EXTERNAL');
+        const rpc = api.new_rpc_from_base_address(
+            `wss://${mgmt_ip}:${mgmt_port_https}`,
+            'EXTERNAL',
+        );
         const client = rpc.new_client({});
         await client.create_auth_token(auth_params);
         for (const name of activated_nodes_list) {
@@ -103,16 +123,21 @@ class AgentFunctions {
 
     async activeAllHosts(mgmt_ip, mgmt_port_https) {
         console.log(`Active All Hosts`);
-        const rpc = api.new_rpc_from_base_address(`wss://${mgmt_ip}:${mgmt_port_https}`, 'EXTERNAL');
+        const rpc = api.new_rpc_from_base_address(
+            `wss://${mgmt_ip}:${mgmt_port_https}`,
+            'EXTERNAL',
+        );
         const client = rpc.new_client({});
         await client.create_auth_token(auth_params);
         const listHosts = await client.host.list_hosts({});
-        for (const names of listHosts.hosts.filter(node => node.mode === 'DECOMMISSIONED')) {
+        for (const names of listHosts.hosts.filter(
+            node => node.mode === 'DECOMMISSIONED',
+        )) {
             const params = {
                 name: names.name,
                 services: {
                     s3: undefined,
-                    storage: true
+                    storage: true,
                 },
             };
             await client.host.update_host_services(params);
@@ -121,16 +146,21 @@ class AgentFunctions {
 
     async deactivateAllHosts(mgmt_ip, mgmt_port_https) {
         console.log(`Deactivating All Hosts`);
-        const rpc = api.new_rpc_from_base_address(`wss://${mgmt_ip}:${mgmt_port_https}`, 'EXTERNAL');
+        const rpc = api.new_rpc_from_base_address(
+            `wss://${mgmt_ip}:${mgmt_port_https}`,
+            'EXTERNAL',
+        );
         const client = rpc.new_client({});
         await client.create_auth_token(auth_params);
         const list_hosts = await client.host.list_hosts({});
-        for (const names of list_hosts.hosts.filter(node => node.mode === 'OPTIMAL')) {
+        for (const names of list_hosts.hosts.filter(
+            node => node.mode === 'OPTIMAL',
+        )) {
             const params = {
                 name: names.name,
                 services: {
                     s3: undefined,
-                    storage: false
+                    storage: false,
                 },
             };
             await client.host.update_host_services(params);
@@ -140,7 +170,14 @@ class AgentFunctions {
     //check how many agents there are now, expecting agent to be included.
     async isIncluded(params) {
         console.log(params);
-        const { mgmt_ip, mgmt_port_https, previous_agent_number = 0, additional_agents = 0, print = 'include', suffix = '' } = params;
+        const {
+            mgmt_ip,
+            mgmt_port_https,
+            previous_agent_number = 0,
+            additional_agents = 0,
+            print = 'include',
+            suffix = '',
+        } = params;
         try {
             let retry = 0;
             let actual_count;
@@ -151,18 +188,34 @@ class AgentFunctions {
                     console.log(`sleeping for 1 min`);
                     await P.delay(60 * 1000);
                 }
-                const listNodes = await this.list_nodes(mgmt_ip, mgmt_port_https);
-                const decommissioned_nodes = listNodes.filter(node => node.mode === 'DECOMMISSIONED');
-                console.warn(`${Yellow}Number of Excluded agents: ${decommissioned_nodes.length}${NC}`);
-                console.warn(`Node names are ${listNodes.map(node => node.name)}`);
-                const test_nodes = await this.list_optimal_agents(mgmt_ip, mgmt_port_https, suffix);
+                const listNodes = await this.list_nodes(
+                    mgmt_ip,
+                    mgmt_port_https,
+                );
+                const decommissioned_nodes = listNodes.filter(
+                    node => node.mode === 'DECOMMISSIONED',
+                );
+                console.warn(
+                    `${Yellow}Number of Excluded agents: ${decommissioned_nodes.length}${NC}`,
+                );
+                console.warn(
+                    `Node names are ${listNodes.map(node => node.name)}`,
+                );
+                const test_nodes = await this.list_optimal_agents(
+                    mgmt_ip,
+                    mgmt_port_https,
+                    suffix,
+                );
                 actual_count = test_nodes.length;
-            } while ((actual_count !== expected_count) && (retry < 5));
+            } while (actual_count !== expected_count && retry < 5);
             if (actual_count === expected_count) {
-                console.warn(`${Yellow}Number of nodes after ${print} are ${actual_count}${NC}`);
+                console.warn(
+                    `${Yellow}Number of nodes after ${print} are ${actual_count}${NC}`,
+                );
             } else {
                 const error = `Number of nodes after ${print} are ${
-                    actual_count} - something went wrong... expected ${expected_count}`;
+                    actual_count
+                } - something went wrong... expected ${expected_count}`;
                 console.error(`${Yellow}${error}${NC}`);
                 throw new Error(error);
             }
@@ -175,7 +228,10 @@ class AgentFunctions {
     //removes agents with names that include suffix from Noobaa server
     async deleteAgents(mgmt_ip, mgmt_port_https, suffix = '') {
         console.log(`Starting the delete agents stage`);
-        const rpc = api.new_rpc_from_base_address(`wss://${mgmt_ip}:${mgmt_port_https}`, 'EXTERNAL');
+        const rpc = api.new_rpc_from_base_address(
+            `wss://${mgmt_ip}:${mgmt_port_https}`,
+            'EXTERNAL',
+        );
         const client = rpc.new_client({});
         await client.create_auth_token(auth_params);
         const list_hosts = await client.host.list_hosts({});
@@ -189,10 +245,19 @@ class AgentFunctions {
         });
         await P.delay(120 * 1000);
         const listNods = await this.list_nodes(mgmt_ip, mgmt_port_https);
-        console.warn(`${Yellow}Num nodes after the delete agent are ${listNods.length}${NC}`);
+        console.warn(
+            `${Yellow}Num nodes after the delete agent are ${listNods.length}${NC}`,
+        );
     }
 
-    async stopRandomAgents(azf, mgmt_ip, mgmt_port_https, amount, suffix, agentList) {
+    async stopRandomAgents(
+        azf,
+        mgmt_ip,
+        mgmt_port_https,
+        amount,
+        suffix,
+        agentList,
+    ) {
         await this.number_offline_nodes(mgmt_ip, mgmt_port_https);
         throw new Error('DEPRECATED - this flow is not relevant anymore');
         // const stopped_agents = getRandomOsesFromList(amount, agentList);
@@ -229,14 +294,15 @@ class AgentFunctions {
                     return true;
                 }
             } catch (e) {
-                console.log(`Current agents number is: ${agents}, waiting 5 extra seconds for: ${numberAgents}`);
+                console.log(
+                    `Current agents number is: ${agents}, waiting 5 extra seconds for: ${numberAgents}`,
+                );
                 await P.delay(5 * 1000);
             }
         }
         console.warn(`We expected ${agents}, and got ${numberAgents}`);
         return false;
     }
-
 }
 
 exports.AgentFunctions = AgentFunctions;

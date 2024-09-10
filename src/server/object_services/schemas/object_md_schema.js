@@ -4,15 +4,8 @@
 module.exports = {
     $id: 'object_md_schema',
     type: 'object',
-    required: [
-        '_id',
-        'system',
-        'bucket',
-        'key',
-        'content_type',
-    ],
+    required: ['_id', 'system', 'bucket', 'key', 'content_type'],
     properties: {
-
         _id: { objectid: true },
         deleted: { date: true },
         reclaimed: { date: true },
@@ -32,7 +25,7 @@ module.exports = {
                     properties: {
                         mode: { type: 'string' },
                         retain_until_date: { date: true },
-                    }
+                    },
                 },
                 legal_hold: {
                     type: 'object',
@@ -42,8 +35,8 @@ module.exports = {
                             enum: ['ON', 'OFF'],
                         },
                     },
-                }
-            }
+                },
+            },
         },
         // version_past = undefined  means latest version.
         // version_past = true       means non latest.
@@ -88,7 +81,7 @@ module.exports = {
         last_modified_time: { date: true },
         // etag is the object md5 hex for objects uploaded in single action.
         // for multipart upload etag is a special aggregated md5 of the parts md5's.
-        etag: { type: 'string', },
+        etag: { type: 'string' },
 
         // hashes are saved when provided during upload
         // md5 is used for etag of non-multipart uploads
@@ -101,7 +94,7 @@ module.exports = {
         xattr: {
             type: 'object',
             additionalProperties: true,
-            properties: {}
+            properties: {},
         },
 
         // Statistics
@@ -110,32 +103,31 @@ module.exports = {
             properties: {
                 reads: { type: 'integer' },
                 last_read: { date: true },
-            }
+            },
         },
 
-        tagging: { $ref: 'common_api#/definitions/tagging', },
+        tagging: { $ref: 'common_api#/definitions/tagging' },
 
         encryption: {
             type: 'object',
             properties: {
                 algorithm: {
                     type: 'string',
-                    enum: ['AES256', 'aws:kms']
+                    enum: ['AES256', 'aws:kms'],
                 },
                 kms_key_id: {
-                    type: 'string'
+                    type: 'string',
                 },
                 context_b64: {
-                    type: 'string'
+                    type: 'string',
                 },
                 key_md5_b64: {
-                    type: 'string'
+                    type: 'string',
                 },
                 key_b64: {
-                    type: 'string'
-                }
-            }
+                    type: 'string',
+                },
+            },
         },
-
-    }
+    },
 };

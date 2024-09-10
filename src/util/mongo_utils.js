@@ -96,7 +96,6 @@ const mongodb = require('mongodb');
 //     return docs;
 // }
 
-
 // function resolve_object_ids_recursive(idmap, item) {
 //     _.each(item, (val, key) => {
 //         if (val instanceof mongodb.ObjectId) {
@@ -159,16 +158,21 @@ const mongodb = require('mongodb');
 // }
 
 function is_object_id(id) {
-    return (id instanceof mongodb.ObjectId);
+    return id instanceof mongodb.ObjectId;
 }
 
 function mongoObjectId() {
     // eslint-disable-next-line no-bitwise
-    const timestamp = (new Date().getTime() / 1000 | 0).toString(16);
-    return timestamp + 'xxxxxxxxxxxxxxxx'.replace(/[x]/g, function() {
-        // eslint-disable-next-line no-bitwise
-        return (Math.random() * 16 | 0).toString(16);
-    }).toLowerCase();
+    const timestamp = ((new Date().getTime() / 1000) | 0).toString(16);
+    return (
+        timestamp +
+        'xxxxxxxxxxxxxxxx'
+            .replace(/[x]/g, function () {
+                // eslint-disable-next-line no-bitwise
+                return ((Math.random() * 16) | 0).toString(16);
+            })
+            .toLowerCase()
+    );
 }
 
 // function is_err_duplicate_key(err) {

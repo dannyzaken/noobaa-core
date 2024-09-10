@@ -10,15 +10,26 @@ class Requestor {
     constructor(requestorOptions) {
         this.requestorOptions = requestorOptions;
         if (!(this.requestorOptions instanceof Object)) {
-            throw new TypeError('[Requestor Error] options should be an object');
-        } else if (!(this.requestorOptions.hostname &&
+            throw new TypeError(
+                '[Requestor Error] options should be an object',
+            );
+        } else if (
+            !(
+                this.requestorOptions.hostname &&
                 this.requestorOptions.keyName &&
                 this.requestorOptions.key &&
-                this.requestorOptions.ssl !== undefined)) {
-            throw new Error('[Requestor Error] options object should contain key, keyName, hostname, and ssl attributes');
+                this.requestorOptions.ssl !== undefined
+            )
+        ) {
+            throw new Error(
+                '[Requestor Error] options object should contain key, keyName, hostname, and ssl attributes',
+            );
         }
 
-        this.auth = new Auth({ key: this.requestorOptions.key, keyName: this.requestorOptions.keyName });
+        this.auth = new Auth({
+            key: this.requestorOptions.key,
+            keyName: this.requestorOptions.keyName,
+        });
         this.parser = new Parser();
     }
 
@@ -36,11 +47,13 @@ class Requestor {
                 'X-Akamai-ACS-Auth-Data': authData.acs_auth_data,
                 'X-Akamai-ACS-Auth-Sign': authData.acs_auth_sign,
                 'Accept-Encoding': 'identity',
-                'User-Agent': 'NetStorageKit-Node'
-            }
+                'User-Agent': 'NetStorageKit-Node',
+            },
         };
 
-        const request = (this.requestorOptions.ssl ? https : http).request(options);
+        const request = (this.requestorOptions.ssl ? https : http).request(
+            options,
+        );
 
         request.on('response', res => {
             const ok = res.statusCode >= 200 && res.statusCode < 300;
@@ -48,21 +61,22 @@ class Requestor {
                 return callback(null, res);
             } else {
                 const buffers = [];
-                res.on('data', data => buffers.push(data))
-                    .on('end', () => {
-                        res.body = Buffer.concat(buffers).toString('binary');
-                        if (ok) {
-                            this.parser.parse(res.body, (err, json) => {
-                                if (err) return callback(err);
-                                res.body = json;
-                                return callback(null, res);
-                            });
-                        } else {
-                            const err = new Error(`HTTP STATUS ${res.statusCode}: ${res.body}`);
-                            // err.res = res;
-                            return callback(err);
-                        }
-                    });
+                res.on('data', data => buffers.push(data)).on('end', () => {
+                    res.body = Buffer.concat(buffers).toString('binary');
+                    if (ok) {
+                        this.parser.parse(res.body, (err, json) => {
+                            if (err) return callback(err);
+                            res.body = json;
+                            return callback(null, res);
+                        });
+                    } else {
+                        const err = new Error(
+                            `HTTP STATUS ${res.statusCode}: ${res.body}`,
+                        );
+                        // err.res = res;
+                        return callback(err);
+                    }
+                });
             }
         });
 

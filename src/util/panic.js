@@ -10,7 +10,9 @@ process.on('uncaughtException', err => panic('process uncaughtException', err));
 function panic(message, err) {
     console.error('PANIC:', message, err.stack || err);
     while (process.env.LOOP_ON_PANIC === 'true') {
-        console.warn('Encountered an error, holding the process on an infinite loop');
+        console.warn(
+            'Encountered an error, holding the process on an infinite loop',
+        );
         child_process.execSync('sleep 10');
     }
     process.exit(1);
@@ -41,12 +43,13 @@ function memory_monitor() {
     const c = memory_monitor_config;
     const h = c.heapdump;
     const current = m.heapUsed;
-    if (c.logging_threshold &&
-        c.logging_threshold <= current) {
+    if (c.logging_threshold && c.logging_threshold <= current) {
         const usage = (m.heapUsed / 1024 / 1024).toFixed(0);
         const total = (m.heapTotal / 1024 / 1024).toFixed(0);
         const resident = (m.rss / 1024 / 1024).toFixed(0);
-        console.log(`memory_monitor: heap ${usage} MB | total ${total} MB | resident ${resident} MB`);
+        console.log(
+            `memory_monitor: heap ${usage} MB | total ${total} MB | resident ${resident} MB`,
+        );
     }
     if (h && h.next && h.next <= current) {
         const size_mb = (current / 1024 / 1024).toFixed(0);
@@ -58,7 +61,6 @@ function memory_monitor() {
         h.next += increase + align;
     }
 }
-
 
 exports.panic = panic;
 exports.memory_monitor = memory_monitor;

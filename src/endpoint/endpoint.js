@@ -37,26 +37,37 @@ const server_rpc = require('../server/server_rpc');
 const debug_config = require('../util/debug_config');
 const auth_server = require('../server/common_services/auth_server');
 const system_store = require('../server/system_services/system_store');
-const background_scheduler = require('../util/background_scheduler').get_instance();
+const background_scheduler =
+    require('../util/background_scheduler').get_instance();
 const endpoint_stats_collector = require('../sdk/endpoint_stats_collector');
 const { NamespaceMonitor } = require('../server/bg_services/namespace_monitor');
 const { SemaphoreMonitor } = require('../server/bg_services/semaphore_monitor');
 const prom_reporting = require('../server/analytic_services/prometheus_reporting');
 const { PersistentLogger } = require('../util/persistent_logger');
-const NoobaaEvent = require('../manage_nsfs/manage_nsfs_events_utils').NoobaaEvent;
+const NoobaaEvent =
+    require('../manage_nsfs/manage_nsfs_events_utils').NoobaaEvent;
 const cluster = /** @type {import('node:cluster').Cluster} */ (
     /** @type {unknown} */ (require('node:cluster'))
 );
 
 if (process.env.NOOBAA_LOG_LEVEL) {
-    const dbg_conf = debug_config.get_debug_config(process.env.NOOBAA_LOG_LEVEL);
-    dbg_conf.endpoint.map(module => dbg.set_module_level(dbg_conf.level, module));
+    const dbg_conf = debug_config.get_debug_config(
+        process.env.NOOBAA_LOG_LEVEL,
+    );
+    dbg_conf.endpoint.map(module =>
+        dbg.set_module_level(dbg_conf.level, module),
+    );
 }
 
 const new_umask = process.env.NOOBAA_ENDPOINT_UMASK || 0o000;
 const old_umask = process.umask(new_umask);
 let fork_count;
-dbg.log0('endpoint: replacing old umask: ', old_umask.toString(8), 'with new umask: ', new_umask.toString(8));
+dbg.log0(
+    'endpoint: replacing old umask: ',
+    old_umask.toString(8),
+    'with new umask: ',
+    new_umask.toString(8),
+);
 
 /**
  * @typedef {http.IncomingMessage & {
@@ -72,7 +83,7 @@ dbg.log0('endpoint: replacing old umask: ', old_umask.toString(8), 'with new uma
  * @typedef {(
  *  req: EndpointRequest,
  *  res: http.ServerResponse
- * ) => void | Promise<void>} EndpointHandler 
+ * ) => void | Promise<void>} EndpointHandler
  */
 
 /**
@@ -89,8 +100,15 @@ dbg.log0('endpoint: replacing old umask: ', old_umask.toString(8), 'with new uma
  */
 
 // An internal function to prevent code duplication
-async function create_https_server(ssl_cert_info, honorCipherOrder, endpoint_handler) {
-    const ssl_options = {...ssl_cert_info.cert, honorCipherOrder: honorCipherOrder};
+async function create_https_server(
+    ssl_cert_info,
+    honorCipherOrder,
+    endpoint_handler,
+) {
+    const ssl_options = {
+        ...ssl_cert_info.cert,
+        honorCipherOrder: honorCipherOrder,
+    };
     return https.createServer(ssl_options, endpoint_handler);
 }
 
@@ -108,20 +126,25 @@ async function main(options = {}) {
 
         // the primary just forks and returns, workers will continue to serve
         fork_count = options.forks ?? config.ENDPOINT_FORKS;
-        const metrics_port = options.metrics_port || config.EP_METRICS_SERVER_PORT;
+        const metrics_port =
+            options.metrics_port || config.EP_METRICS_SERVER_PORT;
         if (fork_utils.start_workers(metrics_port, fork_count)) return;
 
         const http_port = options.http_port || config.ENDPOINT_PORT;
         const https_port = options.https_port || config.ENDPOINT_SSL_PORT;
-        const https_port_sts = options.https_port_sts || Number(process.env.ENDPOINT_SSL_PORT_STS) || 7443;
-        const https_port_iam = options.https_port_iam || config.ENDPOINT_SSL_IAM_PORT;
-        const endpoint_group_id = process.env.ENDPOINT_GROUP_ID || 'default-endpoint-group';
+        const https_port_sts =
+            options.https_port_sts ||
+            Number(process.env.ENDPOINT_SSL_PORT_STS) ||
+            7443;
+        const https_port_iam =
+            options.https_port_iam || config.ENDPOINT_SSL_IAM_PORT;
+        const endpoint_group_id =
+            process.env.ENDPOINT_GROUP_ID || 'default-endpoint-group';
 
         const virtual_hosts = Object.freeze(
-            config.VIRTUAL_HOSTS
-            .split(' ')
-            .filter(suffix => net_utils.is_fqdn(suffix))
-            .sort()
+            config.VIRTUAL_HOSTS.split(' ')
+                .filter(suffix => net_utils.is_fqdn(suffix))
+                .sort(),
         );
         const location_info = Object.freeze({
             region: process.env.REGION || '',
@@ -131,11 +154,16 @@ async function main(options = {}) {
         dbg.log0('Configured Location Info:', location_info);
 
         const node_name = process.env.NODE_NAME || os.hostname();
-        bucket_logger = config.BUCKET_LOG_TYPE === 'PERSISTENT' &&
-            new PersistentLogger(config.PERSISTENT_BUCKET_LOG_DIR, config.PERSISTENT_BUCKET_LOG_NS + '_' + node_name, {
-                locking: 'SHARED',
-                poll_interval: config.NSFS_GLACIER_LOGS_POLL_INTERVAL,
-            });
+        bucket_logger =
+            config.BUCKET_LOG_TYPE === 'PERSISTENT' &&
+            new PersistentLogger(
+                config.PERSISTENT_BUCKET_LOG_DIR,
+                config.PERSISTENT_BUCKET_LOG_NS + '_' + node_name,
+                {
+                    locking: 'SHARED',
+                    poll_interval: config.NSFS_GLACIER_LOGS_POLL_INTERVAL,
+                },
+            );
 
         process.on('warning', e => dbg.warn(e.stack));
 
@@ -144,7 +172,6 @@ async function main(options = {}) {
 
         let init_request_sdk = options.init_request_sdk;
         if (!init_request_sdk) {
-
             const rpc = server_rpc.rpc;
             rpc.router = get_rpc_router(process.env);
 
@@ -161,35 +188,69 @@ async function main(options = {}) {
 
             if (process.env.LOCAL_N2N_AGENT === 'true') {
                 dbg.log0('Starting local N2N agent');
-                const signal_client = rpc.new_client({ auth_token: server_rpc.client.options.auth_token });
-                const n2n_agent = rpc.register_n2n_agent(((...args) => signal_client.node.n2n_signal(...args)));
+                const signal_client = rpc.new_client({
+                    auth_token: server_rpc.client.options.auth_token,
+                });
+                const n2n_agent = rpc.register_n2n_agent((...args) =>
+                    signal_client.node.n2n_signal(...args),
+                );
                 n2n_agent.set_any_rpc_address();
             }
             object_io = new ObjectIO(location_info);
 
             internal_rpc_client = rpc.new_client({
-                auth_token: await get_auth_token(process.env)
+                auth_token: await get_auth_token(process.env),
             });
 
-            init_request_sdk = create_init_request_sdk(rpc, internal_rpc_client, object_io);
+            init_request_sdk = create_init_request_sdk(
+                rpc,
+                internal_rpc_client,
+                object_io,
+            );
         }
 
-        const endpoint_request_handler = create_endpoint_handler(init_request_sdk, virtual_hosts, /*is_sts?*/ false, bucket_logger);
-        const endpoint_request_handler_sts = create_endpoint_handler(init_request_sdk, virtual_hosts, /*is_sts?*/ true);
+        const endpoint_request_handler = create_endpoint_handler(
+            init_request_sdk,
+            virtual_hosts,
+            /*is_sts?*/ false,
+            bucket_logger,
+        );
+        const endpoint_request_handler_sts = create_endpoint_handler(
+            init_request_sdk,
+            virtual_hosts,
+            /*is_sts?*/ true,
+        );
 
-        const ssl_cert_info = await ssl_utils.get_ssl_cert_info('S3', options.nsfs_config_root);
-        const https_server = await create_https_server(ssl_cert_info, true, endpoint_request_handler);
+        const ssl_cert_info = await ssl_utils.get_ssl_cert_info(
+            'S3',
+            options.nsfs_config_root,
+        );
+        const https_server = await create_https_server(
+            ssl_cert_info,
+            true,
+            endpoint_request_handler,
+        );
         const sts_ssl_cert_info = await ssl_utils.get_ssl_cert_info('STS');
-        const https_server_sts = await create_https_server(sts_ssl_cert_info, true, endpoint_request_handler_sts);
+        const https_server_sts = await create_https_server(
+            sts_ssl_cert_info,
+            true,
+            endpoint_request_handler_sts,
+        );
 
         ssl_cert_info.on('update', updated_ssl_cert_info => {
-            dbg.log0("Setting updated S3 ssl certs for endpoint.");
-            const updated_ssl_options = { ...updated_ssl_cert_info.cert, honorCipherOrder: true };
+            dbg.log0('Setting updated S3 ssl certs for endpoint.');
+            const updated_ssl_options = {
+                ...updated_ssl_cert_info.cert,
+                honorCipherOrder: true,
+            };
             https_server.setSecureContext(updated_ssl_options);
         });
         sts_ssl_cert_info.on('update', updated_sts_ssl_cert_info => {
-            dbg.log0("Setting updated STS ssl certs for endpoint.");
-            const updated_ssl_options = { ...updated_sts_ssl_cert_info.cert, honorCipherOrder: true };
+            dbg.log0('Setting updated STS ssl certs for endpoint.');
+            const updated_ssl_options = {
+                ...updated_sts_ssl_cert_info.cert,
+                honorCipherOrder: true,
+            };
             https_server_sts.setSecureContext(updated_ssl_options);
         });
         if (options.nsfs_config_root && !config.ALLOW_HTTP) {
@@ -214,10 +275,15 @@ async function main(options = {}) {
         }
         if (https_port_iam > 0) {
             dbg.log0('Starting IAM HTTPS', https_port_iam);
-            const endpoint_request_handler_iam = create_endpoint_handler_iam(init_request_sdk);
+            const endpoint_request_handler_iam =
+                create_endpoint_handler_iam(init_request_sdk);
             // NOTE: The IAM server currently uses the S3 server's certificate. This *will* cause route failures in Openshift.
             // TODO: Generate, mount and utilize an appropriate IAM certificate once the service and route are implemented
-            const https_server_iam = await create_https_server(ssl_cert_info, true, endpoint_request_handler_iam);
+            const https_server_iam = await create_https_server(
+                ssl_cert_info,
+                true,
+                endpoint_request_handler_iam,
+            );
             await listen_http(https_port_iam, https_server_iam);
             dbg.log0('Started IAM HTTPS successfully');
         }
@@ -226,32 +292,46 @@ async function main(options = {}) {
             await prom_reporting.start_server(metrics_port, false);
             dbg.log0('Started metrics server successfully');
         }
-        // TODO: currently NC NSFS deployments don't have internal_rpc_client nor db, 
+        // TODO: currently NC NSFS deployments don't have internal_rpc_client nor db,
         // there for namespace monitor won't be registered
         if (internal_rpc_client && config.NAMESPACE_MONITOR_ENABLED) {
-            endpoint_stats_collector.instance().set_rpc_client(internal_rpc_client);
+            endpoint_stats_collector
+                .instance()
+                .set_rpc_client(internal_rpc_client);
 
             // Register a bg monitor on the endpoint
-            background_scheduler.register_bg_worker(new NamespaceMonitor({
-                name: 'namespace_fs_monitor',
-                client: internal_rpc_client,
-                should_monitor: nsr => Boolean(nsr.nsfs_config),
-            }));
+            background_scheduler.register_bg_worker(
+                new NamespaceMonitor({
+                    name: 'namespace_fs_monitor',
+                    client: internal_rpc_client,
+                    should_monitor: nsr => Boolean(nsr.nsfs_config),
+                }),
+            );
         }
 
         if (config.ENABLE_SEMAPHORE_MONITOR) {
-            background_scheduler.register_bg_worker(new SemaphoreMonitor({
-                name: 'semaphore_monitor',
-                object_io: object_io,
-            }));
+            background_scheduler.register_bg_worker(
+                new SemaphoreMonitor({
+                    name: 'semaphore_monitor',
+                    object_io: object_io,
+                }),
+            );
         }
         //noobaa started
-        new NoobaaEvent(NoobaaEvent.NOOBAA_STARTED).create_event(undefined, undefined, undefined);
+        new NoobaaEvent(NoobaaEvent.NOOBAA_STARTED).create_event(
+            undefined,
+            undefined,
+            undefined,
+        );
         // Start a monitor to send periodic endpoint reports about endpoint usage.
         start_monitor(internal_rpc_client, endpoint_group_id);
     } catch (err) {
         //noobaa crashed event
-        new NoobaaEvent(NoobaaEvent.ENDPOINT_CRASHED).create_event(undefined, undefined, err);
+        new NoobaaEvent(NoobaaEvent.ENDPOINT_CRASHED).create_event(
+            undefined,
+            undefined,
+            err,
+        );
         handle_server_error(err);
     } finally {
         if (bucket_logger) bucket_logger.close();
@@ -264,8 +344,12 @@ async function main(options = {}) {
  * @returns {EndpointHandler}
  */
 function create_endpoint_handler(init_request_sdk, virtual_hosts, sts, logger) {
-    const blob_rest_handler = process.env.ENDPOINT_BLOB_ENABLED === 'true' ? blob_rest : unavailable_handler;
-    const lambda_rest_handler = config.DB_TYPE === 'mongodb' ? lambda_rest : unavailable_handler;
+    const blob_rest_handler =
+        process.env.ENDPOINT_BLOB_ENABLED === 'true' ?
+            blob_rest
+        :   unavailable_handler;
+    const lambda_rest_handler =
+        config.DB_TYPE === 'mongodb' ? lambda_rest : unavailable_handler;
 
     /** @type {EndpointHandler} */
     const endpoint_request_handler = (req, res) => {
@@ -333,9 +417,9 @@ function fork_count_handler(req, res) {
 }
 
 /**
- * @param {typeof server_rpc.rpc} rpc 
- * @param {nb.APIClient} internal_rpc_client 
- * @param {ObjectIO} object_io 
+ * @param {typeof server_rpc.rpc} rpc
+ * @param {nb.APIClient} internal_rpc_client
+ * @param {ObjectIO} object_io
  * @returns {EndpointHandler}
  */
 function create_init_request_sdk(rpc, internal_rpc_client, object_io) {
@@ -362,12 +446,18 @@ function get_rpc_router(env) {
     ports.md += 1;
 
     return {
-        default: env.MGMT_ADDR || addr_utils.format_base_address(hostname, ports.mgmt),
+        default:
+            env.MGMT_ADDR ||
+            addr_utils.format_base_address(hostname, ports.mgmt),
         md: env.MD_ADDR || addr_utils.format_base_address(hostname, ports.md),
         bg: env.BG_ADDR || addr_utils.format_base_address(hostname, ports.bg),
-        hosted_agents: env.HOSTED_AGENTS_ADDR || addr_utils.format_base_address(hostname, ports.hosted_agents),
-        master: env.MGMT_ADDR || addr_utils.format_base_address(hostname, ports.mgmt),
-        syslog: env.SYSLOG_ADDR || "udp://localhost:514",
+        hosted_agents:
+            env.HOSTED_AGENTS_ADDR ||
+            addr_utils.format_base_address(hostname, ports.hosted_agents),
+        master:
+            env.MGMT_ADDR ||
+            addr_utils.format_base_address(hostname, ports.mgmt),
+        syslog: env.SYSLOG_ADDR || 'udp://localhost:514',
     };
 }
 
@@ -376,20 +466,17 @@ async function get_auth_token(env) {
 
     if (config.JWT_SECRET && env.LOCAL_MD_SERVER === 'true') {
         const system_store_inst = system_store.get_instance();
-        await P.wait_until(() =>
-            system_store_inst.is_finished_initial_load
-        );
+        await P.wait_until(() => system_store_inst.is_finished_initial_load);
         const system = system_store_inst.data.systems[0];
         return auth_server.make_auth_token({
             system_id: system._id,
             account_id: system.owner._id,
-            role: 'admin'
+            role: 'admin',
         });
     }
 
     throw new Error('NooBaa auth token is unavailable');
 }
-
 
 /**
  * @param {nb.APIClient} internal_rpc_client
@@ -405,8 +492,11 @@ async function start_monitor(internal_rpc_client, endpoint_group_id) {
             await P.delay_unblocking(config.ENDPOINT_MONITOR_INTERVAL);
             const end_time = process.hrtime.bigint() / 1000n;
             const cpu_time = process.cpuUsage();
-            const elap_cpu_time = (cpu_time.system + cpu_time.user) - (base_cpu_time.system + base_cpu_time.user);
-            const cpu_usage = elap_cpu_time / Number((end_time - start_time));
+            const elap_cpu_time =
+                cpu_time.system +
+                cpu_time.user -
+                (base_cpu_time.system + base_cpu_time.user);
+            const cpu_usage = elap_cpu_time / Number(end_time - start_time);
             const rest_usage = s3_rest.consume_usage_report();
             const group_name = endpoint_group_id;
             const hostname = os.hostname();
@@ -419,7 +509,7 @@ async function start_monitor(internal_rpc_client, endpoint_group_id) {
                 cpu: {
                     // using the upper limit here which includes optional burst resources
                     count: config.CONTAINER_CPU_LIMIT,
-                    usage: cpu_usage
+                    usage: cpu_usage,
                 },
                 memory: {
                     // using the upper limit here which includes optional burst resources
@@ -428,11 +518,9 @@ async function start_monitor(internal_rpc_client, endpoint_group_id) {
                 },
                 s3_ops: {
                     usage: rest_usage.s3_usage_info,
-                    errors: rest_usage.s3_errors_info
+                    errors: rest_usage.s3_errors_info,
                 },
-                bandwidth: [
-                    ...rest_usage.bandwidth_usage_info.values()
-                ]
+                bandwidth: [...rest_usage.bandwidth_usage_info.values()],
             };
 
             if (internal_rpc_client) {
@@ -451,19 +539,24 @@ async function start_monitor(internal_rpc_client, endpoint_group_id) {
 }
 
 function handle_server_error(err) {
-    dbg.error('ENDPOINT FAILED TO START on error:', err.code, err.message, err.stack || err);
+    dbg.error(
+        'ENDPOINT FAILED TO START on error:',
+        err.code,
+        err.message,
+        err.stack || err,
+    );
     process.exit(1);
 }
-
 
 function unavailable_handler(req, res) {
     res.statusCode = 500; // Service Unavailable
     const reply = xml_utils.encode_xml({
         Error: {
             Code: 500,
-            Message: 'This server\'s configuration disabled the requested service handler',
+            Message:
+                "This server's configuration disabled the requested service handler",
             Resource: req.url,
-        }
+        },
     });
     res.setHeader('Content-Type', 'application/xml');
     res.setHeader('Content-Length', Buffer.byteLength(reply));
@@ -500,13 +593,17 @@ function setup_http_server(server) {
 
     // See https://nodejs.org/api/http.html#http_event_clienterror
     server.on('clientError', function on_s3_client_error(err, socket) {
-
         // On parsing errors we reply 400 Bad Request to conform with AWS
         // These errors come from the nodejs native http parser.
-        if (typeof err.code === 'string' &&
+        if (
+            typeof err.code === 'string' &&
             err.code.startsWith('HPE_INVALID_') &&
-            err.bytesParsed > 0) {
-            console.error('ENDPOINT CLIENT ERROR - REPLY WITH BAD REQUEST', err);
+            err.bytesParsed > 0
+        ) {
+            console.error(
+                'ENDPOINT CLIENT ERROR - REPLY WITH BAD REQUEST',
+                err,
+            );
             socket.write('HTTP/1.1 400 Bad Request\r\n');
             socket.write(`Date: ${new Date().toUTCString()}\r\n`);
             socket.write('Connection: close\r\n');

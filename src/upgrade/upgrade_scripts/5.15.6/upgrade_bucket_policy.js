@@ -1,10 +1,11 @@
 /* Copyright (C) 2023 NooBaa */
-"use strict";
+'use strict';
 
 const util = require('util');
-const { OP_NAME_TO_ACTION } = require('../../../endpoint/s3/s3_bucket_policy_utils');
+const {
+    OP_NAME_TO_ACTION,
+} = require('../../../endpoint/s3/s3_bucket_policy_utils');
 const _ = require('lodash');
-
 
 function _create_actions_map() {
     const actions_map = new Map();
@@ -19,7 +20,6 @@ function _create_actions_map() {
 }
 
 async function run({ dbg, system_store, system_server }) {
-
     try {
         dbg.log0('Starting bucket policy upgrade...');
         const buckets = [];
@@ -28,17 +28,22 @@ async function run({ dbg, system_store, system_server }) {
             //Do not update if there are no bucket policy.
             if (!bucket.s3_policy) continue;
 
-
             if (_.isUndefined(bucket.s3_policy.Statement)) {
                 const new_policy = {};
-                if (bucket.s3_policy.version) new_policy.Version = bucket.s3_policy.version;
-                new_policy.Statement = bucket.s3_policy.statement.map(statement => ({
-                    Effect: statement.effect === 'allow' ? 'Allow' : 'Deny',
-                    Action: statement.action.map(action => actions_map.get(action)),
-                    Principal: { AWS: statement.principal },
-                    Resource: statement.resource,
-                    Sid: statement.sid
-                }));
+                if (bucket.s3_policy.version) {
+                    new_policy.Version = bucket.s3_policy.version;
+                }
+                new_policy.Statement = bucket.s3_policy.statement.map(
+                    statement => ({
+                        Effect: statement.effect === 'allow' ? 'Allow' : 'Deny',
+                        Action: statement.action.map(action =>
+                            actions_map.get(action),
+                        ),
+                        Principal: { AWS: statement.principal },
+                        Resource: statement.resource,
+                        Sid: statement.sid,
+                    }),
+                );
                 buckets.push({
                     _id: bucket._id,
                     s3_policy: new_policy,
@@ -47,20 +52,20 @@ async function run({ dbg, system_store, system_server }) {
         }
 
         if (buckets.length > 0) {
-            dbg.log0(`Replacing bucket policy rules to the new API structure for buckets: ${buckets.map(bucket => util.inspect(bucket)).join(', ')}`);
+            dbg.log0(
+                `Replacing bucket policy rules to the new API structure for buckets: ${buckets.map(bucket => util.inspect(bucket)).join(', ')}`,
+            );
             await system_store.make_changes({ update: { buckets } });
         } else {
             dbg.log0('Upgrading buckets policy: no upgrade needed...');
         }
-
     } catch (err) {
         dbg.error('Got error while upgrading buckets policy:', err);
         throw err;
     }
 }
 
-
 module.exports = {
     run,
-    description: 'Update bucket policy to new API format'
+    description: 'Update bucket policy to new API format',
 };

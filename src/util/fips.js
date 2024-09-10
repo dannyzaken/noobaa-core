@@ -68,8 +68,8 @@ function create_hash_sha1_mb() {
 }
 
 /**
- * @param {string} algorithm 
- * @param {object} options 
+ * @param {string} algorithm
+ * @param {object} options
  * @returns {crypto.Hash}
  */
 function create_hash_fips(algorithm, options) {
@@ -97,20 +97,25 @@ function set_fips_mode(mode = detect_fips_mode()) {
     }
 }
 
-
 /**
  * @returns {Boolean}
  */
 function detect_fips_mode() {
     if (process.env.FIPS) return true;
-    const fips_proc_file = process.env.FIPS_PROC_FILE || '/proc/sys/crypto/fips_enabled';
+    const fips_proc_file =
+        process.env.FIPS_PROC_FILE || '/proc/sys/crypto/fips_enabled';
     try {
         const value = fs.readFileSync(fips_proc_file, 'utf8').trim();
-        console.log(`detect_fips_mode: found ${fips_proc_file} with value ${value}`);
+        console.log(
+            `detect_fips_mode: found ${fips_proc_file} with value ${value}`,
+        );
         return value === '1';
     } catch (err) {
         if (err.code !== 'ENOENT' && err.code !== 'ENOTDIR') {
-            console.warn(`detect_fips_mode: failed to read ${fips_proc_file}:`, err);
+            console.warn(
+                `detect_fips_mode: failed to read ${fips_proc_file}:`,
+                err,
+            );
         }
     }
     return false;

@@ -21,64 +21,64 @@ module.exports = {
     ],
     properties: {
         _id: {
-            objectid: true
+            objectid: true,
         },
         deleted: {
-            date: true
+            date: true,
         },
         system: {
-            objectid: true
+            objectid: true,
         },
         pools: {
             type: 'array',
             items: {
-                objectid: true
-            }
+                objectid: true,
+            },
         },
         name: {
-            type: 'string'
+            type: 'string',
         },
         exec_account: {
-            objectid: true
+            objectid: true,
         },
         version: {
-            type: 'string'
+            type: 'string',
         },
         description: {
-            type: 'string'
+            type: 'string',
         },
         role: {
-            type: 'string'
+            type: 'string',
         },
         runtime: {
-            type: 'string'
+            type: 'string',
         },
         handler: {
-            type: 'string'
+            type: 'string',
         },
         memory_size: {
-            type: 'integer'
+            type: 'integer',
         },
         timeout: {
-            type: 'integer'
+            type: 'integer',
         },
         last_modified: {
-            date: true
+            date: true,
         },
         last_modifier: {
-            objectid: true
+            objectid: true,
         },
         resource_name: {
-            type: 'string'
+            type: 'string',
         },
         code_size: {
-            type: 'integer'
+            type: 'integer',
         },
         code_sha256: {
-            type: 'string'
+            type: 'string',
         },
         code: {
-            type: 'string'
-        }
-    }
+            type: 'string',
+        },
+    },
 };

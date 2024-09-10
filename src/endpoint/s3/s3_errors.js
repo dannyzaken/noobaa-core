@@ -5,17 +5,16 @@ const xml_utils = require('../../util/xml_utils');
 
 /**
  * @typedef {{
- *      code?: string, 
- *      message: string, 
+ *      code?: string,
+ *      message: string,
  *      http_code: number,
  *      detail?: string
  * }} S3ErrorSpec
  */
 
 class S3Error extends Error {
-
     /**
-     * @param {S3ErrorSpec} error_spec 
+     * @param {S3ErrorSpec} error_spec
      */
     constructor({ code, message, http_code, detail }) {
         super(message); // sets this.message
@@ -32,11 +31,10 @@ class S3Error extends Error {
                 Resource: resource || '',
                 RequestId: request_id || '',
                 Detail: this.detail,
-            }
+            },
         };
         return xml_utils.encode_xml(xml);
     }
-
 }
 
 // See http://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html
@@ -51,12 +49,14 @@ S3Error.AccessDenied = Object.freeze({
 });
 S3Error.AccountProblem = Object.freeze({
     code: 'AccountProblem',
-    message: 'There is a problem with your AWS account that prevents the operation from completing successfully. Please Contact Us.',
+    message:
+        'There is a problem with your AWS account that prevents the operation from completing successfully. Please Contact Us.',
     http_code: 403,
 });
 S3Error.AmbiguousGrantByEmailAddress = Object.freeze({
     code: 'AmbiguousGrantByEmailAddress',
-    message: 'The email address you provided is associated with more than one account.',
+    message:
+        'The email address you provided is associated with more than one account.',
     http_code: 400,
 });
 S3Error.BadDigest = Object.freeze({
@@ -66,17 +66,20 @@ S3Error.BadDigest = Object.freeze({
 });
 S3Error.BucketAlreadyExists = Object.freeze({
     code: 'BucketAlreadyExists',
-    message: 'The requested bucket name is not available. The bucket namespace is shared by all users of the system. Please select a different name and try again.',
+    message:
+        'The requested bucket name is not available. The bucket namespace is shared by all users of the system. Please select a different name and try again.',
     http_code: 409,
 });
 S3Error.BucketAlreadyOwnedByYou = Object.freeze({
     code: 'BucketAlreadyOwnedByYou',
-    message: 'Your previous request to create the named bucket succeeded and you already own it. You get this error in all AWS regions except US East (N. Virginia) region, us-east-1. In us-east-1 region, you will get 200 OK, but it is no-op (if bucket exists it Amazon S3 will not do anything).',
+    message:
+        'Your previous request to create the named bucket succeeded and you already own it. You get this error in all AWS regions except US East (N. Virginia) region, us-east-1. In us-east-1 region, you will get 200 OK, but it is no-op (if bucket exists it Amazon S3 will not do anything).',
     http_code: 409,
 });
 S3Error.BucketNotEmpty = Object.freeze({
     code: 'BucketNotEmpty',
-    message: 'The bucket you tried to delete is not empty. You must delete all versions in the bucket.',
+    message:
+        'The bucket you tried to delete is not empty. You must delete all versions in the bucket.',
     http_code: 409,
 });
 S3Error.CredentialsNotSupported = Object.freeze({
@@ -86,12 +89,14 @@ S3Error.CredentialsNotSupported = Object.freeze({
 });
 S3Error.CrossLocationLoggingProhibited = Object.freeze({
     code: 'CrossLocationLoggingProhibited',
-    message: 'Cross-location logging not allowed. Buckets in one geographic location cannot log information to a bucket in another location.',
+    message:
+        'Cross-location logging not allowed. Buckets in one geographic location cannot log information to a bucket in another location.',
     http_code: 403,
 });
 S3Error.EntityTooSmall = Object.freeze({
     code: 'EntityTooSmall',
-    message: 'Your proposed upload is smaller than the minimum allowed object size.',
+    message:
+        'Your proposed upload is smaller than the minimum allowed object size.',
     http_code: 400,
 });
 S3Error.EntityTooLarge = Object.freeze({
@@ -106,12 +111,14 @@ S3Error.ExpiredToken = Object.freeze({
 });
 S3Error.IllegalVersioningConfigurationException = Object.freeze({
     code: 'IllegalVersioningConfigurationException',
-    message: 'Indicates that the versioning configuration specified in the request is invalid.',
+    message:
+        'Indicates that the versioning configuration specified in the request is invalid.',
     http_code: 400,
 });
 S3Error.IncompleteBody = Object.freeze({
     code: 'IncompleteBody',
-    message: 'You did not provide the number of bytes specified by the Content-Length HTTP header',
+    message:
+        'You did not provide the number of bytes specified by the Content-Length HTTP header',
     http_code: 400,
 });
 S3Error.IncorrectNumberOfFilesInPostRequest = Object.freeze({
@@ -131,7 +138,8 @@ S3Error.InternalError = Object.freeze({
 });
 S3Error.InvalidAccessKeyId = Object.freeze({
     code: 'InvalidAccessKeyId',
-    message: 'The AWS access key Id you provided does not exist in our records.',
+    message:
+        'The AWS access key Id you provided does not exist in our records.',
     http_code: 403,
 });
 S3Error.InvalidAddressingHeader = Object.freeze({
@@ -171,7 +179,8 @@ S3Error.InvalidDigest = Object.freeze({
 });
 S3Error.InvalidEncryptionAlgorithmError = Object.freeze({
     code: 'InvalidEncryptionAlgorithmError',
-    message: 'The encryption request you specified is not valid. The valid value is AES256.',
+    message:
+        'The encryption request you specified is not valid. The valid value is AES256.',
     http_code: 400,
 });
 S3Error.ServerSideEncryptionConfigurationNotFoundError = Object.freeze({
@@ -181,7 +190,8 @@ S3Error.ServerSideEncryptionConfigurationNotFoundError = Object.freeze({
 });
 S3Error.InvalidLocationConstraint = Object.freeze({
     code: 'InvalidLocationConstraint',
-    message: 'The specified location constraint is not valid. For more information about regions, see How to Select a Region for Your Buckets.',
+    message:
+        'The specified location constraint is not valid. For more information about regions, see How to Select a Region for Your Buckets.',
     http_code: 400,
 });
 S3Error.InvalidObjectState = Object.freeze({
@@ -191,12 +201,14 @@ S3Error.InvalidObjectState = Object.freeze({
 });
 S3Error.InvalidPart = Object.freeze({
     code: 'InvalidPart',
-    message: 'One or more of the specified parts could not be found. The part might not have been uploaded, or the specified entity tag might not have matched the part\'s entity tag.',
+    message:
+        "One or more of the specified parts could not be found. The part might not have been uploaded, or the specified entity tag might not have matched the part's entity tag.",
     http_code: 400,
 });
 S3Error.InvalidPartOrder = Object.freeze({
     code: 'InvalidPartOrder',
-    message: 'The list of parts was not in ascending order.Parts list must specified in order by part number.',
+    message:
+        'The list of parts was not in ascending order.Parts list must specified in order by part number.',
     http_code: 400,
 });
 S3Error.InvalidPayer = Object.freeze({
@@ -206,7 +218,8 @@ S3Error.InvalidPayer = Object.freeze({
 });
 S3Error.InvalidPolicyDocument = Object.freeze({
     code: 'InvalidPolicyDocument',
-    message: 'The content of the form does not meet the conditions specified in the policy document.',
+    message:
+        'The content of the form does not meet the conditions specified in the policy document.',
     http_code: 400,
 });
 S3Error.InvalidRange = Object.freeze({
@@ -236,7 +249,8 @@ S3Error.InvalidStorageClass = Object.freeze({
 });
 S3Error.InvalidTargetBucketForLogging = Object.freeze({
     code: 'InvalidTargetBucketForLogging',
-    message: 'The target bucket for logging does not exist, is not owned by you, or does not have the appropriate grants for the log-delivery group.',
+    message:
+        'The target bucket for logging does not exist, is not owned by you, or does not have the appropriate grants for the log-delivery group.',
     http_code: 400,
 });
 S3Error.InvalidToken = Object.freeze({
@@ -246,7 +260,7 @@ S3Error.InvalidToken = Object.freeze({
 });
 S3Error.InvalidURI = Object.freeze({
     code: 'InvalidURI',
-    message: 'Couldn\'t parse the specified URI.',
+    message: "Couldn't parse the specified URI.",
     http_code: 400,
 });
 S3Error.KeyTooLong = Object.freeze({
@@ -256,17 +270,20 @@ S3Error.KeyTooLong = Object.freeze({
 });
 S3Error.MalformedACLError = Object.freeze({
     code: 'MalformedACLError',
-    message: 'The XML you provided was not well-formed or did not validate against our published schema.',
+    message:
+        'The XML you provided was not well-formed or did not validate against our published schema.',
     http_code: 400,
 });
 S3Error.MalformedPOSTRequest = Object.freeze({
     code: 'MalformedPOSTRequest',
-    message: 'The body of your POST request is not well-formed multipart/form-data.',
+    message:
+        'The body of your POST request is not well-formed multipart/form-data.',
     http_code: 400,
 });
 S3Error.MalformedXML = Object.freeze({
     code: 'MalformedXML',
-    message: 'This happens when the user sends malformed xml (xml that doesn\'t conform to the published xsd) for the configuration. The error message is, "The XML you provided was not well-formed or did not validate against our published schema."',
+    message:
+        'This happens when the user sends malformed xml (xml that doesn\'t conform to the published xsd) for the configuration. The error message is, "The XML you provided was not well-formed or did not validate against our published schema."',
     http_code: 400,
 });
 S3Error.InvalidTag = Object.freeze({
@@ -281,7 +298,8 @@ S3Error.MaxMessageLengthExceeded = Object.freeze({
 });
 S3Error.MaxPostPreDataLengthExceededError = Object.freeze({
     code: 'MaxPostPreDataLengthExceededError',
-    message: 'Your POST request fields preceding the upload file were too large.',
+    message:
+        'Your POST request fields preceding the upload file were too large.',
     http_code: 400,
 });
 S3Error.MetadataTooLarge = Object.freeze({
@@ -321,7 +339,8 @@ S3Error.MissingSecurityHeader = Object.freeze({
 });
 S3Error.NoLoggingStatusForKey = Object.freeze({
     code: 'NoLoggingStatusForKey',
-    message: 'There is no such thing as a logging status subresource for a key.',
+    message:
+        'There is no such thing as a logging status subresource for a key.',
     http_code: 400,
 });
 S3Error.NoSuchBucket = Object.freeze({
@@ -341,22 +360,26 @@ S3Error.NoSuchLifecycleConfiguration = Object.freeze({
 });
 S3Error.NoSuchUpload = Object.freeze({
     code: 'NoSuchUpload',
-    message: 'The specified multipart upload does not exist. The upload ID might be invalid, or the multipart upload might have been aborted or completed.',
+    message:
+        'The specified multipart upload does not exist. The upload ID might be invalid, or the multipart upload might have been aborted or completed.',
     http_code: 404,
 });
 S3Error.NoSuchVersion = Object.freeze({
     code: 'NoSuchVersion',
-    message: 'Indicates that the version ID specified in the request does not match an existing version.',
+    message:
+        'Indicates that the version ID specified in the request does not match an existing version.',
     http_code: 404,
 });
 S3Error.NotImplemented = Object.freeze({
     code: 'NotImplemented',
-    message: 'A header you provided implies functionality that is not implemented.',
+    message:
+        'A header you provided implies functionality that is not implemented.',
     http_code: 501,
 });
 S3Error.NotSignedUp = Object.freeze({
     code: 'NotSignedUp',
-    message: 'Your account is not signed up for the Amazon S3 service. You must sign up before you can use, Amazon S3. You can sign up at the following URL: http://aws.amazon.com/s3',
+    message:
+        'Your account is not signed up for the Amazon S3 service. You must sign up before you can use, Amazon S3. You can sign up at the following URL: http://aws.amazon.com/s3',
     http_code: 403,
 });
 S3Error.NoSuchBucketPolicy = Object.freeze({
@@ -366,12 +389,14 @@ S3Error.NoSuchBucketPolicy = Object.freeze({
 });
 S3Error.OperationAborted = Object.freeze({
     code: 'OperationAborted',
-    message: 'A conflicting conditional operation is currently in progress against this resource. Try again.',
+    message:
+        'A conflicting conditional operation is currently in progress against this resource. Try again.',
     http_code: 409,
 });
 S3Error.PermanentRedirect = Object.freeze({
     code: 'PermanentRedirect',
-    message: 'The bucket you are attempting to access must be addressed using the specified endpoint. Send all future requests to this endpoint.',
+    message:
+        'The bucket you are attempting to access must be addressed using the specified endpoint. Send all future requests to this endpoint.',
     http_code: 301,
 });
 S3Error.PreconditionFailed = Object.freeze({
@@ -396,12 +421,14 @@ S3Error.RequestIsNotMultiPartContent = Object.freeze({
 });
 S3Error.RequestTimeout = Object.freeze({
     code: 'RequestTimeout',
-    message: 'Your socket connection to the server was not read from or written to within the timeout period.',
+    message:
+        'Your socket connection to the server was not read from or written to within the timeout period.',
     http_code: 400,
 });
 S3Error.RequestTimeTooSkewed = Object.freeze({
     code: 'RequestTimeTooSkewed',
-    message: 'The difference between the request time and the server\'s time is too large.',
+    message:
+        "The difference between the request time and the server's time is too large.",
     http_code: 403,
 });
 S3Error.RequestTorrentOfBucketError = Object.freeze({
@@ -411,7 +438,8 @@ S3Error.RequestTorrentOfBucketError = Object.freeze({
 });
 S3Error.SignatureDoesNotMatch = Object.freeze({
     code: 'SignatureDoesNotMatch',
-    message: 'The request signature we calculated does not match the signature you provided. Check your AWS secret access key and signing method. For more information, see REST Authentication and SOAP Authentication for details.',
+    message:
+        'The request signature we calculated does not match the signature you provided. Check your AWS secret access key and signing method. For more information, see REST Authentication and SOAP Authentication for details.',
     http_code: 403,
 });
 S3Error.ServiceUnavailable = Object.freeze({
@@ -446,12 +474,14 @@ S3Error.UnexpectedContent = Object.freeze({
 });
 S3Error.UnresolvableGrantByEmailAddress = Object.freeze({
     code: 'UnresolvableGrantByEmailAddress',
-    message: 'The email address you provided does not match any account on record.',
+    message:
+        'The email address you provided does not match any account on record.',
     http_code: 400,
 });
 S3Error.UserKeyMustBeSpecified = Object.freeze({
     code: 'UserKeyMustBeSpecified',
-    message: 'The bucket POST must contain the specified field name. If it is specified, check the order of the fields.',
+    message:
+        'The bucket POST must contain the specified field name. If it is specified, check the order of the fields.',
     http_code: 400,
 });
 S3Error.NoSuchTagSet = Object.freeze({
@@ -470,7 +500,8 @@ S3Error.AccessControlListNotSupported = Object.freeze({
 /////////////////////////////////////
 S3Error.NotModified = Object.freeze({
     code: 'NotModified',
-    message: 'The resource was not modified according to the conditions in the provided headers.',
+    message:
+        'The resource was not modified according to the conditions in the provided headers.',
     http_code: 304,
 });
 S3Error.BadRequest = Object.freeze({
@@ -500,7 +531,8 @@ S3Error.NoSuchWebsiteConfiguration = Object.freeze({
 });
 S3Error.XAmzContentSHA256Mismatch = Object.freeze({
     code: 'XAmzContentSHA256Mismatch',
-    message: 'The provided \'x-amz-content-sha256\' header does not match what was computed.',
+    message:
+        "The provided 'x-amz-content-sha256' header does not match what was computed.",
     http_code: 400,
     // ClientComputedContentSHA256: '...',
     // S3ComputedContentSHA256: '...',
@@ -541,17 +573,20 @@ S3Error.InvalidEncodingType = Object.freeze({
 
 S3Error.S3SelectNotCompiled = Object.freeze({
     code: 'S3SelectNotCompiled',
-    message: 'This server was not compiled with S3 Select support. Recompile with BUILD_S3SELECT=1.',
+    message:
+        'This server was not compiled with S3 Select support. Recompile with BUILD_S3SELECT=1.',
     http_code: 501,
 });
 S3Error.S3SelectParquetNotCompiled = Object.freeze({
     code: 'S3SelectParquetNotCompiled',
-    message: 'This server was not compiled with S3 Select for Parquet. Recompile with BUILD_S3SELECT=1 and BUILD_S3SELECT_PARQUET=1.',
+    message:
+        'This server was not compiled with S3 Select for Parquet. Recompile with BUILD_S3SELECT=1 and BUILD_S3SELECT_PARQUET=1.',
     http_code: 501,
 });
 S3Error.MissingInputSerialization = Object.freeze({
     code: 'MissingRequiredParameter',
-    message: 'InputSerialization is required. Please check the service documentation and try again.',
+    message:
+        'InputSerialization is required. Please check the service documentation and try again.',
     http_code: 400,
 });
 S3Error.OutputInputFormatMismatch = Object.freeze({
@@ -566,7 +601,7 @@ S3Error.OutputInputFormatMismatch = Object.freeze({
 
 S3Error.InvalidObjectStorageClass = Object.freeze({
     code: 'InvalidObjectState',
-    message: 'Restore is not allowed for the object\'s current storage class.',
+    message: "Restore is not allowed for the object's current storage class.",
     http_code: 403,
 });
 
@@ -595,7 +630,8 @@ S3Error.RPC_ERRORS_TO_S3 = Object.freeze({
     NOT_ENOUGH_SPACE: S3Error.InvalidBucketState,
     MALFORMED_POLICY: S3Error.MalformedPolicy,
     NO_SUCH_OBJECT_LOCK_CONFIGURATION: S3Error.NoSuchObjectLockConfiguration,
-    OBJECT_LOCK_CONFIGURATION_NOT_FOUND_ERROR: S3Error.ObjectLockConfigurationNotFoundError,
+    OBJECT_LOCK_CONFIGURATION_NOT_FOUND_ERROR:
+        S3Error.ObjectLockConfigurationNotFoundError,
     INVALID_REQUEST: S3Error.InvalidRequest,
     NOT_IMPLEMENTED: S3Error.NotImplemented,
     INVALID_ACCESS_KEY_ID: S3Error.InvalidAccessKeyId,
@@ -605,7 +641,8 @@ S3Error.RPC_ERRORS_TO_S3 = Object.freeze({
     INVALID_RANGE: S3Error.InvalidRange,
     INVALID_OBJECT_STATE: S3Error.InvalidObjectState,
     INTERNAL_ERROR: S3Error.InternalError,
-    SERVER_SIDE_ENCRYPTION_CONFIGURATION_NOT_FOUND_ERROR: S3Error.ServerSideEncryptionConfigurationNotFoundError,
+    SERVER_SIDE_ENCRYPTION_CONFIGURATION_NOT_FOUND_ERROR:
+        S3Error.ServerSideEncryptionConfigurationNotFoundError,
     NO_SUCH_TAG: S3Error.NoSuchTagSet,
     INVALID_ENCODING_TYPE: S3Error.InvalidEncodingType,
     INVALID_TARGET_BUCKET: S3Error.InvalidTargetBucketForLogging,

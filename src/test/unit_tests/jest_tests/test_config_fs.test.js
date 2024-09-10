@@ -22,7 +22,11 @@ describe('adjust_bucket_with_schema_updates', () => {
     });
 
     it('should return bucket without deprecated properties', () => {
-        const bucket = {name: 'bucket1', system_owner: 'account1-system-owner', bucket_owner: 'account1-bucket_owner'};
+        const bucket = {
+            name: 'bucket1',
+            system_owner: 'account1-system-owner',
+            bucket_owner: 'account1-bucket_owner',
+        };
         config_fs.adjust_bucket_with_schema_updates(bucket);
         expect(bucket).toBeDefined();
         expect(bucket).not.toHaveProperty('system_owner');

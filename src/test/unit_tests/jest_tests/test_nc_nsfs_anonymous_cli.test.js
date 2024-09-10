@@ -2,16 +2,24 @@
 'use strict';
 
 // disabling init_rand_seed as it takes longer than the actual test execution
-process.env.DISABLE_INIT_RANDOM_SEED = "true";
+process.env.DISABLE_INIT_RANDOM_SEED = 'true';
 
 const path = require('path');
 const os_util = require('../../../util/os_utils');
 const fs_utils = require('../../../util/fs_utils');
 const { ConfigFS } = require('../../../sdk/config_fs');
-const { TMP_PATH, set_nc_config_dir_in_config } = require('../../system_tests/test_utils');
-const { TYPES, ACTIONS } = require('../../../manage_nsfs/manage_nsfs_constants');
-const ManageCLIError = require('../../../manage_nsfs/manage_nsfs_cli_errors').ManageCLIError;
-const ManageCLIResponse = require('../../../manage_nsfs/manage_nsfs_cli_responses').ManageCLIResponse;
+const {
+    TMP_PATH,
+    set_nc_config_dir_in_config,
+} = require('../../system_tests/test_utils');
+const {
+    TYPES,
+    ACTIONS,
+} = require('../../../manage_nsfs/manage_nsfs_constants');
+const ManageCLIError =
+    require('../../../manage_nsfs/manage_nsfs_cli_errors').ManageCLIError;
+const ManageCLIResponse =
+    require('../../../manage_nsfs/manage_nsfs_cli_responses').ManageCLIResponse;
 
 const tmp_fs_path = path.join(TMP_PATH, 'test_nc_nsfs_anon_account_cli');
 const config = require('../../../../config');
@@ -48,7 +56,9 @@ describe('manage nsfs cli anonymous account flow', () => {
             const { type, uid, gid, anonymous } = defaults;
             const account_options = { anonymous, config_root, uid, gid };
             await exec_manage_cli(type, action, account_options);
-            const account = await config_fs.get_account_by_name(config.ANONYMOUS_ACCOUNT_NAME);
+            const account = await config_fs.get_account_by_name(
+                config.ANONYMOUS_ACCOUNT_NAME,
+            );
             assert_account(account, account_options);
         });
 
@@ -57,14 +67,18 @@ describe('manage nsfs cli anonymous account flow', () => {
             const { type, uid, gid, anonymous } = defaults;
             const account_options = { anonymous, config_root, uid, gid };
             const resp = await exec_manage_cli(type, action, account_options);
-            expect(JSON.parse(resp.stdout).error.message).toBe(ManageCLIError.AccountNameAlreadyExists.message);
+            expect(JSON.parse(resp.stdout).error.message).toBe(
+                ManageCLIError.AccountNameAlreadyExists.message,
+            );
         });
 
         it('Should fail - cli create anonymous account with invalid action', async () => {
             const { type, uid, gid } = defaults;
             const account_options = { config_root, uid, gid };
             const resp = await exec_manage_cli(type, 'reload', account_options);
-            expect(JSON.parse(resp.stdout).error.message).toBe(ManageCLIError.InvalidAction.message);
+            expect(JSON.parse(resp.stdout).error.message).toBe(
+                ManageCLIError.InvalidAction.message,
+            );
         });
 
         it('Should fail - cli create anonymous account with name(not a valid argument)', async () => {
@@ -72,15 +86,23 @@ describe('manage nsfs cli anonymous account flow', () => {
             const { type, name, uid, gid, anonymous } = defaults;
             const account_options = { anonymous, config_root, uid, gid, name };
             const resp = await exec_manage_cli(type, action, account_options);
-            expect(JSON.parse(resp.stdout).error.message).toBe(ManageCLIError.InvalidArgument.message);
+            expect(JSON.parse(resp.stdout).error.message).toBe(
+                ManageCLIError.InvalidArgument.message,
+            );
         });
 
         it('Should fail - cli create anonymous account with invalid type', async () => {
             const action = ACTIONS.ADD;
             const { uid, gid, anonymous } = defaults;
             const account_options = { anonymous, config_root, uid, gid };
-            const resp = await exec_manage_cli('account_anonymous', action, account_options);
-            expect(JSON.parse(resp.stdout).error.message).toBe(ManageCLIError.InvalidType.message);
+            const resp = await exec_manage_cli(
+                'account_anonymous',
+                action,
+                account_options,
+            );
+            expect(JSON.parse(resp.stdout).error.message).toBe(
+                ManageCLIError.InvalidType.message,
+            );
         });
 
         it('Should fail - cli create anonymous account with invalid uid', async () => {
@@ -89,7 +111,9 @@ describe('manage nsfs cli anonymous account flow', () => {
             const uid_str = '0';
             const account_options = { anonymous, config_root, uid_str, gid };
             const resp = await exec_manage_cli(type, action, account_options);
-            expect(JSON.parse(resp.stdout).error.message).toBe(ManageCLIError.InvalidArgument.message);
+            expect(JSON.parse(resp.stdout).error.message).toBe(
+                ManageCLIError.InvalidArgument.message,
+            );
         });
 
         it('Should fail - cli create anonymous account with invalid gid', async () => {
@@ -98,7 +122,9 @@ describe('manage nsfs cli anonymous account flow', () => {
             const gid_str = '0';
             const account_options = { anonymous, config_root, uid, gid_str };
             const resp = await exec_manage_cli(type, action, account_options);
-            expect(JSON.parse(resp.stdout).error.message).toBe(ManageCLIError.InvalidArgument.message);
+            expect(JSON.parse(resp.stdout).error.message).toBe(
+                ManageCLIError.InvalidArgument.message,
+            );
         });
 
         it('cli create anonymous account with distinguished_name', async () => {
@@ -107,11 +133,15 @@ describe('manage nsfs cli anonymous account flow', () => {
             let account_options = { anonymous, config_root };
             let resp = await exec_manage_cli(type, action, account_options);
             const res_json = JSON.parse(resp.trim());
-            expect(res_json.response.code).toBe(ManageCLIResponse.AccountDeleted.code);
+            expect(res_json.response.code).toBe(
+                ManageCLIResponse.AccountDeleted.code,
+            );
             action = ACTIONS.ADD;
             account_options = { anonymous, config_root, user };
             resp = await exec_manage_cli(type, action, account_options);
-            const account = await config_fs.get_account_by_name(config.ANONYMOUS_ACCOUNT_NAME);
+            const account = await config_fs.get_account_by_name(
+                config.ANONYMOUS_ACCOUNT_NAME,
+            );
             assert_account(account, account_options);
         });
 
@@ -121,7 +151,9 @@ describe('manage nsfs cli anonymous account flow', () => {
             const user_int = 0;
             const account_options = { anonymous, config_root, user_int };
             const resp = await exec_manage_cli(type, action, account_options);
-            expect(JSON.parse(resp.stdout).error.message).toBe(ManageCLIError.InvalidArgument.message);
+            expect(JSON.parse(resp.stdout).error.message).toBe(
+                ManageCLIError.InvalidArgument.message,
+            );
         });
     });
 
@@ -151,14 +183,18 @@ describe('manage nsfs cli anonymous account flow', () => {
             let { type, uid, gid, anonymous } = defaults;
             const account_options = { anonymous, config_root, uid, gid };
             await exec_manage_cli(type, action, account_options);
-            const account = await config_fs.get_account_by_name(config.ANONYMOUS_ACCOUNT_NAME);
+            const account = await config_fs.get_account_by_name(
+                config.ANONYMOUS_ACCOUNT_NAME,
+            );
             assert_account(account, account_options);
 
             action = ACTIONS.UPDATE;
             gid = 1001;
             const account_update_options = { anonymous, config_root, uid, gid };
             await exec_manage_cli(type, action, account_update_options);
-            const update_account = await config_fs.get_account_by_name(config.ANONYMOUS_ACCOUNT_NAME);
+            const update_account = await config_fs.get_account_by_name(
+                config.ANONYMOUS_ACCOUNT_NAME,
+            );
             assert_account(update_account, account_update_options);
         });
 
@@ -167,8 +203,14 @@ describe('manage nsfs cli anonymous account flow', () => {
             const { type, uid, anonymous } = defaults;
             const gid = 'str';
             const account_update_options = { anonymous, config_root, uid, gid };
-            const resp = await exec_manage_cli(type, action, account_update_options);
-            expect(JSON.parse(resp.stdout).error.message).toBe(ManageCLIError.InvalidArgumentType.message);
+            const resp = await exec_manage_cli(
+                type,
+                action,
+                account_update_options,
+            );
+            expect(JSON.parse(resp.stdout).error.message).toBe(
+                ManageCLIError.InvalidArgumentType.message,
+            );
         });
 
         it('should fail - cli update anonymous account with invalid user', async () => {
@@ -176,8 +218,14 @@ describe('manage nsfs cli anonymous account flow', () => {
             const { type, anonymous } = defaults;
             const user = 0;
             const account_update_options = { anonymous, config_root, user };
-            const resp = await exec_manage_cli(type, action, account_update_options);
-            expect(JSON.parse(resp.stdout).error.message).toBe(ManageCLIError.InvalidArgumentType.message);
+            const resp = await exec_manage_cli(
+                type,
+                action,
+                account_update_options,
+            );
+            expect(JSON.parse(resp.stdout).error.message).toBe(
+                ManageCLIError.InvalidArgumentType.message,
+            );
         });
     });
 
@@ -207,22 +255,36 @@ describe('manage nsfs cli anonymous account flow', () => {
             const { type, uid, gid, anonymous } = defaults;
             const account_options = { anonymous, config_root, uid, gid };
             await exec_manage_cli(type, action, account_options);
-            const account = await config_fs.get_account_by_name(config.ANONYMOUS_ACCOUNT_NAME);
+            const account = await config_fs.get_account_by_name(
+                config.ANONYMOUS_ACCOUNT_NAME,
+            );
             assert_account(account, account_options);
 
             action = ACTIONS.DELETE;
             const account_delete_options = { anonymous, config_root };
-            const resp = await exec_manage_cli(type, action, account_delete_options);
+            const resp = await exec_manage_cli(
+                type,
+                action,
+                account_delete_options,
+            );
             const res_json = JSON.parse(resp.trim());
-            expect(res_json.response.code).toBe(ManageCLIResponse.AccountDeleted.code);
+            expect(res_json.response.code).toBe(
+                ManageCLIResponse.AccountDeleted.code,
+            );
         });
 
         it('should fail - Anonymous account try to delete again ', async () => {
             const action = ACTIONS.DELETE;
             const { type, anonymous } = defaults;
             const account_delete_options = { anonymous, config_root };
-            const resp = await exec_manage_cli(type, action, account_delete_options);
-            expect(JSON.parse(resp.stdout).error.message).toBe(ManageCLIError.NoSuchAccountName.message);
+            const resp = await exec_manage_cli(
+                type,
+                action,
+                account_delete_options,
+            );
+            expect(JSON.parse(resp.stdout).error.message).toBe(
+                ManageCLIError.NoSuchAccountName.message,
+            );
         });
     });
 
@@ -252,21 +314,26 @@ describe('manage nsfs cli anonymous account flow', () => {
             const { type, uid, gid, anonymous } = defaults;
             const account_options = { anonymous, config_root, uid, gid };
             await exec_manage_cli(type, action, account_options);
-            const account = await config_fs.get_account_by_name(config.ANONYMOUS_ACCOUNT_NAME);
+            const account = await config_fs.get_account_by_name(
+                config.ANONYMOUS_ACCOUNT_NAME,
+            );
             assert_account(account, account_options);
 
             action = ACTIONS.STATUS;
             const account_delete_options = { anonymous, config_root };
-            const resp = await exec_manage_cli(type, action, account_delete_options);
+            const resp = await exec_manage_cli(
+                type,
+                action,
+                account_delete_options,
+            );
             const res_json = JSON.parse(resp.trim());
             assert_account(res_json.response.reply, account_options);
         });
     });
-
 });
 
 /**
- * assert_account will verify the fields of the accounts 
+ * assert_account will verify the fields of the accounts
  * @param {object} account
  * @param {object} account_options
  */
@@ -274,7 +341,9 @@ function assert_account(account, account_options) {
     expect(account.name).toEqual(config.ANONYMOUS_ACCOUNT_NAME);
 
     if (account_options.distinguished_name) {
-        expect(account.nsfs_account_config.distinguished_name).toEqual(account_options.distinguished_name);
+        expect(account.nsfs_account_config.distinguished_name).toEqual(
+            account_options.distinguished_name,
+        );
     } else {
         expect(account.nsfs_account_config.uid).toEqual(account_options.uid);
         expect(account.nsfs_account_config.gid).toEqual(account_options.gid);
@@ -298,7 +367,7 @@ async function exec_manage_cli(type, action, options) {
     return res;
 }
 
-/** 
+/**
  * create_command would create the string needed to run the CLI command
  * @param {string} type
  * @param {string} action

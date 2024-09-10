@@ -48,9 +48,14 @@ async function handle_request(req, res) {
     // but anyway we allow it by the agent server.
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers',
-        'Content-Type,Content-MD5,Authorization,X-Amz-User-Agent,X-Amz-Date,ETag,X-Amz-Content-Sha256');
+    res.setHeader(
+        'Access-Control-Allow-Methods',
+        'GET,POST,PUT,DELETE,OPTIONS',
+    );
+    res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type,Content-MD5,Authorization,X-Amz-User-Agent,X-Amz-Date,ETag,X-Amz-Content-Sha256',
+    );
     res.setHeader('Access-Control-Expose-Headers', 'ETag');
 
     if (req.method === 'OPTIONS') {
@@ -69,10 +74,24 @@ async function handle_request(req, res) {
 
     // resolve the op to call
     const op_name = parse_op_name(req);
-    dbg.log0('LAMBDA REQUEST', req.method, req.originalUrl, 'op', op_name, 'request_id', req.request_id, req.headers);
+    dbg.log0(
+        'LAMBDA REQUEST',
+        req.method,
+        req.originalUrl,
+        'op',
+        op_name,
+        'request_id',
+        req.request_id,
+        req.headers,
+    );
     const op = LAMBDA_OPS[op_name];
     if (!op || !op.handler) {
-        dbg.error('LAMBDA TODO (NotImplemented)', op_name, req.method, req.originalUrl);
+        dbg.error(
+            'LAMBDA TODO (NotImplemented)',
+            op_name,
+            req.method,
+            req.originalUrl,
+        );
         throw new LambdaError(LambdaError.NotImplemented);
     }
 
@@ -127,9 +146,12 @@ function check_headers(req) {
     }
 
     const req_time =
-        time_utils.parse_amz_date(req.headers['x-amz-date'] || req.query['X-Amz-Date']) ||
-        time_utils.parse_http_header_date(req.headers.date);
-    if (Math.abs(Date.now() - req_time) > config.AMZ_DATE_MAX_TIME_SKEW_MILLIS) {
+        time_utils.parse_amz_date(
+            req.headers['x-amz-date'] || req.query['X-Amz-Date'],
+        ) || time_utils.parse_http_header_date(req.headers.date);
+    if (
+        Math.abs(Date.now() - req_time) > config.AMZ_DATE_MAX_TIME_SKEW_MILLIS
+    ) {
         throw new LambdaError(LambdaError.RequestTimeTooSkewed);
     }
 }
@@ -185,20 +207,25 @@ function parse_op_name(req) {
 
 function handle_error(req, res, err) {
     const lambda_err =
-        ((err instanceof LambdaError) && err) ||
-        new LambdaError(RPC_ERRORS_TO_LAMBDA[err.rpc_code] || LambdaError.ServiceException);
+        (err instanceof LambdaError && err) ||
+        new LambdaError(
+            RPC_ERRORS_TO_LAMBDA[err.rpc_code] || LambdaError.ServiceException,
+        );
 
     const reply = lambda_err.reply();
-    dbg.error('LAMBDA ERROR', reply,
-        req.method, req.originalUrl,
+    dbg.error(
+        'LAMBDA ERROR',
+        reply,
+        req.method,
+        req.originalUrl,
         JSON.stringify(req.headers),
-        err.stack || err);
+        err.stack || err,
+    );
     res.statusCode = lambda_err.http_code;
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Length', Buffer.byteLength(reply));
     res.end(reply);
 }
-
 
 // EXPORTS
 module.exports = lambda_rest;

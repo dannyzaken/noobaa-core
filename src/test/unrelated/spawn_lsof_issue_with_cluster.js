@@ -15,25 +15,30 @@ if (cluster.isMaster) {
     cluster.fork();
 
     const server = net.createServer();
-    server.listen(function() {
+    server.listen(function () {
         console.log('LISTENING ON PORT', server.address().port);
     });
 
     show_spawn_fds('MASTER AFTER FORK');
-
 } else {
     show_spawn_fds('WORKER');
-    setInterval(function() { /* Empty Func */ }, 10000);
+    setInterval(function () {
+        /* Empty Func */
+    }, 10000);
 }
 
 function show_spawn_fds(who) {
     console.log(who);
     const stdout = fs.openSync(fname, 'a');
-    const ret = child_process.spawn('bash', ['-c', 'echo "' + who + '"; lsof -p $$ | grep TCP'], {
-        detached: true,
-        stdio: ['ignore', stdout, stdout],
-        cwd: '/tmp'
-    });
+    const ret = child_process.spawn(
+        'bash',
+        ['-c', 'echo "' + who + '"; lsof -p $$ | grep TCP'],
+        {
+            detached: true,
+            stdio: ['ignore', stdout, stdout],
+            cwd: '/tmp',
+        },
+    );
     //console.log(ret.stdout.toString());
     return ret;
 }

@@ -17,9 +17,9 @@ class GlacierBackend {
     static EXPIRY_TIMESTAMP_FILE = 'expiry.timestamp';
 
     /**
-     * XATTR_RESTORE_REQUEST is set to a NUMBER (expiry days) by `restore_object` when 
-     * a restore request is made. This is unset by the underlying restore process when 
-     * it finishes the request, this  is to ensure that the same object is not queued 
+     * XATTR_RESTORE_REQUEST is set to a NUMBER (expiry days) by `restore_object` when
+     * a restore request is made. This is unset by the underlying restore process when
+     * it finishes the request, this  is to ensure that the same object is not queued
      * for restoration multiple times.
      */
     static XATTR_RESTORE_REQUEST = 'user.noobaa.restore.request';
@@ -29,7 +29,7 @@ class GlacierBackend {
      * NooBaa (in case restore is issued again while the object is on disk).
      * This is read by the underlying "disk evict" process to determine if the object
      * should be evicted from the disk or not.
-     * 
+     *
      * NooBaa will use this date to determine if the object is on disk or not, if the
      * expiry date is in the future, the object is on disk, if the expiry date is in
      * the past, the object is not on disk. This may or may not represent the actual
@@ -54,10 +54,10 @@ class GlacierBackend {
      * migrate must take a file name which will have newline seperated
      * entries of filenames which needs to be migrated to GLACIER and
      * should perform migration of those files if feasible.
-     * 
+     *
      * The function should return false if it needs the log file to be
      * preserved.
-     * 
+     *
      * NOTE: This needs to be implemented by each backend.
      * @param {nb.NativeFSContext} fs_context
      * @param {string} log_file log filename
@@ -72,10 +72,10 @@ class GlacierBackend {
      * restore must take a file name which will have newline seperated
      * entries of filenames which needs to be restored from GLACIER and
      * should perform restore of those files if feasible
-     * 
+     *
      * The function should return false if it needs the log file to be
      * preserved.
-     * 
+     *
      * NOTE: This needs to be implemented by each backend.
      * @param {nb.NativeFSContext} fs_context
      * @param {string} log_file log filename
@@ -88,7 +88,7 @@ class GlacierBackend {
 
     /**
      * expiry moves the restored files back to glacier
-     * 
+     *
      * NOTE: This needs to be implemented by each backend.
      * @param {nb.NativeFSContext} fs_context
      */
@@ -99,13 +99,13 @@ class GlacierBackend {
     /**
      * low_free_space must return true if the backend has
      * low free space.
-     * 
+     *
      * NOTE: This may be used as a precheck before executing
      * operations like `migrate` and `restore`.
-     * 
+     *
      * Example: `migrate` can be more frequently if this function
      * returns `true`.
-     * 
+     *
      * @returns {Promise<boolean>}
      */
     async low_free_space() {
@@ -114,7 +114,7 @@ class GlacierBackend {
 
     /**
      * should_migrate returns true if the given file must be migrated
-     * 
+     *
      * The caller can pass the stat data, if none is passed, stat is
      * called internally.
      * @param {string} file name of the file
@@ -136,37 +136,52 @@ class GlacierBackend {
         // the migration.
         if (stat.blocks === 0) return false;
 
-        const restore_status = GlacierBackend.get_restore_status(stat.xattr, new Date(), file);
+        const restore_status = GlacierBackend.get_restore_status(
+            stat.xattr,
+            new Date(),
+            file,
+        );
         if (!restore_status) return false;
 
-        return restore_status.state === GlacierBackend.RESTORE_STATUS_CAN_RESTORE;
+        return (
+            restore_status.state === GlacierBackend.RESTORE_STATUS_CAN_RESTORE
+        );
     }
 
     /**
      * get_restore_status returns status of the object at the given
      * file_path
-     * 
+     *
      * NOTE: Returns undefined if `user.storage_class` attribute is not
      * `GLACIER`
-     * @param {nb.NativeFSXattr} xattr 
-     * @param {Date} now 
-     * @param {string} file_path 
+     * @param {nb.NativeFSXattr} xattr
+     * @param {Date} now
+     * @param {string} file_path
      * @returns {nb.RestoreStatus | undefined}
      */
     static get_restore_status(xattr, now, file_path) {
-        if (xattr[GlacierBackend.STORAGE_CLASS_XATTR] !== s3_utils.STORAGE_CLASS_GLACIER) return;
+        if (
+            xattr[GlacierBackend.STORAGE_CLASS_XATTR] !==
+            s3_utils.STORAGE_CLASS_GLACIER
+        ) {
+            return;
+        }
 
         // Total 6 states (2x restore_request, 3x restore_expiry)
         let restore_request;
         let restore_expiry;
 
-        const restore_request_xattr = xattr[GlacierBackend.XATTR_RESTORE_REQUEST];
+        const restore_request_xattr =
+            xattr[GlacierBackend.XATTR_RESTORE_REQUEST];
         if (restore_request_xattr) {
             const num = Number(restore_request_xattr);
             if (!isNaN(num) && num > 0) {
                 restore_request = num;
             } else {
-                dbg.error('unexpected value for restore request for', file_path);
+                dbg.error(
+                    'unexpected value for restore request for',
+                    file_path,
+                );
             }
         }
         if (xattr[GlacierBackend.XATTR_RESTORE_EXPIRY]) {
@@ -180,7 +195,10 @@ class GlacierBackend {
 
         if (restore_request) {
             if (restore_expiry > now) {
-                dbg.warn('unexpected restore state - (restore_request, request_expiry > now) for', file_path);
+                dbg.warn(
+                    'unexpected restore state - (restore_request, request_expiry > now) for',
+                    file_path,
+                );
             }
 
             return {
@@ -207,12 +225,12 @@ class GlacierBackend {
      * @param {Date} from
      * @param {Number} days - float
      * @param {string} desired_date_time - in format HH:MM:SS
-     * @param {'UTC' | 'LOCAL'} tz 
+     * @param {'UTC' | 'LOCAL'} tz
      * @returns {Date}
      */
     static generate_expiry(from, days, desired_date_time, tz) {
         const expires_on = new Date(from);
-        expires_on.setTime(expires_on.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires_on.setTime(expires_on.getTime() + days * 24 * 60 * 60 * 1000);
 
         const parsed = desired_date_time.split(':');
         if (parsed.length === 3) {
@@ -243,7 +261,7 @@ class GlacierBackend {
 
     /**
      * should_restore returns true if the give file must be restored
-     * 
+     *
      * The caller can pass the stat data, if none is passed, stat is
      * called internally.
      * @param {string} file name of the file
@@ -260,7 +278,11 @@ class GlacierBackend {
             });
         }
 
-        const restore_status = GlacierBackend.get_restore_status(stat.xattr, new Date(), file);
+        const restore_status = GlacierBackend.get_restore_status(
+            stat.xattr,
+            new Date(),
+            file,
+        );
         if (!restore_status) return false;
 
         // We don't check for pre-existing expiry here, it can happen in 2 cases

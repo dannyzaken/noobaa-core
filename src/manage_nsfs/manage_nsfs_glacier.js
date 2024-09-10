@@ -19,11 +19,18 @@ async function process_migrations() {
         const backend = getGlacierBackend();
 
         if (
-            await backend.low_free_space() ||
-            await time_exceeded(fs_context, config.NSFS_GLACIER_MIGRATE_INTERVAL, GlacierBackend.MIGRATE_TIMESTAMP_FILE)
+            (await backend.low_free_space()) ||
+            (await time_exceeded(
+                fs_context,
+                config.NSFS_GLACIER_MIGRATE_INTERVAL,
+                GlacierBackend.MIGRATE_TIMESTAMP_FILE,
+            ))
         ) {
             await run_glacier_migrations(fs_context, backend);
-            await record_current_time(fs_context, GlacierBackend.MIGRATE_TIMESTAMP_FILE);
+            await record_current_time(
+                fs_context,
+                GlacierBackend.MIGRATE_TIMESTAMP_FILE,
+            );
         }
     });
 }
@@ -35,7 +42,11 @@ async function process_migrations() {
  * @param {import('../sdk/nsfs_glacier_backend/backend').GlacierBackend} backend
  */
 async function run_glacier_migrations(fs_context, backend) {
-    await run_glacier_operation(fs_context, GlacierBackend.MIGRATE_WAL_NAME, backend.migrate.bind(backend));
+    await run_glacier_operation(
+        fs_context,
+        GlacierBackend.MIGRATE_WAL_NAME,
+        backend.migrate.bind(backend),
+    );
 }
 
 async function process_restores() {
@@ -45,24 +56,36 @@ async function process_restores() {
         const backend = getGlacierBackend();
 
         if (
-            await backend.low_free_space() ||
-            !(await time_exceeded(fs_context, config.NSFS_GLACIER_RESTORE_INTERVAL, GlacierBackend.RESTORE_TIMESTAMP_FILE))
-        ) return;
-
+            (await backend.low_free_space()) ||
+            !(await time_exceeded(
+                fs_context,
+                config.NSFS_GLACIER_RESTORE_INTERVAL,
+                GlacierBackend.RESTORE_TIMESTAMP_FILE,
+            ))
+        ) {
+            return;
+        }
 
         await run_glacier_restore(fs_context, backend);
-        await record_current_time(fs_context, GlacierBackend.RESTORE_TIMESTAMP_FILE);
+        await record_current_time(
+            fs_context,
+            GlacierBackend.RESTORE_TIMESTAMP_FILE,
+        );
     });
 }
 
 /**
  * run_tape_restore reads the restore WALs and attempts to restore the
  * files mentioned in the WAL.
- * @param {nb.NativeFSContext} fs_context 
+ * @param {nb.NativeFSContext} fs_context
  * @param {import('../sdk/nsfs_glacier_backend/backend').GlacierBackend} backend
  */
 async function run_glacier_restore(fs_context, backend) {
-    await run_glacier_operation(fs_context, GlacierBackend.RESTORE_WAL_NAME, backend.restore.bind(backend));
+    await run_glacier_operation(
+        fs_context,
+        GlacierBackend.RESTORE_WAL_NAME,
+        backend.restore.bind(backend),
+    );
 }
 
 async function process_expiry() {
@@ -71,55 +94,84 @@ async function process_expiry() {
     await lock_and_run(fs_context, SCAN_LOCK, async () => {
         const backend = getGlacierBackend();
         if (
-            await backend.low_free_space() ||
-            await is_desired_time(
-                    fs_context,
-                    new Date(),
-                    config.NSFS_GLACIER_EXPIRY_RUN_TIME,
-                    config.NSFS_GLACIER_EXPIRY_RUN_DELAY_LIMIT_MINS,
-                    GlacierBackend.EXPIRY_TIMESTAMP_FILE,
-            )
+            (await backend.low_free_space()) ||
+            (await is_desired_time(
+                fs_context,
+                new Date(),
+                config.NSFS_GLACIER_EXPIRY_RUN_TIME,
+                config.NSFS_GLACIER_EXPIRY_RUN_DELAY_LIMIT_MINS,
+                GlacierBackend.EXPIRY_TIMESTAMP_FILE,
+            ))
         ) {
             await backend.expiry(fs_context);
-            await record_current_time(fs_context, GlacierBackend.EXPIRY_TIMESTAMP_FILE);
+            await record_current_time(
+                fs_context,
+                GlacierBackend.EXPIRY_TIMESTAMP_FILE,
+            );
         }
     });
 }
 
 /**
  * is_desired_time returns true if the given time matches with
- * the desired time or if 
- * @param {nb.NativeFSContext} fs_context 
+ * the desired time or if
+ * @param {nb.NativeFSContext} fs_context
  * @param {Date} current
  * @param {string} desire time in format 'hh:mm'
  * @param {number} delay_limit_mins
- * @param {string} timestamp_file 
+ * @param {string} timestamp_file
  * @returns {Promise<boolean>}
  */
-async function is_desired_time(fs_context, current, desire, delay_limit_mins, timestamp_file) {
+async function is_desired_time(
+    fs_context,
+    current,
+    desire,
+    delay_limit_mins,
+    timestamp_file,
+) {
     const [desired_hour, desired_min] = desire.split(':').map(Number);
     if (
         isNaN(desired_hour) ||
         isNaN(desired_min) ||
-        (desired_hour < 0 || desired_hour >= 24) ||
-        (desired_min < 0 || desired_min >= 60)
+        desired_hour < 0 ||
+        desired_hour >= 24 ||
+        desired_min < 0 ||
+        desired_min >= 60
     ) {
         throw new Error('invalid desired_time - must be hh:mm');
     }
 
-    const min_time = get_tz_date(desired_hour, desired_min, 0, config.NSFS_GLACIER_EXPIRY_TZ);
-    const max_time = get_tz_date(desired_hour, desired_min + delay_limit_mins, 0, config.NSFS_GLACIER_EXPIRY_TZ);
+    const min_time = get_tz_date(
+        desired_hour,
+        desired_min,
+        0,
+        config.NSFS_GLACIER_EXPIRY_TZ,
+    );
+    const max_time = get_tz_date(
+        desired_hour,
+        desired_min + delay_limit_mins,
+        0,
+        config.NSFS_GLACIER_EXPIRY_TZ,
+    );
 
     if (current >= min_time && current <= max_time) {
         try {
-            const { data } = await nb_native().fs.readFile(fs_context, path.join(config.NSFS_GLACIER_LOGS_DIR, timestamp_file));
+            const { data } = await nb_native().fs.readFile(
+                fs_context,
+                path.join(config.NSFS_GLACIER_LOGS_DIR, timestamp_file),
+            );
             const lastrun = new Date(data.toString());
 
             // Last run should NOT be in this window
             if (lastrun >= min_time && lastrun <= max_time) return false;
         } catch (error) {
             if (error.code === 'ENOENT') return true;
-            console.error('failed to read last run timestamp:', error, 'timestamp_file:', timestamp_file);
+            console.error(
+                'failed to read last run timestamp:',
+                error,
+                'timestamp_file:',
+                timestamp_file,
+            );
 
             throw error;
         }
@@ -133,19 +185,27 @@ async function is_desired_time(fs_context, current, desire, delay_limit_mins, ti
 /**
  * time_exceeded returns true if the time between last run recorded in the given
  * timestamp_file and now is greater than the given interval.
- * @param {nb.NativeFSContext} fs_context 
- * @param {number} interval 
- * @param {string} timestamp_file 
+ * @param {nb.NativeFSContext} fs_context
+ * @param {number} interval
+ * @param {string} timestamp_file
  * @returns {Promise<boolean>}
  */
 async function time_exceeded(fs_context, interval, timestamp_file) {
     try {
-        const { data } = await nb_native().fs.readFile(fs_context, path.join(config.NSFS_GLACIER_LOGS_DIR, timestamp_file));
+        const { data } = await nb_native().fs.readFile(
+            fs_context,
+            path.join(config.NSFS_GLACIER_LOGS_DIR, timestamp_file),
+        );
         const lastrun = new Date(data.toString());
 
         if (lastrun.getTime() + interval < Date.now()) return true;
     } catch (error) {
-        console.error('failed to read last run timestamp:', error, 'timestamp_file:', timestamp_file);
+        console.error(
+            'failed to read last run timestamp:',
+            error,
+            'timestamp_file:',
+            timestamp_file,
+        );
         if (error.code === 'ENOENT') return true;
 
         throw error;
@@ -157,8 +217,8 @@ async function time_exceeded(fs_context, interval, timestamp_file) {
 /**
  * record_current_time stores the current timestamp in ISO format into
  * the given timestamp file
- * @param {nb.NativeFSContext} fs_context 
- * @param {string} timestamp_file 
+ * @param {nb.NativeFSContext} fs_context
+ * @param {string} timestamp_file
  */
 async function record_current_time(fs_context, timestamp_file) {
     await nb_native().fs.writeFile(
@@ -172,14 +232,20 @@ async function record_current_time(fs_context, timestamp_file) {
  * run_glacier_operations takes a log_namespace and a callback and executes the
  * callback on each log file in that namespace. It will also generate a failure
  * log file and persist the failures in that log file.
- * @param {nb.NativeFSContext} fs_context 
- * @param {string} log_namespace 
- * @param {Function} cb 
+ * @param {nb.NativeFSContext} fs_context
+ * @param {string} log_namespace
+ * @param {Function} cb
  */
 async function run_glacier_operation(fs_context, log_namespace, cb) {
-    const log = new PersistentLogger(config.NSFS_GLACIER_LOGS_DIR, log_namespace, { locking: 'EXCLUSIVE' });
+    const log = new PersistentLogger(
+        config.NSFS_GLACIER_LOGS_DIR,
+        log_namespace,
+        { locking: 'EXCLUSIVE' },
+    );
     try {
-        await log.process(async (entry, failure_recorder) => cb(fs_context, entry, failure_recorder));
+        await log.process(async (entry, failure_recorder) =>
+            cb(fs_context, entry, failure_recorder),
+        );
     } catch (error) {
         console.error('failed to process log in namespace:', log_namespace);
     } finally {
@@ -215,12 +281,16 @@ function get_tz_date(hours, mins, secs, tz) {
 /**
  * lock_and_run acquires a flock and calls the given callback after
  * acquiring the lock
- * @param {nb.NativeFSContext} fs_context 
+ * @param {nb.NativeFSContext} fs_context
  * @param {string} lockfilename
- * @param {Function} cb 
+ * @param {Function} cb
  */
 async function lock_and_run(fs_context, lockfilename, cb) {
-    const lockfd = await nb_native().fs.open(fs_context, path.join(config.NSFS_GLACIER_LOGS_DIR, lockfilename), 'w');
+    const lockfd = await nb_native().fs.open(
+        fs_context,
+        path.join(config.NSFS_GLACIER_LOGS_DIR, lockfilename),
+        'w',
+    );
 
     try {
         await lockfd.fcntllock(fs_context, 'EXCLUSIVE');

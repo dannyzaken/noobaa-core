@@ -6,7 +6,8 @@ const url = require('url');
 const querystring = require('querystring');
 const net = require('net');
 
-const QUICK_PARSE_REGEXP = /^\s*(\w+:)?(\/\/)?(([^:/[\]]*)|\[([a-fA-F0-9:.]*)\])?(:\d*)?(\/[^?#]*)?(\?[^#]*)?(#.*)?\s*$/;
+const QUICK_PARSE_REGEXP =
+    /^\s*(\w+:)?(\/\/)?(([^:/[\]]*)|\[([a-fA-F0-9:.]*)\])?(:\d*)?(\/[^?#]*)?(\?[^#]*)?(#.*)?\s*$/;
 
 /**
  * parse url string much faster than url.parse() - reduce the time to 1/10.
@@ -59,34 +60,48 @@ function construct_url(def) {
         hostname = `[${hostname}]`;
     }
 
-    return new URL(port ?
-        `${protocol || 'http'}://${hostname}:${port}` :
-        `${protocol || 'http'}://${hostname}`
+    return new URL(
+        port ?
+            `${protocol || 'http'}://${hostname}:${port}`
+        :   `${protocol || 'http'}://${hostname}`,
     );
 }
 
 function benchmark() {
-    const testing_url = process.argv[2] || "http://localhost:4545/";
+    const testing_url = process.argv[2] || 'http://localhost:4545/';
     const url_parse_res = url.parse(testing_url, true);
     const quick_parse_res = quick_parse(testing_url, true);
     console.log('\nurl.parse("' + testing_url + '") = ', url_parse_res);
     console.log('\nquick_parse("' + testing_url + '") = ', quick_parse_res);
     console.log(' ');
-    _.forIn(url_parse_res, function(v1, k) {
+    _.forIn(url_parse_res, function (v1, k) {
         const v2 = quick_parse_res[k];
         if (!_.isEqual(v1, v2)) {
-            console.log('!!! Bad value quick_parse()',
+            console.log(
+                '!!! Bad value quick_parse()',
                 k + ': ' + JSON.stringify(v2),
-                'expected', JSON.stringify(v1));
+                'expected',
+                JSON.stringify(v1),
+            );
         }
     });
     const url_parse_fmt = url.format(url_parse_res);
     const quick_parse_fmt = url.format(quick_parse_res);
     if (url_parse_fmt !== testing_url) {
-        console.log('!!! Bad format(url.parse) =', url_parse_fmt, 'expected', testing_url);
+        console.log(
+            '!!! Bad format(url.parse) =',
+            url_parse_fmt,
+            'expected',
+            testing_url,
+        );
     }
     if (quick_parse_fmt !== testing_url) {
-        console.log('!!! Bad format(quick_parse) =', quick_parse_fmt, 'expected', testing_url);
+        console.log(
+            '!!! Bad format(quick_parse) =',
+            quick_parse_fmt,
+            'expected',
+            testing_url,
+        );
     }
     const tests = [
         function test_url_parse() {
@@ -94,7 +109,7 @@ function benchmark() {
         },
         function test_quick_parse() {
             return quick_parse(testing_url, true);
-        }
+        },
     ];
     for (let t = 0; t < tests.length; ++t) {
         const test = tests[t];
@@ -110,13 +125,16 @@ function benchmark() {
             count += 5000;
             now = Date.now();
             if (now - last_print > 1000) {
-                speed = ((count - last_count) * 1000 / (now - last_print)).toFixed(0);
+                speed = (
+                    ((count - last_count) * 1000) /
+                    (now - last_print)
+                ).toFixed(0);
                 console.log('\tcurrent times per second:', speed);
                 last_print = now;
                 last_count = count;
             }
         } while (now - start < 5000);
-        speed = (count * 1000 / (now - start)).toFixed(0);
+        speed = ((count * 1000) / (now - start)).toFixed(0);
         console.log('\tOVERALL times per second:', speed);
     }
     console.log('\ndone.\n');

@@ -12,13 +12,13 @@
 
 const AWS = require('aws-sdk');
 
-module.exports.handler = async function(event, context, callback) {
+module.exports.handler = async function (event, context, callback) {
     try {
         const {
             source_bucket,
             target_bucket,
             are_you_sure = false,
-            concur = 10
+            concur = 10,
         } = event;
 
         const s3 = new AWS.S3();
@@ -32,7 +32,11 @@ module.exports.handler = async function(event, context, callback) {
 
         for (const source of source_map.values()) {
             const target = target_map.get(source.Key);
-            if (target && target.Etag === source.Etag && target.Size === source.Size) {
+            if (
+                target &&
+                target.Etag === source.Etag &&
+                target.Size === source.Size
+            ) {
                 exist_list.push(source);
             } else {
                 copy_list.push(source);
@@ -40,25 +44,41 @@ module.exports.handler = async function(event, context, callback) {
         }
 
         if (!are_you_sure) {
-            return callback(null, `
+            return callback(
+                null,
+                `
                 ${copy_list.length} Objects to copy.
                 ${exist_list.length} Objects already exist.
                 (use "are_you_sure": true)
-            `);
+            `,
+            );
         }
 
         if (copy_list.length) {
-            await Promise.all(new Array(concur).fill(0).map(() =>
-                copy_worker(s3, source_bucket, target_bucket, copy_list, copy_done_list, copy_fail_list)
-            ));
+            await Promise.all(
+                new Array(concur)
+                    .fill(0)
+                    .map(() =>
+                        copy_worker(
+                            s3,
+                            source_bucket,
+                            target_bucket,
+                            copy_list,
+                            copy_done_list,
+                            copy_fail_list,
+                        ),
+                    ),
+            );
         }
 
-        return callback(null, `
+        return callback(
+            null,
+            `
             ${copy_done_list.length} Objects copied successfuly.
             ${copy_fail_list.length} Objects failed to copy.
             ${exist_list.length} Objects already exist.
-        `);
-
+        `,
+        );
     } catch (err) {
         return callback(err);
     }
@@ -70,7 +90,9 @@ async function list_all(s3, bucket) {
     let marker;
 
     while (truncated) {
-        const list = await s3.listObjects({ Bucket: bucket, Marker: marker }).promise();
+        const list = await s3
+            .listObjects({ Bucket: bucket, Marker: marker })
+            .promise();
         if (list.Contents && list.Contents.length) {
             for (const obj of list.Contents) {
                 objects_map.set(obj.Key, obj);
@@ -83,23 +105,33 @@ async function list_all(s3, bucket) {
     return objects_map;
 }
 
-async function copy_worker(s3, source_bucket, target_bucket, copy_list, copy_done_list, copy_fail_list) {
+async function copy_worker(
+    s3,
+    source_bucket,
+    target_bucket,
+    copy_list,
+    copy_done_list,
+    copy_fail_list,
+) {
     while (copy_list.length) {
         let obj;
         try {
             obj = copy_list.shift();
 
-            await s3.upload({
-                Bucket: target_bucket,
-                Key: obj.Key,
-                Body: s3.getObject({
-                    Bucket: source_bucket,
+            await s3
+                .upload({
+                    Bucket: target_bucket,
                     Key: obj.Key,
-                }).createReadStream(),
-            }).promise();
+                    Body: s3
+                        .getObject({
+                            Bucket: source_bucket,
+                            Key: obj.Key,
+                        })
+                        .createReadStream(),
+                })
+                .promise();
 
             copy_done_list.push(obj);
-
         } catch (err) {
             if (obj) copy_fail_list.push(obj);
         }

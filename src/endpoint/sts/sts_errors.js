@@ -5,17 +5,16 @@ const xml_utils = require('../../util/xml_utils');
 // https://docs.aws.amazon.com/STS/latest/APIReference/CommonErrors.html
 /**
  * @typedef {{
- *      code?: string, 
- *      message: string, 
+ *      code?: string,
+ *      message: string,
  *      http_code: number,
  *      detail?: string
  * }} StsErrorSpec
  */
 
 class StsError extends Error {
-
     /**
-     * @param {StsErrorSpec} error_spec 
+     * @param {StsErrorSpec} error_spec
      */
     constructor({ code, message, http_code, detail }) {
         super(message); // sets this.message
@@ -32,11 +31,10 @@ class StsError extends Error {
                 Resource: resource || '',
                 RequestId: request_id || '',
                 Detail: this.detail,
-            }
+            },
         };
         return xml_utils.encode_xml(xml);
     }
-
 }
 
 StsError.AccessDeniedException = Object.freeze({
@@ -51,17 +49,20 @@ StsError.IncompleteSignature = Object.freeze({
 });
 StsError.InternalFailure = Object.freeze({
     code: 'InternalFailure',
-    message: 'The request processing has failed because of an unknown error, exception or failure.',
+    message:
+        'The request processing has failed because of an unknown error, exception or failure.',
     http_code: 500,
 });
 StsError.InvalidAction = Object.freeze({
     code: 'InvalidAction',
-    message: 'The action or operation requested is invalid. Verify that the action is typed correctly.',
+    message:
+        'The action or operation requested is invalid. Verify that the action is typed correctly.',
     http_code: 400,
 });
 StsError.InvalidClientTokenId = Object.freeze({
     code: 'InvalidClientTokenId',
-    message: 'The X.509 certificate or AWS access key ID provided does not exist in our records.',
+    message:
+        'The X.509 certificate or AWS access key ID provided does not exist in our records.',
     http_code: 403,
 });
 StsError.InvalidParameterCombination = Object.freeze({
@@ -71,12 +72,14 @@ StsError.InvalidParameterCombination = Object.freeze({
 });
 StsError.InvalidParameterValue = Object.freeze({
     code: 'InvalidParameterValue',
-    message: 'An invalid or out-of-range value was supplied for the input parameter.',
+    message:
+        'An invalid or out-of-range value was supplied for the input parameter.',
     http_code: 400,
 });
 StsError.InvalidQueryParameter = Object.freeze({
     code: 'InvalidQueryParameter',
-    message: 'The AWS query string is malformed or does not adhere to AWS standards.',
+    message:
+        'The AWS query string is malformed or does not adhere to AWS standards.',
     http_code: 400,
 });
 StsError.MalformedQueryString = Object.freeze({
@@ -91,7 +94,8 @@ StsError.MissingAction = Object.freeze({
 });
 StsError.MissingAuthenticationToken = Object.freeze({
     code: 'MissingAuthenticationToken',
-    message: 'The request must contain either a valid (registered) AWS access key ID or X.509 certificate.',
+    message:
+        'The request must contain either a valid (registered) AWS access key ID or X.509 certificate.',
     http_code: 403,
 });
 StsError.MissingParameter = Object.freeze({
@@ -111,7 +115,8 @@ StsError.OptInRequired = Object.freeze({
 });
 StsError.RequestExpired = Object.freeze({
     code: 'RequestExpired',
-    message: 'The request reached the service more than 15 minutes after the date stamp on the request or more than 15 minutes after the request expiration date (such as for pre-signed URLs), or the date stamp on the request is more than 15 minutes in the future.',
+    message:
+        'The request reached the service more than 15 minutes after the date stamp on the request or more than 15 minutes after the request expiration date (such as for pre-signed URLs), or the date stamp on the request is more than 15 minutes in the future.',
     http_code: 400,
 });
 StsError.ServiceUnavailable = Object.freeze({
@@ -126,12 +131,14 @@ StsError.ThrottlingException = Object.freeze({
 });
 StsError.ValidationError = Object.freeze({
     code: 'ValidationError',
-    message: 'The input fails to satisfy the constraints specified by an AWS service.',
+    message:
+        'The input fails to satisfy the constraints specified by an AWS service.',
     http_code: 400,
 });
 StsError.NotImplemented = Object.freeze({
     code: 'NotImplemented',
-    message: 'A header you provided implies functionality that is not implemented.',
+    message:
+        'A header you provided implies functionality that is not implemented.',
     http_code: 501,
 });
 StsError.ExpiredToken = Object.freeze({

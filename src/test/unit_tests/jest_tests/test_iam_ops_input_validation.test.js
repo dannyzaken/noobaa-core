@@ -13,11 +13,9 @@ const iam_update_access_key_op = require('../../../endpoint/iam/ops/iam_update_a
 const iam_delete_access_key_op = require('../../../endpoint/iam/ops/iam_delete_access_key');
 const iam_list_access_keys_op = require('../../../endpoint/iam/ops/iam_list_access_keys');
 
-
 class NoErrorThrownError extends Error {}
 
 describe('input validation flow in IAM ops - IAM USERS API', () => {
-
     describe('iam_create_user', () => {
         let res;
         const username = 'Christopher';
@@ -29,13 +27,16 @@ describe('input validation flow in IAM ops - IAM USERS API', () => {
                     body: {
                         // user_name is required
                         path: iam_path,
-                    }
+                    },
                 };
                 await iam_create_user_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/required/i);
             }
@@ -47,13 +48,16 @@ describe('input validation flow in IAM ops - IAM USERS API', () => {
                 const req = {
                     body: {
                         user_name: invalid_username,
-                    }
+                    },
                 };
                 await iam_create_user_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/length/i);
             }
@@ -66,13 +70,16 @@ describe('input validation flow in IAM ops - IAM USERS API', () => {
                     body: {
                         user_name: username,
                         path: invalid_iam_path,
-                    }
+                    },
                 };
                 await iam_create_user_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/path/i);
             }
@@ -88,13 +95,16 @@ describe('input validation flow in IAM ops - IAM USERS API', () => {
                 const req = {
                     body: {
                         user_name: invalid_username,
-                    }
+                    },
                 };
                 await iam_get_user_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/invalid/i);
             }
@@ -110,13 +120,16 @@ describe('input validation flow in IAM ops - IAM USERS API', () => {
                     body: {
                         // user_name is required
                         new_user_name: username,
-                    }
+                    },
                 };
                 await iam_update_user_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/required/i);
             }
@@ -128,14 +141,17 @@ describe('input validation flow in IAM ops - IAM USERS API', () => {
                 const req = {
                     body: {
                         new_user_name: invalid_username,
-                        user_name: username
-                    }
+                        user_name: username,
+                    },
                 };
                 await iam_update_user_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/length/i);
             }
@@ -148,13 +164,16 @@ describe('input validation flow in IAM ops - IAM USERS API', () => {
                     body: {
                         user_name: username,
                         new_path: invalid_iam_path,
-                    }
+                    },
                 };
                 await iam_update_user_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/path/i);
             }
@@ -169,13 +188,16 @@ describe('input validation flow in IAM ops - IAM USERS API', () => {
                 const req = {
                     body: {
                         // user_name is required
-                    }
+                    },
                 };
                 await iam_delete_user_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/required/i);
             }
@@ -188,14 +210,17 @@ describe('input validation flow in IAM ops - IAM USERS API', () => {
                 const req = {
                     body: {
                         new_user_name: invalid_username,
-                        user_name: username
-                    }
+                        user_name: username,
+                    },
                 };
                 await iam_update_user_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/length/i);
             }
@@ -210,14 +235,17 @@ describe('input validation flow in IAM ops - IAM USERS API', () => {
                 const invalid_iam_path_prefix = 'abc/def';
                 const req = {
                     body: {
-                        path_prefix: invalid_iam_path_prefix
-                    }
+                        path_prefix: invalid_iam_path_prefix,
+                    },
                 };
                 await iam_list_users_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/invalid/i);
             }
@@ -228,14 +256,17 @@ describe('input validation flow in IAM ops - IAM USERS API', () => {
                 const invalid_nax_items = 0;
                 const req = {
                     body: {
-                        max_items: invalid_nax_items
-                    }
+                        max_items: invalid_nax_items,
+                    },
                 };
                 await iam_list_users_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/invalid/i);
             }
@@ -246,14 +277,17 @@ describe('input validation flow in IAM ops - IAM USERS API', () => {
                 const invalid_marker = '';
                 const req = {
                     body: {
-                        marker: invalid_marker
-                    }
+                        marker: invalid_marker,
+                    },
                 };
                 await iam_list_users_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/invalid/i);
             }
@@ -262,7 +296,6 @@ describe('input validation flow in IAM ops - IAM USERS API', () => {
 });
 
 describe('input validation flow in IAM ops - IAM ACCESS KEY API', () => {
-
     describe('iam_create_access_key', () => {
         let res;
 
@@ -272,13 +305,16 @@ describe('input validation flow in IAM ops - IAM ACCESS KEY API', () => {
                 const req = {
                     body: {
                         user_name: invalid_username,
-                    }
+                    },
                 };
                 await iam_create_access_key_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/length/i);
             }
@@ -293,13 +329,16 @@ describe('input validation flow in IAM ops - IAM ACCESS KEY API', () => {
                 const req = {
                     body: {
                         // access_key_id is required
-                    }
+                    },
                 };
                 await iam_get_access_key_last_used_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/required/i);
             }
@@ -311,13 +350,16 @@ describe('input validation flow in IAM ops - IAM ACCESS KEY API', () => {
                 const req = {
                     body: {
                         access_key_id: invalid_access_key_id,
-                    }
+                    },
                 };
                 await iam_get_access_key_last_used_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/invalid/i);
             }
@@ -333,14 +375,17 @@ describe('input validation flow in IAM ops - IAM ACCESS KEY API', () => {
                 const req = {
                     body: {
                         // access_key_id is required
-                        status: status
-                    }
+                        status: status,
+                    },
                 };
                 await iam_update_access_key_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/required/i);
             }
@@ -352,13 +397,16 @@ describe('input validation flow in IAM ops - IAM ACCESS KEY API', () => {
                     body: {
                         access_key_id: access_key_id,
                         // status is required
-                    }
+                    },
                 };
                 await iam_update_access_key_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/required/i);
             }
@@ -371,13 +419,16 @@ describe('input validation flow in IAM ops - IAM ACCESS KEY API', () => {
                     body: {
                         access_key_id: access_key_id,
                         status: invalid_status,
-                    }
+                    },
                 };
                 await iam_update_access_key_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/failed to satisfy/i);
             }
@@ -390,13 +441,16 @@ describe('input validation flow in IAM ops - IAM ACCESS KEY API', () => {
                     body: {
                         access_key_id: invalid_access_key_id,
                         status: status,
-                    }
+                    },
                 };
                 await iam_update_access_key_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/length/i);
             }
@@ -409,19 +463,21 @@ describe('input validation flow in IAM ops - IAM ACCESS KEY API', () => {
                     body: {
                         access_key_id: access_key_id,
                         status: status,
-                        user_name: invalid_username
-                    }
+                        user_name: invalid_username,
+                    },
                 };
                 await iam_update_user_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/length/i);
             }
         });
-
     });
 
     describe('iam_delete_access_key', () => {
@@ -432,13 +488,16 @@ describe('input validation flow in IAM ops - IAM ACCESS KEY API', () => {
                 const req = {
                     body: {
                         // access_key_id is required
-                    }
+                    },
                 };
                 await iam_delete_access_key_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/required/i);
             }
@@ -450,13 +509,16 @@ describe('input validation flow in IAM ops - IAM ACCESS KEY API', () => {
                 const req = {
                     body: {
                         access_key_id: invalid_access_key_id,
-                    }
+                    },
                 };
                 await iam_delete_access_key_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/length/i);
             }
@@ -468,14 +530,17 @@ describe('input validation flow in IAM ops - IAM ACCESS KEY API', () => {
                 const req = {
                     body: {
                         access_key_id: access_key_id,
-                        user_name: invalid_username
-                    }
+                        user_name: invalid_username,
+                    },
                 };
                 await iam_delete_access_key_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/length/i);
             }
@@ -490,14 +555,17 @@ describe('input validation flow in IAM ops - IAM ACCESS KEY API', () => {
                 const invalid_nax_items = 0;
                 const req = {
                     body: {
-                        max_items: invalid_nax_items
-                    }
+                        max_items: invalid_nax_items,
+                    },
                 };
                 await iam_list_access_keys_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/invalid/i);
             }
@@ -508,14 +576,17 @@ describe('input validation flow in IAM ops - IAM ACCESS KEY API', () => {
                 const invalid_marker = '';
                 const req = {
                     body: {
-                        marker: invalid_marker
-                    }
+                        marker: invalid_marker,
+                    },
                 };
                 await iam_list_access_keys_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/invalid/i);
             }
@@ -526,20 +597,20 @@ describe('input validation flow in IAM ops - IAM ACCESS KEY API', () => {
                 const invalid_username = '';
                 const req = {
                     body: {
-                        marker: invalid_username
-                    }
+                        marker: invalid_username,
+                    },
                 };
                 await iam_list_access_keys_op.handler(req, res);
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
                 expect(err).toHaveProperty('message');
                 expect(err.message).toMatch(/invalid/i);
             }
         });
-
     });
 });
-
-

@@ -12,17 +12,17 @@ const Dispatcher = require('../server/notifications/dispatcher');
 const db_client = require('../util/db_client');
 
 const EXISTING_AUDIT_LOGS = {
-    'node': ['create',
+    node: [
+        'create',
         'test_node',
         'decommission',
         'recommission',
         'connected',
-        'disconnected'
+        'disconnected',
     ],
-    'obj': ['uploaded',
-        'deleted'
-    ],
-    'bucket': ['create',
+    obj: ['uploaded', 'deleted'],
+    bucket: [
+        'create',
         'delete',
         'set_cloud_sync',
         'update_cloud_sync',
@@ -30,42 +30,44 @@ const EXISTING_AUDIT_LOGS = {
         'edit_policy',
         's3_access_updated',
         'set_lifecycle_configuration_rules',
-        'delete_lifecycle_configuration_rules'
+        'delete_lifecycle_configuration_rules',
     ],
-    'account': ['create',
+    account: [
+        'create',
         'update',
         'delete',
         's3_access_updated',
-        'generate_credentials'
+        'generate_credentials',
     ],
-    'resource': ['create',
+    resource: [
+        'create',
         'delete',
         'cloud_create',
         'cloud_delete',
         'assign_nodes',
         'pool_assign_region',
-        'cloud_assign_region'
+        'cloud_assign_region',
     ],
-    'dbg': ['set_debug_node',
+    dbg: [
+        'set_debug_node',
         'diagnose_node',
         'diagnose_system',
         'diagnose_server',
         'set_debug_level',
         'set_server_debug_level',
         'maintenance_mode',
-        'maintenance_mode_stopped'
+        'maintenance_mode_stopped',
     ],
-    'cluster': ['added_member_to_cluster',
-        'set_server_conf'
-    ],
-    'conf': ['create_system',
+    cluster: ['added_member_to_cluster', 'set_server_conf'],
+    conf: [
+        'create_system',
         'server_date_time_updated',
         'dns_address',
         'dns_servers',
         'upload_package',
         'system_upgrade_started',
-        'system_after_completed'
-    ]
+        'system_after_completed',
+    ],
 };
 
 const ALERTS_PRI = ['CRIT', 'MAJOR', 'INFO'];
@@ -82,7 +84,7 @@ const ALERTS_SAMPLES = [
     `Hell, it's about damn time`,
     `That’s What She Said`,
     `The cake is a lie`,
-    `It seems today that all you see is violence in movies and sex on TV`
+    `It seems today that all you see is violence in movies and sex on TV`,
 ];
 
 let sysid;
@@ -93,39 +95,49 @@ const events = new EventsGenerator();
 
 const entities = {
     bucket: {
-        _id: ''
+        _id: '',
     },
     node: {
-        _id: ''
+        _id: '',
     },
     obj: {
-        _id: ''
+        _id: '',
     },
     account: {
-        _id: ''
+        _id: '',
     },
     resource: {
-        _id: ''
+        _id: '',
     },
     cluster: {
         hostname: '',
         secret: '',
-    }
+    },
 };
 
 function EventsGenerator() {
     //
 }
 
-EventsGenerator.prototype.init = function() {
+EventsGenerator.prototype.init = function () {
     const fields = { _id: 1 };
     //Init all ObjectIDs of the entities in the system, ndoes and objects don't have to exist
-    return db_client.instance().connect()
-        .then(() => db_client.instance().collection('systems').findOne({}, { projection: fields }))
+    return db_client
+        .instance()
+        .connect()
+        .then(() =>
+            db_client
+                .instance()
+                .collection('systems')
+                .findOne({}, { projection: fields }),
+        )
         .then(res => {
             if (res) {
                 sysid = res._id;
-                return db_client.instance().collection('buckets').findOne({}, { projection: fields });
+                return db_client
+                    .instance()
+                    .collection('buckets')
+                    .findOne({}, { projection: fields });
             } else {
                 console.info('No system, aborting...');
                 process.exit(0);
@@ -133,20 +145,30 @@ EventsGenerator.prototype.init = function() {
         })
         .then(bucket => {
             entities.bucket._id = bucket._id;
-            return db_client.instance().collection('accounts').findOne({}, { projection: fields });
+            return db_client
+                .instance()
+                .collection('accounts')
+                .findOne({}, { projection: fields });
         })
         .then(account => {
             entities.account._id = account._id;
-            return db_client.instance().collection('pools').findOne({}, { projection: fields });
+            return db_client
+                .instance()
+                .collection('pools')
+                .findOne({}, { projection: fields });
         })
         .then(pool => {
             entities.resource._id = pool._id;
             return db_client.instance().collection('clusters').findOne({});
         })
         .then(cluster => {
-            entities.cluster.hostname = cluster.heartbeat.health.os_info.hostname;
+            entities.cluster.hostname =
+                cluster.heartbeat.health.os_info.hostname;
             entities.cluster.secret = cluster.owner_secret;
-            return db_client.instance().collection('nodes').findOne({}, { projection: fields });
+            return db_client
+                .instance()
+                .collection('nodes')
+                .findOne({}, { projection: fields });
         })
         .then(node => {
             if (node) {
@@ -155,7 +177,10 @@ EventsGenerator.prototype.init = function() {
             } else {
                 delete entities.node;
             }
-            return db_client.instance().collection('objectmds').findOne({}, { projection: fields });
+            return db_client
+                .instance()
+                .collection('objectmds')
+                .findOne({}, { projection: fields });
         })
         .then(obj => {
             if (obj) {
@@ -168,14 +193,16 @@ EventsGenerator.prototype.init = function() {
         });
 };
 
-EventsGenerator.prototype.generate_alerts = function(num, pri) {
+EventsGenerator.prototype.generate_alerts = function (num, pri) {
     let priorites = [];
     if (pri === 'ALL') {
         priorites = ALERTS_PRI;
     } else {
-        if (!ALERTS_PRI.find(function(p) {
+        if (
+            !ALERTS_PRI.find(function (p) {
                 return p === pri;
-            })) {
+            })
+        ) {
             console.warn('No such priority', pri);
             events.print_usage();
         }
@@ -185,20 +212,26 @@ EventsGenerator.prototype.generate_alerts = function(num, pri) {
     const pri_size = priorites.length;
     const alerts_size = ALERTS_SAMPLES.length;
     let count = 0;
-    return P.pwhile(() => count < num,
+    return P.pwhile(
+        () => count < num,
         () => {
             count += 1;
-            const alchosen = Math.floor(Math.random() * (alerts_size));
-            const prichosen = Math.floor(Math.random() * (pri_size));
+            const alchosen = Math.floor(Math.random() * alerts_size);
+            const prichosen = Math.floor(Math.random() * pri_size);
             return P.resolve()
-                .then(() => Dispatcher.instance().alert(priorites[prichosen],
-                    sysid,
-                    ALERTS_SAMPLES[alchosen]))
+                .then(() =>
+                    Dispatcher.instance().alert(
+                        priorites[prichosen],
+                        sysid,
+                        ALERTS_SAMPLES[alchosen],
+                    ),
+                )
                 .then(() => P.delay(1000));
-        });
+        },
+    );
 };
 
-EventsGenerator.prototype.generate_audit = function(num, cat) {
+EventsGenerator.prototype.generate_audit = function (num, cat) {
     const events_pool = [];
     if (cat === 'ALL') {
         _.map(_.keys(EXISTING_AUDIT_LOGS), c => {
@@ -212,43 +245,61 @@ EventsGenerator.prototype.generate_audit = function(num, cat) {
             }
             //Update entity ID/name for later audit generation
             const ent = events._get_entity(c);
-            events_pool.concat(_.map(EXISTING_AUDIT_LOGS[c], function(ev) {
-                events_pool.push(_.defaults({
-                    level: 'info',
-                    event: c + '.' + ev,
-                    system: sysid,
-                    desc: 'Dummy log created by the events generator',
-                }, ent));
-            }));
+            events_pool.concat(
+                _.map(EXISTING_AUDIT_LOGS[c], function (ev) {
+                    events_pool.push(
+                        _.defaults(
+                            {
+                                level: 'info',
+                                event: c + '.' + ev,
+                                system: sysid,
+                                desc: 'Dummy log created by the events generator',
+                            },
+                            ent,
+                        ),
+                    );
+                }),
+            );
         });
     } else {
         if (!EXISTING_AUDIT_LOGS[cat]) {
             console.warn('No such category', cat);
             events.print_usage();
         }
-        _.map(EXISTING_AUDIT_LOGS[cat], function(ev) {
+        _.map(EXISTING_AUDIT_LOGS[cat], function (ev) {
             const ent = events._get_entity(cat);
-            events_pool.push(_.defaults({
-                level: 'info',
-                event: cat + '.' + ev,
-                system: sysid,
-                desc: 'Dummy log created by the events generator',
-            }, ent));
+            events_pool.push(
+                _.defaults(
+                    {
+                        level: 'info',
+                        event: cat + '.' + ev,
+                        system: sysid,
+                        desc: 'Dummy log created by the events generator',
+                    },
+                    ent,
+                ),
+            );
         });
     }
 
     const logs_size = events_pool.length;
     let count = 0;
-    return P.pwhile(() => count < num,
+    return P.pwhile(
+        () => count < num,
         () => {
             count += 1;
-            const chosen = Math.floor(Math.random() * (logs_size));
+            const chosen = Math.floor(Math.random() * logs_size);
             return P.resolve()
-                .then(() => Dispatcher.instance().activity(_.clone(events_pool[chosen])))
+                .then(() =>
+                    Dispatcher.instance().activity(
+                        _.clone(events_pool[chosen]),
+                    ),
+                )
                 .then(() => P.delay(1000));
-        });
+        },
+    );
 };
-EventsGenerator.prototype.send_alert = function(alert, sev, rule) {
+EventsGenerator.prototype.send_alert = function (alert, sev, rule) {
     return P.resolve()
         .then(() => {
             if (rule) {
@@ -256,35 +307,37 @@ EventsGenerator.prototype.send_alert = function(alert, sev, rule) {
                     console.warn('No such rule implemented', rule);
                     process.exit(1);
                 }
-                return Dispatcher.instance().alert(sev,
+                return Dispatcher.instance().alert(
+                    sev,
                     sysid,
                     alert,
-                    Dispatcher.rules[rule]
+                    Dispatcher.rules[rule],
                 );
             } else {
-                return Dispatcher.instance().alert(sev,
-                    sysid,
-                    alert
-                );
+                return Dispatcher.instance().alert(sev, sysid, alert);
             }
         })
         .then(() => P.delay(500));
 };
 
-EventsGenerator.prototype.print_usage = function() {
+EventsGenerator.prototype.print_usage = function () {
     console.info('Events and Alerts Generator');
     console.info('\t--help\t\tShow this help message\n');
     console.info('\t--audit\t\tGenerate random audit logs');
     console.info('\t\t\t--adnum number of logs, default is 10');
-    console.info('\t\t\t--adcat <node/obj/bucket/account/resource/dbg/cluster/conf/ALL>, default is ALL\n');
+    console.info(
+        '\t\t\t--adcat <node/obj/bucket/account/resource/dbg/cluster/conf/ALL>, default is ALL\n',
+    );
     console.info('\t--alert\t\tGenerate random alerts');
     console.info('\t\t\t--alnum number of alerts, default is 10');
     console.info('\t\t\t--alpri <CRIT/MAJOR/INFO/ALL>, default is ALL\n');
-    console.info('\t--sendalert\tSend an alert to the dispatcher --msg <text> --sev <severity> [--rule suppression_rule_name]');
+    console.info(
+        '\t--sendalert\tSend an alert to the dispatcher --msg <text> --sev <severity> [--rule suppression_rule_name]',
+    );
     process.exit(0);
 };
 
-EventsGenerator.prototype._get_entity = function(c) {
+EventsGenerator.prototype._get_entity = function (c) {
     let ent = {};
     switch (c) {
         case 'bucket':
@@ -306,8 +359,8 @@ EventsGenerator.prototype._get_entity = function(c) {
             ent = {
                 server: {
                     hostname: entities.cluster.hostname,
-                    secret: entities.cluster.secret
-                }
+                    secret: entities.cluster.secret,
+                },
             };
             break;
         default:
@@ -320,23 +373,40 @@ function main() {
     if (argv.help) {
         events.print_usage();
     }
-    return events.init()
+    return events
+        .init()
         .then(() => {
             if (argv.audit) {
                 //Verify category is not nodes/objects when there are non
-                if (argv.adcat && argv.adcat.toString() === 'node' && !has_nodes) {
-                    console.error('Selected category nodes while no nodes exist');
+                if (
+                    argv.adcat &&
+                    argv.adcat.toString() === 'node' &&
+                    !has_nodes
+                ) {
+                    console.error(
+                        'Selected category nodes while no nodes exist',
+                    );
                     events.print_usage();
-                } else if (argv.adcat && argv.adcat.toString() === 'obj' && !has_objects) {
-                    console.error('Selected category obj while no objects exist');
+                } else if (
+                    argv.adcat &&
+                    argv.adcat.toString() === 'obj' &&
+                    !has_objects
+                ) {
+                    console.error(
+                        'Selected category obj while no objects exist',
+                    );
                     events.print_usage();
                 }
-                return events.generate_audit(argv.adnum ? argv.adnum : 10,
-                    argv.adcat ? argv.adcat.toString() : 'ALL');
+                return events.generate_audit(
+                    argv.adnum ? argv.adnum : 10,
+                    argv.adcat ? argv.adcat.toString() : 'ALL',
+                );
             }
             if (argv.alert) {
-                return events.generate_alerts(argv.alnum ? argv.alnum : 10,
-                    argv.alpri ? argv.alpri.toString() : 'ALL');
+                return events.generate_alerts(
+                    argv.alnum ? argv.alnum : 10,
+                    argv.alpri ? argv.alpri.toString() : 'ALL',
+                );
             }
             if (argv.sendalert) {
                 return events.send_alert(argv.msg, argv.sev, argv.rule);

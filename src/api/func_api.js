@@ -7,11 +7,9 @@
  *
  */
 module.exports = {
-
     $id: 'func_api',
 
     methods: {
-
         create_func: {
             method: 'POST',
             params: {
@@ -19,22 +17,22 @@ module.exports = {
                 required: ['config', 'code'],
                 properties: {
                     config: {
-                        $ref: '#/definitions/func_config'
+                        $ref: '#/definitions/func_config',
                     },
                     code: {
-                        $ref: '#/definitions/func_code'
+                        $ref: '#/definitions/func_code',
                     },
                     publish: {
-                        type: 'boolean'
+                        type: 'boolean',
                     },
-                }
+                },
             },
             reply: {
-                $ref: '#/definitions/func_info'
+                $ref: '#/definitions/func_info',
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         update_func: {
@@ -44,19 +42,19 @@ module.exports = {
                 required: ['config'],
                 properties: {
                     config: {
-                        $ref: '#/definitions/func_config'
+                        $ref: '#/definitions/func_config',
                     },
                     code: {
-                        $ref: '#/definitions/func_code'
+                        $ref: '#/definitions/func_code',
                     },
-                }
+                },
             },
             reply: {
-                $ref: '#/definitions/func_info'
+                $ref: '#/definitions/func_info',
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         delete_func: {
@@ -66,16 +64,16 @@ module.exports = {
                 required: ['name', 'version'],
                 properties: {
                     name: {
-                        type: 'string'
+                        type: 'string',
                     },
                     version: {
-                        type: 'string'
+                        type: 'string',
                     },
                 },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         read_func: {
@@ -85,14 +83,14 @@ module.exports = {
                 required: ['name', 'version'],
                 properties: {
                     name: {
-                        type: 'string'
+                        type: 'string',
                     },
                     version: {
-                        type: 'string'
+                        type: 'string',
                     },
                     read_code: {
-                        type: 'boolean'
-                    }
+                        type: 'boolean',
+                    },
                 },
             },
             reply: {
@@ -100,81 +98,73 @@ module.exports = {
                 required: ['config', 'code_location'],
                 properties: {
                     config: {
-                        $ref: '#/definitions/func_config'
+                        $ref: '#/definitions/func_config',
                     },
                     code_location: {
-                        $ref: '#/definitions/func_code_location'
+                        $ref: '#/definitions/func_code_location',
                     },
                     code: {
-                        $ref: '#/definitions/func_code'
-                    }
-                }
+                        $ref: '#/definitions/func_code',
+                    },
+                },
             },
             auth: {
-                system: ['admin', 'agent']
-            }
+                system: ['admin', 'agent'],
+            },
         },
 
         read_func_stats: {
             method: 'GET',
             params: {
                 type: 'object',
-                required: [
-                    'name',
-                    'version',
-                    'since',
-                    'step'
-                ],
+                required: ['name', 'version', 'since', 'step'],
                 properties: {
                     name: {
-                        type: 'string'
+                        type: 'string',
                     },
                     version: {
-                        type: 'string'
+                        type: 'string',
                     },
                     since: {
-                        idate: true
+                        idate: true,
                     },
                     till: {
-                        idate: true
+                        idate: true,
                     },
                     step: {
-                        type: 'integer'
+                        type: 'integer',
                     },
                     percentiles: {
                         type: 'array',
                         items: {
                             type: 'number',
                             minimum: 0,
-                            maximum: 1
-                        }
+                            maximum: 1,
+                        },
                     },
                     max_samples: {
-                        type: 'integer'
+                        type: 'integer',
                     },
-                }
+                },
             },
             reply: {
                 type: 'object',
-                required: [
-                    'stats',
-                    'slices'
-                ],
+                required: ['stats', 'slices'],
                 properties: {
                     stats: {
-                        $ref: '#/definitions/func_stats'
+                        $ref: '#/definitions/func_stats',
                     },
                     slices: {
                         type: 'array',
                         items: {
-                            $ref: '#/definitions/func_stats'
-                        }
-                    }
-                }
+                            $ref: '#/definitions/func_stats',
+                        },
+                    },
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         list_funcs: {
@@ -185,14 +175,14 @@ module.exports = {
                     functions: {
                         type: 'array',
                         items: {
-                            $ref: '#/definitions/func_info'
-                        }
+                            $ref: '#/definitions/func_info',
+                        },
                     },
                 },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         list_func_versions: {
@@ -202,8 +192,8 @@ module.exports = {
                 required: ['name'],
                 properties: {
                     name: {
-                        type: 'string'
-                    }
+                        type: 'string',
+                    },
                 },
             },
             reply: {
@@ -212,14 +202,14 @@ module.exports = {
                     versions: {
                         type: 'array',
                         items: {
-                            $ref: '#/definitions/func_info'
-                        }
+                            $ref: '#/definitions/func_info',
+                        },
                     },
                 },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         invoke_func: {
@@ -229,30 +219,30 @@ module.exports = {
                 required: ['name', 'version'],
                 properties: {
                     name: {
-                        type: 'string'
+                        type: 'string',
                     },
                     version: {
-                        type: 'string'
+                        type: 'string',
                     },
                     event: {
-                        $ref: '#/definitions/event_type'
-                    }
+                        $ref: '#/definitions/event_type',
+                    },
                 },
             },
             reply: {
                 type: 'object',
                 properties: {
                     result: {
-                        $ref: '#/definitions/event_type'
+                        $ref: '#/definitions/event_type',
                     },
                     error: {
-                        $ref: '#/definitions/error_type'
-                    }
-                }
+                        $ref: '#/definitions/error_type',
+                    },
+                },
             },
             auth: {
-                system: ['admin', 'agent']
-            }
+                system: ['admin', 'agent'],
+            },
         },
 
         /*
@@ -274,86 +264,84 @@ module.exports = {
             }
         },
         */
-
     },
 
     definitions: {
-
         func_config: {
             type: 'object',
             required: ['name', 'version'],
             properties: {
                 name: {
-                    type: 'string'
+                    type: 'string',
                 },
                 version: {
-                    type: 'string'
+                    type: 'string',
                 },
                 exec_account: { $ref: 'common_api#/definitions/email' },
                 description: {
-                    type: 'string'
+                    type: 'string',
                 },
                 role: {
-                    type: 'string'
+                    type: 'string',
                 },
                 handler: {
-                    type: 'string'
+                    type: 'string',
                 },
                 runtime: {
-                    type: 'string'
+                    type: 'string',
                 },
                 memory_size: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 timeout: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 pools: {
                     type: 'array',
                     items: {
-                        type: 'string'
-                    }
+                        type: 'string',
+                    },
                 },
                 // the following fields are not configurable,
                 // and will be returned as info
                 code_size: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 code_sha256: {
-                    type: 'string'
+                    type: 'string',
                 },
                 last_modified: {
-                    idate: true
+                    idate: true,
                 },
                 last_modifier: { $ref: 'common_api#/definitions/email' },
                 resource_name: {
-                    type: 'string'
+                    type: 'string',
                 },
-            }
+            },
         },
 
         func_code: {
             type: 'object',
             properties: {
                 zipfile_b64: {
-                    type: 'string'
+                    type: 'string',
                 },
                 s3_bucket: {
-                    type: 'string'
+                    type: 'string',
                 },
                 s3_key: {
-                    type: 'string'
+                    type: 'string',
                 },
                 s3_obj_version: {
-                    type: 'string'
+                    type: 'string',
                 },
                 s3_endpoint: {
-                    type: 'string'
+                    type: 'string',
                 },
                 url: {
-                    type: 'string'
+                    type: 'string',
                 },
-            }
+            },
         },
 
         func_code_location: {
@@ -361,12 +349,12 @@ module.exports = {
             required: ['url', 'repository'],
             properties: {
                 url: {
-                    type: 'string'
+                    type: 'string',
                 },
                 repository: {
-                    type: 'string'
+                    type: 'string',
                 },
-            }
+            },
         },
 
         func_info: {
@@ -374,22 +362,25 @@ module.exports = {
             required: ['config', 'code_location'],
             properties: {
                 config: {
-                    $ref: '#/definitions/func_config'
+                    $ref: '#/definitions/func_config',
                 },
                 code_location: {
-                    $ref: '#/definitions/func_code_location'
+                    $ref: '#/definitions/func_code_location',
                 },
-            }
+            },
         },
 
         event_type: {
-            oneOf: [{
-                type: 'object',
-                additionalProperties: true,
-                properties: {},
-            }, {
-                type: 'string'
-            }]
+            oneOf: [
+                {
+                    type: 'object',
+                    additionalProperties: true,
+                    properties: {},
+                },
+                {
+                    type: 'string',
+                },
+            ],
         },
 
         error_type: {
@@ -397,13 +388,13 @@ module.exports = {
             required: ['message'],
             properties: {
                 message: {
-                    type: 'string'
+                    type: 'string',
                 },
                 stack: {
-                    type: 'string'
+                    type: 'string',
                 },
                 code: {
-                    type: 'string'
+                    type: 'string',
                 },
             },
         },
@@ -419,54 +410,51 @@ module.exports = {
                 'aggr_response_time',
                 'max_response_time',
                 'avg_response_time',
-                'response_percentiles'
+                'response_percentiles',
             ],
             properties: {
                 since: {
-                    idate: true
+                    idate: true,
                 },
                 till: {
-                    idate: true
+                    idate: true,
                 },
                 invoked: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 fulfilled: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 rejected: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 aggr_response_time: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 max_response_time: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 avg_response_time: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 response_percentiles: {
                     type: 'array',
                     items: {
                         type: 'object',
-                        required: [
-                            'percentile',
-                            'value'
-                        ],
+                        required: ['percentile', 'value'],
                         properties: {
                             percentile: {
                                 type: 'number',
                                 minimum: 0,
-                                maximum: 1
+                                maximum: 1,
                             },
                             value: {
-                                type: 'integer'
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+                                type: 'integer',
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
 };

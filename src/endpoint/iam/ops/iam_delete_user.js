@@ -4,14 +4,14 @@
 const dbg = require('../../../util/debug_module')(__filename);
 const iam_utils = require('../iam_utils');
 const iam_constants = require('../iam_constants');
-const { CONTENT_TYPE_APP_FORM_URLENCODED } = require('../../../util/http_utils');
+const {
+    CONTENT_TYPE_APP_FORM_URLENCODED,
+} = require('../../../util/http_utils');
 
 /**
  * https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeleteUser.html
  */
 async function delete_user(req, res) {
-
-
     const params = {
         username: req.body.user_name,
     };
@@ -23,8 +23,8 @@ async function delete_user(req, res) {
         DeleteUserResponse: {
             ResponseMetadata: {
                 RequestId: req.request_id,
-            }
-        }
+            },
+        },
     };
 }
 

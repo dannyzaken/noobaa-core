@@ -7,52 +7,48 @@
  *
  */
 module.exports = {
-
     $id: 'redirector_api',
 
     methods: {
-
         register_to_cluster: {
             method: 'POST',
             auth: {
-                system: false
-            }
+                system: false,
+            },
         },
 
         publish_to_cluster: {
             method: 'POST',
             params: {
-                $ref: '#/definitions/redirect_params'
+                $ref: '#/definitions/redirect_params',
             },
             reply: {
-                $ref: '#/definitions/redirect_reply'
+                $ref: '#/definitions/redirect_reply',
             },
             auth: {
-                system: false
-            }
+                system: false,
+            },
         },
-
     },
 
     definitions: {
-
         redirect_params: {
             type: 'object',
             required: ['target', 'method_api', 'method_name'],
             properties: {
                 target: {
-                    type: 'string'
+                    type: 'string',
                 },
                 method_api: {
-                    type: 'string'
+                    type: 'string',
                 },
                 method_name: {
-                    type: 'string'
+                    type: 'string',
                 },
                 request_params: {
                     type: 'object',
                     additionalProperties: true,
-                    properties: {}
+                    properties: {},
                 },
             },
         },
@@ -63,9 +59,9 @@ module.exports = {
                 redirect_reply: {
                     type: 'object',
                     additionalProperties: true,
-                    properties: {}
+                    properties: {},
                 },
-            }
+            },
         },
-    }
+    },
 };

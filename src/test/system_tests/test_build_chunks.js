@@ -26,11 +26,10 @@ dotenv.load();
 
 const {
     mgmt_ip = 'localhost',
-        mgmt_port = '8080',
-        s3_ip = 'localhost',
-        s3_port = '80',
+    mgmt_port = '8080',
+    s3_ip = 'localhost',
+    s3_port = '80',
 } = argv;
-
 
 const TEST_CTX = {
     ip: 'localhost',
@@ -41,14 +40,16 @@ const TEST_CTX = {
     default_tier_name: 'test_tier',
     default_tier_policy_name: 'tiering1',
     cloud_pool_name: 'cloud-pool-aws',
-    accounts_default_resource: 'accounts_default_resource'
+    accounts_default_resource: 'accounts_default_resource',
 };
 
 const rpc = api.new_rpc(); //'ws://' + argv.ip + ':8080');
 const client = rpc.new_client({
-    address: `ws://${mgmt_ip}:${mgmt_port}`
+    address: `ws://${mgmt_ip}:${mgmt_port}`,
 });
-const n2n_agent = rpc.register_n2n_agent((...args) => client.node.n2n_signal(...args));
+const n2n_agent = rpc.register_n2n_agent((...args) =>
+    client.node.n2n_signal(...args),
+);
 n2n_agent.set_any_rpc_address();
 
 /////// Aux Functions ////////
@@ -57,7 +58,7 @@ function authenticate() {
     return client.create_auth_token({
         email: 'demo@noobaa.com',
         password: 'DeMo1',
-        system: 'demo'
+        system: 'demo',
     });
 }
 
@@ -77,9 +78,8 @@ async function setup() {
     // create hosts pools
     await Promise.all([
         test_utils.create_hosts_pool(client, 'pool1', 5),
-        test_utils.create_hosts_pool(client, 'pool2', 3)
+        test_utils.create_hosts_pool(client, 'pool2', 3),
     ]);
-
 
     // Create a cloud resource
     await client.account.add_external_connection({
@@ -87,7 +87,7 @@ async function setup() {
         endpoint_type: 'AWS',
         endpoint: 'https://s3.amazonaws.com',
         identity: process.env.AWS_ACCESS_KEY_ID,
-        secret: process.env.AWS_SECRET_ACCESS_KEY
+        secret: process.env.AWS_SECRET_ACCESS_KEY,
     });
     await client.pool.create_cloud_pool({
         name: TEST_CTX.cloud_pool_name,
@@ -96,37 +96,40 @@ async function setup() {
     });
 }
 
-async function setup_case(
-    bucket_name,
-    attached_pools,
-    data_placement
-) {
-    console.log(`create_test_bucket: ${bucket_name} over pool names: ${attached_pools} as ${data_placement}`);
+async function setup_case(bucket_name, attached_pools, data_placement) {
+    console.log(
+        `create_test_bucket: ${bucket_name} over pool names: ${attached_pools} as ${data_placement}`,
+    );
     const bucketInfo = await client.bucket.create_bucket({ name: bucket_name });
     await client.tier.update_tier({
         name: bucketInfo.tiering.tiers[0].tier,
         data_placement,
-        attached_pools
+        attached_pools,
     });
 }
 
-async function upload_random_file(size_mb, bucket_name, extension, content_type) {
+async function upload_random_file(
+    size_mb,
+    bucket_name,
+    extension,
+    content_type,
+) {
     const filename = await ops.generate_random_file(size_mb, extension);
     const s3bucket = new AWS.S3({
         endpoint: TEST_CTX.s3_endpoint,
         credentials: {
             accessKeyId: '123',
-            secretAccessKey: 'abc'
+            secretAccessKey: 'abc',
         },
         s3ForcePathStyle: true,
-        sslEnabled: false
+        sslEnabled: false,
     });
 
     await P.ninvoke(s3bucket, 'upload', {
         Bucket: bucket_name,
         Key: filename,
         Body: fs.createReadStream(filename),
-        ContentType: content_type
+        ContentType: content_type,
     });
 
     return filename;
@@ -155,10 +158,9 @@ async function verify_object(obj_mapping) {
             bucket: bucket.unwrap(),
             key: key,
             start: 0,
-            end: obj_mapping.object_md.size
+            end: obj_mapping.object_md.size,
         });
         return true;
-
     } catch (err) {
         console.warn(`object could not be verified.`, err);
         return false;
@@ -189,9 +191,11 @@ async function verify_object_health(
     bucket_name,
     pool_names,
     cloud_pool,
-    test_corruption
+    test_corruption,
 ) {
-    console.log(`verifying object ${filename} health. expected num of blocks: ${expected_num_blocks}`);
+    console.log(
+        `verifying object ${filename} health. expected num of blocks: ${expected_num_blocks}`,
+    );
     const start_ts = Date.now();
     let obj_is_valid = false;
     let obj_is_verified = !test_corruption;
@@ -199,13 +203,13 @@ async function verify_object_health(
     const { hosts } = await client.host.list_hosts({
         query: {
             pools: pool_names,
-        }
+        },
     });
 
     while (!obj_is_valid) {
         const obj_mapping = await client.object.read_object_mapping_admin({
             bucket: bucket_name,
-            key: filename
+            key: filename,
         });
 
         // This checks for tempering
@@ -223,15 +227,21 @@ async function verify_object_health(
         const num_blocks_per_part = Math.floor(num_blocks / num_parts) || 1;
 
         obj_is_valid =
-            obj_is_verified &&
-            num_blocks_per_part >= expected_num_blocks;
+            obj_is_verified && num_blocks_per_part >= expected_num_blocks;
 
         if (!obj_is_valid) {
             const diff = Date.now() - start_ts;
-            print_verification_warning(diff, num_blocks_per_part, expected_num_blocks, obj_is_verified);
+            print_verification_warning(
+                diff,
+                num_blocks_per_part,
+                expected_num_blocks,
+                obj_is_verified,
+            );
 
-            if (diff > (TEST_CTX.timeout * 1000)) {
-                throw new Error('aborted test after ' + TEST_CTX.timeout + ' seconds');
+            if (diff > TEST_CTX.timeout * 1000) {
+                throw new Error(
+                    'aborted test after ' + TEST_CTX.timeout + ' seconds',
+                );
             }
 
             await P.delay(1000);
@@ -249,11 +259,16 @@ async function verify_object_health(
     console.log('object health verified');
     return client.object.read_object_mapping_admin({
         bucket: bucket_name,
-        key: filename
+        key: filename,
     });
 }
 
-function print_verification_warning(diff, num_blocks_per_part, expected_num_blocks, obj_is_verified) {
+function print_verification_warning(
+    diff,
+    num_blocks_per_part,
+    expected_num_blocks,
+    obj_is_verified,
+) {
     if ((diff / 1000).toFixed(0) % 5 !== 0) {
         return;
     }
@@ -262,12 +277,16 @@ function print_verification_warning(diff, num_blocks_per_part, expected_num_bloc
         msg.push(`object integrity check failed. `);
     }
     if (num_blocks_per_part.toFixed(0) < expected_num_blocks) {
-        msg.push(`object has an average ${num_blocks_per_part.toFixed(0)} blocks per part. expected ${expected_num_blocks}. `);
+        msg.push(
+            `object has an average ${num_blocks_per_part.toFixed(0)} blocks per part. expected ${expected_num_blocks}. `,
+        );
     }
 
     const elapsed_time = (diff / 1000).toFixed(0);
     if (elapsed_time > 0 && elapsed_time < TEST_CTX.timeout) {
-        msg.push(`${elapsed_time} seconds passed. retrying for ${TEST_CTX.timeout - elapsed_time} seconds`);
+        msg.push(
+            `${elapsed_time} seconds passed. retrying for ${TEST_CTX.timeout - elapsed_time} seconds`,
+        );
     }
 
     console.warn(msg.join(''));
@@ -278,34 +297,39 @@ async function decomission_pool_nodes(obj_mapping, num_nodes, pool_names) {
     // assuming here we have enough nodes for the test. In particular, a minimum of 6 to create a new pool.
     // creating a new pool and moving some nodes to it (ones containing some of the object's blocks).
     // marking nodes that contain the object
-    const node_set = new Set(get_blocks(obj_mapping)
-        .map(block => block.block_md.node.toString())
+    const node_set = new Set(
+        get_blocks(obj_mapping).map(block => block.block_md.node.toString()),
     );
 
     const { hosts } = await client.host.list_hosts({
         query: {
-            pools: pool_names
-        }
+            pools: pool_names,
+        },
     });
 
     const nodes = _.flatMap(hosts, host => host.storage_nodes_info.nodes);
-    await Promise.all(nodes
-        .filter(node => node_set.has(node._id.toString()))
-        .slice(0, num_nodes)
-        .map(async node => {
-            const id = node._id;
-            console.log(`decommissioning node: ${node.name}`);
-            await client.node.decommission_node({ id });
-            return P.timeout(3 * 60 * 1000, (
-                async () => {
-                    for (;;) {
-                        const { decommissioned } = await client.node.read_node({ id });
-                        if (decommissioned) break;
-                    }
-                    console.log(`node: ${node.name} has been decommissioned`);
-                }
-            )());
-        })
+    await Promise.all(
+        nodes
+            .filter(node => node_set.has(node._id.toString()))
+            .slice(0, num_nodes)
+            .map(async node => {
+                const id = node._id;
+                console.log(`decommissioning node: ${node.name}`);
+                await client.node.decommission_node({ id });
+                return P.timeout(
+                    3 * 60 * 1000,
+                    (async () => {
+                        for (;;) {
+                            const { decommissioned } =
+                                await client.node.read_node({ id });
+                            if (decommissioned) break;
+                        }
+                        console.log(
+                            `node: ${node.name} has been decommissioned`,
+                        );
+                    })(),
+                );
+            }),
     );
 }
 
@@ -317,10 +341,12 @@ async function cleanup_case(bucket_name, pool_names) {
     if (buckets.some(bucket => bucket.name.unwrap() === bucket_name)) {
         // Empty the bucket.
         console.log(`Emptying bucket ${bucket_name}`);
-        const { objects } = await client.object.list_objects({ bucket: bucket_name });
+        const { objects } = await client.object.list_objects({
+            bucket: bucket_name,
+        });
         await client.object.delete_multiple_objects({
             bucket: bucket_name,
-            objects: objects.map(obj => _.pick(obj, ['key', 'version_id']))
+            objects: objects.map(obj => _.pick(obj, ['key', 'version_id'])),
         });
 
         // Delete the bucket.
@@ -332,12 +358,13 @@ async function cleanup_case(bucket_name, pool_names) {
     const { hosts } = await client.host.list_hosts({
         query: {
             pools: pool_names,
-        }
+        },
     });
     const nodes = _.flatMap(hosts, host => host.storage_nodes_info.nodes);
-    await Promise.all(nodes
-        .filter(node => node.decommissioned)
-        .map(node => client.node.recommission_node({ id: node._id }))
+    await Promise.all(
+        nodes
+            .filter(node => node.decommissioned)
+            .map(node => client.node.recommission_node({ id: node._id })),
     );
 }
 
@@ -355,11 +382,9 @@ async function run_test() {
         // await test_rebuild_corrupted_from_cloud_pool(); // at least 3 nodes required. corrupts 3 nodes     // TODO: fix #2114 && #2090
 
         console.log('test test_build_chunks SUCCESS');
-
     } catch (err) {
         console.error('test_build_chunks FAILED: ', err.stack || err);
         throw new Error(`test_build_chunks FAILED: ${err}`);
-
     } finally {
         rpc.disconnect_all();
     }
@@ -374,15 +399,20 @@ async function test_rebuild_single_unavailable_block() {
     try {
         await setup_case(bucket_name, pool_names, 'MIRROR');
         const filename = await upload_random_file(1, bucket_name);
-        const obj_mapping = await verify_object_health(filename, 3, bucket_name, pool_names);
+        const obj_mapping = await verify_object_health(
+            filename,
+            3,
+            bucket_name,
+            pool_names,
+        );
         await decomission_pool_nodes(obj_mapping, 1, pool_names);
         await verify_object_health(filename, 3, bucket_name, pool_names);
         console.log('test test_rebuild_single_unavailable_block successful');
-
     } catch (err) {
-        console.error(`Had error in test test_rebuild_single_unavailable_block: ${err}`);
+        console.error(
+            `Had error in test test_rebuild_single_unavailable_block: ${err}`,
+        );
         throw err;
-
     } finally {
         await cleanup_case(bucket_name, pool_names);
     }
@@ -396,15 +426,20 @@ async function test_rebuild_two_unavailable_blocks() {
     try {
         await setup_case(bucket_name, pool_names, 'MIRROR');
         const filename = await upload_random_file(5, bucket_name);
-        const obj_mapping = await verify_object_health(filename, 3, bucket_name, pool_names);
+        const obj_mapping = await verify_object_health(
+            filename,
+            3,
+            bucket_name,
+            pool_names,
+        );
         await decomission_pool_nodes(obj_mapping, 2, pool_names);
         await verify_object_health(filename, 3, bucket_name, pool_names);
         console.log('test test_rebuild_two_unavailable_blocks successful');
-
     } catch (err) {
-        console.error(`Had error in test test_rebuild_two_unavailable_blocks: ${err}`);
+        console.error(
+            `Had error in test test_rebuild_two_unavailable_blocks: ${err}`,
+        );
         throw err;
-
     } finally {
         await cleanup_case(bucket_name, pool_names);
     }
@@ -612,7 +647,6 @@ async function main() {
     try {
         await run_test();
         process.exit(0);
-
     } catch (err) {
         console.warn('error while running test. ', err);
         process.exit(1);
@@ -624,5 +658,5 @@ if (require.main === module) {
 }
 
 module.exports = {
-    run_test: run_test
+    run_test: run_test,
 };

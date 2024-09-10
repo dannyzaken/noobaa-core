@@ -18,12 +18,13 @@ const RpcHttpConnection = require('./rpc_http');
  *
  */
 class RpcHttpServer extends events.EventEmitter {
-
     /**
      * install for express app on a route
      */
     install_on_express(app) {
-        return app.use(RpcHttpConnection.BASE_PATH, (req, res, next) => this.handle_request(req, res));
+        return app.use(RpcHttpConnection.BASE_PATH, (req, res, next) =>
+            this.handle_request(req, res),
+        );
     }
 
     /**
@@ -31,9 +32,16 @@ class RpcHttpServer extends events.EventEmitter {
      */
     install_on_server(server, default_handler) {
         return server.on('request', (req, res) => {
-            if (req.url.startsWith(RpcHttpConnection.BASE_PATH)) return this.handle_request(req, res);
+            if (req.url.startsWith(RpcHttpConnection.BASE_PATH)) {
+                return this.handle_request(req, res);
+            }
             if (default_handler) return default_handler(req, res);
-            dbg.warn('unrecognized http request (responding 404)', req.method, req.url, req.headers);
+            dbg.warn(
+                'unrecognized http request (responding 404)',
+                req.method,
+                req.url,
+                req.headers,
+            );
             res.statusCode = 404;
             res.end();
         });
@@ -44,24 +52,40 @@ class RpcHttpServer extends events.EventEmitter {
      */
     async start_server(options) {
         const port = parseInt(options.port, 10);
-        const secure = options.protocol === 'https:' || options.protocol === 'wss:';
+        const secure =
+            options.protocol === 'https:' || options.protocol === 'wss:';
         const logging = options.logging;
-        dbg.log0('HTTP SERVER:', 'port', port, 'secure', secure, 'logging', logging);
+        dbg.log0(
+            'HTTP SERVER:',
+            'port',
+            port,
+            'secure',
+            secure,
+            'logging',
+            logging,
+        );
 
         let server;
         if (secure) {
             const ssl_cert_info = await ssl_utils.get_ssl_cert_info('MGMT');
-            server = https.createServer({ ...ssl_cert_info.cert, honorCipherOrder: true });
+            server = https.createServer({
+                ...ssl_cert_info.cert,
+                honorCipherOrder: true,
+            });
             ssl_cert_info.on('update', updated_cert_info => {
-                dbg.log0("Setting updated MGMT ssl certs for rpc server.");
-                server.setSecureContext({ ...updated_cert_info.cert, honorCipherOrder: true });
+                dbg.log0('Setting updated MGMT ssl certs for rpc server.');
+                server.setSecureContext({
+                    ...updated_cert_info.cert,
+                    honorCipherOrder: true,
+                });
             });
         } else {
             server = http.createServer();
         }
         this.install_on_server(server, options.default_handler);
-        return P.fromCallback(callback => server.listen(port, callback))
-            .then(() => server);
+        return P.fromCallback(callback => server.listen(port, callback)).then(
+            () => server,
+        );
     }
 
     /**
@@ -69,8 +93,14 @@ class RpcHttpServer extends events.EventEmitter {
      */
     handle_request(req, res) {
         try {
-            res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-            res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Content-MD5,Authorization');
+            res.setHeader(
+                'Access-Control-Allow-Methods',
+                'GET,POST,PUT,DELETE,OPTIONS',
+            );
+            res.setHeader(
+                'Access-Control-Allow-Headers',
+                'Content-Type,Content-MD5,Authorization',
+            );
             res.setHeader('Access-Control-Allow-Origin', '*');
             // note that browsers will not allow origin=* with credentials
             // but anyway we allow it by the agent server.
@@ -97,7 +127,6 @@ class RpcHttpServer extends events.EventEmitter {
             res.end(err);
         }
     }
-
 }
 
 module.exports = RpcHttpServer;

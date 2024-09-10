@@ -6,7 +6,7 @@
  */
 async function delete_bucket_tagging(req) {
     return req.object_sdk.delete_bucket_tagging({
-        name: req.params.bucket
+        name: req.params.bucket,
     });
 }
 

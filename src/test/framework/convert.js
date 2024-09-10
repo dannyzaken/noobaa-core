@@ -8,10 +8,7 @@ const argv = require('minimist')(process.argv);
 
 let res_files = [];
 
-const {
-    result,
-    output_file = `./out_test.csv`
-} = argv;
+const { result, output_file = `./out_test.csv` } = argv;
 
 //Making sure that the results locations are in array.
 res_files = res_files.concat(result);
@@ -63,7 +60,10 @@ async function convert() {
     console.log('out:', out);
     console.log('out sum:', sum_results);
 
-    await fs.promises.writeFile(output_file, object_to_csv(out) + object_to_csv(sum_results));
+    await fs.promises.writeFile(
+        output_file,
+        object_to_csv(out) + object_to_csv(sum_results),
+    );
     console.log(`The report saved in: ${output_file}`);
 }
 
@@ -73,5 +73,4 @@ function object_to_csv(obj) {
     return lines.join('\n') + '\n';
 }
 
-P.resolve()
-    .then(convert);
+P.resolve().then(convert);

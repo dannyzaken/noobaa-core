@@ -15,40 +15,63 @@ function get_cloud_vendor(resource_type, connection_basic_details) {
 
     switch (resource_type) {
         case 'aws-s3':
-            cloud_vendor = new AnalyzeAws(credentials.access_key, credentials.secret_access_key,
-                connection_basic_details.endpoint, connection_basic_details.signature_version,
-                connection_basic_details.region);
+            cloud_vendor = new AnalyzeAws(
+                credentials.access_key,
+                credentials.secret_access_key,
+                connection_basic_details.endpoint,
+                connection_basic_details.signature_version,
+                connection_basic_details.region,
+            );
             break;
         case 's3-compatible':
-            cloud_vendor = new AnalyzeAws(credentials.access_key, credentials.secret_access_key,
-                connection_basic_details.endpoint, connection_basic_details.signature_version);
+            cloud_vendor = new AnalyzeAws(
+                credentials.access_key,
+                credentials.secret_access_key,
+                connection_basic_details.endpoint,
+                connection_basic_details.signature_version,
+            );
             break;
         case 'ibm-cos':
-            cloud_vendor = new AnalyzeAws(credentials.access_key, credentials.secret_access_key,
-                connection_basic_details.endpoint, connection_basic_details.signature_version);
+            cloud_vendor = new AnalyzeAws(
+                credentials.access_key,
+                credentials.secret_access_key,
+                connection_basic_details.endpoint,
+                connection_basic_details.signature_version,
+            );
             break;
         case 'azure-blob':
-            cloud_vendor = new AnalyzeAzure(credentials.access_key, credentials.secret_access_key, // Azure storage account name is stored as the access key
-                connection_basic_details.endpoint);
+            cloud_vendor = new AnalyzeAzure(
+                credentials.access_key,
+                credentials.secret_access_key, // Azure storage account name is stored as the access key
+                connection_basic_details.endpoint,
+            );
             break;
         case 'google-cloud-storage':
             cloud_vendor = new AnalyzeGcp(credentials.private_key_json);
             break;
         default:
-            throw new Error(`Could not create cloud vendor client of ${resource_type}`);
+            throw new Error(
+                `Could not create cloud vendor client of ${resource_type}`,
+            );
     }
     return cloud_vendor;
 }
 
 function get_credentials(resource_type) {
     const credentials_properties = get_credentials_properties(resource_type);
-    if (credentials_properties.length === 2) { // assuming that we have up to 2 fields ("google-cloud-storage" is a special case)
+    if (credentials_properties.length === 2) {
+        // assuming that we have up to 2 fields ("google-cloud-storage" is a special case)
         const access_key_path = `${secret_path}/${credentials_properties[0]}`;
-        const access_key = new SensitiveString(fs.readFileSync(access_key_path).toString().trim());
+        const access_key = new SensitiveString(
+            fs.readFileSync(access_key_path).toString().trim(),
+        );
         const secret_access_key_path = `${secret_path}/${credentials_properties[1]}`;
-        const secret_access_key = new SensitiveString(fs.readFileSync(secret_access_key_path).toString().trim());
+        const secret_access_key = new SensitiveString(
+            fs.readFileSync(secret_access_key_path).toString().trim(),
+        );
         return { access_key, secret_access_key };
-    } else if (credentials_properties.length === 1) { // "google-cloud-storage" case
+    } else if (credentials_properties.length === 1) {
+        // "google-cloud-storage" case
         const private_key_json = `${secret_path}/${get_credentials_properties(resource_type)}`;
         return { private_key_json };
     } else {

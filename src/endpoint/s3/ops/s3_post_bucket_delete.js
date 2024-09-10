@@ -9,7 +9,6 @@ const S3Error = require('../s3_errors').S3Error;
  * AKA "Multi Object Delete"
  */
 async function post_bucket_delete(req) {
-
     // The request body XML format:
     // Delete (Required), Object (Required), Quiet (Not Required)
     // Parsing the XML and throw an error in case the required part are not included
@@ -38,7 +37,7 @@ async function post_bucket_delete(req) {
 
     const reply = await req.object_sdk.delete_multiple_objects({
         bucket: req.params.bucket,
-        objects
+        objects,
     });
 
     const results = [];
@@ -53,7 +52,7 @@ async function post_bucket_delete(req) {
                     VersionId: req_obj.version_id,
                     Code: res_obj.err_code,
                     Message: res_obj.err_message,
-                }
+                },
             };
         } else if (res_obj.created_delete_marker) {
             results[i] = {
@@ -62,7 +61,7 @@ async function post_bucket_delete(req) {
                     VersionId: req_obj.version_id,
                     DeleteMarker: true,
                     DeleteMarkerVersionId: res_obj.created_version_id,
-                }
+                },
             };
         } else if (res_obj.deleted_delete_marker) {
             results[i] = {
@@ -71,14 +70,14 @@ async function post_bucket_delete(req) {
                     VersionId: req_obj.version_id,
                     DeleteMarker: true,
                     DeleteMarkerVersionId: res_obj.deleted_version_id,
-                }
+                },
             };
         } else {
             results[i] = {
                 Deleted: {
                     Key: req_obj.key,
                     VersionId: req_obj.version_id,
-                }
+                },
             };
         }
     }

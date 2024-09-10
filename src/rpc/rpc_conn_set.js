@@ -6,7 +6,6 @@ const dbg = require('../util/debug_module')(__filename);
 const CLOSE_LISTENER_SYMBOL = Symbol('CLOSE_LISTENER_SYMBOL');
 
 class RpcConnSet {
-
     constructor(name) {
         this.name = name;
         this.set = new Set();
@@ -46,7 +45,6 @@ class RpcConnSet {
         this.cleanup();
         return Array.from(this.set);
     }
-
 }
 
 module.exports = RpcConnSet;

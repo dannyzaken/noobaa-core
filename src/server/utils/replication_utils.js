@@ -18,7 +18,7 @@ const PARTIAL_SINGLE_BUCKET_REPLICATION_DEFAULTS = {
     last_cycle_error_writes_size: 0,
 };
 
-//TODO: this function is not being used anymore, commenting out and keeping it as reference 
+//TODO: this function is not being used anymore, commenting out and keeping it as reference
 // function check_data_or_md_changed(src_info, dst_info) {
 //     dbg.log1('replication_utils.check_data_or_md_changed:', src_info, dst_info);
 
@@ -35,17 +35,23 @@ const PARTIAL_SINGLE_BUCKET_REPLICATION_DEFAULTS = {
 //     if (!_.isEqual(src_info.Metadata, dst_info.Metadata)) return true;
 
 //     // data and md is equal which means something else changed in src
-//     // nothing to do 
+//     // nothing to do
 //     return false;
 // }
 
 function get_rule_status(rule, src_cont_token, keys_diff_map, copy_res) {
-    const { num_keys_to_copy, num_bytes_to_copy } = Object.entries(keys_diff_map).reduce(
+    const { num_keys_to_copy, num_bytes_to_copy } = Object.entries(
+        keys_diff_map,
+    ).reduce(
         (acc, [key, value]) => {
             acc.num_keys_to_copy += value.length;
-            acc.num_bytes_to_copy += value.reduce((key_bytes, obj) => key_bytes + obj.Size, 0);
+            acc.num_bytes_to_copy += value.reduce(
+                (key_bytes, obj) => key_bytes + obj.Size,
+                0,
+            );
             return acc;
-        }, { num_keys_to_copy: 0, num_bytes_to_copy: 0 }
+        },
+        { num_keys_to_copy: 0, num_bytes_to_copy: 0 },
     );
 
     const num_keys_moved = copy_res.num_of_objects;
@@ -63,13 +69,20 @@ function get_rule_status(rule, src_cont_token, keys_diff_map, copy_res) {
     return status;
 }
 
-function update_replication_prom_report(bucket_name, replication_policy_id, replication_status) {
+function update_replication_prom_report(
+    bucket_name,
+    replication_policy_id,
+    replication_status,
+) {
     const core_report = prom_reporting.get_core_report();
-    const last_cycle_status = _.defaults({
-        ...replication_status,
-        bucket_name: bucket_name.unwrap(),
-        replication_id: replication_policy_id
-    }, PARTIAL_SINGLE_BUCKET_REPLICATION_DEFAULTS);
+    const last_cycle_status = _.defaults(
+        {
+            ...replication_status,
+            bucket_name: bucket_name.unwrap(),
+            replication_id: replication_policy_id,
+        },
+        PARTIAL_SINGLE_BUCKET_REPLICATION_DEFAULTS,
+    );
 
     core_report.set_replication_status(last_cycle_status);
 }
@@ -81,7 +94,9 @@ function update_replication_prom_report(bucket_name, replication_policy_id, repl
  * @param {string} version_id
  */
 async function get_object_md(bucket_name, key, s3, version_id) {
-    if (bucket_name instanceof SensitiveString) bucket_name = bucket_name.unwrap();
+    if (bucket_name instanceof SensitiveString) {
+        bucket_name = bucket_name.unwrap();
+    }
     const params = {
         Bucket: bucket_name,
         Key: key,
@@ -92,7 +107,9 @@ async function get_object_md(bucket_name, key, s3, version_id) {
     try {
         const head = await s3.headObject(params).promise();
         //for namespace s3 we are omitting the 'noobaa-namespace-s3-bucket' as it will be defer between buckets
-        if (head?.Metadata) head.Metadata = _.omit(head.Metadata, 'noobaa-namespace-s3-bucket');
+        if (head?.Metadata) {
+            head.Metadata = _.omit(head.Metadata, 'noobaa-namespace-s3-bucket');
+        }
         dbg.log1('get_object_md: finished successfully', head);
         return head;
     } catch (err) {
@@ -103,15 +120,30 @@ async function get_object_md(bucket_name, key, s3, version_id) {
 }
 
 function find_src_and_dst_buckets(dst_bucket_id, replication_id) {
-    const ans = _.reduce(system_store.data.buckets, (acc, cur_bucket) => {
-        dbg.log1('replication_utils.find_src_and_dst_buckets: ', cur_bucket._id, dst_bucket_id, cur_bucket.replication_policy_id, replication_id);
-        if (cur_bucket._id.toString() === dst_bucket_id.toString()) acc.dst_bucket = cur_bucket;
-        if (cur_bucket.replication_policy_id &&
-            (cur_bucket.replication_policy_id.toString() === replication_id.toString())) {
-            acc.src_bucket = cur_bucket;
-        }
-        return acc;
-    }, { src_bucket: undefined, dst_bucket: undefined });
+    const ans = _.reduce(
+        system_store.data.buckets,
+        (acc, cur_bucket) => {
+            dbg.log1(
+                'replication_utils.find_src_and_dst_buckets: ',
+                cur_bucket._id,
+                dst_bucket_id,
+                cur_bucket.replication_policy_id,
+                replication_id,
+            );
+            if (cur_bucket._id.toString() === dst_bucket_id.toString()) {
+                acc.dst_bucket = cur_bucket;
+            }
+            if (
+                cur_bucket.replication_policy_id &&
+                cur_bucket.replication_policy_id.toString() ===
+                    replication_id.toString()
+            ) {
+                acc.src_bucket = cur_bucket;
+            }
+            return acc;
+        },
+        { src_bucket: undefined, dst_bucket: undefined },
+    );
 
     return ans;
 }
@@ -121,36 +153,59 @@ function get_copy_type() {
     return 'MIX';
 }
 
-async function copy_objects(scanner_semaphore, client, copy_type, src_bucket_name, dst_bucket_name, keys_diff_map) {
+async function copy_objects(
+    scanner_semaphore,
+    client,
+    copy_type,
+    src_bucket_name,
+    dst_bucket_name,
+    keys_diff_map,
+) {
     try {
         const keys_length = Object.keys(keys_diff_map);
         if (!keys_length.length) return;
-        const res = await scanner_semaphore.surround_count(keys_length, //We will do key by key even when a key have more then one version
+        const res = await scanner_semaphore.surround_count(
+            keys_length, //We will do key by key even when a key have more then one version
             async () => {
                 try {
                     //calling copy_objects in the replication server
-                    const res1 = await client.replication.copy_objects({
-                        copy_type,
-                        src_bucket_name,
-                        dst_bucket_name,
-                        keys_diff_map
-                    }, {
-                        auth_token: auth_server.make_auth_token({
-                            system_id: system_store.data.systems[0]._id,
-                            account_id: system_store.data.systems[0].owner._id,
-                            role: 'admin'
-                        })
-                    });
+                    const res1 = await client.replication.copy_objects(
+                        {
+                            copy_type,
+                            src_bucket_name,
+                            dst_bucket_name,
+                            keys_diff_map,
+                        },
+                        {
+                            auth_token: auth_server.make_auth_token({
+                                system_id: system_store.data.systems[0]._id,
+                                account_id:
+                                    system_store.data.systems[0].owner._id,
+                                role: 'admin',
+                            }),
+                        },
+                    );
                     return res1;
                 } catch (err) {
                     // no need to do retries, eventually the object will be uploaded
                     // TODO: serious error codes with metrics (auth_failed, storage not exist etc)
-                    dbg.error('replication_utils copy_objects: error: ', err, src_bucket_name, dst_bucket_name, keys_diff_map);
+                    dbg.error(
+                        'replication_utils copy_objects: error: ',
+                        err,
+                        src_bucket_name,
+                        dst_bucket_name,
+                        keys_diff_map,
+                    );
                 }
-            });
+            },
+        );
         return res;
     } catch (err) {
-        dbg.error('replication_utils copy_objects: semaphore error:', err, err.stack);
+        dbg.error(
+            'replication_utils copy_objects: semaphore error:',
+            err,
+            err.stack,
+        );
         // no need to handle semaphore errors, eventually the object will be uploaded
     }
 }
@@ -160,27 +215,42 @@ async function copy_objects(scanner_semaphore, client, copy_type, src_bucket_nam
 async function delete_objects(scanner_semaphore, client, bucket_name, keys) {
     if (!keys.length) return;
     try {
-        const res = await scanner_semaphore.surround_count(keys.length,
+        const res = await scanner_semaphore.surround_count(
+            keys.length,
             async () => {
                 try {
-                    const res1 = await client.replication.delete_objects({
-                        bucket_name,
-                        keys
-                    }, {
-                        auth_token: auth_server.make_auth_token({
-                            system_id: system_store.data.systems[0]._id,
-                            account_id: system_store.data.systems[0].owner._id,
-                            role: 'admin'
-                        })
-                    });
+                    const res1 = await client.replication.delete_objects(
+                        {
+                            bucket_name,
+                            keys,
+                        },
+                        {
+                            auth_token: auth_server.make_auth_token({
+                                system_id: system_store.data.systems[0]._id,
+                                account_id:
+                                    system_store.data.systems[0].owner._id,
+                                role: 'admin',
+                            }),
+                        },
+                    );
                     return res1;
                 } catch (err) {
-                    dbg.error('replication_utils delete_objects: error: ', err, bucket_name, keys);
+                    dbg.error(
+                        'replication_utils delete_objects: error: ',
+                        err,
+                        bucket_name,
+                        keys,
+                    );
                 }
-            });
+            },
+        );
         return res;
     } catch (err) {
-        dbg.error('replication_utils delete_objects: semaphore error:', err, err.stack);
+        dbg.error(
+            'replication_utils delete_objects: semaphore error:',
+            err,
+            err.stack,
+        );
     }
 }
 

@@ -38,7 +38,9 @@ Usage:
 const COMMANDS = `
 Commands:
 
-${Object.keys(CORE_COMMANDS).map(cmd => '    - ' + cmd).join('\n')}
+${Object.keys(CORE_COMMANDS)
+    .map(cmd => '    - ' + cmd)
+    .join('\n')}
 `;
 
 function print_usage() {

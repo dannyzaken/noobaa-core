@@ -31,7 +31,8 @@ async function get_object_uploadId(req) {
         num_marker,
     });
     return {
-        ListPartsResult: [{
+        ListPartsResult: [
+            {
                 Bucket: req.params.bucket,
                 Key: req.params.key,
                 UploadId: req.query.uploadId,
@@ -48,10 +49,12 @@ async function get_object_uploadId(req) {
                     PartNumber: part.num,
                     Size: part.size,
                     ETag: `"${part.etag}"`,
-                    LastModified: s3_utils.format_s3_xml_date(part.last_modified),
-                }
-            }))
-        ]
+                    LastModified: s3_utils.format_s3_xml_date(
+                        part.last_modified,
+                    ),
+                },
+            })),
+        ],
     };
 }
 

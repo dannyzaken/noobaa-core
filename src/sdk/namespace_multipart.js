@@ -4,11 +4,8 @@
 const P = require('../util/promise');
 const _ = require('lodash');
 
-const EXCEPT_REASONS = [
-    'NO_SUCH_OBJECT'
-];
+const EXCEPT_REASONS = ['NO_SUCH_OBJECT'];
 class NamespaceMultipart {
-
     constructor(write_ns, multipart_ns) {
         this.write_ns = write_ns;
         this.multipart_ns = multipart_ns;
@@ -31,18 +28,21 @@ class NamespaceMultipart {
     /////////////////
 
     list_objects(params, object_sdk) {
-        return this._ns_map(ns => ns.list_objects(params, object_sdk))
-            .then(res => this._handle_list(res, params));
+        return this._ns_map(ns => ns.list_objects(params, object_sdk)).then(
+            res => this._handle_list(res, params),
+        );
     }
 
     list_uploads(params, object_sdk) {
-        return this._ns_map(ns => ns.list_uploads(params, object_sdk))
-            .then(res => this._handle_list(res, params));
+        return this._ns_map(ns => ns.list_uploads(params, object_sdk)).then(
+            res => this._handle_list(res, params),
+        );
     }
 
     list_object_versions(params, object_sdk) {
-        return this._ns_map(ns => ns.list_object_versions(params, object_sdk))
-            .then(res => this._handle_list(res, params));
+        return this._ns_map(ns =>
+            ns.list_object_versions(params, object_sdk),
+        ).then(res => this._handle_list(res, params));
     }
 
     /////////////////
@@ -50,24 +50,26 @@ class NamespaceMultipart {
     /////////////////
 
     read_object_md(params, object_sdk) {
-        return this._ns_map(ns => P.resolve(ns.read_object_md(params, object_sdk))
-                .then(res => {
-                    // save the ns in the response for optimizing read_object_stream
-                    res.ns = ns;
-                    return res;
-                }))
-            .then(reply => {
-                const working_set = _.sortBy(
-                    this._throw_if_all_failed_or_get_succeeded(reply),
-                    'create_time'
-                );
-                return _.last(working_set);
-            });
+        return this._ns_map(ns =>
+            P.resolve(ns.read_object_md(params, object_sdk)).then(res => {
+                // save the ns in the response for optimizing read_object_stream
+                res.ns = ns;
+                return res;
+            }),
+        ).then(reply => {
+            const working_set = _.sortBy(
+                this._throw_if_all_failed_or_get_succeeded(reply),
+                'create_time',
+            );
+            return _.last(working_set);
+        });
     }
 
     read_object_stream(params, object_sdk) {
         // use the saved ns from read_object_md
-        if (params.object_md && params.object_md.ns) return params.object_md.ns.read_object_stream(params, object_sdk);
+        if (params.object_md && params.object_md.ns) {
+            return params.object_md.ns.read_object_stream(params, object_sdk);
+        }
         throw new Error('NO OBJECT_MD NAMESPACE PASSED');
         //return this._ns_get(ns => ns.read_object_stream(params, object_sdk));
     }
@@ -109,32 +111,40 @@ class NamespaceMultipart {
     ///////////////////
 
     delete_object(params, object_sdk) {
-        return this._ns_map(ns => ns.delete_object(params, object_sdk))
-            .then(reply => {
-                const succeeded = this._throw_if_any_failed_or_get_succeeded(reply, EXCEPT_REASONS);
+        return this._ns_map(ns => ns.delete_object(params, object_sdk)).then(
+            reply => {
+                const succeeded = this._throw_if_any_failed_or_get_succeeded(
+                    reply,
+                    EXCEPT_REASONS,
+                );
                 return _.first(succeeded);
-            });
+            },
+        );
     }
 
     delete_multiple_objects(params, object_sdk) {
-        return this._ns_map(ns => ns.delete_multiple_objects(params, object_sdk))
-            .then(reply => {
-                const succeeded = this._throw_if_any_failed_or_get_succeeded(reply, EXCEPT_REASONS);
-                return _.first(succeeded);
-            });
+        return this._ns_map(ns =>
+            ns.delete_multiple_objects(params, object_sdk),
+        ).then(reply => {
+            const succeeded = this._throw_if_any_failed_or_get_succeeded(
+                reply,
+                EXCEPT_REASONS,
+            );
+            return _.first(succeeded);
+        });
     }
 
     _ns_map(func) {
         return P.map(this.total_resources, ns =>
             P.try(() => func(ns))
-            .then(reply => ({
-                reply,
-                success: true
-            }))
-            .catch(error => ({
-                error,
-                success: false
-            }))
+                .then(reply => ({
+                    reply,
+                    success: true,
+                }))
+                .catch(error => ({
+                    error,
+                    success: false,
+                })),
         );
     }
 
@@ -143,7 +153,9 @@ class NamespaceMultipart {
         const try_next = err => {
             i += 1;
             if (i >= this.total_resources.length) {
-                return P.reject(err || new Error('NamespaceMultipart._ns_get exhausted'));
+                return P.reject(
+                    err || new Error('NamespaceMultipart._ns_get exhausted'),
+                );
             }
             const ns = this.total_resources[i];
             return P.try(() => func(ns)).catch(try_next);
@@ -156,8 +168,16 @@ class NamespaceMultipart {
     }
 
     _get_failed_responses(reply_array, except_reasons) {
-        return reply_array.filter(res => !res.success).map(rec => rec.error)
-            .filter(error => !_.includes(except_reasons || [], error.rpc_code || 'UNKNOWN_ERR'));
+        return reply_array
+            .filter(res => !res.success)
+            .map(rec => rec.error)
+            .filter(
+                error =>
+                    !_.includes(
+                        except_reasons || [],
+                        error.rpc_code || 'UNKNOWN_ERR',
+                    ),
+            );
     }
 
     _throw_if_all_failed_or_get_succeeded(reply_array, except_reasons) {
@@ -193,9 +213,12 @@ class NamespaceMultipart {
         for (i = 0; i < res.length; ++i) {
             for (j = 0; j < res[i].objects.length; ++j) {
                 const obj = res[i].objects[j];
-                if (!map[obj.key] ||
+                if (
+                    !map[obj.key] ||
                     (map[obj.key] && obj.create_time > map[obj.key].create_time)
-                ) map[obj.key] = obj;
+                ) {
+                    map[obj.key] = obj;
+                }
             }
             for (j = 0; j < res[i].common_prefixes.length; ++j) {
                 const prefix = res[i].common_prefixes[j];
@@ -226,8 +249,14 @@ class NamespaceMultipart {
         const next_marker = is_truncated ? names[names.length - 1] : undefined;
         // In case of prefix there will be no object (which means undefined)
         const last_obj_or_prefix = map[names[names.length - 1]];
-        const next_version_id_marker = is_truncated && (typeof last_obj_or_prefix === 'object') ? last_obj_or_prefix.version_id : undefined;
-        const next_upload_id_marker = is_truncated && (typeof last_obj_or_prefix === 'object') ? last_obj_or_prefix.obj_id : undefined;
+        const next_version_id_marker =
+            is_truncated && typeof last_obj_or_prefix === 'object' ?
+                last_obj_or_prefix.version_id
+            :   undefined;
+        const next_upload_id_marker =
+            is_truncated && typeof last_obj_or_prefix === 'object' ?
+                last_obj_or_prefix.obj_id
+            :   undefined;
 
         return {
             objects,
@@ -235,11 +264,9 @@ class NamespaceMultipart {
             is_truncated,
             next_marker,
             next_upload_id_marker,
-            next_version_id_marker
+            next_version_id_marker,
         };
     }
-
 }
-
 
 module.exports = NamespaceMultipart;

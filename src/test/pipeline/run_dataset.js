@@ -33,11 +33,14 @@ const TEST_CFG_DEFAULTS = {
     versioning: false,
     no_exit_on_success: false,
     data_placement: 'SPREAD',
-    seed: crypto.randomBytes(10).toString('hex')
+    seed: crypto.randomBytes(10).toString('hex'),
 };
 
-const dataset_params = _.defaults(_.pick(argv, _.keys(TEST_CFG_DEFAULTS)), TEST_CFG_DEFAULTS);
-const POOL_NAME = "first-pool";
+const dataset_params = _.defaults(
+    _.pick(argv, _.keys(TEST_CFG_DEFAULTS)),
+    TEST_CFG_DEFAULTS,
+);
+const POOL_NAME = 'first-pool';
 
 async function _run_dataset() {
     console.log(dataset_params);
@@ -55,13 +58,16 @@ async function _run_dataset() {
 
 async function _create_pool(agent_number, mgmt_ip, mgmt_port_https) {
     if (agent_number !== 0) {
-        const rpc = api.new_rpc_from_base_address(`wss://${mgmt_ip}:${mgmt_port_https}`, 'EXTERNAL');
+        const rpc = api.new_rpc_from_base_address(
+            `wss://${mgmt_ip}:${mgmt_port_https}`,
+            'EXTERNAL',
+        );
         const client = rpc.new_client({});
         try {
             await client.create_auth_token({
                 email: 'demo@noobaa.com',
                 password: 'DeMo1',
-                system: 'demo'
+                system: 'demo',
             });
         } catch (e) {
             console.error(`create_auth_token has failed`, e);
@@ -69,14 +75,22 @@ async function _create_pool(agent_number, mgmt_ip, mgmt_port_https) {
         }
         const pool_functions = new PoolFunctions(client);
         await pool_functions.create_pool(POOL_NAME, agent_number);
-        await pool_functions.change_tier(POOL_NAME, dataset_params.bucket, dataset_params.data_placement);
+        await pool_functions.change_tier(
+            POOL_NAME,
+            dataset_params.bucket,
+            dataset_params.data_placement,
+        );
     }
 }
 
 async function main() {
     console.log(`running dataset`);
     try {
-        await _create_pool(dataset_params.agent_number, dataset_params.mgmt_ip, dataset_params.mgmt_port_https);
+        await _create_pool(
+            dataset_params.agent_number,
+            dataset_params.mgmt_ip,
+            dataset_params.mgmt_port_https,
+        );
         await _run_dataset();
         process.exit(0);
     } catch (e) {

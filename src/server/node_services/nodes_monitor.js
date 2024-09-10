@@ -1,5 +1,5 @@
 /* Copyright (C) 2016 NooBaa */
-/* eslint max-lines: ['error', 4000], complexity: ['error', 70] */
+
 'use strict';
 
 const _ = require('lodash');
@@ -18,7 +18,8 @@ const js_utils = require('../../util/js_utils');
 const MDStore = require('../object_services/md_store').MDStore;
 const Semaphore = require('../../util/semaphore');
 const NodesStore = require('./nodes_store').NodesStore;
-const IoStatsStore = require('../analytic_services/io_stats_store').IoStatsStore;
+const IoStatsStore =
+    require('../analytic_services/io_stats_store').IoStatsStore;
 const size_utils = require('../../util/size_utils');
 const BigInteger = size_utils.BigInteger;
 const Dispatcher = require('../notifications/dispatcher');
@@ -98,47 +99,58 @@ const NODE_INFO_DEFAULTS = {
     rpc_address: '',
     base_address: '',
 };
-const QUERY_FIELDS = [{
-    query: 'readable',
-    item: 'item.readable',
-    type: 'Boolean',
-}, {
-    query: 'writable',
-    item: 'item.writable',
-    type: 'Boolean',
-}, {
-    query: 'trusted',
-    item: 'item.trusted',
-    type: 'Boolean',
-}, {
-    query: 'migrating_to_pool',
-    item: 'item.node.migrating_to_pool',
-    type: 'Boolean',
-}, {
-    query: 'decommissioning',
-    item: 'item.node.decommissioning',
-    type: 'Boolean',
-}, {
-    query: 'decommissioned',
-    item: 'item.node.decommissioned',
-    type: 'Boolean',
-}, {
-    query: 'migrating_to_pool',
-    item: 'item.node.migrating_to_pool',
-    type: 'Boolean',
-}, {
-    query: 'accessibility',
-    item: 'item.accessibility',
-    type: 'String',
-}, {
-    query: 'connectivity',
-    item: 'item.connectivity',
-    type: 'String',
-}, {
-    query: 'data_activity',
-    item: 'item.data_activity.reason',
-    type: 'String',
-}];
+const QUERY_FIELDS = [
+    {
+        query: 'readable',
+        item: 'item.readable',
+        type: 'Boolean',
+    },
+    {
+        query: 'writable',
+        item: 'item.writable',
+        type: 'Boolean',
+    },
+    {
+        query: 'trusted',
+        item: 'item.trusted',
+        type: 'Boolean',
+    },
+    {
+        query: 'migrating_to_pool',
+        item: 'item.node.migrating_to_pool',
+        type: 'Boolean',
+    },
+    {
+        query: 'decommissioning',
+        item: 'item.node.decommissioning',
+        type: 'Boolean',
+    },
+    {
+        query: 'decommissioned',
+        item: 'item.node.decommissioned',
+        type: 'Boolean',
+    },
+    {
+        query: 'migrating_to_pool',
+        item: 'item.node.migrating_to_pool',
+        type: 'Boolean',
+    },
+    {
+        query: 'accessibility',
+        item: 'item.accessibility',
+        type: 'String',
+    },
+    {
+        query: 'connectivity',
+        item: 'item.connectivity',
+        type: 'String',
+    },
+    {
+        query: 'data_activity',
+        item: 'item.data_activity.reason',
+        type: 'String',
+    },
+];
 
 const MODE_COMPARE_ORDER = [
     'OPTIMAL',
@@ -166,7 +178,7 @@ const MODE_COMPARE_ORDER = [
     'IO_ERRORS',
     'UNTRUSTED',
     'INITIALIZING',
-    'OFFLINE'
+    'OFFLINE',
 ];
 
 const ACT_DELETING = 'DELETING';
@@ -179,12 +191,12 @@ const STAGE_WIPING = 'WIPING';
 const WAIT_NODE_OFFLINE = 'NODE_OFFLINE';
 const WAIT_SYSTEM_MAINTENANCE = 'SYSTEM_MAINTENANCE';
 
-
 class NodesMonitor extends EventEmitter {
-
     constructor() {
         super();
-        this.client = server_rpc.rpc.new_client({ auth_token: server_rpc.client.options.auth_token });
+        this.client = server_rpc.rpc.new_client({
+            auth_token: server_rpc.client.options.auth_token,
+        });
         this._started = false;
         this._loaded = false;
         this._num_running_rebuilds = 0;
@@ -193,8 +205,12 @@ class NodesMonitor extends EventEmitter {
 
         // This is used in order to test n2n connection from node_monitor to agents
         this.n2n_rpc = api.new_rpc();
-        this.n2n_client = this.n2n_rpc.new_client({ auth_token: server_rpc.client.options.auth_token });
-        this.n2n_agent = this.n2n_rpc.register_n2n_agent((...args) => this.n2n_client.node.n2n_signal(...args));
+        this.n2n_client = this.n2n_rpc.new_client({
+            auth_token: server_rpc.client.options.auth_token,
+        });
+        this.n2n_agent = this.n2n_rpc.register_n2n_agent((...args) =>
+            this.n2n_client.node.n2n_signal(...args),
+        );
         this._host_sequence_number = 0;
         // Notice that this is a mock up address just to ensure n2n connection authorization
         this.n2n_agent.set_rpc_address('n2n://nodes_monitor');
@@ -218,16 +234,23 @@ class NodesMonitor extends EventEmitter {
                 0,
                 Date.now(),
                 /* include_kubernetes */
-                true
+                true,
             );
             nodes_stats.forEach(stats => {
                 dbg.log0(`resetting stats in prometheus:`, stats);
                 const core_report = prom_reporting.get_core_report();
-                core_report.set_providers_ops(stats.service, stats.write_count, stats.read_count);
-                core_report.set_providers_bandwidth(stats.service, stats.write_bytes, stats.read_bytes);
+                core_report.set_providers_ops(
+                    stats.service,
+                    stats.write_count,
+                    stats.read_count,
+                );
+                core_report.set_providers_bandwidth(
+                    stats.service,
+                    stats.write_bytes,
+                    stats.read_bytes,
+                );
             });
         }
-
     }
 
     stop(force_close_n2n) {
@@ -248,7 +271,7 @@ class NodesMonitor extends EventEmitter {
         return P.resolve()
             .then(() => this._run())
             .then(() => {
-                // do nothing. 
+                // do nothing.
             });
     }
 
@@ -264,12 +287,16 @@ class NodesMonitor extends EventEmitter {
                 pool &&
                 pool.cloud_pool_info &&
                 pool.cloud_pool_info.available_capacity;
-            const info = await P.timeout(config.AGENT_RESPONSE_TIMEOUT,
-                this.client.agent.get_agent_storage_info({
-                    available_capacity
-                }, {
-                    connection: item.connection
-                })
+            const info = await P.timeout(
+                config.AGENT_RESPONSE_TIMEOUT,
+                this.client.agent.get_agent_storage_info(
+                    {
+                        available_capacity,
+                    },
+                    {
+                        connection: item.connection,
+                    },
+                ),
             );
             if (info.storage) {
                 item.node.storage = info.storage;
@@ -278,7 +305,6 @@ class NodesMonitor extends EventEmitter {
             }
         }
     }
-
 
     /**
      * heartbeat request from node agent
@@ -289,29 +315,36 @@ class NodesMonitor extends EventEmitter {
         const node_version = req.rpc_params.version;
         const reply = {
             version: pkg.version || '0',
-            delay_ms: 0 // delay_ms was required in 0.3.X
+            delay_ms: 0, // delay_ms was required in 0.3.X
         };
 
-        dbg.log0(`got heartbeat ${node_id ? 'for node_id ' + node_id : 'for a new node'} `);
+        dbg.log0(
+            `got heartbeat ${node_id ? 'for node_id ' + node_id : 'for a new node'} `,
+        );
 
         // since the heartbeat api is dynamic through new versions
         // if we detect that this is a new version we return immediately
         // with the new version so that the agent will update the code first
         // and only after the upgrade we will run the heartbeat functionality
         if (node_version !== pkg.version) {
-            dbg.log0('heartbeat: reply new version',
-                'node_id', node_id,
-                'node_version', node_version,
-                'pkg.version', pkg.version);
+            dbg.log0(
+                'heartbeat: reply new version',
+                'node_id',
+                node_id,
+                'node_version',
+                node_version,
+                'pkg.version',
+                pkg.version,
+            );
             return reply;
         }
 
-
         if (req.connection.item_name) {
-            dbg.error(`connection is already used to connect an agent. name=${req.connection.item_name}`);
+            dbg.error(
+                `connection is already used to connect an agent. name=${req.connection.item_name}`,
+            );
             throw new Error('connection is already used to connect an agent');
         }
-
 
         this._throw_if_not_started_and_loaded();
 
@@ -325,12 +358,20 @@ class NodesMonitor extends EventEmitter {
         // new node heartbeat
         // create the node and then update the heartbeat
         if (!node_id && (req.role === 'create_node' || req.role === 'admin')) {
-            const agent_config = (extra.agent_config_id && system_store.data.get_by_id(extra.agent_config_id)) || {};
-            this._add_new_node(req.connection, req.system._id, agent_config, req.rpc_params.pool_name);
+            const agent_config =
+                (extra.agent_config_id &&
+                    system_store.data.get_by_id(extra.agent_config_id)) ||
+                {};
+            this._add_new_node(
+                req.connection,
+                req.system._id,
+                agent_config,
+                req.rpc_params.pool_name,
+            );
             dbg.log0('connecting new node with agent_config =', {
                 ...agent_config,
                 system: agent_config.system && agent_config.system.name,
-                pool: agent_config.pool && agent_config.pool.name
+                pool: agent_config.pool && agent_config.pool.name,
             });
             return reply;
         }
@@ -338,7 +379,6 @@ class NodesMonitor extends EventEmitter {
         dbg.error('heartbeat: BAD REQUEST', 'role', req.role, 'auth', req.auth);
         throw new RpcError('FORBIDDEN', 'Bad heartbeat request');
     }
-
 
     // test the passed node id, to verify that it's a valid node
     test_node_id(req) {
@@ -349,7 +389,6 @@ class NodesMonitor extends EventEmitter {
         // we can remove it only after we no longer support versions that call test_node_id
         return true;
     }
-
 
     /**
      * read_node returns information about one node
@@ -374,21 +413,29 @@ class NodesMonitor extends EventEmitter {
         this._throw_if_not_started_and_loaded();
         const host_nodes = this._get_host_nodes_by_name(req.rpc_params.name);
         const host_item = this._consolidate_host(host_nodes);
-        return P.map(host_nodes, node => this._retrust_node(node))
-            .then(() => this._dispatch_node_event(host_item, 'retrust',
+        return P.map(host_nodes, node => this._retrust_node(node)).then(() =>
+            this._dispatch_node_event(
+                host_item,
+                'retrust',
                 `Node ${this._item_hostname(host_item)} in pool ${this._item_pool_name(host_item)} was set as trusted by ${req.account && req.account.email}`,
-                req.account && req.account._id));
+                req.account && req.account._id,
+            ),
+        );
     }
 
     delete_host(req) {
         this._throw_if_not_started_and_loaded();
         const host_nodes = this._get_host_nodes_by_name(req.rpc_params.name);
         const host_item = this._consolidate_host(host_nodes);
-        return P.map(host_nodes, node => this._delete_node(node))
-            .then(() => this._dispatch_node_event(host_item, 'delete_started',
+        return P.map(host_nodes, node => this._delete_node(node)).then(() =>
+            this._dispatch_node_event(
+                host_item,
+                'delete_started',
                 `Node ${this._item_hostname(host_item)} deletion process was initiated by ${req.account && req.account.email}.
                 The node will be deleted from ${this._item_pool_name(host_item)} once all stored data is secured`,
-                req.account && req.account._id));
+                req.account && req.account._id,
+            ),
+        );
     }
 
     _hide_host(host_nodes) {
@@ -398,12 +445,17 @@ class NodesMonitor extends EventEmitter {
             .then(() => _.each(host_nodes, node => this._hide_node(node)))
             .then(() => this._update_nodes_store('force'))
             .then(() => {
-                this._dispatch_node_event(host_item, 'deleted',
-                    `Node ${this._item_hostname(host_item)} in pool ${this._item_pool_name(host_item)} is successfully deleted`);
+                this._dispatch_node_event(
+                    host_item,
+                    'deleted',
+                    `Node ${this._item_hostname(host_item)} in pool ${this._item_pool_name(host_item)} is successfully deleted`,
+                );
                 if (!host_item.online) {
-                    Dispatcher.instance().alert('INFO',
+                    Dispatcher.instance().alert(
+                        'INFO',
                         system_store.data.systems[0]._id,
-                        `Node  ${this._item_hostname(host_item)} was marked for deletion, data on it could not be wiped since the node was offline`);
+                        `Node  ${this._item_hostname(host_item)} was marked for deletion, data on it could not be wiped since the node was offline`,
+                    );
                 }
             });
     }
@@ -428,12 +480,13 @@ class NodesMonitor extends EventEmitter {
                 return this._update_nodes_store('force');
             })
             .then(() => {
-                this._dispatch_node_event(item, 'decommission',
+                this._dispatch_node_event(
+                    item,
+                    'decommission',
                     `Drive ${this._item_drive_description(item)} was deactivated by ${req.account && req.account.email}`,
-                    req.account && req.account._id
+                    req.account && req.account._id,
                 );
             });
-
     }
 
     recommission_node(req) {
@@ -450,28 +503,34 @@ class NodesMonitor extends EventEmitter {
                 return this._update_nodes_store('force');
             })
             .then(() => {
-                this._dispatch_node_event(item, 'recommission',
+                this._dispatch_node_event(
+                    item,
+                    'recommission',
                     `Drive ${this._item_drive_description(item)} was reactivated by ${req.account && req.account.email}`,
-                    req.account && req.account._id
+                    req.account && req.account._id,
                 );
             });
-
     }
 
     update_nodes_services(req) {
         this._throw_if_not_started_and_loaded();
         const { name, services, nodes } = req.rpc_params;
-        if (services && nodes) throw new Error('Request cannot specify both services and nodes');
-        if (!services && !nodes) throw new Error('Request must specify services or nodes');
+        if (services && nodes) {
+            throw new Error('Request cannot specify both services and nodes');
+        }
+        if (!services && !nodes) {
+            throw new Error('Request must specify services or nodes');
+        }
 
         const host_nodes = this._get_host_nodes_by_name(name);
 
         let updates;
         if (services) {
             const { storage: storage_enabled } = services;
-            updates = host_nodes.map(item => ({
+            updates = host_nodes
+                .map(item => ({
                     item: item,
-                    enabled: storage_enabled
+                    enabled: storage_enabled,
                 }))
                 .filter(item => !_.isUndefined(item.enabled));
 
@@ -480,13 +539,13 @@ class NodesMonitor extends EventEmitter {
                     host_nodes[0],
                     storage_enabled ? 'storage_enabled' : 'storage_disabled',
                     `Storage service was ${storage_enabled ? 'enabled' : 'disabled'} on node ${this._item_hostname(host_nodes[0])} by ${req.account && req.account.email}`,
-                    req.account && req.account._id
+                    req.account && req.account._id,
                 );
             }
         } else {
             updates = nodes.map(update => ({
                 item: this._map_node_name.get(update.name),
-                enabled: update.enabled
+                enabled: update.enabled,
             }));
         }
 
@@ -508,18 +567,31 @@ class NodesMonitor extends EventEmitter {
         if (!services && (activated.length || deactivated.length)) {
             // if updating specific drives generate an event
             const num_updates = activated.length + deactivated.length;
-            const activated_desc = activated.length ?
-                'Activated Drives:\n' + activated.map(item => this._item_drive_description(item)).join('\n') + '\n' : '';
-            const deactivated_desc = deactivated.length ?
-                'Deactivated Drives:\n' + deactivated.map(item => this._item_drive_description(item)).join('\n') : '';
-            const description = `${num_updates} ${num_updates > 1 ? 'drives were' : 'drive was'} edited by ${req.account && req.account.email}\n` +
-                activated_desc + deactivated_desc;
+            const activated_desc =
+                activated.length ?
+                    'Activated Drives:\n' +
+                    activated
+                        .map(item => this._item_drive_description(item))
+                        .join('\n') +
+                    '\n'
+                :   '';
+            const deactivated_desc =
+                deactivated.length ?
+                    'Deactivated Drives:\n' +
+                    deactivated
+                        .map(item => this._item_drive_description(item))
+                        .join('\n')
+                :   '';
+            const description =
+                `${num_updates} ${num_updates > 1 ? 'drives were' : 'drive was'} edited by ${req.account && req.account.email}\n` +
+                activated_desc +
+                deactivated_desc;
 
             this._dispatch_node_event(
                 host_nodes[0],
                 'edit_drives',
                 description,
-                req.account && req.account._id
+                req.account && req.account._id,
             );
         }
 
@@ -529,7 +601,9 @@ class NodesMonitor extends EventEmitter {
     get_node_ids(req) {
         const { identity, by_host } = req.rpc_params;
         if (by_host) {
-            return this._get_host_nodes_by_name(identity).map(item => String(item.node._id));
+            return this._get_host_nodes_by_name(identity).map(item =>
+                String(item.node._id),
+            );
         } else {
             const item = this._get_node({ name: identity }, 'allow_offline');
             return [String(item.node._id)];
@@ -539,7 +613,6 @@ class NodesMonitor extends EventEmitter {
     ///////////////////
     // INTERNAL IMPL //
     ///////////////////
-
 
     _clear() {
         this._loaded = false;
@@ -573,9 +646,14 @@ class NodesMonitor extends EventEmitter {
                 this._clear();
                 // restore host sequence number by iterating nodes and finding the largest host_sequence
                 for (const node of nodes) {
-                    this._host_sequence_number = Math.max(this._host_sequence_number, node.host_sequence || 0);
+                    this._host_sequence_number = Math.max(
+                        this._host_sequence_number,
+                        node.host_sequence || 0,
+                    );
                 }
-                dbg.log0(`restored _host_sequence_number = ${this._host_sequence_number}`);
+                dbg.log0(
+                    `restored _host_sequence_number = ${this._host_sequence_number}`,
+                );
                 for (const node of nodes) {
                     this._add_existing_node(node);
                 }
@@ -600,10 +678,15 @@ class NodesMonitor extends EventEmitter {
         if (node.host_id) {
             this._add_node_to_hosts_map(node.host_id, item);
             if (!item.node.host_sequence) {
-                item.node.host_sequence = this._get_host_sequence_number(node.host_id);
+                item.node.host_sequence = this._get_host_sequence_number(
+                    node.host_id,
+                );
             }
             // set _host_sequence_number to the largest one
-            this._map_host_seq_num.set(String(item.node.host_sequence), node.host_id);
+            this._map_host_seq_num.set(
+                String(item.node.host_sequence),
+                node.host_id,
+            );
         }
         this._set_node_defaults(item);
     }
@@ -613,7 +696,12 @@ class NodesMonitor extends EventEmitter {
         const pool =
             agent_config.pool ||
             system.pools_by_name[pool_name] ||
-            _.filter(system.pools_by_name, p => (!_.get(p, 'mongo_pool_info') && (!_.get(p, 'cloud_pool_info'))))[0]; // default - the 1st host pool in the system
+            _.filter(
+                system.pools_by_name,
+                p =>
+                    !_.get(p, 'mongo_pool_info') &&
+                    !_.get(p, 'cloud_pool_info'),
+            )[0]; // default - the 1st host pool in the system
         // system_store.get_account_by_email(system.owner.email).default_resource; //This should not happen, but if it does, use owner's default
 
         if (!pool) {
@@ -625,19 +713,25 @@ class NodesMonitor extends EventEmitter {
         }
         const now = Date.now();
         const hrtime = process.hrtime();
-        const name = NO_NAME_PREFIX + now.toString(36) + ((hrtime[0] * 1e9) + hrtime[1]).toString(36);
+        const name =
+            NO_NAME_PREFIX +
+            now.toString(36) +
+            (hrtime[0] * 1e9 + hrtime[1]).toString(36);
         const item = {
             connection: null,
             node_from_store: null,
-            node: _.omitBy({
-                _id: NodesStore.instance().make_node_id(),
-                peer_id: NodesStore.instance().make_node_id(),
-                system: system._id,
-                pool: pool._id,
-                agent_config: agent_config._id,
-                heartbeat: now,
-                name,
-            }, _.isUndefined),
+            node: _.omitBy(
+                {
+                    _id: NodesStore.instance().make_node_id(),
+                    peer_id: NodesStore.instance().make_node_id(),
+                    system: system._id,
+                    pool: pool._id,
+                    agent_config: agent_config._id,
+                    heartbeat: now,
+                    name,
+                },
+                _.isUndefined,
+            ),
         };
 
         if (pool.cloud_pool_info) {
@@ -666,7 +760,12 @@ class NodesMonitor extends EventEmitter {
         }
         const peer_id_collision = this._map_peer_id.get(peer_id);
         if (peer_id_collision && peer_id_collision !== item) {
-            dbg.error('NODE PEER ID COLLISION', peer_id, item, peer_id_collision);
+            dbg.error(
+                'NODE PEER ID COLLISION',
+                peer_id,
+                item,
+                peer_id_collision,
+            );
             throw new Error('NODE PEER ID COLLISION ' + peer_id);
         }
         const name_collision = this._map_node_name.get(name);
@@ -683,9 +782,11 @@ class NodesMonitor extends EventEmitter {
     _add_node_to_hosts_map(host_id, item) {
         let host_nodes = this._map_host_id.get(host_id);
         if (!host_nodes) {
-            this._map_host_id.set(host_id, host_nodes = []);
+            this._map_host_id.set(host_id, (host_nodes = []));
         }
-        dbg.log1(`adding ${item.node.name} to hosts map with id ${host_id}. before adding, host_nodes are: ${host_nodes.map(i => i.node.name)}`);
+        dbg.log1(
+            `adding ${item.node.name} to hosts map with id ${host_id}. before adding, host_nodes are: ${host_nodes.map(i => i.node.name)}`,
+        );
         host_nodes.push(item);
     }
 
@@ -721,7 +822,7 @@ class NodesMonitor extends EventEmitter {
             free: 0,
             used: 0,
             alloc: 0,
-            limit: 0
+            limit: 0,
         });
     }
 
@@ -734,11 +835,14 @@ class NodesMonitor extends EventEmitter {
     }
 
     _get_host_nodes_by_name(name) {
-        const [ /*hostname*/ , seq_str] = name.split('#');
+        const [, /*hostname*/ seq_str] = name.split('#');
         const host_id = this._map_host_seq_num.get(String(seq_str));
         if (!host_id) {
             dbg.warn(this._map_host_seq_num);
-            throw new RpcError('BAD_REQUEST', `No such host ${name} - ${seq_str}`);
+            throw new RpcError(
+                'BAD_REQUEST',
+                `No such host ${name} - ${seq_str}`,
+            );
         }
         return this._get_nodes_by_host_id(host_id);
     }
@@ -757,10 +861,13 @@ class NodesMonitor extends EventEmitter {
         }
     }
 
-
     _close_node_connection(item) {
         if (!item.connection) return;
-        dbg.warn('_close_node_connection', item.node.name, item.connection.connid);
+        dbg.warn(
+            '_close_node_connection',
+            item.node.name,
+            item.connection.connid,
+        );
         item.connection.close();
         item.connection = null;
         item.agent_info = null;
@@ -788,9 +895,14 @@ class NodesMonitor extends EventEmitter {
     }
 
     _on_connection_close(item, conn) {
-        dbg.warn('got close on node connection for', item.node.name,
-            'conn', conn.connid,
-            'active conn', item.connection && item.connection.connid);
+        dbg.warn(
+            'got close on node connection for',
+            item.node.name,
+            'conn',
+            conn.connid,
+            'active conn',
+            item.connection && item.connection.connid,
+        );
         // if then connection was replaced ignore the close event
         conn.item_name = null;
         if (item.connection !== conn) return;
@@ -800,20 +912,33 @@ class NodesMonitor extends EventEmitter {
     _check_duplicate_agent(item, conn) {
         // make sure it is not a cloned agent. if the old connection is still connected
         // the assumption is that this is a duplicated agent. in that case throw an error
-        if (item.connection && conn &&
+        if (
+            item.connection &&
+            conn &&
             item.connection._state === 'connected' &&
-            conn.url.hostname !== item.connection.url.hostname) {
-            dbg.warn('DUPLICATE AGENT', item.node.name, item.connection.connid, conn.connid);
-            throw new RpcError('DUPLICATE', 'agent appears to be duplicated - abort', false);
+            conn.url.hostname !== item.connection.url.hostname
+        ) {
+            dbg.warn(
+                'DUPLICATE AGENT',
+                item.node.name,
+                item.connection.connid,
+                conn.connid,
+            );
+            throw new RpcError(
+                'DUPLICATE',
+                'agent appears to be duplicated - abort',
+                false,
+            );
         }
     }
 
     _schedule_next_run(optional_delay_ms) {
-        const delay_ms = Math.max(0, Math.min(RUN_DELAY_MS,
-            optional_delay_ms || RUN_DELAY_MS));
+        const delay_ms = Math.max(
+            0,
+            Math.min(RUN_DELAY_MS, optional_delay_ms || RUN_DELAY_MS),
+        );
         const now = Date.now();
-        if (this._next_run_time &&
-            this._next_run_time < now + delay_ms) {
+        if (this._next_run_time && this._next_run_time < now + delay_ms) {
             // nex run is already scheduled earlier than requested
             return;
         }
@@ -841,73 +966,124 @@ class NodesMonitor extends EventEmitter {
                 const item = queue[next];
                 next += 1;
                 return this._run_node(item)
-                    .catch(err => dbg.error('_run_node worker: ERROR', err.stack || err, 'node', item.node && item.node.name))
+                    .catch(err =>
+                        dbg.error(
+                            '_run_node worker: ERROR',
+                            err.stack || err,
+                            'node',
+                            item.node && item.node.name,
+                        ),
+                    )
                     .then(worker);
             };
-            return P.all(_.times(concur, worker))
-                // .then(() => this._suggest_pool_assign()) // need to be rethinked - out for
-                .then(() => this._update_nodes_store('force'))
-                .catch(err => {
-                    dbg.warn('_run: ERROR', err.stack || err);
-                });
+            return (
+                P.all(_.times(concur, worker))
+                    // .then(() => this._suggest_pool_assign()) // need to be rethinked - out for
+                    .then(() => this._update_nodes_store('force'))
+                    .catch(err => {
+                        dbg.warn('_run: ERROR', err.stack || err);
+                    })
+            );
         });
     }
 
     _run_node(item) {
-        if (!this._started) return P.reject(new Error('monitor has not started'));
+        if (!this._started) {
+            return P.reject(new Error('monitor has not started'));
+        }
         item._run_node_serial = item._run_node_serial || new Semaphore(1);
-        if (item.node.deleted) return P.reject(new Error(`node ${item.node.name} is deleted`));
+        if (item.node.deleted) {
+            return P.reject(new Error(`node ${item.node.name} is deleted`));
+        }
         return item._run_node_serial.surround(() =>
             P.resolve()
-            .then(() => dbg.log1('_run_node:', item.node.name))
-            .then(() => this._get_agent_info(item))
-            .then(() => { //If internal or cloud resource, cut down initializing time (in update_rpc_config)
-                if (!item.node_from_store && (item.node.is_mongo_node || item.node.is_cloud_node)) {
-                    return this._update_nodes_store('force');
-                }
-            })
-            .then(() => this._uninstall_deleting_node(item))
-            .then(() => this._remove_hideable_nodes(item))
-            .then(() => this._update_node_service(item))
-            .then(() => this._update_create_node_token(item))
-            .then(() => this._update_rpc_config(item))
-            .then(() => this._test_nodes_validity(item))
-            .then(() => this._update_status(item))
-            .then(() => this._handle_issues(item))
-            .then(() => this._update_nodes_store())
-            .catch(err => {
-                dbg.warn('_run_node: ERROR', err.stack || err, 'node', item.node);
-            }));
+                .then(() => dbg.log1('_run_node:', item.node.name))
+                .then(() => this._get_agent_info(item))
+                .then(() => {
+                    //If internal or cloud resource, cut down initializing time (in update_rpc_config)
+                    if (
+                        !item.node_from_store &&
+                        (item.node.is_mongo_node || item.node.is_cloud_node)
+                    ) {
+                        return this._update_nodes_store('force');
+                    }
+                })
+                .then(() => this._uninstall_deleting_node(item))
+                .then(() => this._remove_hideable_nodes(item))
+                .then(() => this._update_node_service(item))
+                .then(() => this._update_create_node_token(item))
+                .then(() => this._update_rpc_config(item))
+                .then(() => this._test_nodes_validity(item))
+                .then(() => this._update_status(item))
+                .then(() => this._handle_issues(item))
+                .then(() => this._update_nodes_store())
+                .catch(err => {
+                    dbg.warn(
+                        '_run_node: ERROR',
+                        err.stack || err,
+                        'node',
+                        item.node,
+                    );
+                }),
+        );
     }
 
     _handle_issues(item) {
-        if (item.node.permission_tempering &&
+        if (
+            item.node.permission_tempering &&
             !item.node_from_store.permission_tempering &&
-            !item.permission_event) {
+            !item.permission_event
+        ) {
             item.permission_event = Date.now();
-            this._dispatch_node_event(item, 'untrusted', `Node ${this._item_hostname(item)} in pool ${this._item_pool_name(item)} was set to untrusted due to permission tampering`);
+            this._dispatch_node_event(
+                item,
+                'untrusted',
+                `Node ${this._item_hostname(item)} in pool ${this._item_pool_name(item)} was set to untrusted due to permission tampering`,
+            );
         }
-        if (_.some(item.node.issues_report, issue => issue.reason === 'TAMPERING') &&
-            !_.some(item.node_from_store.issues_report, issue => issue.reason === 'TAMPERING') &&
-            !item.data_event) {
+        if (
+            _.some(
+                item.node.issues_report,
+                issue => issue.reason === 'TAMPERING',
+            ) &&
+            !_.some(
+                item.node_from_store.issues_report,
+                issue => issue.reason === 'TAMPERING',
+            ) &&
+            !item.data_event
+        ) {
             item.data_event = Date.now();
-            this._dispatch_node_event(item, 'untrusted', `Node ${this._item_hostname(item)} in pool ${this._item_pool_name(item)} was set to untrusted due to data tampering`);
+            this._dispatch_node_event(
+                item,
+                'untrusted',
+                `Node ${this._item_hostname(item)} in pool ${this._item_pool_name(item)} was set to untrusted due to data tampering`,
+            );
         }
 
         // for first run of the node don't send the event.
         // prevents blast of events if node_monitor is restarted and all nodes reconnects again.
-        if (item.online !== item._dispatched_online &&
+        if (
+            item.online !== item._dispatched_online &&
             !_.isUndefined(item.online) &&
             item.node_from_store &&
             item.node.node_type === 'BLOCK_STORE_FS' &&
-            item.node.drives && item.node.drives.length) {
-
+            item.node.drives &&
+            item.node.drives.length
+        ) {
             if (!item.online && item._dispatched_online) {
                 dbg.warn(`node ${item.node.name} became offline`);
-                this._dispatch_node_event(item, 'disconnected', `Drive ${this._item_drive_description(item)} is offline`);
+                this._dispatch_node_event(
+                    item,
+                    'disconnected',
+                    `Drive ${this._item_drive_description(item)} is offline`,
+                );
             } else if (item.online && !item._dispatched_online) {
                 dbg.warn(`node ${item.node.name} is back online`);
-                this._dispatch_node_event(item, 'connected', `Drive ${this._item_drive_description(item)} is online`);
+                this._dispatch_node_event(
+                    item,
+                    'connected',
+                    `Drive ${this._item_drive_description(item)} is online`,
+                );
             }
             item._dispatched_online = item.online;
         }
@@ -923,11 +1099,15 @@ class NodesMonitor extends EventEmitter {
                     case 'AUTH_FAILED':
                         alert = `Authentication failed for cloud resource ${pool.name}`;
                         break;
-                    case 'STORAGE_NOT_EXIST': {
-                        const storage_container = item.node.node_type === 'BLOCK_STORE_S3' ? 'S3 bucket' : 'Azure container';
-                        alert = `The target ${storage_container} does not exist for cloud resource ${pool.name}`;
-                    }
-                    break;
+                    case 'STORAGE_NOT_EXIST':
+                        {
+                            const storage_container =
+                                item.node.node_type === 'BLOCK_STORE_S3' ?
+                                    'S3 bucket'
+                                :   'Azure container';
+                            alert = `The target ${storage_container} does not exist for cloud resource ${pool.name}`;
+                        }
+                        break;
                     case 'OFFLINE':
                         alert = `Cloud resource ${pool.name} is offline`;
                         break;
@@ -938,13 +1118,18 @@ class NodesMonitor extends EventEmitter {
                 if (alert) {
                     // if there is an alert wait some time before dispatching it
                     const now = Date.now();
-                    if (item.dispatched_cloud_alert &&
-                        now > item.dispatched_cloud_alert + config.CLOUD_ALERT_GRACE_TIME) {
+                    if (
+                        item.dispatched_cloud_alert &&
+                        now >
+                            item.dispatched_cloud_alert +
+                                config.CLOUD_ALERT_GRACE_TIME
+                    ) {
                         // if grace time has passed cloud alert, dispatch it and reset indication
                         item.dispatched_cloud_alert = null;
                         this._cloud_node_alert(alert);
                     } else {
-                        item.dispatched_cloud_alert = item.dispatched_cloud_alert || now;
+                        item.dispatched_cloud_alert =
+                            item.dispatched_cloud_alert || now;
                     }
                 } else {
                     // no message. reset cloud alert indication
@@ -962,10 +1147,8 @@ class NodesMonitor extends EventEmitter {
      * The delay time itself does not matter much, just the order needs to be enforced.
      */
     _run_node_delayed(item) {
-        return P.delay(100)
-            .then(() => this._run_node(item));
+        return P.delay(100).then(() => this._run_node(item));
     }
-
 
     _set_decommission(item) {
         if (!item.node.decommissioning) {
@@ -987,7 +1170,10 @@ class NodesMonitor extends EventEmitter {
         item.permission_event = false;
         item.data_event = false;
         if (item.node.issues_report) {
-            _.remove(item.node.issues_report, issue => issue.reason === 'TAMPERING');
+            _.remove(
+                item.node.issues_report,
+                issue => issue.reason === 'TAMPERING',
+            );
         }
         if (_.isEmpty(item.node.issues_report)) delete item.node.issues_report;
         this._set_need_update.add(item);
@@ -998,11 +1184,10 @@ class NodesMonitor extends EventEmitter {
         if (!item.node.permission_tempering && !item.node.issues_report) {
             return;
         }
-        return P.resolve()
-            .then(() => {
-                this._clear_untrusted(item);
-                return this._update_nodes_store('force');
-            });
+        return P.resolve().then(() => {
+            this._clear_untrusted(item);
+            return this._update_nodes_store('force');
+        });
     }
 
     _delete_node(item) {
@@ -1016,7 +1201,7 @@ class NodesMonitor extends EventEmitter {
             })
             .then(() => this._update_nodes_store('force'))
             .then(() => {
-                // do nothing. 
+                // do nothing.
             });
     }
 
@@ -1026,20 +1211,20 @@ class NodesMonitor extends EventEmitter {
         this._update_status(item);
     }
 
-
     _get_agent_info(item) {
         if (item.node.deleted) return;
         if (!item.connection) return;
         dbg.log1('_get_agent_info:', item.node.name);
-        const potential_masters = clustering_utils.get_potential_masters().map(addr => ({
-            address: url.format({
-                protocol: 'wss',
-                slashes: true,
-                hostname: addr.address,
-                port: process.env.SSL_PORT || 8443
-            })
-        }));
-
+        const potential_masters = clustering_utils
+            .get_potential_masters()
+            .map(addr => ({
+                address: url.format({
+                    protocol: 'wss',
+                    slashes: true,
+                    hostname: addr.address,
+                    port: process.env.SSL_PORT || 8443,
+                }),
+            }));
 
         const pool = system_store.data.get_by_id(item.node.pool);
         const available_capacity =
@@ -1047,28 +1232,46 @@ class NodesMonitor extends EventEmitter {
             pool.cloud_pool_info &&
             pool.cloud_pool_info.available_capacity;
 
-        return P.timeout(config.AGENT_RESPONSE_TIMEOUT,
-                this.client.agent.get_agent_info_and_update_masters({
+        return P.timeout(
+            config.AGENT_RESPONSE_TIMEOUT,
+            this.client.agent.get_agent_info_and_update_masters(
+                {
                     addresses: potential_masters,
-                    available_capacity
-                }, {
-                    connection: item.connection
-                })
-            )
+                    available_capacity,
+                },
+                {
+                    connection: item.connection,
+                },
+            ),
+        )
             .then(info => {
                 if (!info) return;
                 this._handle_agent_response(item, info);
             })
             .catch(err => {
-                if (err.rpc_code === 'STORAGE_NOT_EXIST' && !item.storage_not_exist) {
-                    dbg.error('got STORAGE_NOT_EXIST error from node', item.node.name, err.message);
+                if (
+                    err.rpc_code === 'STORAGE_NOT_EXIST' &&
+                    !item.storage_not_exist
+                ) {
+                    dbg.error(
+                        'got STORAGE_NOT_EXIST error from node',
+                        item.node.name,
+                        err.message,
+                    );
                     item.storage_not_exist = Date.now();
                 }
                 if (item.node.deleting) {
-                    dbg.warn('got error in _get_agent_info on a deleting node, ignoring error. node name', item.node.name, err.message);
+                    dbg.warn(
+                        'got error in _get_agent_info on a deleting node, ignoring error. node name',
+                        item.node.name,
+                        err.message,
+                    );
                     return;
                 }
-                dbg.error(`got error in _get_agent_info ${item.node.name}:`, err);
+                dbg.error(
+                    `got error in _get_agent_info ${item.node.name}:`,
+                    err,
+                );
                 throw err;
             });
     }
@@ -1081,23 +1284,42 @@ class NodesMonitor extends EventEmitter {
             IoStatsStore.instance().update_node_io_stats({
                 system: item.node.system,
                 stats: info.io_stats,
-                node_id: item.node._id
+                node_id: item.node._id,
             });
 
             //update prometheus metrics
             if (config.PROMETHEUS_ENABLED) {
                 const report = prom_reporting.get_core_report();
                 if (this._is_cloud_node(item)) {
-                    const endpoint_type = _.get(system_store.data.get_by_id(item.node.pool), 'cloud_pool_info.endpoint_type') || 'OTHER';
-                    report.update_providers_bandwidth(endpoint_type, info.io_stats.write_bytes, info.io_stats.read_bytes);
-                    report.update_providers_ops(endpoint_type, info.io_stats.write_count, info.io_stats.read_count);
+                    const endpoint_type =
+                        _.get(
+                            system_store.data.get_by_id(item.node.pool),
+                            'cloud_pool_info.endpoint_type',
+                        ) || 'OTHER';
+                    report.update_providers_bandwidth(
+                        endpoint_type,
+                        info.io_stats.write_bytes,
+                        info.io_stats.read_bytes,
+                    );
+                    report.update_providers_ops(
+                        endpoint_type,
+                        info.io_stats.write_count,
+                        info.io_stats.read_count,
+                    );
                 } else if (this._is_kubernetes_node(item)) {
                     const endpoint_type = 'KUBERNETES';
-                    report.update_providers_bandwidth(endpoint_type, info.io_stats.write_bytes, info.io_stats.read_bytes);
-                    report.update_providers_ops(endpoint_type, info.io_stats.write_count, info.io_stats.read_count);
+                    report.update_providers_bandwidth(
+                        endpoint_type,
+                        info.io_stats.write_bytes,
+                        info.io_stats.read_bytes,
+                    );
+                    report.update_providers_ops(
+                        endpoint_type,
+                        info.io_stats.write_count,
+                        info.io_stats.read_count,
+                    );
                 }
             }
-
         }
         const updates = _.pick(info, AGENT_INFO_FIELDS);
         updates.heartbeat = Date.now();
@@ -1117,7 +1339,9 @@ class NodesMonitor extends EventEmitter {
             if (info.host_id !== item.node.host_id) {
                 const old_host_id = item.node.host_id;
                 const new_host_id = info.host_id;
-                dbg.warn(`agent sent different host_id than the one stored in DB. updating from ${old_host_id} to ${new_host_id}`);
+                dbg.warn(
+                    `agent sent different host_id than the one stored in DB. updating from ${old_host_id} to ${new_host_id}`,
+                );
                 // if host id changed then we should change it for all agents of this host for consistnecy
                 const host_nodes = this._map_host_id.get(old_host_id);
                 if (host_nodes) {
@@ -1128,7 +1352,10 @@ class NodesMonitor extends EventEmitter {
                     }
                     this._map_host_id.delete(old_host_id);
                     if (item.node.host_sequence) {
-                        this._map_host_seq_num.set(String(item.node.host_sequence), new_host_id);
+                        this._map_host_seq_num.set(
+                            String(item.node.host_sequence),
+                            new_host_id,
+                        );
                     }
                 }
             }
@@ -1143,33 +1370,59 @@ class NodesMonitor extends EventEmitter {
                 counter += 1;
             }
             this._map_node_name.set(String(updates.name), item);
-            dbg.log1('_get_agent_info: set node name', item.node.name, 'to', updates.name);
+            dbg.log1(
+                '_get_agent_info: set node name',
+                item.node.name,
+                'to',
+                updates.name,
+            );
             item.new_host = !this._map_host_id.get(updates.host_id);
             if (!item.added_host) {
                 if (!item.new_host) {
                     const host_nodes = this._map_host_id.get(info.host_id);
                     const host_item = this._consolidate_host(host_nodes);
-                    if (String(item.node.pool) !== String(host_item.node.pool)) {
-                        dbg.log0('Node pool changed', 'Node:', item.node, 'Host_Node:', host_item);
+                    if (
+                        String(item.node.pool) !== String(host_item.node.pool)
+                    ) {
+                        dbg.log0(
+                            'Node pool changed',
+                            'Node:',
+                            item.node,
+                            'Host_Node:',
+                            host_item,
+                        );
                         updates.pool = host_item.node.pool;
                     }
                 }
                 this._add_node_to_hosts_map(updates.host_id, item);
                 item.added_host = true;
             }
-            const agent_config = system_store.data.get_by_id(item.node.agent_config) || {};
+            const agent_config =
+                system_store.data.get_by_id(item.node.agent_config) || {};
             // on first call to get_agent_info enable\disable the node according to the configuration
-            const should_start_service = this._should_enable_agent(info, agent_config);
-            dbg.log1(`first call to get_agent_info. storage agent ${item.node.name}. should_start_service=${should_start_service}. `);
+            const should_start_service = this._should_enable_agent(
+                info,
+                agent_config,
+            );
+            dbg.log1(
+                `first call to get_agent_info. storage agent ${item.node.name}. should_start_service=${should_start_service}. `,
+            );
             if (!should_start_service) {
                 item.node.decommissioned = Date.now();
                 item.node.decommissioning = item.node.decommissioned;
             }
         }
         if (_.isUndefined(item.node.host_sequence)) {
-            updates.host_sequence = this._get_host_sequence_number(info.host_id);
-            this._map_host_seq_num.set(String(updates.host_sequence), info.host_id);
-            dbg.log0(`node: ${updates.name} setting host_sequence to ${updates.host_sequence}`);
+            updates.host_sequence = this._get_host_sequence_number(
+                info.host_id,
+            );
+            this._map_host_seq_num.set(
+                String(updates.host_sequence),
+                info.host_id,
+            );
+            dbg.log0(
+                `node: ${updates.name} setting host_sequence to ${updates.host_sequence}`,
+            );
         }
         _.extend(item.node, updates);
         this._set_need_update.add(item);
@@ -1197,7 +1450,9 @@ class NodesMonitor extends EventEmitter {
     }
 
     _uninstall_deleting_node(item) {
-        if (item.ready_to_uninstall && this._should_skip_uninstall(item)) item.ready_to_be_deleted = true; // No need to uninstall - skipping...
+        if (item.ready_to_uninstall && this._should_skip_uninstall(item)) {
+            item.ready_to_be_deleted = true;
+        } // No need to uninstall - skipping...
 
         if (!item.ready_to_uninstall) return;
         if (item.node.deleted) return;
@@ -1217,15 +1472,23 @@ class NodesMonitor extends EventEmitter {
         if (!_.every(host_nodes, node => node.ready_to_uninstall)) return;
 
         first_item.uninstalling = true;
-        dbg.log0('_uninstall_deleting_node: uninstalling host', item.node.host_id, 'all nodes are deleted');
+        dbg.log0(
+            '_uninstall_deleting_node: uninstalling host',
+            item.node.host_id,
+            'all nodes are deleted',
+        );
         return P.resolve()
-            .then(() => server_rpc.client.agent.uninstall(undefined, {
-                connection: first_item.connection,
-            }))
+            .then(() =>
+                server_rpc.client.agent.uninstall(undefined, {
+                    connection: first_item.connection,
+                }),
+            )
             .then(() => {
-                dbg.log0('_uninstall_deleting_node: host',
+                dbg.log0(
+                    '_uninstall_deleting_node: host',
                     this._item_hostname(host) + '#' + host.node.host_sequence,
-                    'is uninstalled - all nodes will be removed');
+                    'is uninstalled - all nodes will be removed',
+                );
                 host_nodes.forEach(host_item => {
                     host_item.ready_to_be_deleted = true;
                 });
@@ -1240,7 +1503,7 @@ class NodesMonitor extends EventEmitter {
         if (item.node.deleted) return;
         if (!item.connection) return;
         if (!item.agent_info) return;
-        //The node should be set as enable if it is not decommissioned. 
+        //The node should be set as enable if it is not decommissioned.
         const should_enable = !item.node.decommissioned;
         const item_pool = system_store.data.get_by_id(item.node.pool);
         const location_info = {
@@ -1248,22 +1511,32 @@ class NodesMonitor extends EventEmitter {
             host_id: String(item.node.host_id),
             pool_id: String(item.node.pool),
         };
-        // We should only add region if it is defined. 
-        if (item_pool && !_.isUndefined(item_pool.region)) location_info.region = item_pool.region;
+        // We should only add region if it is defined.
+        if (item_pool && !_.isUndefined(item_pool.region)) {
+            location_info.region = item_pool.region;
+        }
         // We should change the service enable field if the field is not equal to the decommissioned decision.
-        const service_enabled_not_changed = (item.node.enabled === should_enable);
-        const location_info_not_changed = _.isEqual(item.agent_info.location_info, location_info);
+        const service_enabled_not_changed = item.node.enabled === should_enable;
+        const location_info_not_changed = _.isEqual(
+            item.agent_info.location_info,
+            location_info,
+        );
         if (service_enabled_not_changed && location_info_not_changed) {
             return;
         }
-        dbg.log0(`node service is not as expected. setting node service to ${should_enable ? 'enabled' : 'disabled'}`);
+        dbg.log0(
+            `node service is not as expected. setting node service to ${should_enable ? 'enabled' : 'disabled'}`,
+        );
 
-        return this.client.agent.update_node_service({
-            enabled: should_enable,
-            location_info,
-        }, {
-            connection: item.connection
-        });
+        return this.client.agent.update_node_service(
+            {
+                enabled: should_enable,
+                location_info,
+            },
+            {
+                connection: item.connection,
+            },
+        );
     }
 
     async _update_create_node_token(item) {
@@ -1272,31 +1545,38 @@ class NodesMonitor extends EventEmitter {
             if (!item.connection) return;
             if (!item.node_from_store) return;
             if (item.create_node_token) {
-                dbg.log2(`_update_create_node_token: node already has a valid create_node_token. item.create_node_token = ${item.create_node_token}`);
+                dbg.log2(
+                    `_update_create_node_token: node already has a valid create_node_token. item.create_node_token = ${item.create_node_token}`,
+                );
                 return;
             }
-            dbg.log0('node does not have a valid create_node_token. creating new one and sending to agent');
+            dbg.log0(
+                'node does not have a valid create_node_token. creating new one and sending to agent',
+            );
             const auth_parmas = {
                 system_id: String(item.node.system),
-                account_id: system_store.data.get_by_id(item.node.system).owner._id,
+                account_id: system_store.data.get_by_id(item.node.system).owner
+                    ._id,
                 role: 'create_node',
             };
             const token = auth_server.make_auth_token(auth_parmas);
             dbg.log0(`new create_node_token: ${token}`);
 
-            await P.timeout(config.AGENT_RESPONSE_TIMEOUT,
-                this.client.agent.update_create_node_token({
-                    create_node_token: token
-                }, {
-                    connection: item.connection
-                })
+            await P.timeout(
+                config.AGENT_RESPONSE_TIMEOUT,
+                this.client.agent.update_create_node_token(
+                    {
+                        create_node_token: token,
+                    },
+                    {
+                        connection: item.connection,
+                    },
+                ),
             );
-
         } catch (err) {
             dbg.warn('encountered an error in _update_create_node_token', err);
             throw err;
         }
-
     }
 
     async _update_rpc_config(item) {
@@ -1309,9 +1589,10 @@ class NodesMonitor extends EventEmitter {
             const system = system_store.data.get_by_id(item.node.system);
             const rpc_proto = config.AGENT_RPC_PROTOCOL;
             const rpc_port = item.agent_info.rpc_port || config.AGENT_RPC_PORT;
-            const rpc_address = rpc_proto === 'n2n' ?
-                `n2n://${item.node.peer_id}` :
-                `${rpc_proto}://${item.node.ip}:${rpc_port}`;
+            const rpc_address =
+                rpc_proto === 'n2n' ?
+                    `n2n://${item.node.peer_id}`
+                :   `${rpc_proto}://${item.node.ip}:${rpc_port}`;
             const rpc_config = {};
             if (rpc_address !== item.agent_info.rpc_address) {
                 rpc_config.rpc_address = rpc_address;
@@ -1320,29 +1601,40 @@ class NodesMonitor extends EventEmitter {
             // otherwise the agent is using the ip directly, so no update is needed
             // don't update local agents which are using local host
 
-            const { routing_hint } = system_store.data.get_by_id(item.node.agent_config) || {};
-            const base_address = addr_utils.get_base_address(system.system_address, { hint: routing_hint }).toString();
-            const address_configured = system.system_address.some(addr => addr.service === 'noobaa-mgmt');
-            if (address_configured &&
+            const { routing_hint } =
+                system_store.data.get_by_id(item.node.agent_config) || {};
+            const base_address = addr_utils
+                .get_base_address(system.system_address, { hint: routing_hint })
+                .toString();
+            const address_configured = system.system_address.some(
+                addr => addr.service === 'noobaa-mgmt',
+            );
+            if (
+                address_configured &&
                 !item.node.is_internal_node &&
                 !is_localhost(item.agent_info.base_address) &&
-                base_address.toLowerCase() !== item.agent_info.base_address.toLowerCase()) {
+                base_address.toLowerCase() !==
+                    item.agent_info.base_address.toLowerCase()
+            ) {
                 rpc_config.base_address = base_address;
             }
 
             // make sure we don't modify the system's n2n_config
             const public_ips = item.node.public_ip ? [item.node.public_ip] : [];
-            const n2n_config = _.extend(null,
+            const n2n_config = _.extend(
+                null,
                 item.agent_info.n2n_config,
-                _.cloneDeep(system.n2n_config), { public_ips });
+                _.cloneDeep(system.n2n_config),
+                { public_ips },
+            );
             if (item.node.is_cloud_node) {
                 n2n_config.tcp_permanent_passive = {
-                    port: config.CLOUD_AGENTS_N2N_PORT
+                    port: config.CLOUD_AGENTS_N2N_PORT,
                 };
             }
             if (item.node.is_mongo_node) {
                 n2n_config.tcp_permanent_passive = {
-                    port: config.MONGO_AGENTS_N2N_PORT
+                    port: config.MONGO_AGENTS_N2N_PORT,
                 };
             }
             if (!_.isEqual(n2n_config, item.agent_info.n2n_config)) {
@@ -1351,10 +1643,11 @@ class NodesMonitor extends EventEmitter {
             // skip the update when no changes detected
             if (_.isEmpty(rpc_config)) return;
             dbg.log0('_update_rpc_config:', item.node.name, rpc_config);
-            await P.timeout(config.AGENT_RESPONSE_TIMEOUT,
+            await P.timeout(
+                config.AGENT_RESPONSE_TIMEOUT,
                 this.client.agent.update_rpc_config(rpc_config, {
-                    connection: item.connection
-                })
+                    connection: item.connection,
+                }),
             );
 
             _.extend(item.node, rpc_config);
@@ -1363,55 +1656,84 @@ class NodesMonitor extends EventEmitter {
             dbg.warn('encountered an error in _update_rpc_config', err);
             throw err;
         }
-
     }
 
     async _test_store_validity(item) {
         try {
-            await P.timeout(config.AGENT_RESPONSE_TIMEOUT,
+            await P.timeout(
+                config.AGENT_RESPONSE_TIMEOUT,
                 this.client.agent.test_store_validity(null, {
-                    connection: item.connection
-                })
+                    connection: item.connection,
+                }),
             );
         } catch (err) {
             // ignore "unkonown" errors for cloud resources - we don't want to put the node in detention in cases where we don't know what is the problem
             // if there is a real issue, we will take it into account in report_error_on_node_blocks
-            if (this._is_cloud_node(item) && err.rpc_code !== 'AUTH_FAILED' && err.rpc_code !== 'STORAGE_NOT_EXIST') {
-                dbg.warn(`encountered an unknown error in _test_store_validity`, err);
+            if (
+                this._is_cloud_node(item) &&
+                err.rpc_code !== 'AUTH_FAILED' &&
+                err.rpc_code !== 'STORAGE_NOT_EXIST'
+            ) {
+                dbg.warn(
+                    `encountered an unknown error in _test_store_validity`,
+                    err,
+                );
             } else {
                 dbg.log0(`encountered an error in _test_store_validity. `, err);
                 throw err;
             }
-
         }
     }
 
     async _test_store_perf(item) {
         const now = Date.now();
-        if (item.last_store_perf_test && now < item.last_store_perf_test + config.STORE_PERF_TEST_INTERVAL) return;
+        if (
+            item.last_store_perf_test &&
+            now < item.last_store_perf_test + config.STORE_PERF_TEST_INTERVAL
+        ) {
+            return;
+        }
         try {
-
-
             dbg.log1('running _test_store_perf::', item.node.name);
-            const res = await P.timeout(config.AGENT_RESPONSE_TIMEOUT,
-                this.client.agent.test_store_perf({
-                    count: 5
-                }, {
-                    connection: item.connection
-                })
+            const res = await P.timeout(
+                config.AGENT_RESPONSE_TIMEOUT,
+                this.client.agent.test_store_perf(
+                    {
+                        count: 5,
+                    },
+                    {
+                        connection: item.connection,
+                    },
+                ),
             );
             item.last_store_perf_test = Date.now();
-            dbg.log0(`_test_store_perf for node ${item.node.name} returned:`, res);
+            dbg.log0(
+                `_test_store_perf for node ${item.node.name} returned:`,
+                res,
+            );
             this._set_need_update.add(item);
             item.node.latency_of_disk_read = js_utils.array_push_keep_latest(
-                item.node.latency_of_disk_read, res.read, MAX_NUM_LATENCIES);
+                item.node.latency_of_disk_read,
+                res.read,
+                MAX_NUM_LATENCIES,
+            );
             item.node.latency_of_disk_write = js_utils.array_push_keep_latest(
-                item.node.latency_of_disk_write, res.write, MAX_NUM_LATENCIES);
+                item.node.latency_of_disk_write,
+                res.write,
+                MAX_NUM_LATENCIES,
+            );
         } catch (err) {
             // ignore "unkonown" errors for cloud resources - we don't want to put the node in detention in cases where we don't know what is the problem
             // if there is a real issue, we will take it into account in report_error_on_node_blocks
-            if (this._is_cloud_node(item) && err.rpc_code !== 'AUTH_FAILED' && err.rpc_code !== 'STORAGE_NOT_EXIST') {
-                dbg.warn(`encountered an unknown error in _test_store_perf. `, err);
+            if (
+                this._is_cloud_node(item) &&
+                err.rpc_code !== 'AUTH_FAILED' &&
+                err.rpc_code !== 'STORAGE_NOT_EXIST'
+            ) {
+                dbg.warn(
+                    `encountered an unknown error in _test_store_perf. `,
+                    err,
+                );
             } else {
                 dbg.log0(`encountered an error in _test_store_perf. `, err);
                 throw err;
@@ -1427,45 +1749,70 @@ class NodesMonitor extends EventEmitter {
             await this._test_store_validity(item);
 
             dbg.log2('_test_store:: success in test', item.node.name);
-            if (item.io_test_errors &&
-                Date.now() - item.io_test_errors > config.NODE_IO_DETENTION_THRESHOLD) {
+            if (
+                item.io_test_errors &&
+                Date.now() - item.io_test_errors >
+                    config.NODE_IO_DETENTION_THRESHOLD
+            ) {
                 item.io_test_errors = 0;
             }
 
             if (item.storage_not_exist) {
                 // storage test succeeds after the storage target (AWS bucket / azure container) was not available
-                dbg.warn('agent storage is available again after agent reported it does not exist. ', item.node.name);
+                dbg.warn(
+                    'agent storage is available again after agent reported it does not exist. ',
+                    item.node.name,
+                );
                 delete item.storage_not_exist;
             }
             if (item.auth_failed) {
                 // authentication in aws\azure succeeded after it failed before
-                dbg.warn('authentication in aws\\azure succeeded after it failed before ', item.node.name);
+                dbg.warn(
+                    'authentication in aws\\azure succeeded after it failed before ',
+                    item.node.name,
+                );
                 delete item.auth_failed;
             }
-
         } catch (err) {
             dbg.warn('encountered an error in _test_store', err);
-            if (err.rpc_code === 'STORAGE_NOT_EXIST' && !item.storage_not_exist) {
-                dbg.error('got STORAGE_NOT_EXIST error from node', item.node.name, err.message);
+            if (
+                err.rpc_code === 'STORAGE_NOT_EXIST' &&
+                !item.storage_not_exist
+            ) {
+                dbg.error(
+                    'got STORAGE_NOT_EXIST error from node',
+                    item.node.name,
+                    err.message,
+                );
                 item.storage_not_exist = Date.now();
             } else if (err.rpc_code === 'AUTH_FAILED' && !item.auth_failed) {
-                dbg.error('got AUTH_FAILED error from node', item.node.name, err.message);
+                dbg.error(
+                    'got AUTH_FAILED error from node',
+                    item.node.name,
+                    err.message,
+                );
                 item.auth_failed = Date.now();
-            } else if ((this._is_cloud_node(item)) &&
+            } else if (
+                this._is_cloud_node(item) &&
                 // for cloud nodes allow some errors before putting to detention
-                item.num_io_test_errors < config.CLOUD_MAX_ALLOWED_IO_TEST_ERRORS) {
+                item.num_io_test_errors <
+                    config.CLOUD_MAX_ALLOWED_IO_TEST_ERRORS
+            ) {
                 item.num_io_test_errors += 1;
                 return;
             }
             if (!config.NODE_IO_DETENTION_DISABLE && !item.io_test_errors) {
-                dbg.error('_test_store:: node has io_test_errors', item.node.name, err);
+                dbg.error(
+                    '_test_store:: node has io_test_errors',
+                    item.node.name,
+                    err,
+                );
                 item.io_test_errors = Date.now();
             }
 
             item.num_io_test_errors = 0;
         }
     }
-
 
     async _test_network_to_server(item) {
         if (!item.connection) return;
@@ -1474,70 +1821,109 @@ class NodesMonitor extends EventEmitter {
         try {
             const start = Date.now();
             dbg.log1('_test_network_to_server::', item.node.name);
-            const req = await P.timeout(config.AGENT_TEST_CONNECTION_TIMEOUT,
-                this.n2n_client.agent.test_network_perf({
-                    source: this.n2n_agent.rpc_address,
-                    target: item.node.rpc_address,
-                    response_length: 1,
-                }, {
-                    address: item.node.rpc_address,
-                    return_rpc_req: true // we want to check req.connection
-                })
+            const req = await P.timeout(
+                config.AGENT_TEST_CONNECTION_TIMEOUT,
+                this.n2n_client.agent.test_network_perf(
+                    {
+                        source: this.n2n_agent.rpc_address,
+                        target: item.node.rpc_address,
+                        response_length: 1,
+                    },
+                    {
+                        address: item.node.rpc_address,
+                        return_rpc_req: true, // we want to check req.connection
+                    },
+                ),
             );
 
             const took = Date.now() - start;
             this._set_need_update.add(item);
             item.node.latency_to_server = js_utils.array_push_keep_latest(
-                item.node.latency_to_server, [took], MAX_NUM_LATENCIES);
-            dbg.log1('_test_network_to_server:: Succeeded in sending n2n rpc to ',
-                item.node.name, 'took', took);
+                item.node.latency_to_server,
+                [took],
+                MAX_NUM_LATENCIES,
+            );
+            dbg.log1(
+                '_test_network_to_server:: Succeeded in sending n2n rpc to ',
+                item.node.name,
+                'took',
+                took,
+            );
             req.connection.close();
 
-            if (item.gateway_errors &&
-                Date.now() - item.gateway_errors > config.NODE_IO_DETENTION_THRESHOLD) {
+            if (
+                item.gateway_errors &&
+                Date.now() - item.gateway_errors >
+                    config.NODE_IO_DETENTION_THRESHOLD
+            ) {
                 item.gateway_errors = 0;
             }
         } catch (err) {
             if (!config.NODE_IO_DETENTION_DISABLE && !item.gateway_errors) {
-                dbg.error('_test_network_to_server:: node has gateway_errors', item.node.name, err);
+                dbg.error(
+                    '_test_network_to_server:: node has gateway_errors',
+                    item.node.name,
+                    err,
+                );
                 item.gateway_errors = Date.now();
             }
         }
     }
-
 
     // Test with few other nodes and detect if we have a NAT preventing TCP to this node
     _test_network_perf(item) {
         if (!item.connection) return;
         if (!item.node.rpc_address) return;
 
-        const items_without_issues = this._get_detention_test_nodes(item, config.NODE_IO_DETENTION_TEST_NODES);
+        const items_without_issues = this._get_detention_test_nodes(
+            item,
+            config.NODE_IO_DETENTION_TEST_NODES,
+        );
         return P.map_one_by_one(items_without_issues, item_without_issues => {
-                dbg.log1('_test_network_perf::', item.node.name, item.io_detention,
-                    item.node.rpc_address, item_without_issues.node.rpc_address);
-                return P.timeout(config.AGENT_TEST_CONNECTION_TIMEOUT,
-                    this.client.agent.test_network_perf_to_peer({
+            dbg.log1(
+                '_test_network_perf::',
+                item.node.name,
+                item.io_detention,
+                item.node.rpc_address,
+                item_without_issues.node.rpc_address,
+            );
+            return P.timeout(
+                config.AGENT_TEST_CONNECTION_TIMEOUT,
+                this.client.agent.test_network_perf_to_peer(
+                    {
                         source: item_without_issues.node.rpc_address,
                         target: item.node.rpc_address,
                         request_length: 1,
                         response_length: 1,
                         count: 1,
-                        concur: 1
-                    }, {
-                        connection: item_without_issues.connection
-                    })
-                );
-            })
+                        concur: 1,
+                    },
+                    {
+                        connection: item_without_issues.connection,
+                    },
+                ),
+            );
+        })
             .then(() => {
-                dbg.log1('_test_network_perf:: success in test', item.node.name);
-                if (item.n2n_errors &&
-                    Date.now() - item.n2n_errors > config.NODE_IO_DETENTION_THRESHOLD) {
+                dbg.log1(
+                    '_test_network_perf:: success in test',
+                    item.node.name,
+                );
+                if (
+                    item.n2n_errors &&
+                    Date.now() - item.n2n_errors >
+                        config.NODE_IO_DETENTION_THRESHOLD
+                ) {
                     item.n2n_errors = 0;
                 }
             })
             .catch(err => {
                 if (!config.NODE_IO_DETENTION_DISABLE && !item.n2n_errors) {
-                    dbg.error('_test_network_perf:: node has n2n_errors', item.node.name, err);
+                    dbg.error(
+                        '_test_network_perf:: node has n2n_errors',
+                        item.node.name,
+                        err,
+                    );
                     item.n2n_errors = Date.now();
                 }
             });
@@ -1552,20 +1938,24 @@ class NodesMonitor extends EventEmitter {
             await Promise.all([
                 this._test_network_perf(item),
                 this._test_store(item),
-                this._test_network_to_server(item)
+                this._test_network_to_server(item),
             ]);
 
-            if (item.io_reported_errors &&
-                Date.now() - item.io_reported_errors > config.NODE_IO_DETENTION_THRESHOLD) {
-                dbg.log1('_test_nodes_validity:: io_reported_errors removed', item.node.name);
+            if (
+                item.io_reported_errors &&
+                Date.now() - item.io_reported_errors >
+                    config.NODE_IO_DETENTION_THRESHOLD
+            ) {
+                dbg.log1(
+                    '_test_nodes_validity:: io_reported_errors removed',
+                    item.node.name,
+                );
                 item.io_reported_errors = 0;
             }
-
         } catch (err) {
             dbg.warn('encountered an error in _test_nodes_validity', err);
         }
     }
-
 
     _get_detention_test_nodes(item, limit) {
         this._throw_if_not_started_and_loaded();
@@ -1573,18 +1963,21 @@ class NodesMonitor extends EventEmitter {
             skip_address: item.node.rpc_address,
             skip_no_address: true,
             pools: [item.node.pool],
-            has_issues: false
+            has_issues: false,
         });
         const list = filter_res.list;
         this._sort_nodes_list(list, {
-            sort: 'shuffle'
+            sort: 'shuffle',
         });
         const selected = _.take(list, limit);
-        dbg.log1('_get_detention_test_nodes::', item.node.name,
-            _.map(selected, 'node.name'), limit);
+        dbg.log1(
+            '_get_detention_test_nodes::',
+            item.node.name,
+            _.map(selected, 'node.name'),
+            limit,
+        );
         return _.isUndefined(limit) ? list : selected;
     }
-
 
     /*
      *
@@ -1596,7 +1989,9 @@ class NodesMonitor extends EventEmitter {
         return this._update_nodes_store_serial.surround(() => {
             // skip the update if not forced and not enough coalescing
             if (!this._set_need_update.size) return;
-            if (!force && this._set_need_update.size < UPDATE_STORE_MIN_ITEMS) return;
+            if (!force && this._set_need_update.size < UPDATE_STORE_MIN_ITEMS) {
+                return;
+            }
 
             const new_nodes = [];
             const existing_nodes = [];
@@ -1615,13 +2010,12 @@ class NodesMonitor extends EventEmitter {
             this._set_need_update = new Set();
 
             return Promise.all([
-                    this._update_existing_nodes(existing_nodes),
-                    this._update_new_nodes(new_nodes),
-                    this._update_deleted_nodes(deleted_nodes)
-                ])
-                .catch(err => {
-                    dbg.warn('_update_nodes_store: had errors', err);
-                });
+                this._update_existing_nodes(existing_nodes),
+                this._update_new_nodes(new_nodes),
+                this._update_deleted_nodes(deleted_nodes),
+            ]).catch(err => {
+                dbg.warn('_update_nodes_store: had errors', err);
+            });
         });
     }
 
@@ -1646,43 +2040,55 @@ class NodesMonitor extends EventEmitter {
         if (!new_nodes.length) return;
         const items_to_create = [];
         return P.map_with_concurrency(10, new_nodes, item => {
-                if (!item.connection) {
-                    // we discard nodes that disconnected before being created
-                    dbg.warn('discard node that was not created', item.node.name);
-                    this._remove_node_from_maps(item);
-                    return;
-                }
-                if (item.node.name.startsWith(NO_NAME_PREFIX)) {
-                    // in this case we could not get the agent info
-                    // so we avoid creating the node until we get it
+            if (!item.connection) {
+                // we discard nodes that disconnected before being created
+                dbg.warn('discard node that was not created', item.node.name);
+                this._remove_node_from_maps(item);
+                return;
+            }
+            if (item.node.name.startsWith(NO_NAME_PREFIX)) {
+                // in this case we could not get the agent info
+                // so we avoid creating the node until we get it
+                this._set_need_update.add(item);
+                return;
+            }
+            dbg.log0('_update_new_nodes: update_auth_token', item.node.name);
+            return P.timeout(
+                config.AGENT_RESPONSE_TIMEOUT,
+                this.client.agent.update_auth_token(
+                    {
+                        auth_token: auth_server.make_auth_token({
+                            system_id: String(item.node.system),
+                            role: 'agent',
+                            extra: {
+                                node_id: item.node._id,
+                            },
+                        }),
+                    },
+                    {
+                        connection: item.connection,
+                    },
+                ),
+            )
+                .then(() => items_to_create.push(item))
+                .catch(err => {
+                    // we couldn't update the agent with the token
+                    // so avoid inserting this node to store
+                    dbg.warn(
+                        '_update_new_nodes: update_auth_token ERROR node',
+                        item.node.name,
+                        item,
+                        err,
+                    );
                     this._set_need_update.add(item);
-                    return;
-                }
-                dbg.log0('_update_new_nodes: update_auth_token', item.node.name);
-                return P.timeout(config.AGENT_RESPONSE_TIMEOUT,
-                        this.client.agent.update_auth_token({
-                            auth_token: auth_server.make_auth_token({
-                                system_id: String(item.node.system),
-                                role: 'agent',
-                                extra: {
-                                    node_id: item.node._id
-                                }
-                            })
-                        }, {
-                            connection: item.connection
-                        })
-                    )
-                    .then(() => items_to_create.push(item))
-                    .catch(err => {
-                        // we couldn't update the agent with the token
-                        // so avoid inserting this node to store
-                        dbg.warn('_update_new_nodes: update_auth_token ERROR node',
-                            item.node.name, item, err);
-                        this._set_need_update.add(item);
-                    });
-            })
-            .then(() => dbg.log0('_update_new_nodes: nodes to create',
-                _.map(items_to_create, 'node.name')))
+                });
+        })
+            .then(() =>
+                dbg.log0(
+                    '_update_new_nodes: nodes to create',
+                    _.map(items_to_create, 'node.name'),
+                ),
+            )
             .then(() => NodesStore.instance().bulk_update(items_to_create))
             .then(res => {
                 // mark failed updates to retry
@@ -1699,7 +2105,11 @@ class NodesMonitor extends EventEmitter {
                         if (item.node.is_mongo_node) continue;
                         if (item.node.is_internal_node) continue;
                         if (item.new_host) {
-                            this._dispatch_node_event(item, 'create', `${this._item_hostname(item)} was added as a node to pool ${this._item_pool_name(item)}`);
+                            this._dispatch_node_event(
+                                item,
+                                'create',
+                                `${this._item_hostname(item)} was added as a node to pool ${this._item_pool_name(item)}`,
+                            );
                         }
                     }
                 }
@@ -1723,50 +2133,58 @@ class NodesMonitor extends EventEmitter {
         if (!deleted_nodes.length) return;
         const items_to_update = [];
         return P.map_with_concurrency(10, deleted_nodes, item => {
-                dbg.log0('_update_nodes_store deleted_node:', item);
+            dbg.log0('_update_nodes_store deleted_node:', item);
 
-                if (item.node.deleted) {
-                    if (!item.node_from_store.deleted) {
-                        items_to_update.push(item);
-                    }
-                    return;
+            if (item.node.deleted) {
+                if (!item.node_from_store.deleted) {
+                    items_to_update.push(item);
                 }
+                return;
+            }
 
-                // TODO handle deletion of normal nodes (uninstall?)
-                // Just mark the node as deleted and we will not scan it anymore
-                // This is done once the node's proccess is deleted (relevant to cloud/mongo resource)
-                // Or in a normal node it is done immediately
-                if (!item.node.is_cloud_node &&
-                    !item.node.is_mongo_node &&
-                    !item.node.is_internal_node) {
+            // TODO handle deletion of normal nodes (uninstall?)
+            // Just mark the node as deleted and we will not scan it anymore
+            // This is done once the node's proccess is deleted (relevant to cloud/mongo resource)
+            // Or in a normal node it is done immediately
+            if (
+                !item.node.is_cloud_node &&
+                !item.node.is_mongo_node &&
+                !item.node.is_internal_node
+            ) {
+                item.node.deleted = Date.now();
+                items_to_update.push(item);
+                return;
+            }
+
+            return P.resolve()
+                .then(() => {
+                    if (item.node.is_internal_node) {
+                        return P.reject(
+                            'Do not support internal_node deletion yet',
+                        );
+                    }
+                    // Removing the internal node from the processes
+                    return server_rpc.client.hosted_agents.remove_pool_agent({
+                        node_name: item.node.name,
+                    });
+                })
+                .then(() => {
+                    // Marking the node as deleted since we've removed it completely
+                    // If we did not succeed at removing the process we don't mark the deletion
+                    // This is done in order to cycle the node once again and attempt until
+                    // We succeed
                     item.node.deleted = Date.now();
                     items_to_update.push(item);
-                    return;
-                }
-
-                return P.resolve()
-                    .then(() => {
-                        if (item.node.is_internal_node) {
-                            return P.reject('Do not support internal_node deletion yet');
-                        }
-                        // Removing the internal node from the processes
-                        return server_rpc.client.hosted_agents.remove_pool_agent({
-                            node_name: item.node.name
-                        });
-                    })
-                    .then(() => {
-                        // Marking the node as deleted since we've removed it completely
-                        // If we did not succeed at removing the process we don't mark the deletion
-                        // This is done in order to cycle the node once again and attempt until
-                        // We succeed
-                        item.node.deleted = Date.now();
-                        items_to_update.push(item);
-                    })
-                    .catch(err => {
-                        // We will just wait another cycle and attempt to delete it fully again
-                        dbg.warn('delete_cloud_or_mongo_pool_node ERROR node', item.node, err);
-                    });
-            })
+                })
+                .catch(err => {
+                    // We will just wait another cycle and attempt to delete it fully again
+                    dbg.warn(
+                        'delete_cloud_or_mongo_pool_node ERROR node',
+                        item.node,
+                        err,
+                    );
+                });
+        })
             .then(() => NodesStore.instance().bulk_update(items_to_update))
             .then(res => {
                 // mark failed updates to retry
@@ -1790,8 +2208,14 @@ class NodesMonitor extends EventEmitter {
         const { use_storage = true, exclude_drives = [] } = agent_config;
         if (info.node_type === 'BLOCK_STORE_FS') {
             if (!use_storage) return false; // if storage disable if configured to exclud storage
-            if (info.storage.total < config.MINIMUM_AGENT_TOTAL_STORAGE) return false; // disable if not enough storage
-            return this._should_include_drives(info.drives[0].mount, info.os_info, exclude_drives);
+            if (info.storage.total < config.MINIMUM_AGENT_TOTAL_STORAGE) {
+                return false;
+            } // disable if not enough storage
+            return this._should_include_drives(
+                info.drives[0].mount,
+                info.os_info,
+                exclude_drives,
+            );
         }
         return true;
     }
@@ -1824,13 +2248,17 @@ class NodesMonitor extends EventEmitter {
         dbg.log3('_update_status:', item.node.name);
 
         const now = Date.now();
-        item.online = Boolean(item.connection) && (now < item.node.heartbeat + config.AGENT_HEARTBEAT_GRACE_TIME);
+        item.online =
+            Boolean(item.connection) &&
+            now < item.node.heartbeat + config.AGENT_HEARTBEAT_GRACE_TIME;
 
         // if we still have a connection, but considered offline, close the connection
         if (!item.online && item.connection) {
-            dbg.warn('node HB not received in the last',
+            dbg.warn(
+                'node HB not received in the last',
                 config.AGENT_HEARTBEAT_GRACE_TIME / 60000,
-                'minutes. closing connection');
+                'minutes. closing connection',
+            );
             this._disconnect_node(item);
         }
 
@@ -1843,9 +2271,15 @@ class NodesMonitor extends EventEmitter {
 
         if (item.node.issues_report) {
             // only print to log if the node had issues in the last hour
-            const last_issue = item.node.issues_report[item.node.issues_report.length - 1];
+            const last_issue =
+                item.node.issues_report[item.node.issues_report.length - 1];
             if (now - last_issue.time < 60 * 60 * 1000) {
-                dbg.log0('_update_status:', item.node.name, 'issues:', item.node.issues_report);
+                dbg.log0(
+                    '_update_status:',
+                    item.node.name,
+                    'issues:',
+                    item.node.issues_report,
+                );
             }
             for (const issue of item.node.issues_report) {
                 // tampering is a trust issue, but maybe we need to refine this
@@ -1855,9 +2289,11 @@ class NodesMonitor extends EventEmitter {
                     item.trusted = false;
                 }
 
-                if (issue.action === 'write' ||
+                if (
+                    issue.action === 'write' ||
                     issue.action === 'replicate' ||
-                    issue.action === 'read') {
+                    issue.action === 'read'
+                ) {
                     if (now - issue.time < config.NODE_IO_DETENTION_THRESHOLD) {
                         io_detention_recent_issues += 1;
                     }
@@ -1865,9 +2301,15 @@ class NodesMonitor extends EventEmitter {
             }
         }
 
-        if (!config.NODE_IO_DETENTION_DISABLE && !item.io_reported_errors &&
-            io_detention_recent_issues >= config.NODE_IO_DETENTION_RECENT_ISSUES) {
-            dbg.log0('_update_status:: Node has io_reported_errors', item.node.name);
+        if (
+            !config.NODE_IO_DETENTION_DISABLE &&
+            !item.io_reported_errors &&
+            io_detention_recent_issues >= config.NODE_IO_DETENTION_RECENT_ISSUES
+        ) {
+            dbg.log0(
+                '_update_status:: Node has io_reported_errors',
+                item.node.name,
+            );
             item.io_reported_errors = now;
         }
 
@@ -1887,10 +2329,12 @@ class NodesMonitor extends EventEmitter {
     }
 
     _cloud_node_alert(msg) {
-        Dispatcher.instance().alert('MAJOR',
+        Dispatcher.instance().alert(
+            'MAJOR',
             system_store.data.systems[0]._id,
             msg,
-            Dispatcher.rules.once_daily);
+            Dispatcher.rules.once_daily,
+        );
     }
 
     _dispatch_node_event(item, event, description, actor) {
@@ -1915,12 +2359,12 @@ class NodesMonitor extends EventEmitter {
             item.n2n_errors || Number.POSITIVE_INFINITY,
             item.gateway_errors || Number.POSITIVE_INFINITY,
             item.io_test_errors || Number.POSITIVE_INFINITY,
-            item.io_reported_errors || Number.POSITIVE_INFINITY
+            item.io_reported_errors || Number.POSITIVE_INFINITY,
         );
         return io_detention_time === Number.POSITIVE_INFINITY ?
-            0 : io_detention_time;
+                0
+            :   io_detention_time;
     }
-
 
     _get_item_issues_reasons(item) {
         try {
@@ -1929,18 +2373,62 @@ class NodesMonitor extends EventEmitter {
             if (!item.trusted) reasons.push('node untrusted');
             if (!item.node_from_store) reasons.push('node not stored yet');
             if (!item.node.rpc_address) reasons.push('no rpc_address');
-            if (item.storage_not_exist) reasons.push(`target storage do not exist (${new Date(item.storage_not_exist)})`);
-            if (item.auth_failed) reasons.push(`failed to authenticate on target storage (${new Date(item.storage_not_exist)})`);
-            if (item.io_detention && item.n2n_errors) reasons.push(`in detention (n2n_errors at ${new Date(item.n2n_errors)})`);
-            if (item.io_detention && item.gateway_errors) reasons.push(`in detention (gateway_errors at ${new Date(item.gateway_errors)})`);
-            if (item.io_detention && item.io_test_errors) reasons.push(`in detention (io_test_errors at ${new Date(item.io_test_errors)})`);
-            if (item.io_detention && item.io_reported_errors) reasons.push(`in detention (io_reported_errors at ${new Date(item.io_reported_errors)})`);
-            if (item.storage_full) reasons.push(`storage is full (${new Date(item.storage_full)})`);
+            if (item.storage_not_exist) {
+                reasons.push(
+                    `target storage do not exist (${new Date(item.storage_not_exist)})`,
+                );
+            }
+            if (item.auth_failed) {
+                reasons.push(
+                    `failed to authenticate on target storage (${new Date(item.storage_not_exist)})`,
+                );
+            }
+            if (item.io_detention && item.n2n_errors) {
+                reasons.push(
+                    `in detention (n2n_errors at ${new Date(item.n2n_errors)})`,
+                );
+            }
+            if (item.io_detention && item.gateway_errors) {
+                reasons.push(
+                    `in detention (gateway_errors at ${new Date(item.gateway_errors)})`,
+                );
+            }
+            if (item.io_detention && item.io_test_errors) {
+                reasons.push(
+                    `in detention (io_test_errors at ${new Date(item.io_test_errors)})`,
+                );
+            }
+            if (item.io_detention && item.io_reported_errors) {
+                reasons.push(
+                    `in detention (io_reported_errors at ${new Date(item.io_reported_errors)})`,
+                );
+            }
+            if (item.storage_full) {
+                reasons.push(
+                    `storage is full (${new Date(item.storage_full)})`,
+                );
+            }
             if (item.node.migrating_to_pool) reasons.push(`node migrating`);
-            if (item.node.decommissioning) reasons.push(`node decommissioning (${new Date(item.node.decommissioning)})`);
-            if (item.node.decommissioned) reasons.push(`node decommissioned (${new Date(item.node.decommissioned)})`);
-            if (item.node.deleting) reasons.push(`node in deleting state (${new Date(item.node.deleting)})`);
-            if (item.node.deleted) reasons.push(`node in deleted state (${new Date(item.node.deleted)})`);
+            if (item.node.decommissioning) {
+                reasons.push(
+                    `node decommissioning (${new Date(item.node.decommissioning)})`,
+                );
+            }
+            if (item.node.decommissioned) {
+                reasons.push(
+                    `node decommissioned (${new Date(item.node.decommissioned)})`,
+                );
+            }
+            if (item.node.deleting) {
+                reasons.push(
+                    `node in deleting state (${new Date(item.node.deleting)})`,
+                );
+            }
+            if (item.node.deleted) {
+                reasons.push(
+                    `node in deleted state (${new Date(item.node.deleted)})`,
+                );
+            }
 
             return reasons.join(', ');
         } catch (err) {
@@ -1959,29 +2447,33 @@ class NodesMonitor extends EventEmitter {
             !item.node.decommissioning &&
             !item.node.decommissioned &&
             !item.node.deleting &&
-            !item.node.deleted);
+            !item.node.deleted
+        );
         if (stat) {
-            dbg.log0_throttled(`${item.node.name} item has issues. reasons: ${this._get_item_issues_reasons(item)}`);
+            dbg.log0_throttled(
+                `${item.node.name} item has issues. reasons: ${this._get_item_issues_reasons(item)}`,
+            );
         }
         return stat;
     }
 
-
     _get_item_readable(item) {
         const readable = Boolean(
             item.online &&
-            item.trusted &&
-            item.node_from_store &&
-            item.node.rpc_address &&
-            !item.storage_not_exist &&
-            !item.auth_failed &&
-            !item.io_detention &&
-            !item.node.decommissioned && // but readable when decommissioning !
-            !item.node.deleting &&
-            !item.node.deleted
+                item.trusted &&
+                item.node_from_store &&
+                item.node.rpc_address &&
+                !item.storage_not_exist &&
+                !item.auth_failed &&
+                !item.io_detention &&
+                !item.node.decommissioned && // but readable when decommissioning !
+                !item.node.deleting &&
+                !item.node.deleted,
         );
         if (!readable) {
-            dbg.log0_throttled(`${item.node.name} not readable. reasons: ${this._get_item_issues_reasons(item)}`);
+            dbg.log0_throttled(
+                `${item.node.name} not readable. reasons: ${this._get_item_issues_reasons(item)}`,
+            );
         }
         return readable;
     }
@@ -1989,43 +2481,48 @@ class NodesMonitor extends EventEmitter {
     _get_item_writable(item) {
         const writable = Boolean(
             item.online &&
-            item.trusted &&
-            item.node_from_store &&
-            item.node.rpc_address &&
-            !item.storage_not_exist &&
-            !item.auth_failed &&
-            !item.io_detention &&
-            !item.storage_full &&
-            !item.node.migrating_to_pool &&
-            !item.node.decommissioning &&
-            !item.node.decommissioned &&
-            !item.node.deleting &&
-            !item.node.deleted
+                item.trusted &&
+                item.node_from_store &&
+                item.node.rpc_address &&
+                !item.storage_not_exist &&
+                !item.auth_failed &&
+                !item.io_detention &&
+                !item.storage_full &&
+                !item.node.migrating_to_pool &&
+                !item.node.decommissioning &&
+                !item.node.decommissioned &&
+                !item.node.deleting &&
+                !item.node.deleted,
         );
 
         if (!writable) {
-            dbg.log0_throttled(`${item.node.name} not writable. reasons: ${this._get_item_issues_reasons(item)}`);
+            dbg.log0_throttled(
+                `${item.node.name} not writable. reasons: ${this._get_item_issues_reasons(item)}`,
+            );
         }
         return writable;
     }
 
     _get_item_accessibility(item) {
-        return (item.readable && item.writable && 'FULL_ACCESS') ||
+        return (
+            (item.readable && item.writable && 'FULL_ACCESS') ||
             (item.readable && 'READ_ONLY') ||
-            'NO_ACCESS';
+            'NO_ACCESS'
+        );
     }
-
 
     _get_item_mode(item) {
         const MB = 1024 ** 2;
         const storage = this._node_storage_info(item);
         const free = size_utils.json_to_bigint(storage.free);
         const used = size_utils.json_to_bigint(storage.used);
-        const free_ratio = free.add(used).isZero() ?
-            BigInteger.zero :
-            free.multiply(100).divide(free.add(used));
+        const free_ratio =
+            free.add(used).isZero() ?
+                BigInteger.zero
+            :   free.multiply(100).divide(free.add(used));
 
-        return (item.node.decommissioned && 'DECOMMISSIONED') ||
+        return (
+            (item.node.decommissioned && 'DECOMMISSIONED') ||
             (item.node.decommissioning && 'DECOMMISSIONING') ||
             (item.node.deleting && 'DELETING') ||
             (!item.online && 'OFFLINE') ||
@@ -2041,10 +2538,9 @@ class NodesMonitor extends EventEmitter {
             (item.io_reported_errors && 'IO_ERRORS') ||
             (free.lesserOrEquals(MB) && 'NO_CAPACITY') ||
             (free_ratio.lesserOrEquals(20) && 'LOW_CAPACITY') ||
-            'OPTIMAL';
+            'OPTIMAL'
+        );
     }
-
-
 
     _update_data_activity(item) {
         const reason = this._get_data_activity_reason(item);
@@ -2057,7 +2553,9 @@ class NodesMonitor extends EventEmitter {
         const now = Date.now();
         // if no data activity, or activity reason has changed then reset data_activity
         if (!item.data_activity || item.data_activity.reason !== reason) {
-            dbg.log0(`data activity reason of ${item.node.name} was changed from ${_.get(item, 'data_activity.reason')} to ${reason}`);
+            dbg.log0(
+                `data activity reason of ${item.node.name} was changed from ${_.get(item, 'data_activity.reason')} to ${reason}`,
+            );
             item.data_activity = { reason };
         }
         this._update_data_activity_stage(item, now);
@@ -2072,7 +2570,9 @@ class NodesMonitor extends EventEmitter {
         if (item.node.decommissioned) return '';
         if (item.node.decommissioning) return ACT_DECOMMISSIONING;
         if (item.node.migrating_to_pool) return ACT_MIGRATING;
-        if (!item.online || !item.trusted || item.io_detention) return ACT_RESTORING;
+        if (!item.online || !item.trusted || item.io_detention) {
+            return ACT_RESTORING;
+        }
         return '';
     }
 
@@ -2085,8 +2585,11 @@ class NodesMonitor extends EventEmitter {
         // Which means that in case of untrusted node we will not restore/rebuild it
         if (now < end_of_grace) {
             if (act.reason === ACT_RESTORING) {
-                dbg.log1('_update_data_activity_stage: WAIT OFFLINE GRACE',
-                    item.node.name, act);
+                dbg.log1(
+                    '_update_data_activity_stage: WAIT OFFLINE GRACE',
+                    item.node.name,
+                    act,
+                );
                 act.stage = {
                     name: STAGE_OFFLINE_GRACE,
                     time: {
@@ -2098,25 +2601,31 @@ class NodesMonitor extends EventEmitter {
                 return;
             }
         } else if (act.stage && act.stage.name === STAGE_OFFLINE_GRACE) {
-            dbg.log1('_update_data_activity_stage: PASSED OFFLINE GRACE',
-                item.node.name, act);
+            dbg.log1(
+                '_update_data_activity_stage: PASSED OFFLINE GRACE',
+                item.node.name,
+                act,
+            );
             // nullify to reuse the code that init right next
             act.stage = null;
         }
 
         if (!act.stage) {
-            dbg.log1('_update_data_activity_stage: START REBUILDING',
-                item.node.name, act);
+            dbg.log1(
+                '_update_data_activity_stage: START REBUILDING',
+                item.node.name,
+                act,
+            );
             act.stage = {
                 name: STAGE_REBUILDING,
                 time: {
-                    start: now
+                    start: now,
                 },
                 size: {
                     total: item.node.storage.used,
                     remaining: item.node.storage.used,
-                    completed: 0
-                }
+                    completed: 0,
+                },
             };
             return;
         }
@@ -2124,8 +2633,11 @@ class NodesMonitor extends EventEmitter {
         if (!act.stage.done) return;
 
         if (act.stage.name === STAGE_REBUILDING) {
-            dbg.log1('_update_data_activity_stage: DONE REBUILDING',
-                item.node.name, act);
+            dbg.log1(
+                '_update_data_activity_stage: DONE REBUILDING',
+                item.node.name,
+                act,
+            );
             if (act.reason === ACT_RESTORING) {
                 // restore is done after rebuild, not doing wiping
                 act.done = true;
@@ -2146,7 +2658,11 @@ class NodesMonitor extends EventEmitter {
         }
 
         if (act.stage.name === STAGE_WIPING) {
-            dbg.log0('_update_data_activity_stage: DONE WIPING', item.node.name, act);
+            dbg.log0(
+                '_update_data_activity_stage: DONE WIPING',
+                item.node.name,
+                act,
+            );
             if (item.node.migrating_to_pool) {
                 delete item.node.migrating_to_pool;
             }
@@ -2167,15 +2683,18 @@ class NodesMonitor extends EventEmitter {
         const act = item.data_activity;
 
         if (act.stage && !_.isEmpty(act.stage.size)) {
-            act.stage.size.remaining = Math.max(0,
-                act.stage.size.total - act.stage.size.completed) || 0;
+            act.stage.size.remaining =
+                Math.max(0, act.stage.size.total - act.stage.size.completed) ||
+                0;
             const completed_time = now - act.stage.time.start;
             let end_calc;
             if (act.stage.size.completed) {
-                end_calc = now + Math.ceil(
-                    act.stage.size.remaining *
-                    completed_time / act.stage.size.completed
-                );
+                end_calc =
+                    now +
+                    Math.ceil(
+                        (act.stage.size.remaining * completed_time) /
+                            act.stage.size.completed,
+                    );
             }
             act.stage.time.end = end_calc;
         }
@@ -2208,8 +2727,11 @@ class NodesMonitor extends EventEmitter {
         }
 
         if (system_utils.system_in_maintenance(item.node.system)) {
-            dbg.warn('_update_status: delay node data_activity',
-                'while system in maintenance', item.node.name);
+            dbg.warn(
+                '_update_status: delay node data_activity',
+                'while system in maintenance',
+                item.node.name,
+            );
             act.stage.wait_reason = WAIT_SYSTEM_MAINTENANCE;
             this._set_need_rebuild.delete(item);
             return;
@@ -2237,8 +2759,16 @@ class NodesMonitor extends EventEmitter {
         const now = Date.now();
         let delay = config.REBUILD_NODE_BATCH_DELAY;
         if (act.stage.rebuild_error) {
-            delay = Math.max(act.stage.rebuild_error - now + 10000, config.REBUILD_NODE_BATCH_DELAY);
-            dbg.warn('_schedule_rebuild: delay', delay, 'for node', item.node.name);
+            delay = Math.max(
+                act.stage.rebuild_error - now + 10000,
+                config.REBUILD_NODE_BATCH_DELAY,
+            );
+            dbg.warn(
+                '_schedule_rebuild: delay',
+                delay,
+                'for node',
+                item.node.name,
+            );
         }
 
         item.rebuild_timeout = setTimeout(() => {
@@ -2253,7 +2783,8 @@ class NodesMonitor extends EventEmitter {
         if (!config.REBUILD_NODE_ENABLED) return;
         const count = Math.min(
             config.REBUILD_NODE_CONCURRENCY,
-            this._set_need_rebuild.size - this._num_running_rebuilds);
+            this._set_need_rebuild.size - this._num_running_rebuilds,
+        );
         for (let i = 0; i < count; ++i) {
             // TODO: This can cause multiple workers to wait for each other and work on the same
             // batches since they all look at const act = item.data_activity
@@ -2292,23 +2823,28 @@ class NodesMonitor extends EventEmitter {
         const start_marker = act.stage.marker;
         let blocks_size;
         return P.resolve()
-            .then(() => MDStore.instance().iterate_node_chunks({
-                node_id: item.node._id,
-                marker: start_marker,
-                limit: config.REBUILD_NODE_BATCH_SIZE,
-            }))
+            .then(() =>
+                MDStore.instance().iterate_node_chunks({
+                    node_id: item.node._id,
+                    marker: start_marker,
+                    limit: config.REBUILD_NODE_BATCH_SIZE,
+                }),
+            )
             .then(res => {
                 // we update the stage marker even if failed to advance the scan
                 act.stage.marker = res.marker;
                 blocks_size = res.blocks_size;
-                return this.client.scrubber.build_chunks({
-                    chunk_ids: res.chunk_ids
-                }, {
-                    auth_token: auth_server.make_auth_token({
-                        system_id: String(item.node.system),
-                        role: 'admin'
-                    })
-                });
+                return this.client.scrubber.build_chunks(
+                    {
+                        chunk_ids: res.chunk_ids,
+                    },
+                    {
+                        auth_token: auth_server.make_auth_token({
+                            system_id: String(item.node.system),
+                            role: 'admin',
+                        }),
+                    },
+                );
             })
             .then(() => {
                 act.running = false;
@@ -2322,8 +2858,13 @@ class NodesMonitor extends EventEmitter {
                 }
                 if (act.stage.rebuild_error) {
                     act.stage.marker = act.stage.error_marker;
-                    act.stage.size.completed = act.stage.error_marker_completed || 0;
-                    dbg.log0('_rebuild_node: HAD ERRORS. RESTART', item.node.name, act);
+                    act.stage.size.completed =
+                        act.stage.error_marker_completed || 0;
+                    dbg.log0(
+                        '_rebuild_node: HAD ERRORS. RESTART',
+                        item.node.name,
+                        act,
+                    );
                     this._update_data_activity(item);
                     act.stage.rebuild_error = 0;
                     act.stage.error_marker = null;
@@ -2336,16 +2877,20 @@ class NodesMonitor extends EventEmitter {
             })
             .catch(err => {
                 act.running = false;
-                dbg.warn('_rebuild_node: ERROR', item.node.name, err.stack || err);
+                dbg.warn(
+                    '_rebuild_node: ERROR',
+                    item.node.name,
+                    err.stack || err,
+                );
                 if (!act.stage.rebuild_error) {
                     act.stage.error_marker = start_marker;
-                    act.stage.error_marker_completed = act.stage.size.completed || 0;
+                    act.stage.error_marker_completed =
+                        act.stage.size.completed || 0;
                 }
                 act.stage.rebuild_error = Date.now();
                 this._update_data_activity(item);
             });
     }
-
 
     /*
      *
@@ -2359,15 +2904,23 @@ class NodesMonitor extends EventEmitter {
         const filter_counts = {
             count: 0,
             online: 0,
-            by_mode: mode_counters
+            by_mode: mode_counters,
         };
 
         const filter_item_func = this._get_filter_item_func(query);
 
-        const items = query.nodes ?
-            new Set(_.map(query.nodes, node_identity =>
-                this._get_node(node_identity, 'allow_offline', 'allow_missing'))) :
-            this._map_node_id.values();
+        const items =
+            query.nodes ?
+                new Set(
+                    _.map(query.nodes, node_identity =>
+                        this._get_node(
+                            node_identity,
+                            'allow_offline',
+                            'allow_missing',
+                        ),
+                    ),
+                )
+            :   this._map_node_id.values();
         for (const item of items) {
             if (!item) continue;
             // skip new nodes
@@ -2386,23 +2939,30 @@ class NodesMonitor extends EventEmitter {
             if (item.online) filter_counts.online += 1;
 
             // after counting, we can finally filter by
-            if (!_.isUndefined(query.has_issues) &&
-                query.has_issues !== Boolean(item.has_issues)) continue;
-            if (!_.isUndefined(query.online) &&
-                query.online !== Boolean(item.online)) continue;
-            if (!_.isUndefined(query.mode) &&
-                !query.mode.includes(item.mode)) continue;
+            if (
+                !_.isUndefined(query.has_issues) &&
+                query.has_issues !== Boolean(item.has_issues)
+            ) {
+                continue;
+            }
+            if (
+                !_.isUndefined(query.online) &&
+                query.online !== Boolean(item.online)
+            ) {
+                continue;
+            }
+            if (!_.isUndefined(query.mode) && !query.mode.includes(item.mode)) {
+                continue;
+            }
 
             dbg.log1('list_nodes: adding node', item.node.name);
             list.push(item);
         }
         return {
             list,
-            filter_counts
+            filter_counts,
         };
     }
-
-
 
     _filter_hosts(query) {
         const list = [];
@@ -2417,10 +2977,28 @@ class NodesMonitor extends EventEmitter {
             // update the status of every node we go over
             const item = this._consolidate_host(host);
             // filter hosts according to query
-            if (item.node.node_type !== 'BLOCK_STORE_FS' && !query.include_all) continue;
-            if (query.hosts && !query.hosts.includes(String(item.node.host_sequence))) continue;
-            if (query.pools && !query.pools.has(String(item.node.pool))) continue;
-            if (query.filter && !query.filter.test(this._item_hostname(item)) && !query.filter.test(item.node.ip)) continue;
+            if (
+                item.node.node_type !== 'BLOCK_STORE_FS' &&
+                !query.include_all
+            ) {
+                continue;
+            }
+            if (
+                query.hosts &&
+                !query.hosts.includes(String(item.node.host_sequence))
+            ) {
+                continue;
+            }
+            if (query.pools && !query.pools.has(String(item.node.pool))) {
+                continue;
+            }
+            if (
+                query.filter &&
+                !query.filter.test(this._item_hostname(item)) &&
+                !query.filter.test(item.node.ip)
+            ) {
+                continue;
+            }
             if (query.skip_cloud_nodes && item.node.is_cloud_node) continue;
 
             // The mode_counters count nodes that passed all filters besides
@@ -2428,15 +3006,16 @@ class NodesMonitor extends EventEmitter {
             mode_counters[item.mode] = (mode_counters[item.mode] || 0) + 1;
 
             // after counting, we can finally filter by mode
-            if (!_.isUndefined(query.mode) &&
-                !query.mode.includes(item.mode)) continue;
+            if (!_.isUndefined(query.mode) && !query.mode.includes(item.mode)) {
+                continue;
+            }
 
             dbg.log1('list_nodes: adding node', item.node.name);
             list.push(item);
         }
         return {
             list,
-            mode_counters
+            mode_counters,
         };
     }
 
@@ -2458,13 +3037,18 @@ class NodesMonitor extends EventEmitter {
         // for now we take the first storage node, and use it as the host_item, with some modifications
         // TODO: once we have better understanding of what the host status should be
         // as a result of the status of the nodes we need to change it.
-        let root_item = host_nodes.find(item =>
-            item.node.drives && item.node.drives[0] &&
-            (item.node.drives[0].mount === '/' || item.node.drives[0].mount.toLowerCase() === 'c:')
+        let root_item = host_nodes.find(
+            item =>
+                item.node.drives &&
+                item.node.drives[0] &&
+                (item.node.drives[0].mount === '/' ||
+                    item.node.drives[0].mount.toLowerCase() === 'c:'),
         );
         if (!root_item) {
             // if for some reason root node not found, take the first one.
-            dbg.log1(`could not find node for root path, taking the first in the list. drives = ${host_nodes.map(item => item.node.drives[0])}`);
+            dbg.log1(
+                `could not find node for root path, taking the first in the list. drives = ${host_nodes.map(item => item.node.drives[0])}`,
+            );
             root_item = host_nodes[0];
         }
         const host_item = _.clone(root_item);
@@ -2475,11 +3059,16 @@ class NodesMonitor extends EventEmitter {
         // host is online if at least one node is online
         host_item.online = host_nodes.some(item => item.online);
         // host is considered decommisioned if all nodes are decomissioned
-        host_item.node.decommissioned = host_nodes.every(item => item.node.decommissioned);
+        host_item.node.decommissioned = host_nodes.every(
+            item => item.node.decommissioned,
+        );
         // if host is not decommissioned and all nodes are either decommissioned or decommissioning
         // than the host is decommissioning
-        host_item.node.decommissioning = !host_item.node.decommissioned &&
-            host_nodes.every(item => item.node.decommissioned || item.node.decommissioning);
+        host_item.node.decommissioning =
+            !host_item.node.decommissioned &&
+            host_nodes.every(
+                item => item.node.decommissioned || item.node.decommissioning,
+            );
 
         //trusted, and untrusted reasons if exist
         host_item.trusted = host_nodes.every(item => item.trusted !== false);
@@ -2489,12 +3078,12 @@ class NodesMonitor extends EventEmitter {
                 untrusted_item => {
                     const reason = {
                         events: [],
-                        drive: untrusted_item.node.drives[0]
+                        drive: untrusted_item.node.drives[0],
                     };
                     if (untrusted_item.node.permission_tempering) {
                         reason.events.push({
                             event: 'PERMISSION_EVENT',
-                            time: untrusted_item.node.permission_tempering
+                            time: untrusted_item.node.permission_tempering,
                         });
                     }
                     if (untrusted_item.node.issues_report) {
@@ -2502,31 +3091,40 @@ class NodesMonitor extends EventEmitter {
                             if (issue.reason === 'TAMPERING') {
                                 reason.events.push({
                                     event: 'DATA_EVENT',
-                                    time: issue.time
+                                    time: issue.time,
                                 });
                             }
                         }
                     }
                     return reason;
-                });
+                },
+            );
         }
 
-        host_item.migrating_to_pool = host_nodes.some(item => item.node.migrating_to_pool);
+        host_item.migrating_to_pool = host_nodes.some(
+            item => item.node.migrating_to_pool,
+        );
         host_item.n2n_errors = host_nodes.some(item => item.n2n_errors);
         host_item.gateway_errors = host_nodes.some(item => item.gateway_errors);
         host_item.io_test_errors = host_nodes.some(item => item.io_test_errors);
-        host_item.io_reported_errors = host_nodes.some(item => item.io_reported_errors);
+        host_item.io_reported_errors = host_nodes.some(
+            item => item.io_reported_errors,
+        );
         host_item.has_issues = false; // if true it causes storage count to be 0. not used by the UI.
 
         // aggregate data used by suggested pools classification
         host_item.avg_ping = _.mean(host_nodes.map(item => item.avg_ping));
-        host_item.avg_disk_read = _.mean(host_nodes.map(item => item.avg_disk_read));
-        host_item.avg_disk_write = _.mean(host_nodes.map(item => item.avg_disk_write));
-
+        host_item.avg_disk_read = _.mean(
+            host_nodes.map(item => item.avg_disk_read),
+        );
+        host_item.avg_disk_write = _.mean(
+            host_nodes.map(item => item.avg_disk_write),
+        );
 
         const host_aggragate = this._aggregate_nodes_list(host_nodes);
         host_item.node.storage = host_aggragate.storage;
-        host_item.storage_nodes.data_activities = host_aggragate.data_activities;
+        host_item.storage_nodes.data_activities =
+            host_aggragate.data_activities;
         host_item.node.drives = _.flatMap(host_nodes, item => item.node.drives);
 
         this._calculate_host_mode(host_item);
@@ -2542,25 +3140,29 @@ class NodesMonitor extends EventEmitter {
         const storage = host_item.node.storage;
         const free = size_utils.json_to_bigint(storage.free);
         const used = size_utils.json_to_bigint(storage.used);
-        const free_ratio = free.add(used).isZero() ?
-            BigInteger.zero :
-            free.multiply(100).divide(free.add(used));
+        const free_ratio =
+            free.add(used).isZero() ?
+                BigInteger.zero
+            :   free.multiply(100).divide(free.add(used));
         // storage mode is implemented by https://docs.google.com/spreadsheets/d/1-q1U57jmKNLt0XML-1MLaPgBFli_c_T5OEkKvzB5Txk/edit#gid=618998419
         if (storage_nodes.length) {
             const {
                 DECOMMISSIONED = 0,
-                    OFFLINE = 0,
-                    DELETING = 0,
-                    UNTRUSTED = 0,
-                    STORAGE_NOT_EXIST = 0,
-                    IO_ERRORS = 0,
-                    N2N_ERRORS = 0,
-                    GATEWAY_ERRORS = 0,
-                    INITIALIZING = 0,
-                    DECOMMISSIONING = 0,
-                    MIGRATING = 0,
-                    N2N_PORTS_BLOCKED = 0
-            } = _.mapValues(_.groupBy(storage_nodes, i => i.mode), arr => arr.length);
+                OFFLINE = 0,
+                DELETING = 0,
+                UNTRUSTED = 0,
+                STORAGE_NOT_EXIST = 0,
+                IO_ERRORS = 0,
+                N2N_ERRORS = 0,
+                GATEWAY_ERRORS = 0,
+                INITIALIZING = 0,
+                DECOMMISSIONING = 0,
+                MIGRATING = 0,
+                N2N_PORTS_BLOCKED = 0,
+            } = _.mapValues(
+                _.groupBy(storage_nodes, i => i.mode),
+                arr => arr.length,
+            );
             const enabled_nodes_count = storage_nodes.length - DECOMMISSIONED;
 
             host_item.storage_nodes_mode =
@@ -2568,17 +3170,29 @@ class NodesMonitor extends EventEmitter {
                 (DELETING && 'DELETING') ||
                 (OFFLINE === enabled_nodes_count && 'OFFLINE') || // all offline
                 (UNTRUSTED && 'UNTRUSTED') ||
-                (STORAGE_NOT_EXIST === enabled_nodes_count && 'STORAGE_NOT_EXIST') || // all unmounted
+                (STORAGE_NOT_EXIST === enabled_nodes_count &&
+                    'STORAGE_NOT_EXIST') || // all unmounted
                 (IO_ERRORS === enabled_nodes_count && 'IO_ERRORS') || // all have io-errors
                 (N2N_ERRORS && 'N2N_ERRORS') || // some N2N errors - reflects all host has N2N errors
                 (GATEWAY_ERRORS && 'GATEWAY_ERRORS') || // some gateway errors - reflects all host has gateway errors
                 (INITIALIZING === enabled_nodes_count && 'INITIALIZING') || // all initializing
-                (DECOMMISSIONING === enabled_nodes_count && 'DECOMMISSIONING') || // all decommissioning
+                (DECOMMISSIONING === enabled_nodes_count &&
+                    'DECOMMISSIONING') || // all decommissioning
                 (MIGRATING === enabled_nodes_count && 'MIGRATING') || // all migrating
-                (MIGRATING && !INITIALIZING && !DECOMMISSIONING && 'SOME_STORAGE_MIGRATING') || // some migrating
-                (INITIALIZING && !MIGRATING && !DECOMMISSIONING && 'SOME_STORAGE_INITIALIZING') || // some initializing
-                (DECOMMISSIONING && !INITIALIZING && !MIGRATING && 'SOME_STORAGE_DECOMMISSIONING') || // some decommissioning
-                ((DECOMMISSIONING || INITIALIZING || MIGRATING) && 'IN_PROCESS') || // mixed in process
+                (MIGRATING &&
+                    !INITIALIZING &&
+                    !DECOMMISSIONING &&
+                    'SOME_STORAGE_MIGRATING') || // some migrating
+                (INITIALIZING &&
+                    !MIGRATING &&
+                    !DECOMMISSIONING &&
+                    'SOME_STORAGE_INITIALIZING') || // some initializing
+                (DECOMMISSIONING &&
+                    !INITIALIZING &&
+                    !MIGRATING &&
+                    'SOME_STORAGE_DECOMMISSIONING') || // some decommissioning
+                ((DECOMMISSIONING || INITIALIZING || MIGRATING) &&
+                    'IN_PROCESS') || // mixed in process
                 (OFFLINE && 'SOME_STORAGE_OFFLINE') || //some offline
                 (STORAGE_NOT_EXIST && 'SOME_STORAGE_NOT_EXIST') || // some unmounted
                 (IO_ERRORS && 'SOME_STORAGE_IO_ERRORS') || // some have io-errors
@@ -2594,14 +3208,16 @@ class NodesMonitor extends EventEmitter {
         host_item.mode = storage_mode;
     }
 
-
     _get_filter_item_func(query) {
         // we are generating a function that will implement most of the query
         // so that we can run it on every node item, and minimize the compare work.
         let code = '';
-        if ((query.strictly_cloud_nodes && query.skip_cloud_nodes) ||
+        if (
+            (query.strictly_cloud_nodes && query.skip_cloud_nodes) ||
             (query.strictly_mongo_nodes && query.skip_mongo_nodes) ||
-            (query.strictly_internal && query.skip_internal)) { // I mean... srsly
+            (query.strictly_internal && query.skip_internal)
+        ) {
+            // I mean... srsly
             code += 'return false; ';
         }
         if (query.system) {
@@ -2659,40 +3275,113 @@ class NodesMonitor extends EventEmitter {
         return new Function('item', code);
     }
 
-
     _sort_nodes_list(list, options) {
         if (!options || !options.sort) return;
         if (options.sort === 'name') {
-            list.sort(js_utils.sort_compare_by(item => String(item.node.name), options.order));
+            list.sort(
+                js_utils.sort_compare_by(
+                    item => String(item.node.name),
+                    options.order,
+                ),
+            );
         } else if (options.sort === 'ip') {
-            list.sort(js_utils.sort_compare_by(item => net_utils.ip_to_long(item.node.ip), options.order));
+            list.sort(
+                js_utils.sort_compare_by(
+                    item => net_utils.ip_to_long(item.node.ip),
+                    options.order,
+                ),
+            );
         } else if (options.sort === 'has_issues') {
-            list.sort(js_utils.sort_compare_by(item => Boolean(item.has_issues), options.order));
+            list.sort(
+                js_utils.sort_compare_by(
+                    item => Boolean(item.has_issues),
+                    options.order,
+                ),
+            );
         } else if (options.sort === 'online') {
-            list.sort(js_utils.sort_compare_by(item => Boolean(item.online), options.order));
+            list.sort(
+                js_utils.sort_compare_by(
+                    item => Boolean(item.online),
+                    options.order,
+                ),
+            );
         } else if (options.sort === 'trusted') {
-            list.sort(js_utils.sort_compare_by(item => Boolean(item.trusted), options.order));
+            list.sort(
+                js_utils.sort_compare_by(
+                    item => Boolean(item.trusted),
+                    options.order,
+                ),
+            );
         } else if (options.sort === 'used') {
-            list.sort(js_utils.sort_compare_by(item => (item.node.storage.total - item.node.storage.free), options.order));
+            list.sort(
+                js_utils.sort_compare_by(
+                    item => item.node.storage.total - item.node.storage.free,
+                    options.order,
+                ),
+            );
         } else if (options.sort === 'accessibility') {
-            list.sort(js_utils.sort_compare_by(item => item.accessibility, options.order));
+            list.sort(
+                js_utils.sort_compare_by(
+                    item => item.accessibility,
+                    options.order,
+                ),
+            );
         } else if (options.sort === 'connectivity') {
-            list.sort(js_utils.sort_compare_by(item => item.connectivity, options.order));
+            list.sort(
+                js_utils.sort_compare_by(
+                    item => item.connectivity,
+                    options.order,
+                ),
+            );
         } else if (options.sort === 'data_activity') {
-            list.sort(js_utils.sort_compare_by(item => _.get(item, 'data_activity.reason', ''), options.order));
+            list.sort(
+                js_utils.sort_compare_by(
+                    item => _.get(item, 'data_activity.reason', ''),
+                    options.order,
+                ),
+            );
         } else if (options.sort === 'mode') {
-            list.sort(js_utils.sort_compare_by(item => MODE_COMPARE_ORDER.indexOf(item.mode), options.order));
+            list.sort(
+                js_utils.sort_compare_by(
+                    item => MODE_COMPARE_ORDER.indexOf(item.mode),
+                    options.order,
+                ),
+            );
         } else if (options.sort === 'pool') {
-            list.sort(js_utils.sort_compare_by(item => system_store.data.get_by_id(item.node.pool).name, options.order));
+            list.sort(
+                js_utils.sort_compare_by(
+                    item => system_store.data.get_by_id(item.node.pool).name,
+                    options.order,
+                ),
+            );
         } else if (options.sort === 'recommended') {
-            list.sort(js_utils.sort_compare_by(item => item.suggested_pool === options.recommended_hint, options.order));
+            list.sort(
+                js_utils.sort_compare_by(
+                    item => item.suggested_pool === options.recommended_hint,
+                    options.order,
+                ),
+            );
         } else if (options.sort === 'healthy_drives') {
-            list.sort(js_utils.sort_compare_by(item => _.countBy(item.storage_nodes, 'mode').OPTIMAL || 0, options.order));
+            list.sort(
+                js_utils.sort_compare_by(
+                    item => _.countBy(item.storage_nodes, 'mode').OPTIMAL || 0,
+                    options.order,
+                ),
+            );
         } else if (options.sort === 'services') {
-            list.sort(js_utils.sort_compare_by(item =>
-                (['DECOMMISSIONED', 'DECOMMISSIONING'].includes(item.storage_nodes_mode) ? 0 : 1),
-                options.order
-            ));
+            list.sort(
+                js_utils.sort_compare_by(
+                    item =>
+                        (
+                            ['DECOMMISSIONED', 'DECOMMISSIONING'].includes(
+                                item.storage_nodes_mode,
+                            )
+                        ) ?
+                            0
+                        :   1,
+                    options.order,
+                ),
+            );
         } else if (options.sort === 'shuffle') {
             chance.shuffle(list);
         }
@@ -2795,22 +3484,30 @@ class NodesMonitor extends EventEmitter {
                 tokens.push('ip:' + x[0] + '.x.x.x');
                 tokens.push('ip:' + x[0] + '.' + x[1] + '.x.x');
                 tokens.push('ip:' + x[0] + '.' + x[1] + '.' + x[2] + '.x');
-                tokens.push('ip:' + x[0] + '.' + x[1] + '.' + x[2] + '.' + x[3]);
+                tokens.push(
+                    'ip:' + x[0] + '.' + x[1] + '.' + x[2] + '.' + x[3],
+                );
             }
         }
         if (item.node.os_info) {
             tokens.push('platform:' + item.node.os_info.platform);
             tokens.push('arch:' + item.node.os_info.arch);
-            tokens.push('totalmem:' + scale_size_token(item.node.os_info.totalmem));
+            tokens.push(
+                'totalmem:' + scale_size_token(item.node.os_info.totalmem),
+            );
         }
         if (_.isNumber(item.avg_ping)) {
             tokens.push('avg_ping:' + scale_number_token(item.avg_ping));
         }
         if (_.isNumber(item.avg_disk_read)) {
-            tokens.push('avg_disk_read:' + scale_number_token(item.avg_disk_read));
+            tokens.push(
+                'avg_disk_read:' + scale_number_token(item.avg_disk_read),
+            );
         }
         if (_.isNumber(item.avg_disk_write)) {
-            tokens.push('avg_disk_write:' + scale_number_token(item.avg_disk_write));
+            tokens.push(
+                'avg_disk_write:' + scale_number_token(item.avg_disk_write),
+            );
         }
         if (item.node.storage && _.isNumber(item.node.storage.total)) {
             const storage_other =
@@ -2818,7 +3515,9 @@ class NodesMonitor extends EventEmitter {
                 item.node.storage.used -
                 item.node.storage.free;
             tokens.push('storage_other:' + scale_size_token(storage_other));
-            tokens.push('storage_total:' + scale_size_token(item.node.storage.total));
+            tokens.push(
+                'storage_total:' + scale_size_token(item.node.storage.total),
+            );
         }
         return tokens;
     }
@@ -2829,18 +3528,20 @@ class NodesMonitor extends EventEmitter {
         const filter_res = this._filter_nodes(query);
         const list = filter_res.list;
         this._sort_nodes_list(list, options);
-        const res_list = options && options.pagination ?
-            this._paginate_nodes_list(list, options) : list;
+        const res_list =
+            options && options.pagination ?
+                this._paginate_nodes_list(list, options)
+            :   list;
         dbg.log2('list_nodes', res_list.length, '/', list.length);
 
         return {
             total_count: list.length,
             filter_counts: filter_res.filter_counts,
             nodes: _.map(res_list, item =>
-                this._get_node_info(item, options && options.fields)),
+                this._get_node_info(item, options && options.fields),
+            ),
         };
     }
-
 
     list_hosts(query, options) {
         dbg.log2('list_hosts: query', query);
@@ -2848,77 +3549,116 @@ class NodesMonitor extends EventEmitter {
         const { list, mode_counters } = this._filter_hosts(query);
         this._sort_nodes_list(list, options);
         const { skip, limit } = options || {};
-        const res_list = _.isUndefined(skip && limit) ? list : this._paginate_nodes_list(list, options);
+        const res_list =
+            _.isUndefined(skip && limit) ? list : (
+                this._paginate_nodes_list(list, options)
+            );
         dbg.log2('list_hosts', res_list.length, '/', list.length);
 
         return {
             counters: {
                 non_paginated: list.length,
-                by_mode: mode_counters
+                by_mode: mode_counters,
             },
             hosts: _.map(res_list, item =>
-                this._get_host_info(item, options.adminfo)),
+                this._get_host_info(item, options.adminfo),
+            ),
         };
     }
 
     async get_nodes_stats(system, start_date, end_date) {
-        const nodes_stats = await IoStatsStore.instance().get_all_nodes_stats({ system, start_date, end_date });
+        const nodes_stats = await IoStatsStore.instance().get_all_nodes_stats({
+            system,
+            start_date,
+            end_date,
+        });
         return _.keyBy(nodes_stats, stat => String(stat._id));
     }
 
-    async _get_nodes_stats_by_service(system_id, start_date, end_date, include_kubernetes) {
-        const all_nodes_stats = await this.get_nodes_stats(system_id, start_date, end_date);
-        const grouped_stats = _.omit(_.groupBy(all_nodes_stats, stat => {
-            const item = this._map_node_id.get(String(stat._id));
-            if (!item) {
-                // handle deleted nodes later
-                return 'DELETED';
-            }
-            const pool = system_store.data.get_by_id(item.node.pool);
-            if (!pool) {
-                // handle deleted pools later
-                return 'DELETED';
-            }
-            let endpoint_type = _.get(pool, 'cloud_pool_info.endpoint_type') || 'OTHER';
-            if (include_kubernetes && this._is_kubernetes_node(item)) endpoint_type = 'KUBERNETES';
-            return endpoint_type;
-        }), 'OTHER');
+    async _get_nodes_stats_by_service(
+        system_id,
+        start_date,
+        end_date,
+        include_kubernetes,
+    ) {
+        const all_nodes_stats = await this.get_nodes_stats(
+            system_id,
+            start_date,
+            end_date,
+        );
+        const grouped_stats = _.omit(
+            _.groupBy(all_nodes_stats, stat => {
+                const item = this._map_node_id.get(String(stat._id));
+                if (!item) {
+                    // handle deleted nodes later
+                    return 'DELETED';
+                }
+                const pool = system_store.data.get_by_id(item.node.pool);
+                if (!pool) {
+                    // handle deleted pools later
+                    return 'DELETED';
+                }
+                let endpoint_type =
+                    _.get(pool, 'cloud_pool_info.endpoint_type') || 'OTHER';
+                if (include_kubernetes && this._is_kubernetes_node(item)) {
+                    endpoint_type = 'KUBERNETES';
+                }
+                return endpoint_type;
+            }),
+            'OTHER',
+        );
 
         const deleted_stats = grouped_stats.DELETED || [];
         // handle deleted nodes and pools
         for (const stat of deleted_stats) {
-            const node = (await NodesStore.instance().find_nodes({ _id: stat._id }))[0];
+            const node = (
+                await NodesStore.instance().find_nodes({ _id: stat._id })
+            )[0];
             if (!node) continue;
             let pool = system_store.data.get_by_id(node.pool);
             if (!pool) {
-                const deleted_pool = await system_store.data.get_by_id_include_deleted(node.pool, 'pools');
+                const deleted_pool =
+                    await system_store.data.get_by_id_include_deleted(
+                        node.pool,
+                        'pools',
+                    );
                 pool = deleted_pool && deleted_pool.record;
             }
             if (!pool) continue;
-            let endpoint_type = _.get(pool, 'cloud_pool_info.endpoint_type') || 'OTHER';
-            if (include_kubernetes && this._is_kubernetes_node({ node })) endpoint_type = 'KUBERNETES';
+            let endpoint_type =
+                _.get(pool, 'cloud_pool_info.endpoint_type') || 'OTHER';
+            if (include_kubernetes && this._is_kubernetes_node({ node })) {
+                endpoint_type = 'KUBERNETES';
+            }
             grouped_stats[endpoint_type] = grouped_stats[endpoint_type] || [];
             grouped_stats[endpoint_type].push(stat);
         }
 
-        const ret = _.map(_.omit(grouped_stats, 'DELETED'), (stats, service) => {
-            const reduced_stats = stats.reduce((prev, current) => ({
-                read_count: prev.read_count + (current.read_count || 0),
-                write_count: prev.write_count + (current.write_count || 0),
-                read_bytes: prev.read_bytes + (current.read_bytes || 0),
-                write_bytes: prev.write_bytes + (current.write_bytes || 0),
-            }), {
-                read_count: 0,
-                write_count: 0,
-                read_bytes: 0,
-                write_bytes: 0,
-            });
-            reduced_stats.service = service;
-            return reduced_stats;
-        });
+        const ret = _.map(
+            _.omit(grouped_stats, 'DELETED'),
+            (stats, service) => {
+                const reduced_stats = stats.reduce(
+                    (prev, current) => ({
+                        read_count: prev.read_count + (current.read_count || 0),
+                        write_count:
+                            prev.write_count + (current.write_count || 0),
+                        read_bytes: prev.read_bytes + (current.read_bytes || 0),
+                        write_bytes:
+                            prev.write_bytes + (current.write_bytes || 0),
+                    }),
+                    {
+                        read_count: 0,
+                        write_count: 0,
+                        read_bytes: 0,
+                        write_bytes: 0,
+                    },
+                );
+                reduced_stats.service = service;
+                return reduced_stats;
+            },
+        );
         return ret;
     }
-
 
     async get_nodes_stats_by_cloud_service(req) {
         return this._get_nodes_stats_by_service(
@@ -2926,7 +3666,7 @@ class NodesMonitor extends EventEmitter {
             req.rpc_params.start_date,
             req.rpc_params.end_date,
             /* include_kubernetes */
-            false
+            false,
         );
     }
 
@@ -2976,7 +3716,7 @@ class NodesMonitor extends EventEmitter {
                     time: {
                         start: act.time.start,
                         end: act.time.end,
-                    }
+                    },
                 };
                 a.count += 1;
                 a.time.start = Math.min(a.time.start, act.time.start);
@@ -2986,14 +3726,16 @@ class NodesMonitor extends EventEmitter {
 
             const node_storage = this._node_storage_info(item);
             _.forIn(storage, (value, key) => {
-                storage[key] = size_utils.reduce_sum(key, [node_storage[key], value]);
+                storage[key] = size_utils.reduce_sum(key, [
+                    node_storage[key],
+                    value,
+                ]);
             });
 
             if (nodes_stats) {
                 const node_io_stats = nodes_stats[String(item.node._id)];
                 if (node_io_stats) _.mergeWith(io_stats, node_io_stats, _.add);
             }
-
         });
 
         const now = Date.now();
@@ -3016,10 +3758,9 @@ class NodesMonitor extends EventEmitter {
                 a.progress = progress_by_time(a.time, now);
                 return a;
             }),
-            io_stats: nodes_stats ? io_stats : undefined
+            io_stats: nodes_stats ? io_stats : undefined,
         };
     }
-
 
     _aggregate_hosts_list(list) {
         let count = 0;
@@ -3041,12 +3782,22 @@ class NodesMonitor extends EventEmitter {
         _.each(list, item => {
             count += 1;
             by_mode[item.mode] = (by_mode[item.mode] || 0) + 1;
-            storage_by_mode[item.storage_nodes_mode] = (storage_by_mode[item.storage_nodes_mode] || 0) + 1;
-            by_service.STORAGE += item.storage_nodes && item.storage_nodes.every(i => i.node.decommissioned) ? 0 : 1;
+            storage_by_mode[item.storage_nodes_mode] =
+                (storage_by_mode[item.storage_nodes_mode] || 0) + 1;
+            by_service.STORAGE +=
+                (
+                    item.storage_nodes &&
+                    item.storage_nodes.every(i => i.node.decommissioned)
+                ) ?
+                    0
+                :   1;
             if (item.online) online += 1;
             let has_activity = false;
             for (const storage_item of item.storage_nodes || []) {
-                if (storage_item.data_activity && !storage_item.data_activity.done) {
+                if (
+                    storage_item.data_activity &&
+                    !storage_item.data_activity.done
+                ) {
                     has_activity = true;
                     const act = storage_item.data_activity;
                     const a = data_activities[act.reason] || {
@@ -3056,7 +3807,7 @@ class NodesMonitor extends EventEmitter {
                         time: {
                             start: act.time.start,
                             end: act.time.end,
-                        }
+                        },
                     };
                     a.count += 1;
                     a.time.start = Math.min(a.time.start, act.time.start);
@@ -3070,7 +3821,10 @@ class NodesMonitor extends EventEmitter {
 
             const node_storage = item.node.storage;
             _.forIn(storage, (value, key) => {
-                storage[key] = size_utils.reduce_sum(key, [node_storage[key], value]);
+                storage[key] = size_utils.reduce_sum(key, [
+                    node_storage[key],
+                    value,
+                ]);
             });
         });
 
@@ -3082,14 +3836,14 @@ class NodesMonitor extends EventEmitter {
                 by_mode,
                 by_service,
                 storage_by_mode,
-                data_activity_host_count
+                data_activity_host_count,
             },
             storage: storage,
             data_activities: _.map(data_activities, a => {
                 if (!Number.isFinite(a.time.end)) delete a.time.end;
                 a.progress = progress_by_time(a.time, now);
                 return a;
-            })
+            }),
         };
     }
 
@@ -3099,12 +3853,16 @@ class NodesMonitor extends EventEmitter {
         const res = this._aggregate_hosts_list(list);
         if (group_by) {
             if (group_by === 'pool') {
-                const pool_groups = _.groupBy(list,
-                    item => String(item.node.pool));
-                res.groups = _.mapValues(pool_groups,
-                    items => this._aggregate_hosts_list(items));
+                const pool_groups = _.groupBy(list, item =>
+                    String(item.node.pool),
+                );
+                res.groups = _.mapValues(pool_groups, items =>
+                    this._aggregate_hosts_list(items),
+                );
             } else {
-                throw new Error('aggregate_hosts: Invalid group_by ' + group_by);
+                throw new Error(
+                    'aggregate_hosts: Invalid group_by ' + group_by,
+                );
             }
         }
         return res;
@@ -3116,17 +3874,20 @@ class NodesMonitor extends EventEmitter {
         const res = this._aggregate_nodes_list(list);
         if (group_by) {
             if (group_by === 'pool') {
-                const pool_groups = _.groupBy(list,
-                    item => String(item.node.pool));
-                res.groups = _.mapValues(pool_groups,
-                    items => this._aggregate_nodes_list(items, nodes_stats));
+                const pool_groups = _.groupBy(list, item =>
+                    String(item.node.pool),
+                );
+                res.groups = _.mapValues(pool_groups, items =>
+                    this._aggregate_nodes_list(items, nodes_stats),
+                );
             } else {
-                throw new Error('aggregate_nodes: Invalid group_by ' + group_by);
+                throw new Error(
+                    'aggregate_nodes: Invalid group_by ' + group_by,
+                );
             }
         }
         return res;
     }
-
 
     _get_host_info(host_item, adminfo) {
         const info = {
@@ -3136,15 +3897,19 @@ class NodesMonitor extends EventEmitter {
                     .map(item => {
                         this._update_status(item);
                         return this._get_node_info(item);
-                    })
-            }
+                    }),
+            },
         };
         info.storage_nodes_info.mode = host_item.storage_nodes_mode;
-        info.storage_nodes_info.enabled = host_item.storage_nodes.some(item => !item.node.decommissioned && !item.node.decommissioning);
-        info.storage_nodes_info.data_activities = host_item.storage_nodes.data_activities;
+        info.storage_nodes_info.enabled = host_item.storage_nodes.some(
+            item => !item.node.decommissioned && !item.node.decommissioning,
+        );
+        info.storage_nodes_info.data_activities =
+            host_item.storage_nodes.data_activities;
 
         // collect host info
-        info.name = this._item_hostname(host_item) + '#' + host_item.node.host_sequence;
+        info.name =
+            this._item_hostname(host_item) + '#' + host_item.node.host_sequence;
         const pool = system_store.data.get_by_id(host_item.node.pool);
         info.pool = pool ? pool.name : '';
         info.geolocation = host_item.node.geolocation;
@@ -3165,27 +3930,36 @@ class NodesMonitor extends EventEmitter {
             info.os_info.uptime = new Date(info.os_info.uptime).getTime();
         }
         if (info.os_info.last_update) {
-            info.os_info.last_update = new Date(info.os_info.last_update).getTime();
+            info.os_info.last_update = new Date(
+                info.os_info.last_update,
+            ).getTime();
         }
-        info.os_info.cpu_usage = Math.max(host_item.cpu_usage, host_item.node.cpu_usage) || 0;
+        info.os_info.cpu_usage =
+            Math.max(host_item.cpu_usage, host_item.node.cpu_usage) || 0;
         info.process_cpu_usage = host_item.node.cpu_usage;
         info.process_mem_usage = host_item.node.mem_usage;
         info.rpc_address = host_item.node.rpc_address;
         info.latency_to_server = host_item.node.latency_to_server;
-        const debug_time = host_item.node.debug_mode ?
-            Math.max(0, config.DEBUG_MODE_PERIOD - (Date.now() - host_item.node.debug_mode)) :
-            undefined;
+        const debug_time =
+            host_item.node.debug_mode ?
+                Math.max(
+                    0,
+                    config.DEBUG_MODE_PERIOD -
+                        (Date.now() - host_item.node.debug_mode),
+                )
+            :   undefined;
         info.debug = {
             level: host_item.node.debug_level,
-            time_left: debug_time
+            time_left: debug_time,
         };
         info.suggested_pool = host_item.suggested_pool;
         info.mode = host_item.mode;
 
-        const port_range = (host_item.node.n2n_config || {}).tcp_permanent_passive;
+        const port_range = (host_item.node.n2n_config || {})
+            .tcp_permanent_passive;
         if (port_range) {
             info.ports = {
-                range: port_range
+                range: port_range,
             };
         }
         info.base_address = host_item.node.base_address;
@@ -3195,11 +3969,18 @@ class NodesMonitor extends EventEmitter {
     _is_host_hideable(host_nodes) {
         if (!_.every(host_nodes, item => item.node.deleting)) return false;
         if (_.some(host_nodes, item => item.online)) return false; // node is online
-        const nodes_activity_stage = _.flatMap(host_nodes, node => node.data_activity && node.data_activity.stage.name);
-        if (_.some(nodes_activity_stage, node_stage => (
-                node_stage === STAGE_OFFLINE_GRACE ||
-                node_stage === STAGE_REBUILDING
-            ))) {
+        const nodes_activity_stage = _.flatMap(
+            host_nodes,
+            node => node.data_activity && node.data_activity.stage.name,
+        );
+        if (
+            _.some(
+                nodes_activity_stage,
+                node_stage =>
+                    node_stage === STAGE_OFFLINE_GRACE ||
+                    node_stage === STAGE_REBUILDING,
+            )
+        ) {
             return false;
         }
         return true;
@@ -3210,7 +3991,8 @@ class NodesMonitor extends EventEmitter {
         const info = _.defaults(
             _.pick(item, MONITOR_INFO_FIELDS),
             _.pick(node, NODE_INFO_FIELDS),
-            NODE_INFO_DEFAULTS);
+            NODE_INFO_DEFAULTS,
+        );
         info._id = String(node._id);
         info.peer_id = String(node.peer_id);
 
@@ -3226,19 +4008,24 @@ class NodesMonitor extends EventEmitter {
         if (node.is_internal_node) info.demo_node = true;
         const act = item.data_activity;
         if (act && !act.done) {
-            info.data_activity = _.pick(act,
-                'reason',
-                'progress',
-                'time');
-            info.data_activity.stage = _.pick(act.stage,
+            info.data_activity = _.pick(act, 'reason', 'progress', 'time');
+            info.data_activity.stage = _.pick(
+                act.stage,
                 'name',
                 'time',
                 'size',
-                'wait_reason');
-            if (info.data_activity.time && !Number.isFinite(info.data_activity.time.end)) {
+                'wait_reason',
+            );
+            if (
+                info.data_activity.time &&
+                !Number.isFinite(info.data_activity.time.end)
+            ) {
                 delete info.data_activity.time.end;
             }
-            if (info.data_activity.stage.time && !Number.isFinite(info.data_activity.stage.time.end)) {
+            if (
+                info.data_activity.stage.time &&
+                !Number.isFinite(info.data_activity.stage.time.end)
+            ) {
                 delete info.data_activity.stage.time.end;
             }
         }
@@ -3252,7 +4039,9 @@ class NodesMonitor extends EventEmitter {
             info.os_info.uptime = new Date(info.os_info.uptime).getTime();
         }
         if (info.os_info.last_update) {
-            info.os_info.last_update = new Date(info.os_info.last_update).getTime();
+            info.os_info.last_update = new Date(
+                info.os_info.last_update,
+            ).getTime();
         }
         info.host_seq = String(item.node.host_sequence);
 
@@ -3261,7 +4050,7 @@ class NodesMonitor extends EventEmitter {
             if (node.permission_tempering) {
                 info.untrusted_reasons.push({
                     event: 'PERMISSION_EVENT',
-                    time: node.permission_tempering
+                    time: node.permission_tempering,
                 });
             }
             if (node.issues_report) {
@@ -3269,7 +4058,7 @@ class NodesMonitor extends EventEmitter {
                     if (issue.reason === 'TAMPERING') {
                         info.untrusted_reasons.push({
                             event: 'DATA_EVENT',
-                            time: issue.time
+                            time: issue.time,
                         });
                     }
                 }
@@ -3289,18 +4078,24 @@ class NodesMonitor extends EventEmitter {
         } else if (node_identity.peer_id) {
             item = this._map_peer_id.get(String(node_identity.peer_id));
         } else if (node_identity.rpc_address) {
-            item = this._map_peer_id.get(node_identity.rpc_address.slice('n2n://'.length));
+            item = this._map_peer_id.get(
+                node_identity.rpc_address.slice('n2n://'.length),
+            );
         }
         if (!item && allow_missing !== 'allow_missing') {
             dbg.log0('Nodes ids:', Array.from(this._map_node_id.keys()));
             dbg.log0('Nodes names:', Array.from(this._map_node_name.keys()));
             dbg.error('NO_SUCH_NODE', JSON.stringify(node_identity));
-            throw new RpcError('NO_SUCH_NODE',
-                'No node ' + JSON.stringify(node_identity));
+            throw new RpcError(
+                'NO_SUCH_NODE',
+                'No node ' + JSON.stringify(node_identity),
+            );
         }
         if (item && !item.connection && allow_offline !== 'allow_offline') {
-            throw new RpcError('NODE_OFFLINE',
-                'Node is offline ' + JSON.stringify(node_identity));
+            throw new RpcError(
+                'NODE_OFFLINE',
+                'Node is offline ' + JSON.stringify(node_identity),
+            );
         }
         return item;
     }
@@ -3314,7 +4109,7 @@ class NodesMonitor extends EventEmitter {
         dbg.log1('n2n_signal:', signal_params.target);
         this._throw_if_not_started_and_loaded();
         const item = this._get_node({
-            rpc_address: signal_params.target
+            rpc_address: signal_params.target,
         });
         //if (!item) {
         // TODO do the hockey pocky in the cluster like was in redirector
@@ -3324,35 +4119,40 @@ class NodesMonitor extends EventEmitter {
         });
     }
 
-
     /**
      * n2n_proxy sends an rpc call to the target node like a proxy.
      */
     n2n_proxy(proxy_params) {
-        dbg.log3('n2n_proxy: target', proxy_params.target,
-            'call', proxy_params.method_api + '.' + proxy_params.method_name,
-            'params', proxy_params.request_params);
+        dbg.log3(
+            'n2n_proxy: target',
+            proxy_params.target,
+            'call',
+            proxy_params.method_api + '.' + proxy_params.method_name,
+            'params',
+            proxy_params.request_params,
+        );
         this._throw_if_not_started_and_loaded();
 
         const item = this._get_node({
-            rpc_address: proxy_params.target
+            rpc_address: proxy_params.target,
         });
         const server_api = proxy_params.method_api.slice(0, -4); //Remove _api suffix
         const method_name = proxy_params.method_name;
 
         if (proxy_params.request_params) {
-            proxy_params.request_params[RPC_BUFFERS] = proxy_params[RPC_BUFFERS];
+            proxy_params.request_params[RPC_BUFFERS] =
+                proxy_params[RPC_BUFFERS];
         }
 
         return this.client[server_api][method_name](
-                proxy_params.request_params, {
-                    connection: item.connection
-                }
-            )
-            .then(reply => ({
-                proxy_reply: js_utils.omit_symbol(reply, RPC_BUFFERS),
-                [RPC_BUFFERS]: reply && reply[RPC_BUFFERS],
-            }));
+            proxy_params.request_params,
+            {
+                connection: item.connection,
+            },
+        ).then(reply => ({
+            proxy_reply: js_utils.omit_symbol(reply, RPC_BUFFERS),
+            [RPC_BUFFERS]: reply && reply[RPC_BUFFERS],
+        }));
     }
 
     /*
@@ -3360,30 +4160,38 @@ class NodesMonitor extends EventEmitter {
      * return X random nodes for self test purposes
      */
     get_test_nodes(req) {
-        const list_res = this.list_nodes({
-            system: String(req.system._id),
-            online: true,
-            decommissioning: false,
-            decommissioned: false,
-            deleting: false,
-            deleted: false,
-            skip_address: req.rpc_params.source,
-            skip_cloud_nodes: true,
-            skip_mongo_nodes: true,
-            skip_internal: true
-        }, {
-            pagination: true,
-            limit: req.rpc_params.count,
-            sort: 'shuffle'
-        });
+        const list_res = this.list_nodes(
+            {
+                system: String(req.system._id),
+                online: true,
+                decommissioning: false,
+                decommissioned: false,
+                deleting: false,
+                deleted: false,
+                skip_address: req.rpc_params.source,
+                skip_cloud_nodes: true,
+                skip_mongo_nodes: true,
+                skip_internal: true,
+            },
+            {
+                pagination: true,
+                limit: req.rpc_params.count,
+                sort: 'shuffle',
+            },
+        );
         const { rpc_params } = req;
         const item = this._get_node({
-            rpc_address: rpc_params.source
+            rpc_address: rpc_params.source,
         });
-        this._dispatch_node_event(item, 'test_node',
-            `Node ${this._item_hostname(item)} was tested by ${req.account && req.account.email.unwrap()}`, req.account && req.account._id);
-        return _.map(list_res.nodes,
-            node => _.pick(node, 'name', 'rpc_address'));
+        this._dispatch_node_event(
+            item,
+            'test_node',
+            `Node ${this._item_hostname(item)} was tested by ${req.account && req.account.email.unwrap()}`,
+            req.account && req.account._id,
+        );
+        return _.map(list_res.nodes, node =>
+            _.pick(node, 'name', 'rpc_address'),
+        );
     }
 
     test_node_network(req) {
@@ -3391,17 +4199,17 @@ class NodesMonitor extends EventEmitter {
         dbg.log1('test_node_network:', rpc_params);
         this._throw_if_not_started_and_loaded();
         const item = this._get_node({
-            rpc_address: rpc_params.source
+            rpc_address: rpc_params.source,
         });
-        return P.timeout(config.AGENT_RESPONSE_TIMEOUT,
-                this.client.agent.test_network_perf_to_peer(rpc_params, {
-                    connection: item.connection
-                })
-            )
-            .then(res => {
-                dbg.log2('test_node_network', rpc_params, 'returned', res);
-                return res;
-            });
+        return P.timeout(
+            config.AGENT_RESPONSE_TIMEOUT,
+            this.client.agent.test_network_perf_to_peer(rpc_params, {
+                connection: item.connection,
+            }),
+        ).then(res => {
+            dbg.log2('test_node_network', rpc_params, 'returned', res);
+            return res;
+        });
     }
 
     collect_agent_diagnostics(node_identity) {
@@ -3428,7 +4236,8 @@ class NodesMonitor extends EventEmitter {
         }
 
         const { connection } = firstItem;
-        return server_rpc.client.agent.collect_diagnostics(undefined, { connection })
+        return server_rpc.client.agent
+            .collect_diagnostics(undefined, { connection })
             .then(res => res[RPC_BUFFERS].data);
     }
 
@@ -3436,40 +4245,55 @@ class NodesMonitor extends EventEmitter {
         this._throw_if_not_started_and_loaded();
         const { name, level } = req.rpc_params;
         const host_nodes = this._get_host_nodes_by_name(name);
-        if (!host_nodes || !host_nodes.length) throw new RpcError('BAD_REQUEST', `No such host ${name}`);
-        return P.map(host_nodes, item => this._set_agent_debug_level(item, level))
-            .then(() => {
-                dbg.log1('set_debug_node was successful for host', name, 'level', level);
-                Dispatcher.instance().activity({
-                    system: req.system._id,
-                    level: 'info',
-                    event: 'dbg.set_debug_node',
-                    actor: req.account && req.account._id,
-                    node: host_nodes[0].node._id,
-                    desc: `${name} debug level was raised by ${req.account && req.account.email.unwrap()}`,
-                });
-                dbg.log1('set_debug_node was successful for host', name, 'level', level);
+        if (!host_nodes || !host_nodes.length) {
+            throw new RpcError('BAD_REQUEST', `No such host ${name}`);
+        }
+        return P.map(host_nodes, item =>
+            this._set_agent_debug_level(item, level),
+        ).then(() => {
+            dbg.log1(
+                'set_debug_node was successful for host',
+                name,
+                'level',
+                level,
+            );
+            Dispatcher.instance().activity({
+                system: req.system._id,
+                level: 'info',
+                event: 'dbg.set_debug_node',
+                actor: req.account && req.account._id,
+                node: host_nodes[0].node._id,
+                desc: `${name} debug level was raised by ${req.account && req.account.email.unwrap()}`,
             });
-
+            dbg.log1(
+                'set_debug_node was successful for host',
+                name,
+                'level',
+                level,
+            );
+        });
     }
 
     set_debug_node(req) {
         this._throw_if_not_started_and_loaded();
         const { level, node } = req.rpc_params;
         const item = this._get_node(node);
-        return this._set_agent_debug_level(item, level)
-            .then(() => {
-                Dispatcher.instance().activity({
-                    system: req.system._id,
-                    level: 'info',
-                    event: 'dbg.set_debug_node',
-                    actor: req.account && req.account._id,
-                    node: item.node._id,
-                    desc: `${item.node.name} debug level was raised by ${req.account && req.account.email.unwrap()}`,
-                });
-                dbg.log1('set_debug_node was successful for agent', item.node.name,
-                    'level', level);
+        return this._set_agent_debug_level(item, level).then(() => {
+            Dispatcher.instance().activity({
+                system: req.system._id,
+                level: 'info',
+                event: 'dbg.set_debug_node',
+                actor: req.account && req.account._id,
+                node: item.node._id,
+                desc: `${item.node.name} debug level was raised by ${req.account && req.account.email.unwrap()}`,
             });
+            dbg.log1(
+                'set_debug_node was successful for agent',
+                item.node.name,
+                'level',
+                level,
+            );
+        });
     }
 
     allocate_nodes(params) {
@@ -3488,32 +4312,46 @@ class NodesMonitor extends EventEmitter {
         // Not all nodes always have the avg_disk_write.
         // KMeans needs valid vectors so we exclude the nodes and assume that they are the slowest
         // Since we assume them to be the slowest we will place them in the last KMeans group
-        const partition_avg_disk_write = _.partition(list, item => !Number.isNaN(item.avg_disk_write) && _.isNumber(item.avg_disk_write));
+        const partition_avg_disk_write = _.partition(
+            list,
+            item =>
+                !Number.isNaN(item.avg_disk_write) &&
+                _.isNumber(item.avg_disk_write),
+        );
         const nodes_with_avg_disk_write = partition_avg_disk_write[0];
         const nodes_without_avg_disk_write = partition_avg_disk_write[1];
-        if (nodes_with_avg_disk_write.length >= config.NODE_ALLOCATOR_NUM_CLUSTERS) {
+        if (
+            nodes_with_avg_disk_write.length >=
+            config.NODE_ALLOCATOR_NUM_CLUSTERS
+        ) {
             // TODO:
             // Not handling noise at all.
             // This means that we can have a group of 1 noisy drive.
             // I rely on avg_disk_write as an average reading to handle any noise.
             const kmeans_clusters = kmeans.run(
-                nodes_with_avg_disk_write.map(item => [item.avg_disk_write]), {
-                    k: config.NODE_ALLOCATOR_NUM_CLUSTERS
-                }
+                nodes_with_avg_disk_write.map(item => [item.avg_disk_write]),
+                {
+                    k: config.NODE_ALLOCATOR_NUM_CLUSTERS,
+                },
             );
 
             // Sort the groups by latency (centroid is the computed centralized latency for each group)
-            kmeans_clusters.sort(js_utils.sort_compare_by(item => item.centroid[0], 1));
+            kmeans_clusters.sort(
+                js_utils.sort_compare_by(item => item.centroid[0], 1),
+            );
 
             kmeans_clusters.forEach(kmeans_cluster =>
-                latency_groups.push(kmeans_cluster.clusterInd.map(index => list[index]))
+                latency_groups.push(
+                    kmeans_cluster.clusterInd.map(index => list[index]),
+                ),
             );
 
             if (nodes_without_avg_disk_write.length) {
-                latency_groups[latency_groups.length - 1] =
-                    _.concat(latency_groups[latency_groups.length - 1], nodes_without_avg_disk_write);
+                latency_groups[latency_groups.length - 1] = _.concat(
+                    latency_groups[latency_groups.length - 1],
+                    nodes_without_avg_disk_write,
+                );
             }
-
         } else {
             latency_groups.push(list);
         }
@@ -3522,15 +4360,20 @@ class NodesMonitor extends EventEmitter {
             const max = 1000;
             // This is done in order to get the most unused or free drives
             // Since we sclice the response up to 1000 drives
-            cluster.sort(js_utils.sort_compare_by(item => item.node.storage.used, 1));
-            const nodes_set = (cluster.length < max) ? cluster : cluster.slice(0, max);
+            cluster.sort(
+                js_utils.sort_compare_by(item => item.node.storage.used, 1),
+            );
+            const nodes_set =
+                cluster.length < max ? cluster : cluster.slice(0, max);
             return {
-                nodes: nodes_set.map(item => this._get_node_info(item, params.fields))
+                nodes: nodes_set.map(item =>
+                    this._get_node_info(item, params.fields),
+                ),
             };
         });
 
         return {
-            latency_groups: _.isEmpty(lg_res) ? [{ nodes: [] }] : lg_res
+            latency_groups: _.isEmpty(lg_res) ? [{ nodes: [] }] : lg_res,
         };
     }
 
@@ -3538,12 +4381,18 @@ class NodesMonitor extends EventEmitter {
         this._throw_if_not_started_and_loaded();
         for (const block_report of params.blocks_report) {
             const node_id = block_report.block_md.node;
-            const item = this._get_node({
-                id: node_id
-            }, 'allow_offline', 'allow_missing');
+            const item = this._get_node(
+                {
+                    id: node_id,
+                },
+                'allow_offline',
+                'allow_missing',
+            );
             if (!item) {
-                dbg.warn('report_error_on_node_blocks: node not found for block',
-                    block_report);
+                dbg.warn(
+                    'report_error_on_node_blocks: node not found for block',
+                    block_report,
+                );
                 continue;
             }
             // when the error is NO SPACE we don't want to push the issue
@@ -3554,27 +4403,37 @@ class NodesMonitor extends EventEmitter {
             item.node.issues_report.push({
                 time: Date.now(),
                 action: block_report.action,
-                reason: block_report.rpc_code || ''
+                reason: block_report.rpc_code || '',
             });
             // TODO pack issues_report by action and reason, instead of naive
             while (item.node.issues_report.length > 20) {
                 const oldest = item.node.issues_report.shift();
                 const first = item.node.issues_report[0];
                 first.count = (first.count || 0) + 1;
-                if (!first.count_since ||
-                    first.count_since > oldest.time) {
+                if (!first.count_since || first.count_since > oldest.time) {
                     first.count_since = oldest.time;
                 }
             }
-            dbg.log0('report_error_on_node_blocks:',
-                'node', item.node.name,
-                'issues_report', item.node.issues_report,
-                'block_report', block_report);
+            dbg.log0(
+                'report_error_on_node_blocks:',
+                'node',
+                item.node.name,
+                'issues_report',
+                item.node.issues_report,
+                'block_report',
+                block_report,
+            );
             // disconnect from the node to force reconnect
             // only disconnect if enough time passed since last disconnect to avoid amplification of errors in R\W flows
             const DISCONNECT_GRACE_PERIOD = 2 * 60 * 1000; // 2 minutes grace before another disconnect
-            if (!item.disconnect_time || item.disconnect_time + DISCONNECT_GRACE_PERIOD < Date.now()) {
-                dbg.log0('disconnecting node to force reconnect. node:', item.node.name);
+            if (
+                !item.disconnect_time ||
+                item.disconnect_time + DISCONNECT_GRACE_PERIOD < Date.now()
+            ) {
+                dbg.log0(
+                    'disconnecting node to force reconnect. node:',
+                    item.node.name,
+                );
                 this._disconnect_node(item);
             }
         }
@@ -3583,37 +4442,55 @@ class NodesMonitor extends EventEmitter {
     _set_agent_debug_level(item, debug_level) {
         item.node.debug_level = debug_level;
         this._set_need_update.add(item);
-        return server_rpc.client.agent.set_debug_node({
-                level: debug_level
-            }, {
-                connection: item.connection,
-            })
+        return server_rpc.client.agent
+            .set_debug_node(
+                {
+                    level: debug_level,
+                },
+                {
+                    connection: item.connection,
+                },
+            )
             .then(() => {
                 item.node.debug_mode = debug_level > 0 ? Date.now() : undefined;
             });
     }
 
     _node_storage_info(item) {
-        const disk_total = size_utils.json_to_bigint(item.node.storage.total || 0);
-        const disk_free = BigInteger.max(size_utils.json_to_bigint(item.node.storage.free || 0), BigInteger.zero);
+        const disk_total = size_utils.json_to_bigint(
+            item.node.storage.total || 0,
+        );
+        const disk_free = BigInteger.max(
+            size_utils.json_to_bigint(item.node.storage.free || 0),
+            BigInteger.zero,
+        );
         const disk_used = disk_total.minus(disk_free);
 
         const nb_used = size_utils.json_to_bigint(item.node.storage.used || 0);
-        const used_other = BigInteger.max(BigInteger.zero, disk_used.minus(nb_used));
+        const used_other = BigInteger.max(
+            BigInteger.zero,
+            disk_used.minus(nb_used),
+        );
 
         // calculate nb_reserved: it's complex.
-        const ignore_reserve = item.node.is_internal_node || item.node.is_cloud_node || item.node.is_mongo_node;
-        const reserved_config = ignore_reserve ?
-            BigInteger.zero :
-            size_utils.json_to_bigint(config.NODES_FREE_SPACE_RESERVE || 0);
+        const ignore_reserve =
+            item.node.is_internal_node ||
+            item.node.is_cloud_node ||
+            item.node.is_mongo_node;
+        const reserved_config =
+            ignore_reserve ?
+                BigInteger.zero
+            :   size_utils.json_to_bigint(config.NODES_FREE_SPACE_RESERVE || 0);
         const nb_limit = BigInteger.min(
-            item.node.storage.limit ? size_utils.json_to_bigint(item.node.storage.limit) : disk_total,
-            disk_total.minus(reserved_config)
+            item.node.storage.limit ?
+                size_utils.json_to_bigint(item.node.storage.limit)
+            :   disk_total,
+            disk_total.minus(reserved_config),
         );
         const reserved_free = disk_total.minus(nb_limit).minus(used_other);
         const nb_reserved = BigInteger.min(
             disk_free,
-            BigInteger.max(reserved_free, reserved_config)
+            BigInteger.max(reserved_free, reserved_config),
         );
 
         let nb_free = disk_free.minus(nb_reserved);
@@ -3644,7 +4521,7 @@ class NodesMonitor extends EventEmitter {
         const cloud_node_types = [
             'BLOCK_STORE_S3',
             'BLOCK_STORE_AZURE',
-            'BLOCK_STORE_GOOGLE'
+            'BLOCK_STORE_GOOGLE',
         ];
         return cloud_node_types.includes(item.node.node_type);
     }
@@ -3677,9 +4554,10 @@ function scale_size_token(size) {
 
 function progress_by_time(time, now) {
     if (!time.end) return 0;
-    return Math.min(1, Math.max(0,
-        (now - time.start) / (time.end - time.start)
-    ));
+    return Math.min(
+        1,
+        Math.max(0, (now - time.start) / (time.end - time.start)),
+    );
 }
 
 function is_localhost(address) {

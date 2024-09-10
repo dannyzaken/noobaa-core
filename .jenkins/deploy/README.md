@@ -35,8 +35,8 @@ create -f <file>` for that.
   it can be run again.
 - `jjb-deploy.yaml` is the OpenShift Job that creates a Pod, runs
   `jenkins-jobs` to push the new jobs to the Jenkins environment. This pod uses
-   the jjb-config ConfigMap to connect and login to the Jenkins instance. The
-   job needs to be deleted from OpenShift before it can be run again.
+  the jjb-config ConfigMap to connect and login to the Jenkins instance. The
+  job needs to be deleted from OpenShift before it can be run again.
 - `jjb.sh` is a helper script that can be used to validate/deploy the Jenkins
   Jobs in the parent directory. It creates the validate or deploy job, waits
   until the job finishes, shows the log and exits with 0 on success. This

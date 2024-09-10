@@ -9,7 +9,9 @@ const config = require('../../../config');
 // Import the reports.
 const { NodeJsReport } = require('./prometheus_reports/nodejs_report');
 const { NooBaaCoreReport } = require('./prometheus_reports/noobaa_core_report');
-const { NooBaaEndpointReport } = require('./prometheus_reports/noobaa_endpoint_report');
+const {
+    NooBaaEndpointReport,
+} = require('./prometheus_reports/noobaa_endpoint_report');
 const stats_aggregator = require('../system_services/stats_aggregator');
 const AggregatorRegistry = require('prom-client').AggregatorRegistry;
 const aggregatorRegistry = new AggregatorRegistry();
@@ -18,7 +20,7 @@ const aggregatorRegistry = new AggregatorRegistry();
 const reports = Object.seal({
     nodejs: new NodeJsReport(),
     core: null, // optional
-    endpoint: null // optional
+    endpoint: null, // optional
 });
 
 let io_stats_complete = {};
@@ -35,7 +37,9 @@ function get_core_report(peek = false) {
 }
 
 function get_endpoint_report(peek = false) {
-    if (!reports.endpoint && !peek) reports.endpoint = new NooBaaEndpointReport();
+    if (!reports.endpoint && !peek) {
+        reports.endpoint = new NooBaaEndpointReport();
+    }
     return reports.endpoint;
 }
 
@@ -43,7 +47,7 @@ async function export_all_metrics() {
     const all_metrics = await Promise.all(
         Object.values(reports)
             .filter(Boolean)
-            .map(report => report.export_metrics())
+            .map(report => report.export_metrics()),
     );
     return all_metrics.join('\n\n');
 }
@@ -52,7 +56,7 @@ async function start_server(
     port,
     fork_enabled,
     retry_count = config.PROMETHEUS_SERVER_RETRY_COUNT,
-    delay = config.PROMETHEUS_SERVER_RETRY_DELAY
+    delay = config.PROMETHEUS_SERVER_RETRY_DELAY,
 ) {
     if (!config.PROMETHEUS_ENABLED) {
         return;
@@ -63,7 +67,9 @@ async function start_server(
         if (fork_enabled) {
             const metrics = await aggregatorRegistry.clusterMetrics();
             if (req.url === '' || req.url === '/') {
-                res.writeHead(200, { 'Content-Type': aggregatorRegistry.contentType });
+                res.writeHead(200, {
+                    'Content-Type': aggregatorRegistry.contentType,
+                });
                 res.end(metrics);
                 return;
             }
@@ -72,7 +78,7 @@ async function start_server(
                 const nsfs_report = {
                     nsfs_counters: io_stats_complete,
                     op_stats_counters: ops_stats_complete,
-                    fs_worker_stats_counters: fs_worker_stats_complete
+                    fs_worker_stats_counters: fs_worker_stats_complete,
                 };
                 res.end(JSON.stringify(nsfs_report));
                 return;
@@ -80,7 +86,7 @@ async function start_server(
             // Serve report's metrics on the report name path
             const report_name = req.url.substr(1);
             const single_metrics = export_single_metrics(metrics, report_name);
-            if (single_metrics !== "") {
+            if (single_metrics !== '') {
                 res.writeHead(200, { 'Content-Type': 'text/plain' });
                 res.end(single_metrics);
                 return;
@@ -120,13 +126,17 @@ async function start_server(
 
             // Set retry_count to 0 to exit the loop
             retry_count = 0;
-
         } catch (err) {
             if (retry_count) {
-                dbg.error(`Metrics server failed to listen on ${port} (retries left: ${retry_count}), got`, err);
+                dbg.error(
+                    `Metrics server failed to listen on ${port} (retries left: ${retry_count}), got`,
+                    err,
+                );
                 await P.delay_unblocking(delay);
             } else {
-                dbg.error(`Metrics server failed to listen on ${port} too many times, existing the process`);
+                dbg.error(
+                    `Metrics server failed to listen on ${port} too many times, existing the process`,
+                );
                 process.exit();
             }
         }
@@ -146,7 +156,9 @@ async function metrics_nsfs_stats_handler() {
     // Building the report per op name key and value
     for (const [op_name, obj] of Object.entries(op_stats)) {
         for (const [key, value] of Object.entries(obj)) {
-            op_stats_counters[`noobaa_nsfs_op_${op_name}_${key}`.toLowerCase()] = value;
+            op_stats_counters[
+                `noobaa_nsfs_op_${op_name}_${key}`.toLowerCase()
+            ] = value;
         }
     }
 
@@ -155,30 +167,30 @@ async function metrics_nsfs_stats_handler() {
     // Building the report per fs worker name key and value
     for (const [fs_op_name, obj] of Object.entries(fs_worker_stats)) {
         for (const [key, value] of Object.entries(obj)) {
-            fs_worker_stats_counters[`noobaa_nsfs_fs_worker_${fs_op_name}_${key}`.toLowerCase()] = value;
+            fs_worker_stats_counters[
+                `noobaa_nsfs_fs_worker_${fs_op_name}_${key}`.toLowerCase()
+            ] = value;
         }
     }
-
 
     const nsfs_report = {
         nsfs_counters: nsfs_io_stats,
         op_stats_counters: op_stats_counters,
-        fs_worker_stats_counters: fs_worker_stats_counters
+        fs_worker_stats_counters: fs_worker_stats_counters,
     };
     dbg.log1(`_create_nsfs_report: nsfs_report ${nsfs_report}`);
     return JSON.stringify(nsfs_report);
 }
 
 function export_single_metrics(all_metrics, report_name) {
-    let single_metrics = "";
+    let single_metrics = '';
     const metrics_arr = all_metrics.split('\n');
     for (const metrics_line of metrics_arr) {
         if (metrics_line.includes(report_name)) {
-            single_metrics = single_metrics + metrics_line + "\n";
+            single_metrics = single_metrics + metrics_line + '\n';
         }
     }
     return single_metrics;
-
 }
 
 function set_io_stats(io_stats) {
@@ -194,7 +206,9 @@ function set_ops_stats(ops_stats) {
     // Building the report per op name key and value
     for (const [op_name, obj] of Object.entries(ops_stats)) {
         for (const [key, value] of Object.entries(obj)) {
-            op_stats_counters[`noobaa_nsfs_op_${op_name}_${key}`.toLowerCase()] = value;
+            op_stats_counters[
+                `noobaa_nsfs_op_${op_name}_${key}`.toLowerCase()
+            ] = value;
         }
     }
     ops_stats_complete = op_stats_counters;
@@ -205,7 +219,9 @@ function set_fs_worker_stats(fs_worker_stats) {
     // Building the report per op name key and value
     for (const [op_name, obj] of Object.entries(fs_worker_stats)) {
         for (const [key, value] of Object.entries(obj)) {
-            op_stats_counters[`noobaa_nsfs_op_${op_name}_${key}`.toLowerCase()] = value;
+            op_stats_counters[
+                `noobaa_nsfs_op_${op_name}_${key}`.toLowerCase()
+            ] = value;
         }
     }
     fs_worker_stats_complete = op_stats_counters;

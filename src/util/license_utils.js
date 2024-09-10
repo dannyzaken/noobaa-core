@@ -20,15 +20,19 @@ const GPL_TYPE = 'GPL';
  * in order to quickly detect the license in a given text.
  */
 class LicenseDetector extends events.EventEmitter {
-
     async init_templates() {
         if (this.LICENSE_TEMPLATES) return P.resolve();
         const templates_dir = path.join(__dirname, 'license_templates');
         const names = await fs.promises.readdir(templates_dir);
-        const templates = await Promise.all(names.map(async name => {
-            const text = await fs.promises.readFile(path.join(templates_dir, name), 'utf8');
-            return this.parse_text(text, name);
-        }));
+        const templates = await Promise.all(
+            names.map(async name => {
+                const text = await fs.promises.readFile(
+                    path.join(templates_dir, name),
+                    'utf8',
+                );
+                return this.parse_text(text, name);
+            }),
+        );
         // sorting licenses to check ones with fewer symbols first
         templates.sort((a, b) => a.symbols.length - b.symbols.length);
         this.LICENSE_TEMPLATES = templates;
@@ -40,8 +44,16 @@ class LicenseDetector extends events.EventEmitter {
         let best;
 
         _.forEach(this.LICENSE_TEMPLATES, template => {
-            const stop_marker = Math.min(best ? best.distance : Infinity, edit_factor * p.symbols.length);
-            const distance = string_utils.levenshtein_distance(p.symbols, template.symbols, 'fuzzy', stop_marker);
+            const stop_marker = Math.min(
+                best ? best.distance : Infinity,
+                edit_factor * p.symbols.length,
+            );
+            const distance = string_utils.levenshtein_distance(
+                p.symbols,
+                template.symbols,
+                'fuzzy',
+                stop_marker,
+            );
             if (!best || best.distance > distance) {
                 best = {
                     template,
@@ -49,9 +61,11 @@ class LicenseDetector extends events.EventEmitter {
                 };
             }
         });
-        if (best &&
+        if (
+            best &&
             best.distance <= edit_factor * p.symbols.length &&
-            best.distance <= edit_factor * best.template.symbols.length) {
+            best.distance <= edit_factor * best.template.symbols.length
+        ) {
             this.emit('detected', file_path, best);
             return best.template.name;
         }
@@ -70,7 +84,7 @@ class LicenseDetector extends events.EventEmitter {
         let last_word = 0;
         for (let i = 0; i < words.length; ++i) {
             const hash = string_utils.rolling_hash(words[i], roll_context);
-            if ((hash % 8) < 4) {
+            if (hash % 8 < 4) {
                 symbols.push(hash);
                 last_word = i;
                 roll_context = {};
@@ -84,7 +98,7 @@ class LicenseDetector extends events.EventEmitter {
             name,
             words,
             symbols,
-            length: text.length
+            length: text.length,
         };
     }
 }
@@ -94,7 +108,6 @@ class LicenseDetector extends events.EventEmitter {
  * and emits information about found licenses.
  */
 class LicenseScanner extends events.EventEmitter {
-
     constructor(detector) {
         super();
         this.detector = detector;
@@ -103,36 +116,41 @@ class LicenseScanner extends events.EventEmitter {
 
     async scan_rpms() {
         const text = await os_utils.exec(
-            `rpm -qa --qf "%{NAME}|%{VERSION}|%{URL}|%{LICENSE}\n"`, {
+            `rpm -qa --qf "%{NAME}|%{VERSION}|%{URL}|%{LICENSE}\n"`,
+            {
                 ignore_rc: false,
                 return_stdout: true,
-            }
+            },
         );
-        await Promise.all(text.split('\n').map(async l => {
-            this._increase_scanned_count();
-            const [
-                name = '',
-                version = '',
-                url = '',
-                license = ''
-            ] = l.split('|');
-            if (!name && !version && !url && !license) return;
-            const paths = [
-                `/usr/share/doc/${name}-${version}`,
-                `/usr/share/doc/${name}`,
-                `/usr/share/${name}-${version}`,
-                `/usr/share/${name}`,
-            ];
-            const stats = Promise.all(paths.map(file_path => fs.promises.stat(file_path).catch(fs_utils.ignore_enoent)));
-            const index = _.findIndex(stats, stat => Boolean(stat));
-            this._emit_license({
-                path: paths[index < 0 ? 0 : index] + '/RPM',
-                license,
-                name,
-                version,
-                url,
-            });
-        }));
+        await Promise.all(
+            text.split('\n').map(async l => {
+                this._increase_scanned_count();
+                const [name = '', version = '', url = '', license = ''] =
+                    l.split('|');
+                if (!name && !version && !url && !license) return;
+                const paths = [
+                    `/usr/share/doc/${name}-${version}`,
+                    `/usr/share/doc/${name}`,
+                    `/usr/share/${name}-${version}`,
+                    `/usr/share/${name}`,
+                ];
+                const stats = Promise.all(
+                    paths.map(file_path =>
+                        fs.promises
+                            .stat(file_path)
+                            .catch(fs_utils.ignore_enoent),
+                    ),
+                );
+                const index = _.findIndex(stats, stat => Boolean(stat));
+                this._emit_license({
+                    path: paths[index < 0 ? 0 : index] + '/RPM',
+                    license,
+                    name,
+                    version,
+                    url,
+                });
+            }),
+        );
     }
 
     scan_dir(dir) {
@@ -144,10 +162,13 @@ class LicenseScanner extends events.EventEmitter {
                 if (e.stat.isDirectory()) return true;
                 if (!e.stat.isFile()) return false;
                 const file_name = path.basename(e.path);
-                if ((/^license|^copying/i).test(file_name)) {
+                if (/^license|^copying/i.test(file_name)) {
                     return this.scan_license_file(e.path);
                 }
-                if (file_name === 'package.json' || file_name === 'bower.json') {
+                if (
+                    file_name === 'package.json' ||
+                    file_name === 'bower.json'
+                ) {
                     return this.scan_package_json_file(e.path);
                 }
                 // NOTE:
@@ -157,7 +178,7 @@ class LicenseScanner extends events.EventEmitter {
                 // if (/\.(js|h|c|hpp|cpp|cxx|cc|py|pl|rb)$/.test(file_name)) {
                 //     return this.scan_code_file(e.path);
                 // }
-            }
+            },
         });
     }
 
@@ -179,13 +200,13 @@ class LicenseScanner extends events.EventEmitter {
             const text = await fs.promises.readFile(file_path, 'utf8');
             const {
                 name = '',
-                    version = '',
-                    license = '',
-                    licenses = '',
-                    url = '',
-                    repository = '',
-                    homepage = '',
-                    author = '',
+                version = '',
+                license = '',
+                licenses = '',
+                url = '',
+                repository = '',
+                homepage = '',
+                author = '',
             } = JSON.parse(text);
             const u = url || homepage || (repository && repository.url) || '';
             if (!license && !licenses && !url && !author) {
@@ -194,15 +215,21 @@ class LicenseScanner extends events.EventEmitter {
                 return;
             }
             const license_list = [license || licenses].flat();
-            license_list.map(l => this._emit_license({
-                path: file_path,
-                license: l.type || l,
-                name,
-                version,
-                url: u,
-            }));
+            license_list.map(l =>
+                this._emit_license({
+                    path: file_path,
+                    license: l.type || l,
+                    name,
+                    version,
+                    url: u,
+                }),
+            );
         } catch (err) {
-            console.warn('scan_package_json_file: FAILED', file_path, err.message);
+            console.warn(
+                'scan_package_json_file: FAILED',
+                file_path,
+                err.message,
+            );
         }
     }
 
@@ -237,7 +264,6 @@ class LicenseScanner extends events.EventEmitter {
         }
         this.emit('license', license);
     }
-
 }
 
 function get_license_type(name) {
@@ -246,46 +272,46 @@ function get_license_type(name) {
     // APACHE LICENSE 2.0
     // APACHE LICENSE VERSION 2.0
     // APACHE-2.0-APPENDIX
-    if ((/^apache/i).test(name)) return PERMISSIVE_TYPE;
+    if (/^apache/i.test(name)) return PERMISSIVE_TYPE;
     // MIT
     // MIT/X11
-    if ((/^mit/i).test(name)) return PERMISSIVE_TYPE;
+    if (/^mit/i.test(name)) return PERMISSIVE_TYPE;
     // BSD
     // BSD-2
     // BSD-2-CLAUSE
     // BSD-3
     // BSD-3-CLAUSE
     // BSD-3-CLAUSE AND MIT
-    if ((/^bsd/i).test(name)) return PERMISSIVE_TYPE;
+    if (/^bsd/i.test(name)) return PERMISSIVE_TYPE;
     // ISC
-    if ((/^isc$/i).test(name)) return PERMISSIVE_TYPE;
+    if (/^isc$/i.test(name)) return PERMISSIVE_TYPE;
     // Unlicense
-    if ((/^unlicense$/i).test(name)) return PERMISSIVE_TYPE;
+    if (/^unlicense$/i.test(name)) return PERMISSIVE_TYPE;
     // MPL-2.0
-    if ((/^mpl/i).test(name)) return PERMISSIVE_TYPE;
+    if (/^mpl/i.test(name)) return PERMISSIVE_TYPE;
     // MOZILLA 2.0
-    if ((/^mozilla/i).test(name)) return PERMISSIVE_TYPE;
+    if (/^mozilla/i.test(name)) return PERMISSIVE_TYPE;
     // WTF
     // WTFPL
     // WTFPL-2.0
-    if ((/^wtf/i).test(name)) return PERMISSIVE_TYPE;
+    if (/^wtf/i.test(name)) return PERMISSIVE_TYPE;
     // ZLIB
-    if ((/^zlib/i).test(name)) return PERMISSIVE_TYPE;
+    if (/^zlib/i.test(name)) return PERMISSIVE_TYPE;
     // Public domain
-    if ((/^public.*domain/i).test(name)) return PERMISSIVE_TYPE;
+    if (/^public.*domain/i.test(name)) return PERMISSIVE_TYPE;
     // ARTISTIC-2.0
     // ARTISTIC LICENSE 2.0
-    if ((/^artistic/i).test(name)) return PERMISSIVE_TYPE;
+    if (/^artistic/i.test(name)) return PERMISSIVE_TYPE;
     // AFL (Academic Free License)
-    if ((/^afl/i).test(name)) return PERMISSIVE_TYPE;
+    if (/^afl/i.test(name)) return PERMISSIVE_TYPE;
     // PYTHON-2.0
-    if ((/^python/i).test(name)) return PERMISSIVE_TYPE;
+    if (/^python/i.test(name)) return PERMISSIVE_TYPE;
     // W3C
-    if ((/^w3c/i).test(name)) return PERMISSIVE_TYPE;
+    if (/^w3c/i.test(name)) return PERMISSIVE_TYPE;
 
     // GPL
     // LGPL
-    if ((/^l?gpl/i).test(name)) return GPL_TYPE;
+    if (/^l?gpl/i.test(name)) return GPL_TYPE;
 
     // default
     return PROPRIETARY_TYPE;

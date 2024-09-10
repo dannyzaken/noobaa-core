@@ -15,7 +15,7 @@ dbg.set_process_name(test_name);
 const files = [];
 const errors = [];
 let current_size = 0;
-const POOL_NAME = "first-pool";
+const POOL_NAME = 'first-pool';
 
 const {
     mgmt_ip,
@@ -49,22 +49,22 @@ if (argv.help) {
     process.exit(1);
 }
 
-const rpc = api.new_rpc_from_base_address(`wss://${mgmt_ip}:${mgmt_port_https}`, 'EXTERNAL');
+const rpc = api.new_rpc_from_base_address(
+    `wss://${mgmt_ip}:${mgmt_port_https}`,
+    'EXTERNAL',
+);
 const client = rpc.new_client({});
 
 const report = new Report();
 //Define test cases
-const cases = [
-    'reclaimed blocks',
-    'edit placement policy'
-];
+const cases = ['reclaimed blocks', 'edit placement policy'];
 report.init_reporter({
     suite: test_name,
     conf: {
         dataset_size: dataset_size,
     },
     mongo_report: true,
-    cases: cases
+    cases: cases,
 });
 
 const bucket_functions = new BucketFunctions(client);
@@ -73,16 +73,16 @@ const baseUnit = 1024;
 const unit_mapping = {
     KB: {
         data_multiplier: baseUnit ** 1,
-        dataset_multiplier: baseUnit ** 2
+        dataset_multiplier: baseUnit ** 2,
     },
     MB: {
         data_multiplier: baseUnit ** 2,
-        dataset_multiplier: baseUnit ** 1
+        dataset_multiplier: baseUnit ** 1,
     },
     GB: {
         data_multiplier: baseUnit ** 3,
-        dataset_multiplier: baseUnit ** 0
-    }
+        dataset_multiplier: baseUnit ** 0,
+    },
 };
 
 function saveErrorAndResume(message) {
@@ -93,26 +93,45 @@ function saveErrorAndResume(message) {
 async function uploadAndVerifyFiles(bucket) {
     current_size = 0;
     const { data_multiplier } = unit_mapping.MB;
-    console.log('Writing and deleting data till size amount to grow ' + dataset_size + ' MB');
+    console.log(
+        'Writing and deleting data till size amount to grow ' +
+            dataset_size +
+            ' MB',
+    );
     while (current_size < dataset_size) {
         try {
-            console.log('Uploading files till data size grow to ' + dataset_size + ', current size is ' + current_size);
+            console.log(
+                'Uploading files till data size grow to ' +
+                    dataset_size +
+                    ', current size is ' +
+                    current_size,
+            );
             const file_size = set_fileSize();
-            const file_name = 'file_part_' + file_size + (Math.floor(Date.now() / 1000));
+            const file_name =
+                'file_part_' + file_size + Math.floor(Date.now() / 1000);
             files.push(file_name);
             current_size += file_size;
             console.log('Uploading file with size ' + file_size + ' MB');
-            await s3ops.put_file_with_md5(bucket, file_name, file_size, data_multiplier);
+            await s3ops.put_file_with_md5(
+                bucket,
+                file_name,
+                file_size,
+                data_multiplier,
+            );
             await s3ops.get_file_check_md5(bucket, file_name);
         } catch (err) {
-            saveErrorAndResume(`${mgmt_ip} FAILED verification uploading and reading ${err}`);
+            saveErrorAndResume(
+                `${mgmt_ip} FAILED verification uploading and reading ${err}`,
+            );
             throw err;
         }
     }
 }
 
 function set_fileSize() {
-    let rand_size = Math.floor((Math.random() * (max_size - min_size)) + min_size);
+    let rand_size = Math.floor(
+        Math.random() * (max_size - min_size) + min_size,
+    );
     if (dataset_size - current_size === 0) {
         rand_size = 1;
         //if we choose file size grater then the remaining space for the dataset,
@@ -133,13 +152,17 @@ async function cleanupBucket(bucket) {
 }
 
 async function reclaimCycle(agents_num) {
-    const reclaim_pool = 'reclaim.pool' + (Math.floor(Date.now() / 1000));
-    const bucket = 'reclaim.bucket' + (Math.floor(Date.now() / 1000));
+    const reclaim_pool = 'reclaim.pool' + Math.floor(Date.now() / 1000);
+    const bucket = 'reclaim.bucket' + Math.floor(Date.now() / 1000);
     try {
         await test_utils.create_hosts_pool(client, POOL_NAME, agents_num);
         await bucket_functions.createBucket(bucket);
         try {
-            await bucket_functions.editBucketDataPlacement(reclaim_pool, bucket, 'SPREAD');
+            await bucket_functions.editBucketDataPlacement(
+                reclaim_pool,
+                bucket,
+                'SPREAD',
+            );
             report.success('edit placement policy');
         } catch (err) {
             report.fail('edit placement policy');
@@ -158,7 +181,7 @@ async function set_rpc_and_create_auth_token() {
     const auth_params = {
         email: 'demo@noobaa.com',
         password: 'DeMo1',
-        system: 'demo'
+        system: 'demo',
     };
     return client.create_auth_token(auth_params);
 }

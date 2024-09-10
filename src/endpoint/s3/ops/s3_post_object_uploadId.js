@@ -12,13 +12,16 @@ const http_utils = require('../../../util/http_utils');
  * AKA Complete Multipart Upload
  */
 async function post_object_uploadId(req, res) {
-
     const multiparts = _.map(
         _.get(req.body, 'CompleteMultipartUpload.Part'),
         multipart => ({
-            num: s3_utils.parse_part_number(multipart.PartNumber[0], S3Error.MalformedXML),
+            num: s3_utils.parse_part_number(
+                multipart.PartNumber[0],
+                S3Error.MalformedXML,
+            ),
             etag: s3_utils.parse_etag(multipart.ETag[0], S3Error.MalformedXML),
-        }));
+        }),
+    );
     if (!multiparts.length) {
         dbg.warn('Missing multiparts', req.body);
         throw new S3Error(S3Error.MalformedXML);
@@ -31,7 +34,7 @@ async function post_object_uploadId(req, res) {
         bucket: req.params.bucket,
         key: req.params.key,
         md_conditions: http_utils.get_md_conditions(req),
-        multiparts
+        multiparts,
     });
 
     // TODO: Should be refactored when coding the complete solution
@@ -49,7 +52,7 @@ async function post_object_uploadId(req, res) {
             Key: req.params.key,
             ETag: `"${reply.etag}"`,
             Location: req.originalUrl,
-        }
+        },
     };
 }
 
@@ -57,10 +60,9 @@ function get_bucket_usage(req, res) {
     return {
         bucket: req.params.bucket,
         access_key: req.object_sdk.get_auth_token().access_key,
-        write_count: 1
+        write_count: 1,
     };
 }
-
 
 module.exports = {
     handler: post_object_uploadId,

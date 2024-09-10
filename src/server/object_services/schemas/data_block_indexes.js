@@ -1,7 +1,8 @@
 /* Copyright (C) 2016 NooBaa */
 'use strict';
 
-module.exports = [{
+module.exports = [
+    {
         // update_blocks_of_chunks
         // find_blocks_of_chunks
         // load_blocks_for_chunks()
@@ -11,9 +12,9 @@ module.exports = [{
         options: {
             unique: false,
             partialFilterExpression: {
-                chunk: { $exists: true }
-            }
-        }
+                chunk: { $exists: true },
+            },
+        },
     },
     {
         // iterate_node_chunks()
@@ -25,9 +26,9 @@ module.exports = [{
         options: {
             unique: false,
             partialFilterExpression: {
-                node: { $exists: true }
-            }
-        }
+                node: { $exists: true },
+            },
+        },
     },
     {
         fields: {
@@ -35,10 +36,10 @@ module.exports = [{
         },
         options: {
             unique: false,
-            name: "aggregate_by_delete_dates",
+            name: 'aggregate_by_delete_dates',
             partialFilterExpression: {
-                deleted: { $exists: true }
-            }
-        }
-    }
+                deleted: { $exists: true },
+            },
+        },
+    },
 ];

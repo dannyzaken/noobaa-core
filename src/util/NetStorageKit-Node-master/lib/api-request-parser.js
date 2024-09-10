@@ -15,9 +15,9 @@ class Parser {
                 return callback(null, { message: this.xmlPayload.trim() });
             }
 
-            const parsedResults = _.mergeWith({}, results, function(a, b) {
+            const parsedResults = _.mergeWith({}, results, function (a, b) {
                 const obj = {};
-                Object.keys(b).forEach(function(key) {
+                Object.keys(b).forEach(function (key) {
                     if (key === '$') {
                         obj.attribs = b[key];
                     } else if (_.isArray(b[key])) {
@@ -29,7 +29,6 @@ class Parser {
             return callback(null, parsedResults);
         });
     }
-
 }
 
 module.exports = Parser;

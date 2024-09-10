@@ -12,19 +12,18 @@ const chance = require('chance')();
 const zip_utils = require('../../util/zip_utils');
 const fs_utils = require('../../util/fs_utils');
 
-mocha.describe('zip_utils', function() {
-
+mocha.describe('zip_utils', function () {
     let temp_dir;
 
-    mocha.before(async function() {
+    mocha.before(async function () {
         temp_dir = await fs.promises.mkdtemp('/tmp/test_zip_utils_');
     });
 
-    mocha.after(async function() {
+    mocha.after(async function () {
         if (temp_dir) await fs_utils.folder_delete(temp_dir);
     });
 
-    mocha.it('should zip to buffer', async function() {
+    mocha.it('should zip to buffer', async function () {
         const files = generate_files();
         const zipfile = await zip_utils.zip_from_files(files);
         const buffer = await zip_utils.zip_to_buffer(zipfile);
@@ -34,7 +33,7 @@ mocha.describe('zip_utils', function() {
         check_files(files, files2);
     });
 
-    mocha.it('should zip to file', async function() {
+    mocha.it('should zip to file', async function () {
         const files = generate_files();
         const fname = path.join(temp_dir, 'zip-to-file');
         const zipfile = await zip_utils.zip_from_files(files);
@@ -44,14 +43,21 @@ mocha.describe('zip_utils', function() {
         check_files(files, files2);
     });
 
-    mocha.it('should zip from dir', async function() {
+    mocha.it('should zip from dir', async function () {
         const files = generate_files();
         const dname = path.join(temp_dir, 'zip-from-dir');
         await fs_utils.create_path(dname);
-        await Promise.all(files.map(async file => {
-            await fs_utils.create_path(path.dirname(path.join(dname, file.path)));
-            await fs.promises.writeFile(path.join(dname, file.path), file.data);
-        }));
+        await Promise.all(
+            files.map(async file => {
+                await fs_utils.create_path(
+                    path.dirname(path.join(dname, file.path)),
+                );
+                await fs.promises.writeFile(
+                    path.join(dname, file.path),
+                    file.data,
+                );
+            }),
+        );
         const zipfile = await zip_utils.zip_from_dir(dname);
         const buffer = await zip_utils.zip_to_buffer(zipfile);
         assert(Buffer.isBuffer(buffer));
@@ -60,7 +66,7 @@ mocha.describe('zip_utils', function() {
         check_files(files, files2);
     });
 
-    mocha.it('should unzip to dir', async function() {
+    mocha.it('should unzip to dir', async function () {
         const files = generate_files();
         const files2 = [];
         const dname = path.join(temp_dir, 'unzip-to-dir');
@@ -77,13 +83,11 @@ mocha.describe('zip_utils', function() {
                 if (!entry.stat.isFile()) return;
                 const data = await fs.promises.readFile(entry.path);
                 files2.push({ path: relative_path, data });
-            }
+            },
         });
         check_files(files, files2);
     });
-
 });
-
 
 function generate_files() {
     return [
@@ -96,7 +100,10 @@ function generate_files() {
 
 function check_files(files, files2) {
     const files_sorted = _.sortBy(files, 'path');
-    const files2_sorted = _.sortBy(files2.filter(f => !f.path.endsWith('/')), 'path');
+    const files2_sorted = _.sortBy(
+        files2.filter(f => !f.path.endsWith('/')),
+        'path',
+    );
     const l = Math.max(files_sorted.length, files2_sorted.length);
     for (let i = 0; i < l; ++i) {
         const file = files_sorted[i];
@@ -125,7 +132,7 @@ function random_file_name(len) {
 }
 
 /**
- * @param {string} range 
+ * @param {string} range
  * @returns {string}
  */
 function charset_range(range) {

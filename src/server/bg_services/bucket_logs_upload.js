@@ -18,9 +18,8 @@ const BUCKET_LOGS_PATH = '/log/noobaa_bucket_logs/';
 // naming rules and can not have "_" in its name.
 // https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html
 
-const BUCKET_NAME_DEL = "_";
+const BUCKET_NAME_DEL = '_';
 class BucketLogUploader {
-
     /**
      * @param {{
      *   name: string;
@@ -40,9 +39,15 @@ class BucketLogUploader {
         }
         if (config.BUCKET_LOG_TYPE === 'PERSISTENT') {
             const fs_context = get_process_fs_context();
-            const success = await export_logs_to_target(fs_context, this.noobaa_connection, this.get_bucket_owner_keys);
+            const success = await export_logs_to_target(
+                fs_context,
+                this.noobaa_connection,
+                this.get_bucket_owner_keys,
+            );
             if (success) {
-                dbg.log0('Logs were uploaded succesfully to their target buckets');
+                dbg.log0(
+                    'Logs were uploaded succesfully to their target buckets',
+                );
             } else {
                 dbg.error('Logs upload failed - will retry in the next cycle');
             }
@@ -56,7 +61,9 @@ class BucketLogUploader {
         dbg.log0('Scaning bucket logging objects in ', BUCKET_LOGS_PATH);
         try {
             if (!this.noobaa_connection) {
-                this.noobaa_connection = cloud_utils.set_noobaa_s3_connection(system_store.data.systems[0]);
+                this.noobaa_connection = cloud_utils.set_noobaa_s3_connection(
+                    system_store.data.systems[0],
+                );
             }
             await this.scan();
         } catch (err) {
@@ -67,13 +74,14 @@ class BucketLogUploader {
     }
 
     _can_run() {
-
         if (!system_store.is_finished_initial_load) {
             dbg.log0('system_store did not finish initial load');
             return false;
         }
         const system = system_store.data.systems[0];
-        if (!system || system_utils.system_in_maintenance(system._id)) return false;
+        if (!system || system_utils.system_in_maintenance(system._id)) {
+            return false;
+        }
 
         return true;
     }
@@ -90,8 +98,12 @@ class BucketLogUploader {
         for (const file of log_objects) {
             const source_bucket_name = file.split(BUCKET_NAME_DEL)[0];
             const log_bucket_name = file.split(BUCKET_NAME_DEL)[1];
-            const source_bucket = system_store.data.buckets.find(bucket => bucket.name.unwrap() === source_bucket_name);
-            const log_bucket = system_store.data.buckets.find(bucket => bucket.name.unwrap() === log_bucket_name);
+            const source_bucket = system_store.data.buckets.find(
+                bucket => bucket.name.unwrap() === source_bucket_name,
+            );
+            const log_bucket = system_store.data.buckets.find(
+                bucket => bucket.name.unwrap() === log_bucket_name,
+            );
             buckets.push({
                 source_bucket_name: source_bucket_name,
                 log_bucket_name: log_bucket_name,
@@ -125,21 +137,36 @@ class BucketLogUploader {
      * containing log records for the bucket.
      */
     async upload_bucket_log_objects(log_object) {
-        dbg.log0('Uploading bucket log: ', log_object.log_object_name, ' to log bucket: ', log_object.log_bucket_name);
+        dbg.log0(
+            'Uploading bucket log: ',
+            log_object.log_object_name,
+            ' to log bucket: ',
+            log_object.log_bucket_name,
+        );
 
-        if (!log_object.source_bucket || log_object.source_bucket.deleting || !log_object.source_bucket.logging) {
-            throw new Error('Source Bucket does not exist or logging is not configured');
+        if (
+            !log_object.source_bucket ||
+            log_object.source_bucket.deleting ||
+            !log_object.source_bucket.logging
+        ) {
+            throw new Error(
+                'Source Bucket does not exist or logging is not configured',
+            );
         }
         if (!log_object.log_bucket || log_object.log_bucket.deleting) {
             throw new Error('Log Bucket does not exist or being deleted');
         }
 
-        const noobaa_con = cloud_utils.set_noobaa_s3_connection(system_store.data.systems[0]);
+        const noobaa_con = cloud_utils.set_noobaa_s3_connection(
+            system_store.data.systems[0],
+        );
         if (!noobaa_con) {
             throw new Error('noobaa endpoint connection is not started yet...');
         }
 
-        const log_object_key = log_object.source_bucket.logging.log_prefix + log_object.log_object_name;
+        const log_object_key =
+            log_object.source_bucket.logging.log_prefix +
+            log_object.log_object_name;
         const log_file_path = BUCKET_LOGS_PATH + log_object.log_object_name;
         const params = {
             Bucket: log_object.log_bucket_name,
@@ -150,16 +177,23 @@ class BucketLogUploader {
         try {
             await noobaa_con.putObject(params).promise();
         } catch (err) {
-            dbg.error('Failed to upload bucket log object: ', log_object.log_object_name, ' to bucket: ', log_object.log_bucket_name, ' :', err);
+            dbg.error(
+                'Failed to upload bucket log object: ',
+                log_object.log_object_name,
+                ' to bucket: ',
+                log_object.log_bucket_name,
+                ' :',
+                err,
+            );
         }
     }
 
     /**
-    * Read the directory BUCKET_LOGS_PATH
-    * and get the list of all log objects. After getting
-    * name of the bucket it uploades the log objects to the log bucket
-    * and creates list of buckets and respective log objects.
-    **/
+     * Read the directory BUCKET_LOGS_PATH
+     * and get the list of all log objects. After getting
+     * name of the bucket it uploades the log objects to the log bucket
+     * and creates list of buckets and respective log objects.
+     **/
     async get_and_upload_bucket_log() {
         let log_objects;
         let log_file_path;
@@ -174,15 +208,24 @@ class BucketLogUploader {
             dbg.error('Failed to read directory:', BUCKET_LOGS_PATH, ':', err);
         }
         dbg.log0('Found log objects: ', log_objects);
-        const buckets_and_log_objects = this._get_buckets_and_objects_list(log_objects);
+        const buckets_and_log_objects =
+            this._get_buckets_and_objects_list(log_objects);
         if (buckets_and_log_objects.length > 0) {
             for (const log_object of buckets_and_log_objects) {
                 try {
                     await this.upload_bucket_log_objects(log_object);
                 } catch (err) {
-                    dbg.error('Failed to upload bucket log object: ', log_object.log_object_name, ' to bucket: ', log_object.log_bucket_name, ' :', err);
+                    dbg.error(
+                        'Failed to upload bucket log object: ',
+                        log_object.log_object_name,
+                        ' to bucket: ',
+                        log_object.log_bucket_name,
+                        ' :',
+                        err,
+                    );
                 } finally {
-                    log_file_path = BUCKET_LOGS_PATH + log_object.log_object_name;
+                    log_file_path =
+                        BUCKET_LOGS_PATH + log_object.log_object_name;
                     this._delete_bucket_log_entries(log_file_path);
                 }
             }
@@ -190,15 +233,23 @@ class BucketLogUploader {
     }
 
     async get_bucket_owner_keys(bucket_name) {
-        const bucket = system_store.data.systems[0].buckets_by_name[bucket_name];
+        const bucket =
+            system_store.data.systems[0].buckets_by_name[bucket_name];
         if (!bucket) {
             dbg.error('BUCKET NOT FOUND', bucket_name);
-            throw new RpcError('NO_SUCH_BUCKET', 'No such bucket: ' + bucket_name);
+            throw new RpcError(
+                'NO_SUCH_BUCKET',
+                'No such bucket: ' + bucket_name,
+            );
         }
-        return [{
-            access_key: bucket.owner_account.access_keys[0].access_key.unwrap(),
-            secret_key: bucket.owner_account.access_keys[0].secret_key.unwrap(),
-        }];
+        return [
+            {
+                access_key:
+                    bucket.owner_account.access_keys[0].access_key.unwrap(),
+                secret_key:
+                    bucket.owner_account.access_keys[0].secret_key.unwrap(),
+            },
+        ];
     }
 }
 

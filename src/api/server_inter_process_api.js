@@ -8,7 +8,6 @@
  *
  */
 module.exports = {
-
     $id: 'server_inter_process_api',
 
     methods: {
@@ -17,12 +16,12 @@ module.exports = {
             params: {
                 type: 'object',
                 properties: {
-                    since: { idate: true }
-                }
+                    since: { idate: true },
+                },
             },
             auth: {
-                system: false
-            }
+                system: false,
+            },
         },
 
         update_mongo_connection_string: {
@@ -34,13 +33,13 @@ module.exports = {
                         type: 'string',
                     },
                     skip_load_system_store: {
-                        type: 'boolean'
-                    }
-                }
+                        type: 'boolean',
+                    },
+                },
             },
             auth: {
-                system: false
-            }
+                system: false,
+            },
         },
 
         update_master_change: {
@@ -49,16 +48,16 @@ module.exports = {
                 type: 'object',
                 properties: {
                     is_master: {
-                        type: 'boolean'
+                        type: 'boolean',
                     },
                     master_address: {
                         type: 'string',
                     },
-                }
+                },
             },
             auth: {
-                system: false
-            }
-        }
-    }
+                system: false,
+            },
+        },
+    },
 };

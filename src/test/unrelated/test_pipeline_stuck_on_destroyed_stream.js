@@ -8,8 +8,14 @@ async function main() {
 
     const source = new stream.Readable({
         read() {
-            setTimeout(() => this.push(Buffer.from(`hello world ${process.hrtime.bigint()}}`)), 100);
-        }
+            setTimeout(
+                () =>
+                    this.push(
+                        Buffer.from(`hello world ${process.hrtime.bigint()}}`),
+                    ),
+                100,
+            );
+        },
     });
     source.on('error', err => console.log('*** SOURCE CLOSED', err.message));
 
@@ -19,11 +25,12 @@ async function main() {
     await new Promise(r => setTimeout(r, 100));
 
     // See https://github.com/nodejs/node/issues/36674
-    console.log('*** PIPELINE', source.destroyed ? 'already destroyed !!!' : 'still not destroyed.');
-    const strm = stream.pipeline(
-        source,
-        new stream.PassThrough(),
-        err => console.log('*** PIPELINE:', err),
+    console.log(
+        '*** PIPELINE',
+        source.destroyed ? 'already destroyed !!!' : 'still not destroyed.',
+    );
+    const strm = stream.pipeline(source, new stream.PassThrough(), err =>
+        console.log('*** PIPELINE:', err),
     );
 
     await write_stream_to_file(strm, '/dev/null');
@@ -36,7 +43,10 @@ async function main() {
  */
 async function write_stream_to_file(strm, fname) {
     try {
-        console.log('*** STREAM', strm.destroyed ? 'already destroyed !!!' : 'still not destroyed.');
+        console.log(
+            '*** STREAM',
+            strm.destroyed ? 'already destroyed !!!' : 'still not destroyed.',
+        );
         for await (const buf of strm) {
             console.log('*** READ', buf.toString());
         }

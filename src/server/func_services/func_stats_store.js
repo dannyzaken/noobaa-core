@@ -11,7 +11,6 @@ const func_stats_schema = require('./func_stats_schema');
 const func_stats_indexes = require('./func_stats_indexes');
 const mongo_functions = require('../../util/mongo_functions');
 class FuncStatsStore {
-
     constructor() {
         this._func_stats = db_client.instance().define_collection({
             name: 'func_stats',
@@ -21,7 +20,9 @@ class FuncStatsStore {
     }
 
     static instance() {
-        if (!FuncStatsStore._instance) FuncStatsStore._instance = new FuncStatsStore();
+        if (!FuncStatsStore._instance) {
+            FuncStatsStore._instance = new FuncStatsStore();
+        }
         return FuncStatsStore._instance;
     }
 
@@ -43,35 +44,31 @@ class FuncStatsStore {
     }
 
     async query_func_stats(params) {
-
-        const records = await this._func_stats
-            .mapReduce(
-                mongo_functions.map_func_stats,
-                mongo_functions.reduce_func_stats, {
-                    finalize: mongo_functions.finalize_func_stats,
-                    query: {
-                        system: params.system,
-                        func: params.func,
-                        time: {
-                            $gte: params.since,
-                            $lt: params.till
-                        }
+        const records = await this._func_stats.mapReduce(
+            mongo_functions.map_func_stats,
+            mongo_functions.reduce_func_stats,
+            {
+                finalize: mongo_functions.finalize_func_stats,
+                query: {
+                    system: params.system,
+                    func: params.func,
+                    time: {
+                        $gte: params.since,
+                        $lt: params.till,
                     },
-                    scope: {
-                        step: params.step,
-                        percentiles: params.percentiles,
-                        max_samples: params.max_samples
-                    },
-                    out: {
-                        inline: 1
-                    }
-                }
-            );
+                },
+                scope: {
+                    step: params.step,
+                    percentiles: params.percentiles,
+                    max_samples: params.max_samples,
+                },
+                out: {
+                    inline: 1,
+                },
+            },
+        );
 
-        return records.map(record => [
-            record._id,
-            record.value
-        ]);
+        return records.map(record => [record._id, record.value]);
     }
 }
 

@@ -7,17 +7,14 @@ const cloud_utils = require('../../util/cloud_utils');
 const RandStream = require('../../util/rand_stream');
 
 //TODO:: Remove and use cloud_functions::getAzureConnection ??
-const {
-    AZURE_STORAGE_ACCOUNT_NAME,
-    AZURE_STORAGE_ACCOUNT_KEY
-} = process.env;
+const { AZURE_STORAGE_ACCOUNT_NAME, AZURE_STORAGE_ACCOUNT_KEY } = process.env;
 
 const AzureDefaultConnection = {
     name: 'AZUREConnection',
     endpoint: `https://${AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net`,
-    endpoint_type: "AZURE",
+    endpoint_type: 'AZURE',
     identity: AZURE_STORAGE_ACCOUNT_NAME,
-    secret: AZURE_STORAGE_ACCOUNT_KEY
+    secret: AZURE_STORAGE_ACCOUNT_KEY,
 };
 
 const conn_str = cloud_utils.get_azure_new_connection_string({
@@ -26,9 +23,15 @@ const conn_str = cloud_utils.get_azure_new_connection_string({
     secret_key: AzureDefaultConnection.secret,
 });
 
-const blobService = azure_storage.BlobServiceClient.fromConnectionString(conn_str);
+const blobService =
+    azure_storage.BlobServiceClient.fromConnectionString(conn_str);
 
-async function uploadRandomFileDirectlyToAzure(container, file_name, size, err_handler) {
+async function uploadRandomFileDirectlyToAzure(
+    container,
+    file_name,
+    size,
+    err_handler,
+) {
     const message = `Uploading random file ${file_name} to azure container ${container}`;
     console.log(message);
     const streamFile = new RandStream(size, {
@@ -37,10 +40,19 @@ async function uploadRandomFileDirectlyToAzure(container, file_name, size, err_h
     const options = {
         storeBlobContentMD5: true,
         useTransactionalMD5: true,
-        transactionalContentMD5: true
+        transactionalContentMD5: true,
     };
     try {
-        await P.fromCallback(callback => blobService.createBlockBlobFromStream(container, file_name, streamFile, size, options, callback));
+        await P.fromCallback(callback =>
+            blobService.createBlockBlobFromStream(
+                container,
+                file_name,
+                streamFile,
+                size,
+                options,
+                callback,
+            ),
+        );
     } catch (err) {
         _handle_error(err, message, err_handler);
     }
@@ -50,11 +62,13 @@ async function getPropertyBlob(container, file_name, err_handler) {
     const message = `Getting md5 for ${file_name} directly from azure container: ${container}`;
     console.log(message);
     try {
-        const blobProperties = await P.fromCallback(callback => blobService.getBlobProperties(container, file_name, callback));
+        const blobProperties = await P.fromCallback(callback =>
+            blobService.getBlobProperties(container, file_name, callback),
+        );
         console.log(JSON.stringify(blobProperties));
         return {
             md5: blobProperties.contentSettings.contentMD5,
-            size: blobProperties.contentLength
+            size: blobProperties.contentLength,
         };
     } catch (err) {
         _handle_error(err, message, err_handler);
@@ -65,7 +79,9 @@ async function getListFilesAzure(bucket, err_handler) {
     const message = `Getting list of files from azure container for ${bucket}`;
     console.log(message);
     try {
-        const blobs = await P.fromCallback(callback => blobService.listBlobsSegmented(bucket, null, callback));
+        const blobs = await P.fromCallback(callback =>
+            blobService.listBlobsSegmented(bucket, null, callback),
+        );
         return blobs.entries.map(blob => blob.name);
     } catch (err) {
         _handle_error(err, message, err_handler);

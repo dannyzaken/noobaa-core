@@ -8,11 +8,9 @@
  *
  */
 module.exports = {
-
     $id: 'hosted_agents_api',
 
     methods: {
-
         create_agent: {
             method: 'POST',
             params: {
@@ -23,13 +21,13 @@ module.exports = {
                         type: 'string',
                     },
                     demo: {
-                        type: 'boolean'
+                        type: 'boolean',
                     },
                     access_keys: {
-                        $ref: 'common_api#/definitions/access_keys'
+                        $ref: 'common_api#/definitions/access_keys',
                     },
                     scale: {
-                        type: 'integer'
+                        type: 'integer',
                     },
                     storage_limit: {
                         type: 'integer',
@@ -41,35 +39,44 @@ module.exports = {
                             endpoint: {
                                 type: 'string',
                             },
-                            target_bucket: { $ref: 'common_api#/definitions/bucket_name' },
+                            target_bucket: {
+                                $ref: 'common_api#/definitions/bucket_name',
+                            },
                             access_keys: {
                                 type: 'object',
-                                required: ['access_key', 'secret_key', 'account_id'],
+                                required: [
+                                    'access_key',
+                                    'secret_key',
+                                    'account_id',
+                                ],
                                 properties: {
-                                    access_key: { $ref: 'common_api#/definitions/access_key' },
-                                    secret_key: { $ref: 'common_api#/definitions/secret_key' },
+                                    access_key: {
+                                        $ref: 'common_api#/definitions/access_key',
+                                    },
+                                    secret_key: {
+                                        $ref: 'common_api#/definitions/secret_key',
+                                    },
                                     account_id: {
-                                        type: 'string'
-                                    }
-                                }
+                                        type: 'string',
+                                    },
+                                },
                             },
                             endpoint_type: {
-                                $ref: 'common_api#/definitions/endpoint_type'
-                            }
+                                $ref: 'common_api#/definitions/endpoint_type',
+                            },
                         },
                     },
 
                     mongo_info: {
                         type: 'object',
                         additionalProperties: true,
-                        properties: {}
-                    }
-                }
+                        properties: {},
+                    },
+                },
             },
             auth: {
-                system: false
-            }
-
+                system: false,
+            },
         },
 
         create_pool_agent: {
@@ -80,12 +87,12 @@ module.exports = {
                 properties: {
                     pool_name: {
                         type: 'string',
-                    }
-                }
+                    },
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         update_credentials: {
@@ -98,16 +105,16 @@ module.exports = {
                         type: 'array',
                         items: {
                             type: 'string',
-                        }
+                        },
                     },
                     credentials: {
                         $ref: 'common_api#/definitions/access_keys',
-                    }
-                }
+                    },
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         update_storage_limit: {
@@ -120,16 +127,16 @@ module.exports = {
                         type: 'array',
                         items: {
                             type: 'string',
-                        }
+                        },
                     },
                     storage_limit: {
-                        $ref: 'common_api#/definitions/bigint'
-                    }
-                }
+                        $ref: 'common_api#/definitions/bigint',
+                    },
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         remove_agent: {
@@ -140,14 +147,13 @@ module.exports = {
                 properties: {
                     name: {
                         type: 'string',
-                    }
-                }
+                    },
+                },
             },
             auth: {
-                system: false
-            }
+                system: false,
+            },
         },
-
 
         remove_pool_agent: {
             method: 'POST',
@@ -158,28 +164,27 @@ module.exports = {
                         type: 'string',
                     },
                     pool_name: {
-                        type: 'string'
-                    }
-                }
+                        type: 'string',
+                    },
+                },
             },
             auth: {
-                system: false
-            }
+                system: false,
+            },
         },
 
         start: {
             method: 'POST',
             auth: {
-                system: false
-            }
+                system: false,
+            },
         },
 
         stop: {
             method: 'POST',
             auth: {
-                system: false
-            }
+                system: false,
+            },
         },
     },
-
 };

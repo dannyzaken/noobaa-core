@@ -29,13 +29,8 @@
 module.exports = {
     $id: 'data_chunk_schema',
     type: 'object',
-    required: [
-        '_id',
-        'system',
-        'size',
-    ],
+    required: ['_id', 'system', 'size'],
     properties: {
-
         // identification
         _id: { objectid: true },
         system: { objectid: true },
@@ -86,9 +81,8 @@ module.exports = {
                     parity_index: { type: 'integer' },
                     lrc_index: { type: 'integer' },
                     digest: { binary: true },
-                }
-            }
+                },
+            },
         },
-
-    }
+    },
 };

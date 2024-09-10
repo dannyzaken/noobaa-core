@@ -7,9 +7,7 @@ const RpcError = require('../../../rpc/rpc_error');
 const config = require('../../../../config');
 
 describe('schema validation NC NSFS config', () => {
-
     describe('config with all needed properties', () => {
-
         it('nsfs_config - valid simple', () => {
             const config_data = {
                 ALLOW_HTTP: true,
@@ -39,7 +37,7 @@ describe('schema validation NC NSFS config', () => {
                 S3_SERVER_IP_WHITELIST: [
                     '127.0.0.1',
                     '0000:0000:0000:0000:0000:ffff:7f00:0002',
-                    '::ffff:7f00:3'
+                    '::ffff:7f00:3',
                 ],
                 NSFS_DIR_CACHE_MAX_DIR_SIZE: 268435456,
                 NSFS_DIR_CACHE_MAX_TOTAL_SIZE: 805306368,
@@ -49,12 +47,12 @@ describe('schema validation NC NSFS config', () => {
     });
 
     describe('config with wrong types', () => {
-
         it('nsfs_config invalid ALLOW_HTTP', () => {
             const config_data = {
                 ALLOW_HTTP: 123, // number instead of boolean
             };
-            const reason = 'Test should have failed because of wrong type ' +
+            const reason =
+                'Test should have failed because of wrong type ' +
                 'ALLOW_HTTP with number (instead of boolean)';
             const message = 'must be boolean';
             assert_validation(config_data, reason, message);
@@ -64,7 +62,8 @@ describe('schema validation NC NSFS config', () => {
             const config_data = {
                 ENDPOINT_FORKS: true, // boolean instead of number
             };
-            const reason = 'Test should have failed because of wrong type ' +
+            const reason =
+                'Test should have failed because of wrong type ' +
                 'ENDPOINT_FORKS with boolean (instead of number)';
             const message = 'must be number';
             assert_validation(config_data, reason, message);
@@ -74,7 +73,8 @@ describe('schema validation NC NSFS config', () => {
             const config_data = {
                 NSFS_NC_STORAGE_BACKEND: 'INVALID_FS_BACKEND', // not part of definition of fs_backend
             };
-            const reason = 'Test should have failed because of wrong type ' +
+            const reason =
+                'Test should have failed because of wrong type ' +
                 'NSFS_NC_STORAGE_BACKEND with boolean (instead of number)';
             const message = 'must be equal to one of the allowed values';
             assert_validation(config_data, reason, message);
@@ -84,7 +84,8 @@ describe('schema validation NC NSFS config', () => {
             const config_data = {
                 NSFS_NC_CONFIG_DIR_BACKEND: 123, // number instead of string
             };
-            const reason = 'Test should have failed because of wrong type ' +
+            const reason =
+                'Test should have failed because of wrong type ' +
                 'NSFS_NC_CONFIG_DIR_BACKEND with number (instead of string)';
             const message = 'must be string';
             assert_validation(config_data, reason, message);
@@ -94,7 +95,8 @@ describe('schema validation NC NSFS config', () => {
             const config_data = {
                 NSFS_DIR_CACHE_MAX_DIR_SIZE: 'not a number', // string instead of number
             };
-            const reason = 'Test should have failed because of wrong type ' +
+            const reason =
+                'Test should have failed because of wrong type ' +
                 'NSFS_DIR_CACHE_MAX_DIR_SIZE with number (instead of string)';
             const message = 'must be number';
             assert_validation(config_data, reason, message);
@@ -104,7 +106,8 @@ describe('schema validation NC NSFS config', () => {
             const config_data = {
                 NSFS_DIR_CACHE_MAX_TOTAL_SIZE: 'not a number', // string instead of number
             };
-            const reason = 'Test should have failed because of wrong type ' +
+            const reason =
+                'Test should have failed because of wrong type ' +
                 'NSFS_DIR_CACHE_MAX_TOTAL_SIZE with number (instead of string)';
             const message = 'must be number';
             assert_validation(config_data, reason, message);
@@ -114,7 +117,8 @@ describe('schema validation NC NSFS config', () => {
             const config_data = {
                 ENABLE_DEV_RANDOM_SEED: 'not boolean', // string instead of boolean
             };
-            const reason = 'Test should have failed because of wrong type ' +
+            const reason =
+                'Test should have failed because of wrong type ' +
                 'ENABLE_DEV_RANDOM_SEED with string (instead of boolean)';
             const message = 'must be boolean';
             assert_validation(config_data, reason, message);
@@ -124,7 +128,8 @@ describe('schema validation NC NSFS config', () => {
             const config_data = {
                 NC_MASTER_KEYS_GET_EXECUTABLE: false, // boolean instead of string
             };
-            const reason = 'Test should have failed because of wrong type ' +
+            const reason =
+                'Test should have failed because of wrong type ' +
                 'NC_MASTER_KEYS_GET_EXECUTABLE with boolean (instead of string)';
             const message = 'must be string';
             assert_validation(config_data, reason, message);
@@ -134,7 +139,8 @@ describe('schema validation NC NSFS config', () => {
             const config_data = {
                 NC_MASTER_KEYS_PUT_EXECUTABLE: false, // boolean instead of string
             };
-            const reason = 'Test should have failed because of wrong type ' +
+            const reason =
+                'Test should have failed because of wrong type ' +
                 'NC_MASTER_KEYS_PUT_EXECUTABLE with boolean (instead of string)';
             const message = 'must be string';
             assert_validation(config_data, reason, message);
@@ -144,9 +150,11 @@ describe('schema validation NC NSFS config', () => {
             const config_data = {
                 NC_MASTER_KEYS_STORE_TYPE: 'not_file_nor_script', // unallowed value, string type
             };
-            const reason = 'Test should have failed because of unallowed value ' +
+            const reason =
+                'Test should have failed because of unallowed value ' +
                 'NC_MASTER_KEYS_STORE_TYPE with boolean (instead of string)';
-            const message = 'must be equal to one of the allowed values | {"allowedValues":["file","executable"]}';
+            const message =
+                'must be equal to one of the allowed values | {"allowedValues":["file","executable"]}';
             assert_validation(config_data, reason, message);
         });
 
@@ -154,7 +162,8 @@ describe('schema validation NC NSFS config', () => {
             const config_data = {
                 NC_MASTER_KEYS_STORE_TYPE: false, // unallowed value, boolean type
             };
-            const reason = 'Test should have failed because of wrong type ' +
+            const reason =
+                'Test should have failed because of wrong type ' +
                 'NC_MASTER_KEYS_STORE_TYPE with boolean (instead of string)';
             const message = 'must be string';
             assert_validation(config_data, reason, message);
@@ -164,7 +173,8 @@ describe('schema validation NC NSFS config', () => {
             const config_data = {
                 NC_MASTER_KEYS_FILE_LOCATION: false, // boolean instead of string
             };
-            const reason = 'Test should have failed because of wrong type ' +
+            const reason =
+                'Test should have failed because of wrong type ' +
                 'NC_MASTER_KEYS_FILE_LOCATION with boolean (instead of string)';
             const message = 'must be string';
             assert_validation(config_data, reason, message);
@@ -174,7 +184,8 @@ describe('schema validation NC NSFS config', () => {
             const config_data = {
                 VIRTUAL_HOSTS: 5, // number instead of string
             };
-            const reason = 'Test should have failed because of wrong type ' +
+            const reason =
+                'Test should have failed because of wrong type ' +
                 'VIRTUAL_HOSTS with number (instead of string)';
             const message = 'must be string';
             assert_validation(config_data, reason, message);
@@ -182,57 +193,59 @@ describe('schema validation NC NSFS config', () => {
 
         it('nsfs_config valid config virtual hosts', () => {
             const config_data = {
-                VIRTUAL_HOSTS: 'my.virtual.domain1 my.virtual.domain2'
+                VIRTUAL_HOSTS: 'my.virtual.domain1 my.virtual.domain2',
             };
             nsfs_schema_utils.validate_nsfs_config_schema(config_data);
         });
 
         it('nsfs_config invalid config hostname - invalid configuration in hostname', () => {
-            const hostname = "hostname1";
+            const hostname = 'hostname1';
             const config_data = {
-                "ALLOW_HTTP": false,
+                ALLOW_HTTP: false,
                 host_customization: {
                     [hostname]: {
-                        "ALLOW_HTTP": 'str'
-                    }
-                }
+                        ALLOW_HTTP: 'str',
+                    },
+                },
             };
-            const reason = 'Test should have failed because of wrong type ' +
+            const reason =
+                'Test should have failed because of wrong type ' +
                 'host_customization - ALLOW HTTP must be boolean';
             const message = `must be boolean | {"type":"boolean"} | "/host_customization/${hostname}/ALLOW_HTTP"`;
             assert_validation(config_data, reason, message);
         });
 
         it('nsfs_config invalid config hostname - invalid hostname - should succeed', () => {
-            const invalid_hostname = "not.$a.valid!.hostname";
+            const invalid_hostname = 'not.$a.valid!.hostname';
             const config_data = {
-                "ALLOW_HTTP": false,
+                ALLOW_HTTP: false,
                 host_customization: {
                     [invalid_hostname]: {
-                        "ALLOW_HTTP": true
-                    }
-                }
+                        ALLOW_HTTP: true,
+                    },
+                },
             };
             nsfs_schema_utils.validate_nsfs_config_schema(config_data);
         });
 
         it('nsfs_config valid config hostname', () => {
             const config_data = {
-                "ALLOW_HTTP": false,
+                ALLOW_HTTP: false,
                 host_customization: {
-                    "a.valid-valid.hostname": {
-                        "ALLOW_HTTP": true
-                    }
-                }
+                    'a.valid-valid.hostname': {
+                        ALLOW_HTTP: true,
+                    },
+                },
             };
             nsfs_schema_utils.validate_nsfs_config_schema(config_data);
         });
 
         it('nsfs_config invalid process title', () => {
             const config_data = {
-                "ENDPOINT_PROCESS_TITLE": false,
+                ENDPOINT_PROCESS_TITLE: false,
             };
-            const reason = 'Test should have failed because of wrong type ' +
+            const reason =
+                'Test should have failed because of wrong type ' +
                 'ENDPOINT_PROCESS_TITLE must be string';
             const message = `must be string | {"type":"string"} | "/ENDPOINT_PROCESS_TITLE"`;
             assert_validation(config_data, reason, message);
@@ -240,14 +253,14 @@ describe('schema validation NC NSFS config', () => {
 
         it('nsfs_config valid process title', () => {
             const config_data = {
-                "ENDPOINT_PROCESS_TITLE": 'noobaa_60',
+                ENDPOINT_PROCESS_TITLE: 'noobaa_60',
             };
             nsfs_schema_utils.validate_nsfs_config_schema(config_data);
         });
 
         it('nsfs_config valid and empty process title', () => {
             const config_data = {
-                "ENDPOINT_PROCESS_TITLE": '',
+                ENDPOINT_PROCESS_TITLE: '',
             };
             nsfs_schema_utils.validate_nsfs_config_schema(config_data);
         });
@@ -272,8 +285,9 @@ describe('schema validation NC NSFS config', () => {
                 NC_DISABLE_SCHEMA_CHECK: false,
                 ENABLE_DEV_RANDOM_SEED: 'not boolean', // string instead of boolean
             };
-            const reason = 'Test should have failed because of wrong type ' +
-            'ENABLE_DEV_RANDOM_SEED must be boolean';
+            const reason =
+                'Test should have failed because of wrong type ' +
+                'ENABLE_DEV_RANDOM_SEED must be boolean';
             const message = `must be boolean | {"type":"boolean"} | "/ENABLE_DEV_RANDOM_SEED"`;
             assert_validation(config_data, reason, message);
         });
@@ -291,8 +305,9 @@ describe('schema validation NC NSFS config', () => {
             const config_data = {
                 ENABLE_DEV_RANDOM_SEED: 'not boolean', // string instead of boolean
             };
-            const reason = 'Test should have failed because of wrong type ' +
-            'ENABLE_DEV_RANDOM_SEED must be boolean';
+            const reason =
+                'Test should have failed because of wrong type ' +
+                'ENABLE_DEV_RANDOM_SEED must be boolean';
             const message = `must be boolean | {"type":"boolean"} | "/ENABLE_DEV_RANDOM_SEED"`;
             assert_validation(config_data, reason, message);
         });
@@ -312,8 +327,9 @@ describe('schema validation NC NSFS config', () => {
                 NC_DISABLE_SCHEMA_CHECK: false,
                 ENABLE_DEV_RANDOM_SEED: 'not boolean', // string instead of boolean
             };
-            const reason = 'Test should have failed because of wrong type ' +
-            'ENABLE_DEV_RANDOM_SEED must be boolean';
+            const reason =
+                'Test should have failed because of wrong type ' +
+                'ENABLE_DEV_RANDOM_SEED must be boolean';
             const message = `must be boolean | {"type":"boolean"} | "/ENABLE_DEV_RANDOM_SEED"`;
             assert_validation(config_data, reason, message);
         });
@@ -323,8 +339,9 @@ describe('schema validation NC NSFS config', () => {
             const config_data = {
                 NC_DISABLE_SCHEMA_CHECK: 'bla',
             };
-            const reason = 'Test should have failed because of wrong type ' +
-            'NC_DISABLE_SCHEMA_CHECK must be boolean';
+            const reason =
+                'Test should have failed because of wrong type ' +
+                'NC_DISABLE_SCHEMA_CHECK must be boolean';
             const message = `must be boolean | {"type":"boolean"} | "/NC_DISABLE_SCHEMA_CHECK"`;
             assert_validation(config_data, reason, message);
         });
@@ -334,8 +351,9 @@ describe('schema validation NC NSFS config', () => {
             const config_data = {
                 NC_DISABLE_SCHEMA_CHECK: 'bla',
             };
-            const reason = 'Test should have failed because of wrong type ' +
-            'NC_DISABLE_SCHEMA_CHECK must be boolean';
+            const reason =
+                'Test should have failed because of wrong type ' +
+                'NC_DISABLE_SCHEMA_CHECK must be boolean';
             const message = `must be boolean | {"type":"boolean"} | "/NC_DISABLE_SCHEMA_CHECK"`;
             assert_validation(config_data, reason, message);
         });
@@ -345,8 +363,9 @@ describe('schema validation NC NSFS config', () => {
             const config_data = {
                 LOG_TO_SYSLOG_ENABLED: 'bla',
             };
-            const reason = 'Test should have failed because of wrong type ' +
-            'LOG_TO_SYSLOG_ENABLED must be boolean';
+            const reason =
+                'Test should have failed because of wrong type ' +
+                'LOG_TO_SYSLOG_ENABLED must be boolean';
             const message = `must be boolean | {"type":"boolean"} | "/LOG_TO_SYSLOG_ENABLED"`;
             assert_validation(config_data, reason, message);
         });
@@ -356,8 +375,9 @@ describe('schema validation NC NSFS config', () => {
             const config_data = {
                 LOG_TO_STDERR_ENABLED: 'bla',
             };
-            const reason = 'Test should have failed because of wrong type ' +
-            'LOG_TO_STDERR_ENABLED must be boolean';
+            const reason =
+                'Test should have failed because of wrong type ' +
+                'LOG_TO_STDERR_ENABLED must be boolean';
             const message = `must be boolean | {"type":"boolean"} | "/LOG_TO_STDERR_ENABLED"`;
             assert_validation(config_data, reason, message);
         });
@@ -371,7 +391,7 @@ function assert_validation(config_to_validate, reason, basic_message) {
     } catch (err) {
         expect(err).toBeInstanceOf(RpcError);
         expect(err).toHaveProperty('message');
-        expect((err.message).includes(basic_message)).toBe(true);
+        expect(err.message.includes(basic_message)).toBe(true);
     }
 }
 

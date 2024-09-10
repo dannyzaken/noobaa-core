@@ -40,14 +40,13 @@ const RPC_BUFFERS = RpcRequest.RPC_BUFFERS;
  *
  */
 class RPC extends EventEmitter {
-
     /**
-     * 
+     *
      * @param {{
      *  schema?: RpcSchema,
      *  router?: object,
      *  api_routes?: object,
-     * }} options 
+     * }} options
      */
     constructor(options) {
         super();
@@ -76,9 +75,7 @@ class RPC extends EventEmitter {
      *
      */
     new_client(options) {
-        return this.schema ?
-            this.schema.new_client(this, options) :
-            null;
+        return this.schema ? this.schema.new_client(this, options) : null;
     }
 
     /**
@@ -93,27 +90,37 @@ class RPC extends EventEmitter {
 
         _.each(api.methods, (method_api, method_name) => {
             const srv = api.$id + '.' + method_name;
-            assert(!this._services[srv],
-                'RPC register_service: service already registered ' + srv);
-            const func = server[method_name] ||
-                (options.allow_missing_methods && (() => P.reject({
-                    data: 'RPC register_service:' +
-                        ' missing method implementation - ' +
-                        method_api.fullname
-                })));
-            assert.strictEqual(typeof(func), 'function',
+            assert(
+                !this._services[srv],
+                'RPC register_service: service already registered ' + srv,
+            );
+            const func =
+                server[method_name] ||
+                (options.allow_missing_methods &&
+                    (() =>
+                        P.reject({
+                            data:
+                                'RPC register_service:' +
+                                ' missing method implementation - ' +
+                                method_api.fullname,
+                        })));
+            assert.strictEqual(
+                typeof func,
+                'function',
                 'RPC register_service: server method should be a function - ' +
-                method_api.fullname + '. Is of type ' + typeof(func));
+                    method_api.fullname +
+                    '. Is of type ' +
+                    typeof func,
+            );
 
             this._services[srv] = {
                 api: api,
                 server: server,
                 options: options,
                 method_api: method_api,
-                server_func: (...args) => func.apply(server, args)
+                server_func: (...args) => func.apply(server, args),
             };
         });
-
 
         //Service was registered, call _init (if exists)
         if (server._init) {
@@ -129,27 +136,37 @@ class RPC extends EventEmitter {
 
         _.each(api.methods, (method_api, method_name) => {
             const srv = api.$id + '.' + method_name;
-            assert(this._services[srv],
-                'RPC replace_service: service is not registered ' + srv);
-            const func = server[method_name] ||
-                (options.allow_missing_methods && (() => P.reject({
-                    data: 'RPC replace_service:' +
-                        ' missing method implementation - ' +
-                        method_api.fullname
-                })));
-            assert.strictEqual(typeof(func), 'function',
+            assert(
+                this._services[srv],
+                'RPC replace_service: service is not registered ' + srv,
+            );
+            const func =
+                server[method_name] ||
+                (options.allow_missing_methods &&
+                    (() =>
+                        P.reject({
+                            data:
+                                'RPC replace_service:' +
+                                ' missing method implementation - ' +
+                                method_api.fullname,
+                        })));
+            assert.strictEqual(
+                typeof func,
+                'function',
                 'RPC replace_service: server method should be a function - ' +
-                method_api.fullname + '. Is of type ' + typeof(func));
+                    method_api.fullname +
+                    '. Is of type ' +
+                    typeof func,
+            );
 
             this._services[srv] = {
                 api: api,
                 server: server,
                 options: options,
                 method_api: method_api,
-                server_func: (...args) => func.apply(server, args)
+                server_func: (...args) => func.apply(server, args),
             };
         });
-
 
         //Service was registered, call _init (if exists)
         if (server._init) {
@@ -199,7 +216,10 @@ class RPC extends EventEmitter {
             }
 
             if (this._disconnected_state) {
-                throw new RpcError('RPC_DISCONNECTED_STATE', 'RPC_DISCONNECTED_STATE - failing request ' + req.base_info);
+                throw new RpcError(
+                    'RPC_DISCONNECTED_STATE',
+                    'RPC_DISCONNECTED_STATE - failing request ' + req.base_info,
+                );
             }
             if (!this._disable_validation) {
                 req.method_api.validate_params(req.params, 'CLIENT');
@@ -207,18 +227,23 @@ class RPC extends EventEmitter {
 
             // assign a connection to the request
             const conn = this._assign_connection(req, options);
-            if (!conn) { // proxying
+            if (!conn) {
+                // proxying
                 return this._proxy(api, method_api, params, options);
             }
 
             dbg.log1('RPC._request: START', req.base_info);
 
             // connect the connection
-            await P.timeout(options.timeout,
+            await P.timeout(
+                options.timeout,
                 req.connection.connect(),
-                () => new RpcError('RPC_REQUEST_TIMEOUT', 'RPC REQUEST TIMEOUT while connecting' + req.base_info)
+                () =>
+                    new RpcError(
+                        'RPC_REQUEST_TIMEOUT',
+                        'RPC REQUEST TIMEOUT while connecting' + req.base_info,
+                    ),
             );
-
 
             dbg.log1('RPC._request: SEND', req.base_info);
 
@@ -227,16 +252,28 @@ class RPC extends EventEmitter {
             }
 
             // send request over the connection
-            await P.timeout(options.timeout,
+            await P.timeout(
+                options.timeout,
                 req.connection.send(req.make_request_message(), req),
-                () => new RpcError('RPC_REQUEST_TIMEOUT', 'RPC REQUEST TIMEOUT while sending request ' + req.base_info)
+                () =>
+                    new RpcError(
+                        'RPC_REQUEST_TIMEOUT',
+                        'RPC REQUEST TIMEOUT while sending request ' +
+                            req.base_info,
+                    ),
             );
 
             dbg.log1('RPC._request: WAIT', req.base_info);
 
-            const reply = await P.timeout(options.timeout,
+            const reply = await P.timeout(
+                options.timeout,
                 req._response_defer.promise,
-                () => new RpcError('RPC_REQUEST_TIMEOUT', 'RPC REQUEST TIMEOUT while waiting for response ' + req.base_info)
+                () =>
+                    new RpcError(
+                        'RPC_REQUEST_TIMEOUT',
+                        'RPC REQUEST TIMEOUT while waiting for response ' +
+                            req.base_info,
+                    ),
             );
 
             if (!this._disable_validation) {
@@ -244,31 +281,39 @@ class RPC extends EventEmitter {
             }
 
             if (this._request_logger) {
-                this._request_logger('RPC REQUEST REPLY', req.srv, '==>', reply);
+                this._request_logger(
+                    'RPC REQUEST REPLY',
+                    req.srv,
+                    '==>',
+                    reply,
+                );
             }
 
             dbg.log1('RPC._request: DONE', req.base_info, req.took_info);
 
             this._update_flight_avg(req.took_flight);
             if (this.should_emit_stats) {
-                this.emit('stats', this._aggregated_flight_time / this._served_requests);
+                this.emit(
+                    'stats',
+                    this._aggregated_flight_time / this._served_requests,
+                );
             }
 
             // return_rpc_req mode allows callers to get back the request
             // instead of a bare reply, and the reply is in req.reply
             return options.return_rpc_req ? req : reply;
-
         } catch (err) {
-
             if (this._request_logger) {
                 this._request_logger('RPC REQUEST CATCH', req.srv, '==>', err);
             }
 
-            dbg.error('RPC._request: response ERROR',
+            dbg.error(
+                'RPC._request: response ERROR',
                 req.base_info,
-                'params', util.inspect(params, true, null, true),
+                'params',
+                util.inspect(params, true, null, true),
                 req.took_info,
-                err.stack || err
+                err.stack || err,
             );
 
             if (this.should_emit_request_errors) {
@@ -276,12 +321,10 @@ class RPC extends EventEmitter {
             }
 
             throw err;
-
         } finally {
             this._release_connection(req);
         }
     }
-
 
     /**
      * @param {RpcBaseConnection} conn
@@ -298,7 +341,10 @@ class RPC extends EventEmitter {
         const service = this._services[req.srv];
         if (!service) {
             dbg.warn('RPC._on_request: NO_SUCH_RPC_SERVICE', req.base_info);
-            req.error = new RpcError('NO_SUCH_RPC_SERVICE', 'No such RPC Service ' + req.srv);
+            req.error = new RpcError(
+                'NO_SUCH_RPC_SERVICE',
+                'No such RPC Service ' + req.srv,
+            );
             req.error.stack = ''; // don't print this stack
             await this._send_response(conn, req);
             return;
@@ -309,7 +355,10 @@ class RPC extends EventEmitter {
             req._set_request(msg, service.api, service.method_api);
 
             if (this._disconnected_state) {
-                throw new RpcError('RPC_DISCONNECTED_STATE', 'RPC_DISCONNECTED_STATE - failing request ' + req.base_info);
+                throw new RpcError(
+                    'RPC_DISCONNECTED_STATE',
+                    'RPC_DISCONNECTED_STATE - failing request ' + req.base_info,
+                );
             }
             if (!this._disable_validation) {
                 req.method_api.validate_params(req.params, 'SERVER');
@@ -353,15 +402,22 @@ class RPC extends EventEmitter {
 
             dbg.log3('RPC._on_request: COMPLETED', req.base_info);
             await this._send_response(conn, req);
-
         } catch (err) {
-            console.error('RPC._on_request: ERROR', req.base_info, err.stack || err);
+            console.error(
+                'RPC._on_request: ERROR',
+                req.base_info,
+                err.stack || err,
+            );
             // propagate rpc errors from inner rpc client calls (using err.rpc_code)
             // set default internal error if no other error was specified
             if (err instanceof RpcError) {
                 req.error = err;
             } else {
-                req.error = new RpcError(err.rpc_code || 'INTERNAL', err.message, { retryable: true });
+                req.error = new RpcError(
+                    err.rpc_code || 'INTERNAL',
+                    err.message,
+                    { retryable: true },
+                );
                 req.error.stack = ''; // don't print this stack
             }
             await this._send_response(conn, req);
@@ -377,7 +433,11 @@ class RPC extends EventEmitter {
             await conn.send(req.make_response_message(), req);
         } catch (err) {
             const desc = `srv ${req.srv} reqid ${req.reqid} connid ${conn.connid}`;
-            console.error('RPC._on_request: send response message ERROR', desc, err.stack || err);
+            console.error(
+                'RPC._on_request: send response message ERROR',
+                desc,
+                err.stack || err,
+            );
         }
     }
 
@@ -388,34 +448,46 @@ class RPC extends EventEmitter {
      * @param {RpcMessage} msg
      */
     _on_response(conn, msg) {
-        dbg.log1('RPC._on_response:',
-            'reqid', msg.body.reqid,
-            'connid', conn.connid);
+        dbg.log1(
+            'RPC._on_response:',
+            'reqid',
+            msg.body.reqid,
+            'connid',
+            conn.connid,
+        );
 
         const req = conn._sent_requests.get(msg.body.reqid);
         if (!req) {
-            dbg.warn('RPC._on_response: GOT RESPONSE BUT NO REQUEST',
-                'reqid', msg.body.reqid,
-                'connid', conn.connid);
+            dbg.warn(
+                'RPC._on_response: GOT RESPONSE BUT NO REQUEST',
+                'reqid',
+                msg.body.reqid,
+                'connid',
+                conn.connid,
+            );
             return;
         }
 
         const is_pending = req._set_response(msg);
         if (!is_pending) {
-            dbg.warn('RPC._on_response: GOT RESPONSE BUT REQUEST NOT PENDING',
-                'reqid', msg.body.reqid,
-                'connid', conn.connid);
+            dbg.warn(
+                'RPC._on_response: GOT RESPONSE BUT REQUEST NOT PENDING',
+                'reqid',
+                msg.body.reqid,
+                'connid',
+                conn.connid,
+            );
         }
     }
 
-
     /**
-     * @param {RpcRequest} req 
+     * @param {RpcRequest} req
      */
     _get_remote_address(req, options) {
         let address = options.address;
         if (!address) {
-            const domain = options.domain || this.api_routes[req.api.$id] || 'default';
+            const domain =
+                options.domain || this.api_routes[req.api.$id] || 'default';
             address = this.router[domain];
             dbg.log3('RPC ROUTER', domain, '=>', address);
         }
@@ -440,7 +512,9 @@ class RPC extends EventEmitter {
             conn = this._get_connection(addr_url, req.srv);
         }
         if (conn) {
-            if (options.connect_timeout) conn._connect_timeout_ms = options.connect_timeout;
+            if (options.connect_timeout) {
+                conn._connect_timeout_ms = options.connect_timeout;
+            }
             req.connection = conn;
             req.reqid = conn._alloc_reqid();
             conn._sent_requests.set(req.reqid, req);
@@ -460,7 +534,6 @@ class RPC extends EventEmitter {
         }
     }
 
-
     /**
      * @returns {RpcBaseConnection}
      */
@@ -469,34 +542,49 @@ class RPC extends EventEmitter {
 
         if (conn) {
             if (conn.is_closed()) {
-                dbg.log0('RPC _get_connection: remove stale connection',
-                    'address', addr_url.href,
-                    'srv', srv,
-                    'connid', conn.connid);
+                dbg.log0(
+                    'RPC _get_connection: remove stale connection',
+                    'address',
+                    addr_url.href,
+                    'srv',
+                    srv,
+                    'connid',
+                    conn.connid,
+                );
                 this._connection_by_address.delete(addr_url.href);
                 conn = null;
             } else {
-                dbg.log2('RPC _get_connection: existing',
-                    'address', addr_url.href,
-                    'srv', srv,
-                    'connid', conn.connid);
+                dbg.log2(
+                    'RPC _get_connection: existing',
+                    'address',
+                    addr_url.href,
+                    'srv',
+                    srv,
+                    'connid',
+                    conn.connid,
+                );
             }
         }
 
         if (!conn) {
-            if (this.n2n_proxy &&
+            if (
+                this.n2n_proxy &&
                 !this.n2n_agent &&
-                addr_url.protocol === 'n2n:') {
-                dbg.log2('RPC N2N PROXY',
-                    'address', addr_url.href,
-                    'srv', srv);
+                addr_url.protocol === 'n2n:'
+            ) {
+                dbg.log2('RPC N2N PROXY', 'address', addr_url.href, 'srv', srv);
                 return null;
             }
             conn = this._new_connection(addr_url);
-            dbg.log2('RPC _get_connection: new',
-                'address', addr_url.href,
-                'srv', srv,
-                'connid', conn.connid);
+            dbg.log2(
+                'RPC _get_connection: new',
+                'address',
+                addr_url.href,
+                'srv',
+                srv,
+                'connid',
+                conn.connid,
+            );
         }
 
         return conn;
@@ -543,7 +631,9 @@ class RPC extends EventEmitter {
                 break;
             }
             default: {
-                throw new Error('RPC new_connection: bad protocol ' + addr_url.href);
+                throw new Error(
+                    'RPC new_connection: bad protocol ' + addr_url.href,
+                );
             }
         }
 
@@ -556,19 +646,32 @@ class RPC extends EventEmitter {
      */
     _accept_new_connection(conn) {
         if (this._disconnected_state) {
-            conn.close(new RpcError('RPC_DISCONNECTED_STATE', 'RPC IN DISCONNECTED STATE - rejecting connection ' + conn.connid));
+            conn.close(
+                new RpcError(
+                    'RPC_DISCONNECTED_STATE',
+                    'RPC IN DISCONNECTED STATE - rejecting connection ' +
+                        conn.connid,
+                ),
+            );
             return;
         }
         conn._sent_requests = new Map();
         conn._received_requests = new Map();
         conn.once('connect', () => {
             if (this.routing_hint) {
-                dbg.log0('RPC ROUTING REQ SEND', this.routing_hint, conn.connid, conn.url.href);
-                conn.send(new RpcMessage({
-                    op: 'routing_req',
-                    reqid: conn._alloc_reqid(),
-                    routing_hint: this.routing_hint,
-                }));
+                dbg.log0(
+                    'RPC ROUTING REQ SEND',
+                    this.routing_hint,
+                    conn.connid,
+                    conn.url.href,
+                );
+                conn.send(
+                    new RpcMessage({
+                        op: 'routing_req',
+                        reqid: conn._alloc_reqid(),
+                        routing_hint: this.routing_hint,
+                    }),
+                );
             }
         });
         conn.on('decoded_message', msg => this._on_message(conn, msg));
@@ -588,25 +691,32 @@ class RPC extends EventEmitter {
                 conn._ping_reqid_set = conn._ping_reqid_set || new Set();
                 conn._ping_reqid_set.add(reqid);
                 // TODO instead of setting the ping exhausted count so high we better start pings only once connected
-                if (conn._ping_reqid_set.size > config.RPC_PING_EXHAUSTED_COUNT) {
-                    const err = new Error(`RPC PINGPONG EXHAUSTED pings ${
-                    Array.from(conn._ping_reqid_set).join(',')
-                } connid ${conn.connid}`);
+                if (
+                    conn._ping_reqid_set.size > config.RPC_PING_EXHAUSTED_COUNT
+                ) {
+                    const err = new Error(
+                        `RPC PINGPONG EXHAUSTED pings ${Array.from(
+                            conn._ping_reqid_set,
+                        ).join(',')} connid ${conn.connid}`,
+                    );
                     dbg.warn(err);
                     conn.emit('error', err);
                     return null;
                 }
                 P.resolve()
-                    .then(() => conn.send(new RpcMessage({
-                        op: 'ping',
-                        reqid: reqid
-                    })))
+                    .then(() =>
+                        conn.send(
+                            new RpcMessage({
+                                op: 'ping',
+                                reqid: reqid,
+                            }),
+                        ),
+                    )
                     .catch(_.noop); // already means the conn is closed
                 return null;
             }, config.RPC_PING_INTERVAL_MS);
         }
     }
-
 
     /**
      *
@@ -620,18 +730,27 @@ class RPC extends EventEmitter {
         // so that if it closes the backoff will keep increasing up to max.
         if (conn._reconnect_timeout) return;
         conn._reconn_backoff = Math.min(
-            reconn_backoff * config.RECONN_BACKOFF_FACTOR, config.RECONN_BACKOFF_MAX);
+            reconn_backoff * config.RECONN_BACKOFF_FACTOR,
+            config.RECONN_BACKOFF_MAX,
+        );
         conn._reconnect_timeout = setTimeout(() => {
             conn._reconnect_timeout = undefined;
-            const conn2 = this._get_connection(addr_url, 'called from reconnect2');
+            const conn2 = this._get_connection(
+                addr_url,
+                'called from reconnect2',
+            );
             if (conn2 !== conn) return;
             P.resolve()
                 .then(() => conn.connect())
                 .then(() => {
                     // remove the backoff once connected
                     conn._reconn_backoff = undefined;
-                    dbg.log1('RPC RECONNECTED', addr_url.href,
-                        'reconn_backoff', reconn_backoff.toFixed(0));
+                    dbg.log1(
+                        'RPC RECONNECTED',
+                        addr_url.href,
+                        'reconn_backoff',
+                        reconn_backoff.toFixed(0),
+                    );
                     this._aggregated_flight_time = 0;
                     this._served_requests = 0;
                     this.emit('reconnect', conn);
@@ -640,13 +759,17 @@ class RPC extends EventEmitter {
                     // since the new connection should already listen for close events,
                     // then this path will be called again from there,
                     // so no need to loop and retry from here.
-                    dbg.warn('RPC RECONNECT FAILED', addr_url.href,
-                        'reconn_backoff', reconn_backoff.toFixed(0), err.message);
+                    dbg.warn(
+                        'RPC RECONNECT FAILED',
+                        addr_url.href,
+                        'reconn_backoff',
+                        reconn_backoff.toFixed(0),
+                        err.message,
+                    );
                 });
         }, reconn_backoff);
         if (conn._reconnect_timeout.unref) conn._reconnect_timeout.unref();
     }
-
 
     /**
      * @param {boolean} state
@@ -660,7 +783,6 @@ class RPC extends EventEmitter {
         }
     }
 
-
     /**
      *
      */
@@ -672,7 +794,6 @@ class RPC extends EventEmitter {
         }
     }
 
-
     /**
      * @param {RpcBaseConnection} conn
      * @param {Error} [err]
@@ -681,13 +802,20 @@ class RPC extends EventEmitter {
         dbg.log3('RPC _connection_closed:', conn.connid);
 
         // remove from connection pool
-        if (!conn.transient && this._connection_by_address.get(conn.url.href) === conn) {
+        if (
+            !conn.transient &&
+            this._connection_by_address.get(conn.url.href) === conn
+        ) {
             this._connection_by_address.delete(conn.url.href);
         }
 
         // reject pending requests
         for (const req of conn._sent_requests.values()) {
-            req.error = new RpcError('DISCONNECTED', 'connection closed ' + conn.connid + ' reqid ' + req.reqid, { retryable: true });
+            req.error = new RpcError(
+                'DISCONNECTED',
+                'connection closed ' + conn.connid + ' reqid ' + req.reqid,
+                { retryable: true },
+            );
             req.error.stack = ''; // don't print this stack
             req._response_defer.reject(req.error);
         }
@@ -704,12 +832,13 @@ class RPC extends EventEmitter {
 
         // using _.startsWith() since in some cases url.parse will add a trailing /
         // specifically in http urls for some strange reason...
-        if (!conn._no_reconnect &&
-            _.startsWith(conn.url.href, this.router.default)) {
+        if (
+            !conn._no_reconnect &&
+            _.startsWith(conn.url.href, this.router.default)
+        ) {
             this._reconnect(conn.url, conn._reconn_backoff);
         }
     }
-
 
     /**
      * @param {RpcBaseConnection} conn
@@ -717,10 +846,18 @@ class RPC extends EventEmitter {
      */
     _on_message(conn, msg) {
         if (!msg || !msg.body) {
-            conn.emit('error', new Error('RPC._on_message: BAD MESSAGE' +
-                ' typeof(msg) ' + typeof(msg) +
-                ' typeof(msg.body) ' + typeof(msg && msg.body) +
-                ' conn ' + conn.connid));
+            conn.emit(
+                'error',
+                new Error(
+                    'RPC._on_message: BAD MESSAGE' +
+                        ' typeof(msg) ' +
+                        typeof msg +
+                        ' typeof(msg.body) ' +
+                        typeof (msg && msg.body) +
+                        ' conn ' +
+                        conn.connid,
+                ),
+            );
             return;
         }
 
@@ -733,7 +870,10 @@ class RPC extends EventEmitter {
                 P.resolve()
                     .then(() => this._on_request(conn, msg))
                     .catch(err => {
-                        dbg.warn('RPC._on_message: ERROR from _on_request', err.stack || err);
+                        dbg.warn(
+                            'RPC._on_message: ERROR from _on_request',
+                            err.stack || err,
+                        );
                     });
                 break;
             }
@@ -743,14 +883,24 @@ class RPC extends EventEmitter {
             }
             case 'routing_req': {
                 dbg.log4('RPC ROUTING REQ', conn.connid, msg.body, this.router);
-                const routing = this._routing_authority ? this._routing_authority(msg.body.routing_hint) : undefined;
+                const routing =
+                    this._routing_authority ?
+                        this._routing_authority(msg.body.routing_hint)
+                    :   undefined;
 
-                dbg.log0('RPC ROUTING RES SEND', routing, conn.connid, conn.url.href);
-                conn.send(new RpcMessage({
-                    op: 'routing_res',
-                    reqid: msg.body.reqid,
+                dbg.log0(
+                    'RPC ROUTING RES SEND',
                     routing,
-                }));
+                    conn.connid,
+                    conn.url.href,
+                );
+                conn.send(
+                    new RpcMessage({
+                        op: 'routing_res',
+                        reqid: msg.body.reqid,
+                        routing,
+                    }),
+                );
                 break;
             }
             case 'routing_res': {
@@ -763,30 +913,48 @@ class RPC extends EventEmitter {
             case 'ping': {
                 dbg.log4('RPC PONG', conn.connid);
                 P.resolve()
-                    .then(() => conn.send(new RpcMessage({
-                        op: 'pong',
-                        reqid: msg.body.reqid,
-                    })))
+                    .then(() =>
+                        conn.send(
+                            new RpcMessage({
+                                op: 'pong',
+                                reqid: msg.body.reqid,
+                            }),
+                        ),
+                    )
                     .catch(_.noop); // already means the conn is closed
                 break;
             }
             case 'pong': {
-                if (conn._ping_reqid_set && conn._ping_reqid_set.has(msg.body.reqid)) {
+                if (
+                    conn._ping_reqid_set &&
+                    conn._ping_reqid_set.has(msg.body.reqid)
+                ) {
                     dbg.log4('RPC PINGPONG', conn.connid);
                     conn._ping_reqid_set.delete(msg.body.reqid);
                 } else {
-                    dbg.warn(`RPC PINGPONG MISMATCH pings ${
-                        Array.from(conn._ping_reqid_set).join(',')
-                    } pong ${msg.body.reqid
-                    } connid ${conn.connid}`);
+                    dbg.warn(
+                        `RPC PINGPONG MISMATCH pings ${Array.from(
+                            conn._ping_reqid_set,
+                        ).join(',')} pong ${
+                            msg.body.reqid
+                        } connid ${conn.connid}`,
+                    );
                 }
                 break;
             }
             default: {
-                conn.emit('error', new Error('RPC._on_message:' +
-                    ' BAD MESSAGE OP ' + msg.body.op +
-                    ' reqid ' + msg.body.reqid +
-                    ' connid ' + conn.connid));
+                conn.emit(
+                    'error',
+                    new Error(
+                        'RPC._on_message:' +
+                            ' BAD MESSAGE OP ' +
+                            msg.body.op +
+                            ' reqid ' +
+                            msg.body.reqid +
+                            ' connid ' +
+                            conn.connid,
+                    ),
+                );
                 break;
             }
         }
@@ -798,7 +966,7 @@ class RPC extends EventEmitter {
             method_name: method.name,
             target: options.address,
             request_params: js_utils.omit_symbol(params, RPC_BUFFERS),
-            [RPC_BUFFERS]: params && params[RPC_BUFFERS]
+            [RPC_BUFFERS]: params && params[RPC_BUFFERS],
         };
 
         return P.resolve()
@@ -816,24 +984,22 @@ class RPC extends EventEmitter {
         this._served_requests += 1;
     }
 
-
     /**
      * start_http_server
      */
     start_http_server(options) {
         dbg.log0('RPC start_http_server', options);
         const rpc_http_server = new RpcHttpServer();
-        rpc_http_server.on('connection', conn => this._accept_new_connection(conn));
-        return rpc_http_server.start_server(options)
-            .then(http_server => {
-                if (options.protocol === 'ws:' ||
-                    options.protocol === 'wss:') {
-                    this.register_ws_transport(http_server);
-                }
-                return http_server;
-            });
+        rpc_http_server.on('connection', conn =>
+            this._accept_new_connection(conn),
+        );
+        return rpc_http_server.start_server(options).then(http_server => {
+            if (options.protocol === 'ws:' || options.protocol === 'wss:') {
+                this.register_ws_transport(http_server);
+            }
+            return http_server;
+        });
     }
-
 
     /**
      * register_http_app
@@ -857,7 +1023,6 @@ class RPC extends EventEmitter {
         return http_server;
     }
 
-
     /**
      * register_ws_transport
      */
@@ -867,7 +1032,6 @@ class RPC extends EventEmitter {
         ws_server.on('connection', conn => this._accept_new_connection(conn));
         return ws_server;
     }
-
 
     /**
      * register_tcp_transport
@@ -886,7 +1050,6 @@ class RPC extends EventEmitter {
         return tcp_server;
     }
 
-
     /**
      * register_ntcp_transport
      */
@@ -898,7 +1061,6 @@ class RPC extends EventEmitter {
         return ntcp_server;
     }
 
-
     /**
      * register_nudp_transport
      *
@@ -909,11 +1071,12 @@ class RPC extends EventEmitter {
      */
     async register_nudp_transport(port) {
         dbg.log0('RPC register_nudp_transport');
-        const conn = new RpcNudpConnection(url_utils.quick_parse('nudp://0.0.0.0:0'));
+        const conn = new RpcNudpConnection(
+            url_utils.quick_parse('nudp://0.0.0.0:0'),
+        );
         conn.on('connect', () => this._accept_new_connection(conn));
         return conn.accept(port);
     }
-
 
     /**
      * register_n2n_agent
@@ -925,7 +1088,7 @@ class RPC extends EventEmitter {
         }
         dbg.log0('RPC register_n2n_agent');
         const n2n_agent = new RpcN2NAgent({
-            send_signal: send_signal_func
+            send_signal: send_signal_func,
         });
         n2n_agent.on('connection', conn => this._accept_new_connection(conn));
         this.n2n_agent = n2n_agent;
@@ -939,7 +1102,6 @@ class RPC extends EventEmitter {
     async accept_n2n_signal(params) {
         return this.n2n_agent.accept_signal(params);
     }
-
 
     /**
      * register_n2n_proxy
@@ -967,7 +1129,6 @@ class RPC extends EventEmitter {
     set_request_logger(request_logger) {
         this._request_logger = request_logger;
     }
-
 }
 
 // EXPORTS

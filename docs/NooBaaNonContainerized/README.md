@@ -102,4 +102,3 @@ For more information, refer to the [CI & Tests](./CI&Tests.md) guide.
 Instructions and best practices for upgrading your NooBaa Non Containerized environment, to ensure a smooth transition to newer versions.
 
 For more information, refer to the [Upgrade](./Upgrade.md) guide.
-

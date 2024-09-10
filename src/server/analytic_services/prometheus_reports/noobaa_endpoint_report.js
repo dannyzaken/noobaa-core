@@ -10,86 +10,87 @@ const js_utils = require('../../../util/js_utils');
 // come next to add endpoint metrics reporting.
 // -----------------------------------------
 
-const nsfs_suffixes = ["_nsfs_xs", "_nsfs_s", "_nsfs_m", "_nsfs_l"];
-const NOOBAA_ENDPOINT_METRICS = js_utils.deep_freeze([{
+const nsfs_suffixes = ['_nsfs_xs', '_nsfs_s', '_nsfs_m', '_nsfs_l'];
+const NOOBAA_ENDPOINT_METRICS = js_utils.deep_freeze([
+    {
         type: 'Counter',
         name: 'hub_read_bytes',
         configuration: {
             help: 'hub read bytes in namespace cache bucket',
-            labelNames: ['bucket_name']
-        }
+            labelNames: ['bucket_name'],
+        },
     },
     {
         type: 'Counter',
         name: 'hub_write_bytes',
         configuration: {
             help: 'hub write bytes in namespace cache bucket',
-            labelNames: ['bucket_name']
-        }
+            labelNames: ['bucket_name'],
+        },
     },
     {
         type: 'Counter',
         name: 'cache_read_bytes',
         configuration: {
             help: 'Cache read bytes in namespace cache bucket',
-            labelNames: ['bucket_name']
-        }
+            labelNames: ['bucket_name'],
+        },
     },
     {
         type: 'Counter',
         name: 'cache_write_bytes',
         configuration: {
             help: 'Cache write bytes in namespace cache bucket',
-            labelNames: ['bucket_name']
-        }
+            labelNames: ['bucket_name'],
+        },
     },
     {
         type: 'Counter',
         name: 'cache_object_read_count',
         configuration: {
             help: 'Counter on entire object reads in namespace cache bucket',
-            labelNames: ['bucket_name']
-        }
+            labelNames: ['bucket_name'],
+        },
     },
     {
         type: 'Counter',
         name: 'cache_object_read_miss_count',
         configuration: {
             help: 'Counter on entire object read miss in namespace cache bucket',
-            labelNames: ['bucket_name']
-        }
+            labelNames: ['bucket_name'],
+        },
     },
     {
         type: 'Counter',
         name: 'cache_object_read_hit_count',
         configuration: {
             help: 'Counter on entire object read hit in namespace cache bucket',
-            labelNames: ['bucket_name']
-        }
+            labelNames: ['bucket_name'],
+        },
     },
     {
         type: 'Counter',
         name: 'cache_range_read_count',
         configuration: {
             help: 'Counter on range reads in namespace cache bucket',
-            labelNames: ['bucket_name']
-        }
+            labelNames: ['bucket_name'],
+        },
     },
     {
         type: 'Counter',
         name: 'cache_range_read_miss_count',
         configuration: {
             help: 'Counter on range read miss in namespace cache bucket',
-            labelNames: ['bucket_name']
-        }
+            labelNames: ['bucket_name'],
+        },
     },
     {
         type: 'Counter',
         name: 'cache_range_read_hit_count',
         configuration: {
             help: 'Counter on range read hit in namespace cache bucket',
-            labelNames: ['bucket_name']
-        }
+            labelNames: ['bucket_name'],
+        },
     },
     {
         type: 'Histogram',
@@ -98,16 +99,10 @@ const NOOBAA_ENDPOINT_METRICS = js_utils.deep_freeze([{
             help: 'hub read latency in namespace cache bucket',
             labelNames: ['bucket_name'],
             buckets: [
-                0.001,
-                0.01,
-                0.1, 0.2, 0.5,
-                1, 2, 5,
-                10, 20, 50,
-                100, 200, 500,
-                1000, 2000, 5000,
-                10000, 20000, 50000,
+                0.001, 0.01, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500,
+                1000, 2000, 5000, 10000, 20000, 50000,
             ],
-        }
+        },
     },
     {
         type: 'Histogram',
@@ -116,16 +111,10 @@ const NOOBAA_ENDPOINT_METRICS = js_utils.deep_freeze([{
             help: 'hub write latency in namespace cache bucket',
             labelNames: ['bucket_name'],
             buckets: [
-                0.001,
-                0.01,
-                0.1, 0.2, 0.5,
-                1, 2, 5,
-                10, 20, 50,
-                100, 200, 500,
-                1000, 2000, 5000,
-                10000, 20000, 50000,
+                0.001, 0.01, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500,
+                1000, 2000, 5000, 10000, 20000, 50000,
             ],
-        }
+        },
     },
     {
         type: 'Histogram',
@@ -134,16 +123,10 @@ const NOOBAA_ENDPOINT_METRICS = js_utils.deep_freeze([{
             help: 'Cache read latency in namespace cache bucket',
             labelNames: ['bucket_name'],
             buckets: [
-                0.001,
-                0.01,
-                0.1, 0.2, 0.5,
-                1, 2, 5,
-                10, 20, 50,
-                100, 200, 500,
-                1000, 2000, 5000,
-                10000, 20000, 50000,
+                0.001, 0.01, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500,
+                1000, 2000, 5000, 10000, 20000, 50000,
             ],
-        }
+        },
     },
     {
         type: 'Histogram',
@@ -152,25 +135,19 @@ const NOOBAA_ENDPOINT_METRICS = js_utils.deep_freeze([{
             help: 'Cache write latency in namespace cache bucket',
             labelNames: ['bucket_name'],
             buckets: [
-                0.001,
-                0.01,
-                0.1, 0.2, 0.5,
-                1, 2, 5,
-                10, 20, 50,
-                100, 200, 500,
-                1000, 2000, 5000,
-                10000, 20000, 50000,
+                0.001, 0.01, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500,
+                1000, 2000, 5000, 10000, 20000, 50000,
             ],
-        }
+        },
     },
     {
         type: 'Gauge',
         name: 'semaphore_waiting_value',
         configuration: {
             help: 'Namespace semaphore waiting value',
-            labelNames: ['type', 'average_interval']
+            labelNames: ['type', 'average_interval'],
         },
-        collect: function(prom_instance, labels, values) {
+        collect: function (prom_instance, labels, values) {
             let total_values = 0;
             for (const value of values) {
                 total_values += value.semaphore_state.waiting_value;
@@ -184,9 +161,9 @@ const NOOBAA_ENDPOINT_METRICS = js_utils.deep_freeze([{
         name: 'semaphore_waiting_time',
         configuration: {
             help: 'Namespace semaphore waiting time',
-            labelNames: ['type', 'average_interval']
+            labelNames: ['type', 'average_interval'],
         },
-        collect: function(prom_instance, labels, values) {
+        collect: function (prom_instance, labels, values) {
             let total_values = 0;
             for (const value of values) {
                 total_values += value.semaphore_state.waiting_time;
@@ -200,9 +177,9 @@ const NOOBAA_ENDPOINT_METRICS = js_utils.deep_freeze([{
         name: 'semaphore_waiting_queue',
         configuration: {
             help: 'Namespace semaphore waiting queue size',
-            labelNames: ['type', 'average_interval']
+            labelNames: ['type', 'average_interval'],
         },
-        collect: function(prom_instance, labels, values) {
+        collect: function (prom_instance, labels, values) {
             let total_values = 0;
             for (const value of values) {
                 total_values += value.semaphore_state.waiting_queue;
@@ -216,7 +193,7 @@ const NOOBAA_ENDPOINT_METRICS = js_utils.deep_freeze([{
         name: 'semaphore_value',
         configuration: {
             help: 'Namespace semaphore value',
-            labelNames: ['type', 'average_interval']
+            labelNames: ['type', 'average_interval'],
         },
         collect(prom_instance, labels, values) {
             let total_values = 0;
@@ -232,10 +209,10 @@ const NOOBAA_ENDPOINT_METRICS = js_utils.deep_freeze([{
         name: 'fork_counter',
         configuration: {
             help: 'Counter on number of fork hit',
-            labelNames: ['code']
+            labelNames: ['code'],
         },
         aggregator: 'average',
-    }
+    },
 ]);
 
 class NooBaaEndpointReport extends BasePrometheusReport {
@@ -254,19 +231,29 @@ class NooBaaEndpointReport extends BasePrometheusReport {
                         ...m.configuration,
                         collect() {
                             if (m.collect && this.average_intervals) {
-                                for (const average_interval of this.average_intervals) {
+                                for (const average_interval of this
+                                    .average_intervals) {
                                     if (this[average_interval]) {
-                                        m.collect(this, this[average_interval].labels, this[average_interval].value);
+                                        m.collect(
+                                            this,
+                                            this[average_interval].labels,
+                                            this[average_interval].value,
+                                        );
                                     }
                                     for (const suffix of nsfs_suffixes) {
                                         if (this[average_interval + suffix]) {
-                                            m.collect(this, this[average_interval + suffix].labels,
-                                                this[average_interval + suffix].value);
+                                            m.collect(
+                                                this,
+                                                this[average_interval + suffix]
+                                                    .labels,
+                                                this[average_interval + suffix]
+                                                    .value,
+                                            );
                                         }
                                     }
                                 }
                             }
-                        }
+                        },
                     }),
                 };
             }
@@ -278,7 +265,9 @@ class NooBaaEndpointReport extends BasePrometheusReport {
         if (!this._metrics) return;
         const metric = this._metrics[name];
         if (!metric) throw new Error(`Unknown metric ${name}`);
-        if (metric.type !== 'Counter') throw new Error(`Metric ${name} is not Counter`);
+        if (metric.type !== 'Counter') {
+            throw new Error(`Metric ${name} is not Counter`);
+        }
         metric.prom_instance.inc(labels, value);
     }
 
@@ -287,12 +276,15 @@ class NooBaaEndpointReport extends BasePrometheusReport {
         if (!this._metrics) return;
         const metric = this._metrics[name];
         if (!metric) throw new Error(`Unknown metric ${name}`);
-        if (metric.type !== 'Gauge') throw new Error(`Metric ${name} is not Gauge`);
+        if (metric.type !== 'Gauge') {
+            throw new Error(`Metric ${name} is not Gauge`);
+        }
         if (labels.type === 'object_io') {
             metric.prom_instance[labels.average_interval] = { labels, value };
         } else {
             // Adding suffix to distinguish between object_io and nsfs semaphores
-            metric.prom_instance[labels.average_interval + '_' + labels.type] = { labels, value };
+            metric.prom_instance[labels.average_interval + '_' + labels.type] =
+                { labels, value };
         }
         metric.prom_instance.average_intervals = average_intervals;
     }
@@ -302,10 +294,11 @@ class NooBaaEndpointReport extends BasePrometheusReport {
         if (!this._metrics) return;
         const metric = this._metrics[name];
         if (!metric) throw new Error(`Unknown metric ${name}`);
-        if (metric.type !== 'Histogram') throw new Error(`Metric ${name} is not Histogram`);
+        if (metric.type !== 'Histogram') {
+            throw new Error(`Metric ${name} is not Histogram`);
+        }
         metric.prom_instance.observe(labels, value);
     }
-
 
     get metric_prefix() {
         return `${super.metric_prefix}Endpoint_`;

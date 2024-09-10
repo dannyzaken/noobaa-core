@@ -9,9 +9,9 @@ const bucket_stats_schema = require('./bucket_stats_schema');
 const bucket_stats_indexes = require('./bucket_stats_indexes');
 
 class BucketStatsStore {
-
     static instance(system) {
-        BucketStatsStore._instance = BucketStatsStore._instance || new BucketStatsStore();
+        BucketStatsStore._instance =
+            BucketStatsStore._instance || new BucketStatsStore();
         return BucketStatsStore._instance;
     }
 
@@ -26,25 +26,41 @@ class BucketStatsStore {
     ////////////////////////
     // Bucket Stats funcs //
     ////////////////////////
-    async update_bucket_counters({ system, bucket, write_count, read_count, content_type }) {
+    async update_bucket_counters({
+        system,
+        bucket,
+        write_count,
+        read_count,
+        content_type,
+    }) {
         const selector = { system, bucket, content_type };
 
         const update = {
-            $set: _.omitBy({
-                last_write: write_count ? Date.now() : undefined,
-                last_read: read_count ? Date.now() : undefined,
-                ...selector
-            }, _.isUndefined),
-            $inc: _.omitBy({
-                writes: write_count,
-                reads: read_count
-            }, _.isUndefined)
+            $set: _.omitBy(
+                {
+                    last_write: write_count ? Date.now() : undefined,
+                    last_read: read_count ? Date.now() : undefined,
+                    ...selector,
+                },
+                _.isUndefined,
+            ),
+            $inc: _.omitBy(
+                {
+                    writes: write_count,
+                    reads: read_count,
+                },
+                _.isUndefined,
+            ),
         };
 
-        const res = await this._bucket_stats.findOneAndUpdate(selector, update, {
-            upsert: true,
-            returnOriginal: false
-        });
+        const res = await this._bucket_stats.findOneAndUpdate(
+            selector,
+            update,
+            {
+                upsert: true,
+                returnOriginal: false,
+            },
+        );
 
         this._bucket_stats.validate(res.value, 'warn');
     }

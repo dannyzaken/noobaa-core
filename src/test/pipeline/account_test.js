@@ -32,7 +32,7 @@ const TEST_CFG_DEFAULTS = {
     accounts_number: 2,
     skip_report: false,
     skip_delete: false,
-    skip_create: false
+    skip_create: false,
 };
 
 if (argv.help) {
@@ -41,11 +41,14 @@ if (argv.help) {
 }
 
 //define colors
-const YELLOW = "\x1b[33;1m";
-const RED = "\x1b[31;1m";
-const NC = "\x1b[0m";
+const YELLOW = '\x1b[33;1m';
+const RED = '\x1b[31;1m';
+const NC = '\x1b[0m';
 
-const TEST_CFG = _.defaults(_.pick(argv, _.keys(TEST_CFG_DEFAULTS)), TEST_CFG_DEFAULTS);
+const TEST_CFG = _.defaults(
+    _.pick(argv, _.keys(TEST_CFG_DEFAULTS)),
+    TEST_CFG_DEFAULTS,
+);
 Object.freeze(TEST_CFG);
 
 const report = new Report();
@@ -78,9 +81,14 @@ const cases = [
     'edit_s3Access',
     'edit_bucket_creation',
     'restrict_ip_access',
-    'reset_password'
+    'reset_password',
 ];
-report.init_reporter({ suite: test_name, conf: TEST_CFG, mongo_report: true, cases: cases });
+report.init_reporter({
+    suite: test_name,
+    conf: TEST_CFG,
+    mongo_report: true,
+    cases: cases,
+});
 
 function saveErrorAndResume(message) {
     console.error(message);
@@ -113,13 +121,18 @@ async function get_accounts_emails() {
 async function get_s3_account_access(email) {
     try {
         const accounts = await get_accounts();
-        const account = accounts.find(accountObj => accountObj.email.unwrap() === email);
+        const account = accounts.find(
+            accountObj => accountObj.email.unwrap() === email,
+        );
         const s3AccessKeys = {
             accessKeyId: account.access_keys[0].access_key.unwrap(),
             secretAccessKey: account.access_keys[0].secret_key.unwrap(),
-            access: account.has_s3_access
+            access: account.has_s3_access,
         };
-        console.log("S3 access keys: " + s3AccessKeys.accessKeyId, s3AccessKeys.secretAccessKey);
+        console.log(
+            'S3 access keys: ' + s3AccessKeys.accessKeyId,
+            s3AccessKeys.secretAccessKey,
+        );
         return s3AccessKeys;
     } catch (err) {
         console.error('Getting s3 access keys return error: ', err);
@@ -130,7 +143,9 @@ async function get_s3_account_access(email) {
 async function get_account_create_bucket_status(email) {
     try {
         const accounts = await get_accounts();
-        const account = accounts.find(accountObj => accountObj.email.unwrap() === email);
+        const account = accounts.find(
+            accountObj => accountObj.email.unwrap() === email,
+        );
         return account.can_create_buckets;
     } catch (err) {
         console.error('Getting create bucket status return error: ', err);
@@ -150,9 +165,16 @@ function set_account_details(has_login, account_name, email, s3_access) {
 
 async function create_account(has_login, account_name) {
     //building an account parameters object.
-    console.log(`Creating account: ${account_name} with access login: ${has_login} s3 access: ${TEST_CFG.s3_access}`);
+    console.log(
+        `Creating account: ${account_name} with access login: ${has_login} s3 access: ${TEST_CFG.s3_access}`,
+    );
     const email = account_name + TEST_CFG.emailSuffix;
-    const accountData = set_account_details(has_login, account_name, email, TEST_CFG.s3_access);
+    const accountData = set_account_details(
+        has_login,
+        account_name,
+        email,
+        TEST_CFG.s3_access,
+    );
     try {
         await client.account.create_account(accountData);
         await report.success('create_account');
@@ -168,7 +190,7 @@ async function delete_account(email) {
     console.log('Deleting account: ' + email);
     try {
         await client.account.delete_account({
-            email
+            email,
         });
         await report.success('delete_account');
     } catch (err) {
@@ -191,7 +213,9 @@ async function regenerate_s3Access(email) {
 }
 
 async function edit_s3Access(email, s3_access) {
-    console.log(`Editing account s3 access: ${email} with access to bucket ${s3_access}`);
+    console.log(
+        `Editing account s3 access: ${email} with access to bucket ${s3_access}`,
+    );
     try {
         await client.account.update_account_s3_access({
             email,
@@ -216,7 +240,7 @@ async function edit_bucket_creation(email, allow_bucket_creation) {
         await client.account.update_account_s3_access({
             email,
             s3_access,
-            allow_bucket_creation
+            allow_bucket_creation,
         });
         await report.success('edit_bucket_creation');
     } catch (err) {
@@ -229,7 +253,9 @@ async function edit_bucket_creation(email, allow_bucket_creation) {
 async function check_bucket_creation_permissions(email) {
     let create_bucket_status = await get_account_create_bucket_status(email);
     if (!create_bucket_status) {
-        throw new Error(`Account ${email} default bucket creation permissions should be enabled`);
+        throw new Error(
+            `Account ${email} default bucket creation permissions should be enabled`,
+        );
     }
     await edit_bucket_creation(email, false);
     create_bucket_status = await get_account_create_bucket_status(email);
@@ -237,7 +263,10 @@ async function check_bucket_creation_permissions(email) {
         throw new Error(`Account ${email} did not changed to disabled`);
     } else {
         try {
-            const s3ops = new S3OPS({ ip: TEST_CFG.s3_ip, port: TEST_CFG.s3_port });
+            const s3ops = new S3OPS({
+                ip: TEST_CFG.s3_ip,
+                port: TEST_CFG.s3_port,
+            });
             await s3ops.create_bucket('shouldFail', false);
             throw new Error(`Create bucket should have failed`);
         } catch (e) {
@@ -252,7 +281,7 @@ async function restrict_ip_access(email, ips) {
     try {
         await client.account.update_account({
             email,
-            ips
+            ips,
         });
         await report.success('restrict_ip_access');
     } catch (err) {
@@ -268,7 +297,7 @@ async function init_s3ops(email) {
         ip: TEST_CFG.s3_ip,
         port: TEST_CFG.s3_port,
         access_key: keys.accessKeyId,
-        secret_key: keys.secretAccessKey
+        secret_key: keys.secretAccessKey,
     });
     return s3ops;
 }
@@ -279,7 +308,9 @@ async function verify_s3_access(email, bucket) {
     if (buckets.includes(bucket)) {
         console.log(`Created account has access to s3 bucket ${bucket}`);
     } else {
-        saveErrorAndResume(`Created account doesn't have access to s3 bucket ${bucket}`);
+        saveErrorAndResume(
+            `Created account doesn't have access to s3 bucket ${bucket}`,
+        );
         failures_in_test = true;
     }
 }
@@ -290,9 +321,13 @@ async function verify_s3_no_access(email, print_error = true) {
         await s3ops.get_list_buckets(print_error);
     } catch (err) {
         if (err.code === 'AccessDenied') {
-            console.log(`Account doesn't have access to buckets after switch off access, err ${err.code} - as should`);
+            console.log(
+                `Account doesn't have access to buckets after switch off access, err ${err.code} - as should`,
+            );
         } else {
-            saveErrorAndResume('After switch off access to buckets account has access to s3');
+            saveErrorAndResume(
+                'After switch off access to buckets account has access to s3',
+            );
             failures_in_test = true;
         }
     }
@@ -300,12 +335,15 @@ async function verify_s3_no_access(email, print_error = true) {
 
 async function login_user(email) {
     console.log(`login user: ${email}`);
-    rpc = api.new_rpc_from_base_address(`wss://${TEST_CFG.mgmt_ip}:${TEST_CFG.mgmt_port_https}`, 'EXTERNAL');
+    rpc = api.new_rpc_from_base_address(
+        `wss://${TEST_CFG.mgmt_ip}:${TEST_CFG.mgmt_port_https}`,
+        'EXTERNAL',
+    );
     client = rpc.new_client({});
     const auth_params = {
         email,
         password: 'DeMo1',
-        system: 'demo'
+        system: 'demo',
     };
     try {
         const auth_token = await client.create_auth_token(auth_params);
@@ -327,8 +365,8 @@ async function reset_password(email) {
         await client.account.reset_password({
             email,
             must_change_password: false,
-            password: "DeMo1",
-            verification_password: "DeMo1"
+            password: 'DeMo1',
+            verification_password: 'DeMo1',
         });
         await report.success('reset_password');
     } catch (err) {
@@ -346,7 +384,9 @@ async function verify_account_in_system(email, isPresent) {
     } else if (!emails.includes(email) && !isPresent) {
         console.log(`System does not contains ${email} account`);
     } else {
-        saveErrorAndResume(`Account ${email} was ${isPresent ? 'found' : 'not found'} on the system`);
+        saveErrorAndResume(
+            `Account ${email} was ${isPresent ? 'found' : 'not found'} on the system`,
+        );
         failures_in_test = true;
     }
 }
@@ -370,22 +410,28 @@ async function disable_s3_Access_and_check(email) {
         ip: TEST_CFG.s3_ip,
         port: TEST_CFG.s3_port,
         access_key: keys.accessKeyId,
-        secret_key: keys.secretAccessKey
+        secret_key: keys.secretAccessKey,
     });
     const buckets = await s3ops.get_list_buckets();
     if (buckets.length === 0) {
-        console.log(`Account doesn't have access to buckets after changing access - as should`);
+        console.log(
+            `Account doesn't have access to buckets after changing access - as should`,
+        );
     } else {
-        saveErrorAndResume(`After switch off s3 access account still has access to ${buckets}`);
+        saveErrorAndResume(
+            `After switch off s3 access account still has access to ${buckets}`,
+        );
         failures_in_test = true;
     }
     await edit_s3Access(email, true);
 }
 
 async function checkAccountFeatures() {
-    const fullName = `${TEST_CFG.name}` + (Math.floor(Date.now() / 1000));
+    const fullName = `${TEST_CFG.name}` + Math.floor(Date.now() / 1000);
     const email = (await create_account(true, fullName)).unwrap();
-    console.log(`Created account is ${email} with access s3 ${TEST_CFG.s3_access}`);
+    console.log(
+        `Created account is ${email} with access s3 ${TEST_CFG.s3_access}`,
+    );
     await verify_account_in_system(email, true);
     if (TEST_CFG.s3_access === true) {
         await verify_s3_access(email, TEST_CFG.bucket);
@@ -415,17 +461,25 @@ async function checkAccountFeatures() {
 }
 
 async function create_delete_accounts(cycle_num, count) {
-    console.log(`${RED}cycle_num: ${cycle_num}, creating ${count} accounts${NC}`);
+    console.log(
+        `${RED}cycle_num: ${cycle_num}, creating ${count} accounts${NC}`,
+    );
     for (let account_num = 1; account_num <= count; account_num++) {
-        console.log(`${YELLOW}Creating account number: ${account_num} in cycle ${cycle_num}${NC}`);
-        const fullName = `${TEST_CFG.name}${account_num}_cycle${cycle_num}_` + (Math.floor(Date.now() / 1000));
+        console.log(
+            `${YELLOW}Creating account number: ${account_num} in cycle ${cycle_num}${NC}`,
+        );
+        const fullName =
+            `${TEST_CFG.name}${account_num}_cycle${cycle_num}_` +
+            Math.floor(Date.now() / 1000);
         let email;
         if (TEST_CFG.skip_create) {
             email = fullName;
         } else {
             email = (await create_account(true, fullName)).unwrap();
         }
-        console.log(`Created account is ${email} with access s3 ${TEST_CFG.s3_access}`);
+        console.log(
+            `Created account is ${email} with access s3 ${TEST_CFG.s3_access}`,
+        );
         await verify_account_in_system(email, true);
         await P.delay(10 * 1000);
         if (TEST_CFG.skip_delete) {
@@ -444,9 +498,11 @@ async function main() {
     if (TEST_CFG.skip_report) {
         report.pause();
     }
-    console.log(`${YELLOW}Running test with ${
-        TEST_CFG.cycles} cycles and ${
-        TEST_CFG.accounts_number} accounts${NC}`);
+    console.log(
+        `${YELLOW}Running test with ${TEST_CFG.cycles} cycles and ${
+            TEST_CFG.accounts_number
+        } accounts${NC}`,
+    );
     for (let cycle = 1; cycle <= TEST_CFG.cycles; cycle++) {
         console.log(`${YELLOW}Starting cycle ${cycle}${NC}`);
         try {

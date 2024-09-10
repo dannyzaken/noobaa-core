@@ -25,11 +25,10 @@ dotenv.load();
 
 const {
     mgmt_ip = 'localhost',
-        mgmt_port = '8080',
-        s3_ip = 'localhost',
-        s3_port = '80',
+    mgmt_port = '8080',
+    s3_ip = 'localhost',
+    s3_port = '80',
 } = argv;
-
 
 /***         Config         ***/
 const TIME_FOR_FUNC_TO_RUN = 15000;
@@ -38,7 +37,7 @@ const NUM_OF_RETRIES = 10;
 const POOL_NAME = 'test-pool';
 
 const client = rpc.new_client({
-    address: `ws://${mgmt_ip}:${mgmt_port}`
+    address: `ws://${mgmt_ip}:${mgmt_port}`,
 });
 
 const full_access_user = {
@@ -65,7 +64,7 @@ const external_connection = {
     endpoint_type: 'S3_COMPATIBLE',
     identity: '123',
     secret: 'abc',
-    name: 'conn1'
+    name: 'conn1',
 };
 
 const ROLE_ARN = 'arn:aws:iam::112233445566:role/lambda-test';
@@ -78,12 +77,17 @@ const trigger_based_func_create = {
     Role: ROLE_ARN,
     MemorySize: 128,
     VpcConfig: {
-        SubnetIds: [POOL_NAME]
+        SubnetIds: [POOL_NAME],
     },
-    Files: [{
-        path: 'create_backup_file_func.js',
-        fs_path: path.join(__dirname, '../lambda/create_backup_file_func.js'),
-    }]
+    Files: [
+        {
+            path: 'create_backup_file_func.js',
+            fs_path: path.join(
+                __dirname,
+                '../lambda/create_backup_file_func.js',
+            ),
+        },
+    ],
 };
 
 const trigger_based_func_delete = {
@@ -94,12 +98,17 @@ const trigger_based_func_delete = {
     Role: ROLE_ARN,
     MemorySize: 128,
     VpcConfig: {
-        SubnetIds: [POOL_NAME]
+        SubnetIds: [POOL_NAME],
     },
-    Files: [{
-        path: 'delete_backup_file_func.js',
-        fs_path: path.join(__dirname, '../lambda/delete_backup_file_func.js'),
-    }]
+    Files: [
+        {
+            path: 'delete_backup_file_func.js',
+            fs_path: path.join(
+                __dirname,
+                '../lambda/delete_backup_file_func.js',
+            ),
+        },
+    ],
 };
 
 const trigger_based_func_read = {
@@ -110,14 +119,18 @@ const trigger_based_func_read = {
     Role: ROLE_ARN,
     MemorySize: 128,
     VpcConfig: {
-        SubnetIds: [POOL_NAME]
+        SubnetIds: [POOL_NAME],
     },
-    Files: [{
-        path: 'create_backup_file_func.js',
-        fs_path: path.join(__dirname, '../lambda/create_backup_file_func.js'),
-    }]
+    Files: [
+        {
+            path: 'create_backup_file_func.js',
+            fs_path: path.join(
+                __dirname,
+                '../lambda/create_backup_file_func.js',
+            ),
+        },
+    ],
 };
-
 
 /***         Utils         ***/
 
@@ -125,7 +138,7 @@ async function authenticate() {
     const auth_params = {
         email: 'demo@noobaa.com',
         password: 'DeMo1',
-        system: 'demo'
+        system: 'demo',
     };
     await client.create_auth_token(auth_params);
 }
@@ -137,7 +150,7 @@ function prepare_func(fn) {
         .then(zip_buffer => {
             delete fn.Files;
             fn.Code = {
-                ZipFile: zip_buffer
+                ZipFile: zip_buffer,
             };
         });
 }
@@ -205,22 +218,22 @@ async function setup() {
         await client.pool.create_namespace_resource({
             connection: external_connection.name,
             name: 'ns.rsc.on.buck1',
-            target_bucket: 'ns.internal.bucket1'
+            target_bucket: 'ns.internal.bucket1',
         });
 
         await client.pool.create_namespace_resource({
             connection: external_connection.name,
             name: 'ns.rsc.on.buck2',
-            target_bucket: 'ns.internal.bucket2'
+            target_bucket: 'ns.internal.bucket2',
         });
         const nsr1 = { resource: 'ns.rsc.on.buck1' };
         const nsr2 = { resource: 'ns.rsc.on.buck2' };
         await client.bucket.create_bucket({
             name: 'ns.external.bucket1',
             namespace: {
-                read_resources: [ nsr1 ],
-                write_resource: nsr2
-            }
+                read_resources: [nsr1],
+                write_resource: nsr2,
+            },
         });
 
         // add new accounts:
@@ -248,7 +261,9 @@ async function run_test() {
     await authenticate();
     const target_buckets = await setup();
 
-    console.log(`Adding functions trigger_based_func_create, trigger_based_func_delete`);
+    console.log(
+        `Adding functions trigger_based_func_create, trigger_based_func_delete`,
+    );
     await test_add_function(bucket1_user, trigger_based_func_create);
     await test_add_function(full_access_user, trigger_based_func_delete);
     await test_add_function(bucket1_user, trigger_based_func_read);
@@ -257,7 +272,11 @@ async function run_test() {
         console.log(`Running test on ${b}`);
         //Test create trigger
         console.log(`Adding trigger for ${b}`);
-        await test_add_bucket_trigger('ObjectCreated', trigger_based_func_create, b);
+        await test_add_bucket_trigger(
+            'ObjectCreated',
+            trigger_based_func_create,
+            b,
+        );
         system_info = await client.system.read_system();
         bucket = bucket_by_name(system_info.buckets, b);
         trigger_id = bucket.triggers[0].id;
@@ -268,12 +287,16 @@ async function run_test() {
         last_run = bucket.triggers[0].last_run;
 
         console.log(`testing trigger not invoked for ${b}`);
-        await test_trigger_dont_run_when_shouldnt(bucket1_user, 'file1.notdat', b);
+        await test_trigger_dont_run_when_shouldnt(
+            bucket1_user,
+            'file1.notdat',
+            b,
+        );
         console.log(`disabling bucket lambda trigger on ${b}`);
         await client.bucket.update_bucket_lambda_trigger({
             bucket_name: b,
             id: trigger_id,
-            enabled: false
+            enabled: false,
         });
         await P.delay(TIME_FOR_SDK_TO_UPDATE);
 
@@ -283,46 +306,80 @@ async function run_test() {
         await client.bucket.update_bucket_lambda_trigger({
             bucket_name: b,
             id: trigger_id,
-            enabled: true
+            enabled: true,
         });
         await P.delay(TIME_FOR_SDK_TO_UPDATE);
         await test_trigger_run_when_should(bucket1_user, 'file3.dat', b);
         // Used for DeleteObjects later on
-        await test_trigger_run_when_should(bucket1_user, 'sloth_multiple.dat', b);
+        await test_trigger_run_when_should(
+            bucket1_user,
+            'sloth_multiple.dat',
+            b,
+        );
         console.log(`changing bucket lambda trigger prefix to /bla. on ${b}`);
         await client.bucket.update_bucket_lambda_trigger({
             bucket_name: b,
             id: trigger_id,
-            object_prefix: '/bla'
+            object_prefix: '/bla',
         });
         await P.delay(TIME_FOR_SDK_TO_UPDATE);
 
-        await test_trigger_dont_run_when_shouldnt(bucket1_user, '/tmp/file4.dat', b);
+        await test_trigger_dont_run_when_shouldnt(
+            bucket1_user,
+            '/tmp/file4.dat',
+            b,
+        );
         console.log(`changing bucket lambda trigger prefix to /tmp on ${b}`);
         await client.bucket.update_bucket_lambda_trigger({
             bucket_name: b,
             id: trigger_id,
-            object_prefix: '/tmp'
+            object_prefix: '/tmp',
         });
         await P.delay(TIME_FOR_SDK_TO_UPDATE);
 
         await test_trigger_run_when_should(bucket1_user, '/tmp/file5.dat', b);
         system_info = await client.system.read_system();
-        console.log(`Checking that last_run of bucket_trigger has advanced for ${b}`);
+        console.log(
+            `Checking that last_run of bucket_trigger has advanced for ${b}`,
+        );
         bucket = bucket_by_name(system_info.buckets, b);
         last_run_new = bucket.triggers[0].last_run;
-        assert(last_run_new > last_run, `expecting last run to advance but didn't. previous last_run: ${new Date(last_run)} new last_run: ${new Date(last_run_new)}`);
-        console.log(`last run has advanced as should for ${b}. previous last_run: ${new Date(last_run)} new last_run: ${new Date(last_run_new)}`);
+        assert(
+            last_run_new > last_run,
+            `expecting last run to advance but didn't. previous last_run: ${new Date(last_run)} new last_run: ${new Date(last_run_new)}`,
+        );
+        console.log(
+            `last run has advanced as should for ${b}. previous last_run: ${new Date(last_run)} new last_run: ${new Date(last_run_new)}`,
+        );
 
         console.log(`Checking that multi delete triggers as should for ${b}`);
-        await test_trigger_run_when_should_multi(bucket1_user, b, '/tmp/multi-file', '.dat', 10);
+        await test_trigger_run_when_should_multi(
+            bucket1_user,
+            b,
+            '/tmp/multi-file',
+            '.dat',
+            10,
+        );
         // should fail as bucket1_user was removed from bucket access and is the runner of the function
-        await test_trigger_dont_run_when_shouldnt(full_access_user, '/tmp/file6.dat', b);
+        await test_trigger_dont_run_when_shouldnt(
+            full_access_user,
+            '/tmp/file6.dat',
+            b,
+        );
 
         console.log(`Checking object removed trigger for ${b}`);
-        await test_add_bucket_trigger('ObjectRemoved', trigger_based_func_delete, b);
+        await test_add_bucket_trigger(
+            'ObjectRemoved',
+            trigger_based_func_delete,
+            b,
+        );
         await test_delete_trigger_run(full_access_user, 'file3.dat', b);
-        await test_delete_trigger_run(full_access_user, 'sloth_multiple.dat', b, /* multiple */ true);
+        await test_delete_trigger_run(
+            full_access_user,
+            'sloth_multiple.dat',
+            b,
+            /* multiple */ true,
+        );
     }
 
     console.log('test_bucket_lambda_triggers PASSED');
@@ -333,9 +390,15 @@ async function test_add_function(user, func) {
     await prepare_func(func);
 
     try {
-        await lambda.deleteFunction({ FunctionName: func.FunctionName }).promise();
+        await lambda
+            .deleteFunction({ FunctionName: func.FunctionName })
+            .promise();
     } catch (err) {
-        console.log('Delete function if exist:', func.FunctionName, err.message);
+        console.log(
+            'Delete function if exist:',
+            func.FunctionName,
+            err.message,
+        );
     }
 
     await lambda.createFunction(func).promise();
@@ -348,7 +411,7 @@ async function test_add_bucket_trigger(type, func, bucketname) {
         bucket_name: bucketname,
         object_suffix: '.dat',
         func_name: func.FunctionName,
-        event_name: type
+        event_name: type,
     });
     await P.delay(TIME_FOR_SDK_TO_UPDATE);
     console.log('bucket lambda trigger created.');
@@ -363,13 +426,13 @@ async function test_trigger_run_when_should(user, file_param, bucketname) {
     const params1 = {
         Bucket: bucketname,
         Key: file_param,
-        Body: fs.createReadStream(fname)
+        Body: fs.createReadStream(fname),
     };
     await s3.upload(params1).promise();
     while (retries < NUM_OF_RETRIES && file_not_created) {
         const params2 = {
             Bucket: bucketname,
-            Key: file_param + '.json'
+            Key: file_param + '.json',
         };
         try {
             await s3.headObject(params2).promise();
@@ -377,19 +440,30 @@ async function test_trigger_run_when_should(user, file_param, bucketname) {
         } catch (err) {
             if (err.statusCode === 404) {
                 retries += 1;
-                console.log('file wasn\'t created yet...');
+                console.log("file wasn't created yet...");
                 await P.delay(TIME_FOR_FUNC_TO_RUN);
             } else {
-                throw new Error(`expecting head to fail with statusCode 404 - File not found but got different error ${err}`);
+                throw new Error(
+                    `expecting head to fail with statusCode 404 - File not found but got different error ${err}`,
+                );
             }
         }
     }
 
-    assert(file_not_created === false, `expecting file to be created but didn't uploaded ${bucketname}/${file_param} , retries ${retries}`);
-    console.log(`bucket lambda trigger worked. file created for: ${bucketname}/${file_param}`);
+    assert(
+        file_not_created === false,
+        `expecting file to be created but didn't uploaded ${bucketname}/${file_param} , retries ${retries}`,
+    );
+    console.log(
+        `bucket lambda trigger worked. file created for: ${bucketname}/${file_param}`,
+    );
 }
 
-async function test_trigger_dont_run_when_shouldnt(user, file_param, bucketname) {
+async function test_trigger_dont_run_when_shouldnt(
+    user,
+    file_param,
+    bucketname,
+) {
     console.log(`test trigger should not run for ${bucketname}`);
     const s3 = get_new_server(user);
     const fname = await ops.generate_random_file(1);
@@ -397,22 +471,30 @@ async function test_trigger_dont_run_when_shouldnt(user, file_param, bucketname)
     const params1 = {
         Bucket: bucketname,
         Key: file_param,
-        Body: fs.createReadStream(fname)
+        Body: fs.createReadStream(fname),
     };
     await s3.upload(params1).promise();
     await P.delay(TIME_FOR_FUNC_TO_RUN);
 
     const params2 = {
         Bucket: bucketname,
-        Key: file_param + '.json'
+        Key: file_param + '.json',
     };
 
     try {
         await s3.headObject(params2).promise();
-        throw new Error(`expecting head to fail with statusCode 404 - File not found ${bucketname}/${file_param}`);
+        throw new Error(
+            `expecting head to fail with statusCode 404 - File not found ${bucketname}/${file_param}`,
+        );
     } catch (err) {
-        assert(err.statusCode === 404, 'expecting upload to fail with statusCode 404 - File not found' + err.statusCode);
-        console.log(`bucket lambda trigger worked. file not created for: ${bucketname}/${file_param}`);
+        assert(
+            err.statusCode === 404,
+            'expecting upload to fail with statusCode 404 - File not found' +
+                err.statusCode,
+        );
+        console.log(
+            `bucket lambda trigger worked. file not created for: ${bucketname}/${file_param}`,
+        );
     }
 }
 
@@ -421,26 +503,34 @@ async function test_delete_trigger_run(user, file_param, bucketname, multiple) {
     const s3 = get_new_server(user);
     const params = {
         Bucket: bucketname,
-        Key: file_param
+        Key: file_param,
     };
     const params2 = {
         Bucket: bucketname,
-        Key: file_param + '.json'
+        Key: file_param + '.json',
     };
     let file_not_deleted = true;
     let retries = 0;
     try {
         await s3.headObject(params2).promise();
     } catch (err) {
-        console.log('json file not exist - test can\'t succeed:', file_param + '.json', err);
-        throw new Error(`expecting head to fail with statusCode 404 - File not found ${bucketname}/${file_param}`);
+        console.log(
+            "json file not exist - test can't succeed:",
+            file_param + '.json',
+            err,
+        );
+        throw new Error(
+            `expecting head to fail with statusCode 404 - File not found ${bucketname}/${file_param}`,
+        );
     }
 
     if (multiple) {
-        await s3.deleteObjects({
-            Bucket: bucketname,
-            Delete: { Objects: [_.pick(params, 'Key')] },
-        }).promise();
+        await s3
+            .deleteObjects({
+                Bucket: bucketname,
+                Delete: { Objects: [_.pick(params, 'Key')] },
+            })
+            .promise();
     } else {
         await s3.deleteObject(params).promise();
     }
@@ -449,22 +539,35 @@ async function test_delete_trigger_run(user, file_param, bucketname, multiple) {
         try {
             await s3.headObject(params2).promise();
             retries += 1;
-            console.log('file wasn\'t deleted yet...');
+            console.log("file wasn't deleted yet...");
             await P.delay(TIME_FOR_FUNC_TO_RUN);
         } catch (err) {
             if (err.statusCode === 404) {
                 file_not_deleted = false;
             } else {
-                throw new Error(`expecting head to fail with statusCode 404 - File not found but got different error ${err}`);
+                throw new Error(
+                    `expecting head to fail with statusCode 404 - File not found but got different error ${err}`,
+                );
             }
         }
     }
 
-    assert(file_not_deleted === false, `expecting file to be deleted but didn't ${bucketname}/${file_param} retries ${retries}`);
-    console.log(`bucket lambda trigger worked. file deleted for: ${bucketname}/${file_param}`);
+    assert(
+        file_not_deleted === false,
+        `expecting file to be deleted but didn't ${bucketname}/${file_param} retries ${retries}`,
+    );
+    console.log(
+        `bucket lambda trigger worked. file deleted for: ${bucketname}/${file_param}`,
+    );
 }
 
-async function test_trigger_run_when_should_multi(user, bucketname, files_prefix, suffix, num_of_files) {
+async function test_trigger_run_when_should_multi(
+    user,
+    bucketname,
+    files_prefix,
+    suffix,
+    num_of_files,
+) {
     console.log(`test multi delete trigger should run for ${bucketname}`);
     const s3 = get_new_server(user);
     const names = [];
@@ -477,7 +580,7 @@ async function test_trigger_run_when_should_multi(user, bucketname, files_prefix
         const params1 = {
             Bucket: bucketname,
             Key: name,
-            Body: fs.createReadStream(fname)
+            Body: fs.createReadStream(fname),
         };
         return s3.upload(params1).promise();
     });
@@ -485,12 +588,17 @@ async function test_trigger_run_when_should_multi(user, bucketname, files_prefix
 
     const params2 = {
         Bucket: bucketname,
-        Prefix: files_prefix
+        Prefix: files_prefix,
     };
     const data = await s3.listObjects(params2).promise();
 
-    assert(data.Contents.length === (num_of_files * 2), `bucket ${bucketname} lambda trigger failed. files created: ${data.Contents}`);
-    console.log(`bucket lambda trigger worked. files ${data.Contents.length} created on ${bucketname}`);
+    assert(
+        data.Contents.length === num_of_files * 2,
+        `bucket ${bucketname} lambda trigger failed. files created: ${data.Contents}`,
+    );
+    console.log(
+        `bucket lambda trigger worked. files ${data.Contents.length} created on ${bucketname}`,
+    );
 }
 
 async function main() {
@@ -504,7 +612,7 @@ async function main() {
 }
 
 module.exports = {
-    run_test: run_test
+    run_test: run_test,
 };
 
 if (require.main === module) {

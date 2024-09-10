@@ -9,11 +9,9 @@
 'use strict';
 
 module.exports = {
-
     $id: 'agent_api',
 
     methods: {
-
         get_agent_info_and_update_masters: {
             method: 'PUT',
             params: {
@@ -26,91 +24,91 @@ module.exports = {
                             type: 'object',
                             properties: {
                                 address: {
-                                    type: 'string'
+                                    type: 'string',
                                 },
                             },
                         },
                     },
                     available_capacity: {
-                        $ref: 'common_api#/definitions/bigint'
-                    }
+                        $ref: 'common_api#/definitions/bigint',
+                    },
                 },
             },
             reply: {
                 type: 'object',
                 properties: {
                     version: {
-                        type: 'string'
+                        type: 'string',
                     },
                     name: {
-                        type: 'string'
+                        type: 'string',
                     },
                     ip: {
-                        type: 'string'
+                        type: 'string',
                     },
                     host_id: {
-                        type: 'string'
+                        type: 'string',
                     },
                     host_name: {
-                        type: 'string'
+                        type: 'string',
                     },
                     base_address: {
-                        type: 'string'
+                        type: 'string',
                     },
                     rpc_port: {
-                        type: 'string'
+                        type: 'string',
                     },
                     rpc_address: {
-                        type: 'string'
+                        type: 'string',
                     },
                     public_ip: {
-                        type: 'string'
+                        type: 'string',
                     },
                     permission_tempering: {
-                        idate: true
+                        idate: true,
                     },
                     n2n_config: {
-                        $ref: 'common_api#/definitions/n2n_config'
+                        $ref: 'common_api#/definitions/n2n_config',
                     },
                     enabled: {
-                        type: 'boolean'
+                        type: 'boolean',
                     },
                     geolocation: {
-                        type: 'string'
+                        type: 'string',
                     },
                     storage: {
-                        $ref: 'common_api#/definitions/storage_info'
+                        $ref: 'common_api#/definitions/storage_info',
                     },
                     drives: {
                         type: 'array',
                         items: {
-                            $ref: 'common_api#/definitions/drive_info'
-                        }
+                            $ref: 'common_api#/definitions/drive_info',
+                        },
                     },
                     os_info: {
-                        $ref: 'common_api#/definitions/os_info'
+                        $ref: 'common_api#/definitions/os_info',
                     },
                     node_type: {
-                        $ref: 'common_api#/definitions/node_type'
+                        $ref: 'common_api#/definitions/node_type',
                     },
                     cpu_usage: {
-                        type: 'number'
+                        type: 'number',
                     },
                     mem_usage: {
-                        type: 'integer'
+                        type: 'integer',
                     },
                     debug_level: {
                         type: 'integer',
                     },
                     pool_name: {
-                        type: 'string'
+                        type: 'string',
                     },
                     create_node_token: {
-                        type: 'string'
+                        type: 'string',
                     },
 
                     io_stats: {
-                        $ref: 'common_api#/definitions/io_stats'
+                        $ref: 'common_api#/definitions/io_stats',
                     },
 
                     // the agent's "recommendation" of it's roles. nodes_monitor will only use it
@@ -118,14 +116,14 @@ module.exports = {
                     roles: {
                         type: 'array',
                         items: {
-                            $ref: 'common_api#/definitions/agent_roles_enum'
-                        }
+                            $ref: 'common_api#/definitions/agent_roles_enum',
+                        },
                     },
 
                     location_info: {
-                        $ref: 'common_api#/definitions/location_info'
-                    }
-                }
+                        $ref: 'common_api#/definitions/location_info',
+                    },
+                },
             },
         },
 
@@ -135,16 +133,16 @@ module.exports = {
                 type: 'object',
                 properties: {
                     available_capacity: {
-                        $ref: 'common_api#/definitions/bigint'
-                    }
-                }
+                        $ref: 'common_api#/definitions/bigint',
+                    },
+                },
             },
             reply: {
                 type: 'object',
                 properties: {
-                    storage: { $ref: 'common_api#/definitions/storage_info' }
-                }
-            }
+                    storage: { $ref: 'common_api#/definitions/storage_info' },
+                },
+            },
         },
 
         update_auth_token: {
@@ -154,10 +152,10 @@ module.exports = {
                 required: ['auth_token'],
                 properties: {
                     auth_token: {
-                        type: 'string'
-                    }
-                }
-            }
+                        type: 'string',
+                    },
+                },
+            },
         },
 
         update_create_node_token: {
@@ -167,10 +165,10 @@ module.exports = {
                 required: ['create_node_token'],
                 properties: {
                     create_node_token: {
-                        type: 'string'
-                    }
-                }
-            }
+                        type: 'string',
+                    },
+                },
+            },
         },
 
         update_rpc_config: {
@@ -179,16 +177,16 @@ module.exports = {
                 type: 'object',
                 properties: {
                     rpc_address: {
-                        type: 'string'
+                        type: 'string',
                     },
                     base_address: {
-                        type: 'string'
+                        type: 'string',
                     },
                     n2n_config: {
-                        $ref: 'common_api#/definitions/n2n_config'
-                    }
-                }
-            }
+                        $ref: 'common_api#/definitions/n2n_config',
+                    },
+                },
+            },
         },
 
         update_node_service: {
@@ -198,22 +196,22 @@ module.exports = {
                 required: ['enabled', 'location_info'],
                 properties: {
                     enabled: {
-                        type: 'boolean'
+                        type: 'boolean',
                     },
                     location_info: {
-                        $ref: 'common_api#/definitions/location_info'
-                    }
-                }
-            }
+                        $ref: 'common_api#/definitions/location_info',
+                    },
+                },
+            },
         },
 
         n2n_signal: {
             method: 'POST',
             params: {
-                $ref: 'node_api#/definitions/signal_params'
+                $ref: 'node_api#/definitions/signal_params',
             },
             reply: {
-                $ref: 'node_api#/definitions/signal_reply'
+                $ref: 'node_api#/definitions/signal_reply',
             },
         },
 
@@ -223,21 +221,21 @@ module.exports = {
                 type: 'object',
                 properties: {
                     count: {
-                        type: 'integer'
-                    }
-                }
+                        type: 'integer',
+                    },
+                },
             },
             reply: {
                 type: 'object',
                 properties: {
                     write: {
-                        $ref: 'node_api#/definitions/latency_array'
+                        $ref: 'node_api#/definitions/latency_array',
                     },
                     read: {
-                        $ref: 'node_api#/definitions/latency_array'
-                    }
-                }
-            }
+                        $ref: 'node_api#/definitions/latency_array',
+                    },
+                },
+            },
         },
 
         test_store_validity: {
@@ -251,13 +249,13 @@ module.exports = {
                 required: ['source', 'target', 'response_length'],
                 properties: {
                     source: {
-                        type: 'string'
+                        type: 'string',
                     },
                     target: {
-                        type: 'string'
+                        type: 'string',
                     },
                     response_length: {
-                        type: 'integer'
+                        type: 'integer',
                     },
                     // [RPC_BUFFERS].data
                 },
@@ -269,17 +267,17 @@ module.exports = {
                 },
             },
             auth: {
-                n2n: true
-            }
+                n2n: true,
+            },
         },
 
         test_network_perf_to_peer: {
             method: 'POST',
             params: {
-                $ref: '#/definitions/self_test_params'
+                $ref: '#/definitions/self_test_params',
             },
             reply: {
-                $ref: '#/definitions/self_test_reply'
+                $ref: '#/definitions/self_test_reply',
             },
         },
 
@@ -300,20 +298,18 @@ module.exports = {
                 required: ['level'],
                 properties: {
                     level: {
-                        type: 'integer'
-                    }
-                }
-            }
+                        type: 'integer',
+                    },
+                },
+            },
         },
 
         uninstall: {
             method: 'DELETE',
         },
-
     },
 
     definitions: {
-
         self_test_params: {
             type: 'object',
             required: [
@@ -342,8 +338,8 @@ module.exports = {
                 },
                 concur: {
                     type: 'integer',
-                }
-            }
+                },
+            },
         },
 
         self_test_reply: {
@@ -351,10 +347,8 @@ module.exports = {
             properties: {
                 session: {
                     type: 'string',
-                }
-            }
+                },
+            },
         },
-
-    }
-
+    },
 };

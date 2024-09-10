@@ -19,7 +19,6 @@ let nb_native_napi;
  * @returns {nb.Native}
  */
 function nb_native() {
-
     if (nb_native_napi) return nb_native_napi;
 
     nb_native_napi = bindings('nb_native.node');
@@ -39,7 +38,7 @@ function nb_native() {
 
 // extend prototype
 function inherits(target, source) {
-    _.forIn(source.prototype, function(v, k) {
+    _.forIn(source.prototype, function (v, k) {
         target.prototype[k] = source.prototype[k];
     });
 }
@@ -83,7 +82,8 @@ async function read_rand_seed(seed_bytes) {
     while (offset < buf.length) {
         try {
             const count = buf.length - offset;
-            const random_dev = config.ENABLE_DEV_RANDOM_SEED ? '/dev/random' : '/dev/urandom';
+            const random_dev =
+                config.ENABLE_DEV_RANDOM_SEED ? '/dev/random' : '/dev/urandom';
             if (!fh) {
                 if (process.env.LOCAL_MD_SERVER) {
                     console.log(`read_rand_seed: opening ${random_dev} ...`);
@@ -92,10 +92,14 @@ async function read_rand_seed(seed_bytes) {
                 // Ignore seed in standalone due to pkg issue: https://github.com/noobaa/noobaa-core/issues/6476
                 if (Number.isInteger(fh)) break;
             }
-            console.log(`read_rand_seed: reading ${count} bytes from ${random_dev} ...`);
+            console.log(
+                `read_rand_seed: reading ${count} bytes from ${random_dev} ...`,
+            );
             const { bytesRead } = await fh.read(buf, offset, count, null);
             offset += bytesRead;
-            console.log(`read_rand_seed: got ${bytesRead} bytes from ${random_dev}, total ${offset} ...`);
+            console.log(
+                `read_rand_seed: got ${bytesRead} bytes from ${random_dev}, total ${offset} ...`,
+            );
         } catch (err) {
             console.log('read_rand_seed: error', err);
             await clean_fh();
@@ -108,21 +112,33 @@ async function read_rand_seed(seed_bytes) {
 }
 
 async function generate_entropy(loop_cond) {
-    if (process.platform !== 'linux' || process.env.container === 'docker') return;
+    if (process.platform !== 'linux' || process.env.container === 'docker') {
+        return;
+    }
     while (loop_cond()) {
         try {
             await async_delay(1000);
             const ENTROPY_AVAIL_PATH = '/proc/sys/kernel/random/entropy_avail';
-            const entropy_avail = parseInt(await fs.promises.readFile(ENTROPY_AVAIL_PATH, 'utf8'), 10);
+            const entropy_avail = parseInt(
+                await fs.promises.readFile(ENTROPY_AVAIL_PATH, 'utf8'),
+                10,
+            );
             console.log(`generate_entropy: entropy_avail ${entropy_avail}`);
             if (entropy_avail < 512) {
                 const bs = 1024 * 1024;
                 const count = 32;
                 let disk;
                 let disk_size;
-                for (disk of ['/dev/sda', '/dev/vda', '/dev/xvda', '/dev/dasda']) {
+                for (disk of [
+                    '/dev/sda',
+                    '/dev/vda',
+                    '/dev/xvda',
+                    '/dev/dasda',
+                ]) {
                     try {
-                        const res = await async_exec(`blockdev --getsize64 ${disk}`);
+                        const res = await async_exec(
+                            `blockdev --getsize64 ${disk}`,
+                        );
                         disk_size = res.stdout;
                         break;
                     } catch (err) {
@@ -131,9 +147,16 @@ async function generate_entropy(loop_cond) {
                 }
                 if (disk_size) {
                     const disk_size_in_blocks = parseInt(disk_size, 10) / bs;
-                    const skip = chance.integer({ min: 0, max: disk_size_in_blocks });
-                    console.log(`generate_entropy: adding entropy: dd if=${disk} bs=${bs} count=${count} skip=${skip} | md5sum`);
-                    await async_exec(`dd if=${disk} bs=${bs} count=${count} skip=${skip} | md5sum`);
+                    const skip = chance.integer({
+                        min: 0,
+                        max: disk_size_in_blocks,
+                    });
+                    console.log(
+                        `generate_entropy: adding entropy: dd if=${disk} bs=${bs} count=${count} skip=${skip} | md5sum`,
+                    );
+                    await async_exec(
+                        `dd if=${disk} bs=${bs} count=${count} skip=${skip} | md5sum`,
+                    );
                 } else {
                     throw new Error('No disk candidates found');
                 }

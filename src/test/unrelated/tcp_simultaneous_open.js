@@ -18,9 +18,9 @@ function tcp_simultaneous_open(local_port, remote_port, attempts) {
     attempts = attempts || 0;
     let conn = net.connect({
         port: remote_port,
-        localPort: local_port
+        localPort: local_port,
     });
-    conn.on('error', function(err) {
+    conn.on('error', function (err) {
         process.stdout.write('.');
         conn.destroy();
         conn = null;
@@ -30,33 +30,39 @@ function tcp_simultaneous_open(local_port, remote_port, attempts) {
             delay = 1;
         }
         if (attempts < 1000) {
-            setTimeout(tcp_simultaneous_open, delay, local_port, remote_port, attempts);
+            setTimeout(
+                tcp_simultaneous_open,
+                delay,
+                local_port,
+                remote_port,
+                attempts,
+            );
         } else {
             console.log('PEW EXHAUSTED', err);
         }
     });
-    conn.on('data', function(data) {
+    conn.on('data', function (data) {
         console.log('PLAIN DATA:', data.toString());
         upgrade_to_tls(conn, local_port < remote_port);
     });
-    conn.on('connect', function() {
+    conn.on('connect', function () {
         console.log('\nCONNECTED!', conn.address());
         conn.write(Buffer.from('FIRST PLAIN MESSAGE'));
     });
 }
 
 function tcp_normal_open(listen_port) {
-    const server = net.createServer(function(conn) {
+    const server = net.createServer(function (conn) {
         server.close();
-        conn.on('readable', function() {
+        conn.on('readable', function () {
             on_readable(conn, true);
         });
     });
-    server.listen(listen_port, function() {
-        const conn = net.connect(listen_port, function() {
+    server.listen(listen_port, function () {
+        const conn = net.connect(listen_port, function () {
             conn.write(new_seq_buffer(1));
         });
-        conn.on('readable', function() {
+        conn.on('readable', function () {
             on_readable(conn, false);
         });
     });
@@ -118,26 +124,36 @@ function upgrade_to_tls(conn, is_server) {
         });
     }
     sconn.on('secure', once_connected);
-    sconn.on('error', function(err) {
+    sconn.on('error', function (err) {
         console.error('TLS ERROR:', err);
         sconn.destroy();
     });
-    sconn.on('close', function() {
+    sconn.on('close', function () {
         console.error('TLS CLOSED');
         clearInterval(looper);
         conn.destroy();
     });
-    sconn.on('data', function(data) {
+    sconn.on('data', function (data) {
         console.log('TLS DATA:', data.toString());
     });
 
     function once_connected() {
         console.log('TLS CONNECTED:', sconn.localPort, '->', sconn.remotePort);
-        sconn.write(Buffer.from('first secure message from ' +
-            (is_server ? 'server ' : 'client ') + (new Date())));
-        looper = setInterval(function() {
-            sconn.write(Buffer.from('another secure message from ' +
-                (is_server ? 'server ' : 'client ') + (new Date())));
+        sconn.write(
+            Buffer.from(
+                'first secure message from ' +
+                    (is_server ? 'server ' : 'client ') +
+                    new Date(),
+            ),
+        );
+        looper = setInterval(function () {
+            sconn.write(
+                Buffer.from(
+                    'another secure message from ' +
+                        (is_server ? 'server ' : 'client ') +
+                        new Date(),
+                ),
+            );
         }, 1000);
     }
 }

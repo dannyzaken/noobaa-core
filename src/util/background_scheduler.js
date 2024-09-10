@@ -17,9 +17,9 @@ const dbg = require('./debug_module')(__filename);
  *
  */
 class Background_Scheduler {
-
     static get_instance() {
-        Background_Scheduler._instance = Background_Scheduler._instance || new Background_Scheduler();
+        Background_Scheduler._instance =
+            Background_Scheduler._instance || new Background_Scheduler();
         return Background_Scheduler._instance;
     }
 
@@ -36,15 +36,28 @@ class Background_Scheduler {
 
         function run() {
             if (self.workers_by_name_cache[worker.name]) {
-                P.fcall(function() {
-                        return worker.run_batch();
-                    })
-                    .then(function(delay) {
-                        return P.delay_unblocking(delay || worker.delay || DEFAULT_DELAY);
-                    }, function(err) {
-                        dbg.log('run_background_worker', worker.name, 'UNCAUGHT ERROR', err, err.stack);
-                        return P.delay_unblocking(worker.delay || DEFAULT_DELAY);
-                    })
+                P.fcall(function () {
+                    return worker.run_batch();
+                })
+                    .then(
+                        function (delay) {
+                            return P.delay_unblocking(
+                                delay || worker.delay || DEFAULT_DELAY,
+                            );
+                        },
+                        function (err) {
+                            dbg.log(
+                                'run_background_worker',
+                                worker.name,
+                                'UNCAUGHT ERROR',
+                                err,
+                                err.stack,
+                            );
+                            return P.delay_unblocking(
+                                worker.delay || DEFAULT_DELAY,
+                            );
+                        },
+                    )
                     .then(run);
             }
         }
@@ -73,8 +86,14 @@ class Background_Scheduler {
         }
         const isFunction = typeof worker.run_batch;
         if (!worker.name || isFunction !== 'function') {
-            console.error('Name and run function must be supplied for registering bg worker', worker.name);
-            throw new Error('Name and run function must be supplied for registering bg worker ' + worker.name);
+            console.error(
+                'Name and run function must be supplied for registering bg worker',
+                worker.name,
+            );
+            throw new Error(
+                'Name and run function must be supplied for registering bg worker ' +
+                    worker.name,
+            );
         }
         this.run_background_worker(worker);
     }

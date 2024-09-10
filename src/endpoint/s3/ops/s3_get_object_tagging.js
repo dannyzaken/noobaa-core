@@ -17,16 +17,19 @@ async function get_object_tagging(req, res) {
 }
 
 function format_tagging_response(tag_set) {
-    const tags_array = tag_set ? tag_set.map(tag => ({
-        Tag: {
-            Key: tag.key,
-            Value: tag.value
-        }
-    })) : [];
+    const tags_array =
+        tag_set ?
+            tag_set.map(tag => ({
+                Tag: {
+                    Key: tag.key,
+                    Value: tag.value,
+                },
+            }))
+        :   [];
     return {
         Tagging: {
-            TagSet: tags_array
-        }
+            TagSet: tags_array,
+        },
     };
 }
 

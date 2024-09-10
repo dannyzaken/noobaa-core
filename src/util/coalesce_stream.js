@@ -12,7 +12,6 @@ const buffer_utils = require('./buffer_utils');
  *
  */
 class CoalesceStream extends stream.Transform {
-
     constructor(options) {
         super(options);
         this.object_mode = options.objectMode;
@@ -38,7 +37,6 @@ class CoalesceStream extends stream.Transform {
     }
 
     _flush(callback) {
-
         if (this.timeout) {
             clearTimeout(this.timeout);
             this.timeout = null;

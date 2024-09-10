@@ -1,5 +1,5 @@
 /* Copyright (C) 2022 NooBaa */
-"use strict";
+'use strict';
 
 const cephalt_name = 'cephalt';
 const cephtenant_name = 'cephtenant';
@@ -29,19 +29,19 @@ const CEPH_TEST = {
         name: cephalt_name,
         uid: 1000,
         gid: 1000,
-        new_buckets_path: FS_ROOT_1
+        new_buckets_path: FS_ROOT_1,
     },
     nc_cephtenant_account_params: {
         name: cephtenant_name,
         uid: 2000,
         gid: 2000,
-        new_buckets_path: FS_ROOT_2
+        new_buckets_path: FS_ROOT_2,
     },
     nc_anonymous_account_params: {
         anonymous: true,
         uid: process.getuid(),
-        gid: process.getgid()
-    }
+        gid: process.getgid(),
+    },
 };
 const DEFAULT_NUMBER_OF_WORKERS = 5; //5 was the number of workers in the previous CI/CD process
 
@@ -55,4 +55,3 @@ exports.TOX_ARGS = TOX_ARGS;
 exports.AWS4_TEST_SUFFIX = AWS4_TEST_SUFFIX;
 exports.FS_ROOT_1 = FS_ROOT_1;
 exports.FS_ROOT_2 = FS_ROOT_2;
-

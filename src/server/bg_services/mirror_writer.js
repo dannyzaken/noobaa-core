@@ -14,9 +14,7 @@ const { MultiMarker } = require('../../util/multi_marker');
 const { MDStore } = require('../object_services/md_store');
 const { BucketChunksBuilder } = require('./bucket_chunks_builder');
 
-
 class MirrorWriter {
-
     constructor({ name, client }) {
         this.name = name;
         // main scanner with node end_marker (never stops)
@@ -46,9 +44,18 @@ class MirrorWriter {
         }
         dbg.log2(`starting run batch. `);
         dbg.log2(`scan range = `, this.mirror_scanner.get_chunks_range());
-        dbg.log2(`retry range = `, this.retry_scanner ? this.retry_scanner.get_chunks_range() : 'none');
-        dbg.log2(`errors marker = `, this.errors_marker ? this.errors_marker.get_total_range() : 'none');
-        dbg.log1('found these buckets with mirror policy:', util.inspect(mirrored_buckets));
+        dbg.log2(
+            `retry range = `,
+            this.retry_scanner ? this.retry_scanner.get_chunks_range() : 'none',
+        );
+        dbg.log2(
+            `errors marker = `,
+            this.errors_marker ? this.errors_marker.get_total_range() : 'none',
+        );
+        dbg.log1(
+            'found these buckets with mirror policy:',
+            util.inspect(mirrored_buckets),
+        );
 
         let scan_had_errors = false; // main scan had errors
         let retry_had_errors = false; // retry scan had errors
@@ -58,7 +65,10 @@ class MirrorWriter {
         const bucket_ids = mirrored_buckets.map(bucket => bucket._id);
 
         try {
-            const [scan_res, retry_res] = [await this.mirror_scanner.run_batch(bucket_ids), await this._retry_mirror(bucket_ids)];
+            const [scan_res, retry_res] = [
+                await this.mirror_scanner.run_batch(bucket_ids),
+                await this._retry_mirror(bucket_ids),
+            ];
 
             dbg.log1('got results: scan_res  = ', util.inspect(scan_res));
             dbg.log1('got results: retry_res = ', util.inspect(retry_res));
@@ -102,13 +112,10 @@ class MirrorWriter {
 
             // return default delay
             return config.MIRROR_WRITER_BATCH_DELAY;
-
         } catch (err) {
             dbg.error('got error on mirror writer run_batch:', err);
             return config.MIRROR_WRITER_ERROR_DELAY;
         }
-
-
     }
 
     _can_run() {
@@ -118,41 +125,62 @@ class MirrorWriter {
         }
 
         const system = system_store.data.systems[0];
-        if (!system || system_utils.system_in_maintenance(system._id)) return false;
+        if (!system || system_utils.system_in_maintenance(system._id)) {
+            return false;
+        }
 
         return true;
     }
 
     _init() {
         // read previous markers from system store
-        const start_marker = _.get(system_store.data, 'systems.0.bg_workers_info.mirror_writer_info.start_marker');
-        const retry_range = _.get(system_store.data, 'systems.0.bg_workers_info.mirror_writer_info.retry_range');
-        dbg.log0('starting mirror writer with start_marker = ', start_marker, 'retry_range = ', retry_range);
+        const start_marker = _.get(
+            system_store.data,
+            'systems.0.bg_workers_info.mirror_writer_info.start_marker',
+        );
+        const retry_range = _.get(
+            system_store.data,
+            'systems.0.bg_workers_info.mirror_writer_info.retry_range',
+        );
+        dbg.log0(
+            'starting mirror writer with start_marker = ',
+            start_marker,
+            'retry_range = ',
+            retry_range,
+        );
 
         // initialize the errors marker with range of previously failed chunks
-        this.errors_marker = new MultiMarker(_.mapValues(retry_range, id => String(id)));
+        this.errors_marker = new MultiMarker(
+            _.mapValues(retry_range, id => String(id)),
+        );
 
         // initialize the main scanner to start from previously stored marker
         this.mirror_scanner = this._get_bucket_chunks_builder({
-            start_marker
+            start_marker,
         });
 
         this.initialized = true;
     }
 
-
-
     _iterate_chunks(start_marker, end_marker, buckets) {
-        return MDStore.instance().iterate_all_chunks_in_buckets(start_marker, end_marker, buckets, config.MIRROR_WRITER_BATCH_SIZE);
+        return MDStore.instance().iterate_all_chunks_in_buckets(
+            start_marker,
+            end_marker,
+            buckets,
+            config.MIRROR_WRITER_BATCH_SIZE,
+        );
     }
 
     _build_chunks(chunk_ids) {
-        return this.client.scrubber.build_chunks({ chunk_ids }, {
-            auth_token: auth_server.make_auth_token({
-                system_id: system_store.data.systems[0]._id,
-                role: 'admin'
-            })
-        });
+        return this.client.scrubber.build_chunks(
+            { chunk_ids },
+            {
+                auth_token: auth_server.make_auth_token({
+                    system_id: system_store.data.systems[0]._id,
+                    role: 'admin',
+                }),
+            },
+        );
     }
 
     _retry_mirror(buckets) {
@@ -163,23 +191,26 @@ class MirrorWriter {
             if (error_range) {
                 this.retry_scanner = this._get_bucket_chunks_builder({
                     start_marker: new ObjectId(error_range.start),
-                    end_marker: new ObjectId(error_range.end)
+                    end_marker: new ObjectId(error_range.end),
                 });
             } else {
                 return { successful: true, chunk_ids: [], done: true };
             }
-
         }
         return this.retry_scanner.run_batch(buckets);
     }
 
-
     _get_mirrored_buckets() {
         // return buckets that has at least one tier with more than 1 mirror set
         return system_store.data.buckets
-            .filter(bucket =>
-                _.isUndefined(bucket.deleting) &&
-                bucket.tiering && bucket.tiering.tiers.some(tier => tier.tier.mirrors.length > 1))
+            .filter(
+                bucket =>
+                    _.isUndefined(bucket.deleting) &&
+                    bucket.tiering &&
+                    bucket.tiering.tiers.some(
+                        tier => tier.tier.mirrors.length > 1,
+                    ),
+            )
             .map(bucket => ({
                 name: bucket.name,
                 _id: MDStore.instance().make_md_id(bucket._id),
@@ -190,7 +221,7 @@ class MirrorWriter {
         if (chunk_ids && chunk_ids.length) {
             const range = {
                 start: String(chunk_ids[0]),
-                end: String(chunk_ids[chunk_ids.length - 1])
+                end: String(chunk_ids[chunk_ids.length - 1]),
             };
             this.errors_marker.push_range(range);
         }
@@ -201,7 +232,7 @@ class MirrorWriter {
             iterate_chunks_func: this._iterate_chunks.bind(this),
             build_chunks_func: this._build_chunks.bind(this),
             start_marker,
-            end_marker
+            end_marker,
         });
     }
 
@@ -209,43 +240,59 @@ class MirrorWriter {
         const now = Date.now();
         if (this._should_store_markers(now)) {
             this.markers_stored = now;
-            // store current markers in system_store so we can start again later where we left 
+            // store current markers in system_store so we can start again later where we left
             const retry_range_marker = new MultiMarker();
             if (this.errors_marker) {
-                retry_range_marker.push_range(this.errors_marker.get_total_range());
+                retry_range_marker.push_range(
+                    this.errors_marker.get_total_range(),
+                );
             }
             if (this.retry_scanner) {
-                retry_range_marker.push_range(this.retry_scanner.get_chunks_range());
+                retry_range_marker.push_range(
+                    this.retry_scanner.get_chunks_range(),
+                );
             }
 
             const retry_range_str = retry_range_marker.get_total_range();
 
-            const mirror_writer_info = _.omitBy({
-                start_marker: new ObjectId(this.mirror_scanner.get_start_marker()),
-                retry_range: retry_range_str && _.mapValues(retry_range_str, marker => new ObjectId(marker))
-            }, _.isUndefined);
+            const mirror_writer_info = _.omitBy(
+                {
+                    start_marker: new ObjectId(
+                        this.mirror_scanner.get_start_marker(),
+                    ),
+                    retry_range:
+                        retry_range_str &&
+                        _.mapValues(
+                            retry_range_str,
+                            marker => new ObjectId(marker),
+                        ),
+                },
+                _.isUndefined,
+            );
             dbg.log0(`writing markers to system store:`, mirror_writer_info);
             await this._update_markers_in_system_store(mirror_writer_info);
         }
     }
 
     _should_store_markers(now) {
-        return now > this.markers_stored + config.MIRROR_WRITER_MARKER_STORE_PERIOD;
+        return (
+            now > this.markers_stored + config.MIRROR_WRITER_MARKER_STORE_PERIOD
+        );
     }
 
     _update_markers_in_system_store(mirror_writer_info) {
         return system_store.make_changes({
             update: {
-                systems: [{
-                    _id: system_store.data.systems[0]._id,
-                    'bg_workers_info.mirror_writer_info': mirror_writer_info
-                }]
-            }
+                systems: [
+                    {
+                        _id: system_store.data.systems[0]._id,
+                        'bg_workers_info.mirror_writer_info':
+                            mirror_writer_info,
+                    },
+                ],
+            },
         });
     }
-
 }
-
-
 
 exports.MirrorWriter = MirrorWriter;

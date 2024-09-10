@@ -2,16 +2,16 @@
 
 1. [Introduction](#introduction)
 2. [NooBaa Service logs](#noobaa-service-logs)
-    1. [Journal logs](#journal-logs)
-    2. [Rsyslog](#rsyslog) 
-        1. [Rsyslog status check](#rsyslog-status-check)
-        2. [Logrotate](#logrotate)
-            1. [Logrotate automatic rotation](#logrotate-automatic-rotation)
-            1. [Manual Logrotate trigerring](#manual-logrotate-triggering)
-4. [NooBaa Debug levels](#noobaa-debug-levels)
-    1. [Supported log debug levels](#supported-log-debug-levels)
-    2. [Debug level Increase](#debug-level-increase)
-5. [NooBaa Logs format](#noobaa-logs-format)
+   1. [Journal logs](#journal-logs)
+   2. [Rsyslog](#rsyslog)
+      1. [Rsyslog status check](#rsyslog-status-check)
+      2. [Logrotate](#logrotate)
+         1. [Logrotate automatic rotation](#logrotate-automatic-rotation)
+         1. [Manual Logrotate trigerring](#manual-logrotate-triggering)
+3. [NooBaa Debug levels](#noobaa-debug-levels)
+   1. [Supported log debug levels](#supported-log-debug-levels)
+   2. [Debug level Increase](#debug-level-increase)
+4. [NooBaa Logs format](#noobaa-logs-format)
 
 ## Introduction
 
@@ -19,12 +19,14 @@ This document provides an overview of the logging capabilities within NooBaa, de
 
 ## NooBaa Service Logs
 
-NooBaa service logs are written directly to stderr and to syslog -  
+NooBaa service logs are written directly to stderr and to syslog -
+
 1. NooBaa writes the logs into stderr and to `/var/log/noobaa.log`.
 2. The `journalctl` service watches stderr and writes it to `journal`.
 3. A `syslog` service, like `rsyslog/syslog_ng` watches `journal` and writes it to `/var/log/messages/`.
 
 ### Journal logs
+
 1. NooBaa service logs -
 
 Run the following command in order to display the NooBaa service logs -
@@ -38,15 +40,17 @@ journalctl -u noobaa.service
 NooBaa logs are configured using rsyslog and logrotate. NooBaa RPM will configure rsyslog and logrotate if both are already running.
 
 #### Rsyslog status check
+
 ```
 systemctl status rsyslog
 ```
 
 NooBaa logs are pushed to `var/log/noobaa.log` and the log is rotated and compressed daily.
 
-The following files contain NooBaa specific configuration for rsyslog and logrotate - 
+The following files contain NooBaa specific configuration for rsyslog and logrotate -
+
 1. `etc/rsyslog.d/noobaa_syslog.conf`
-2. `etc/logrotate.d/noobaa-logrotate` 
+2. `etc/logrotate.d/noobaa-logrotate`
 
 Verify the rsyslog and logrotate rpm configuration is complete by checking the files above.
 
@@ -54,25 +58,26 @@ Verify the rsyslog and logrotate rpm configuration is complete by checking the f
 
 ##### Logrotate automatic rotation
 
-- Logrotate configuration is set up under `etc/logrotate.d/`. 
+- Logrotate configuration is set up under `etc/logrotate.d/`.
 - Logrotate is called from cron on daily schedule, usually at midnight.
-- For acquiring more knowledge on NooBaa events, read - [NooBaa Non Containerized Events](./Events.md).  
+- For acquiring more knowledge on NooBaa events, read - [NooBaa Non Containerized Events](./Events.md).
+
 ##### Manual Logrotate triggering
+
 To rotate the logs manually run -
+
 ```
 logrotate etc/logrotate.d/noobaa-logrotate
 ```
-
 
 ## NooBaa Debug levels
 
 ### Supported log debug levels
 
 1. `default` - default debugging.
-2. `warn` - warning/errors debugging only. 
+2. `warn` - warning/errors debugging only.
 3. `nsfs` - additional `nsfs` detailed debugging.
 4. `all` - all detailed debugging.
-
 
 ### Debug level Increase
 
@@ -80,14 +85,16 @@ Set `NOOBAA_LOG_LEVEL` property in config.json to control the amount of debuggin
 For more info about setting custom properties, see - [Non Containerized Config File Customizations](./ConfigFileCustomizations.md)
 
 ## NooBaa Logs format
+
 NooBaa logs are formatted with ANSI color codes. </br>
-Use the `cat <logfile> | less -R` command in order to display the contents of a log file with pagination and the ability to handle ANSI color codes. 
+Use the `cat <logfile> | less -R` command in order to display the contents of a log file with pagination and the ability to handle ANSI color codes.
 
 ### Set log config
 
-Set `LOG_TO_STDERR_ENABLED` property to `true` to  send Noobaa logs to stderr. Noobaa logs will be send to syslog when the property `LOG_TO_SYSLOG_ENABLED` set to `true`. 
+Set `LOG_TO_STDERR_ENABLED` property to `true` to send Noobaa logs to stderr. Noobaa logs will be send to syslog when the property `LOG_TO_SYSLOG_ENABLED` set to `true`.
 
 Default configurations are:
+
 ```
 LOG_TO_STDERR_ENABLED = true;
 LOG_TO_SYSLOG_ENABLED = false;

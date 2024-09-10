@@ -6,14 +6,12 @@ const _ = require('lodash');
 const dbg = require('../../util/debug_module')(__filename);
 const BlockStoreBase = require('./block_store_base').BlockStoreBase;
 
-
 class BlockStoreMem extends BlockStoreBase {
-
     constructor(options) {
         super(options);
         this._usage = {
             size: 0,
-            count: 0
+            count: 0,
         };
         this._blocks = new Map();
         // below 15 GB the node is deactivated, so we report 16 GB here
@@ -77,7 +75,7 @@ class BlockStoreMem extends BlockStoreBase {
         // Just a place filler since we always succeed in deletions
         return {
             failed_block_ids: [],
-            succeeded_block_ids: _.difference(block_ids, [])
+            succeeded_block_ids: _.difference(block_ids, []),
         };
     }
     /**

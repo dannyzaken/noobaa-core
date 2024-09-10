@@ -13,40 +13,40 @@ async function read_namespace(make_error = _default_error_factory) {
     try {
         const buffer = await fs.promises.readFile(config.KUBE_NAMESPACE_FILE);
         return buffer.toString('utf8').trim();
-
     } catch (err) {
-        throw make_error(`Could not read service account token file at "${config.KUBE_NAMESPACE_FILE}"`);
+        throw make_error(
+            `Could not read service account token file at "${config.KUBE_NAMESPACE_FILE}"`,
+        );
     }
 }
 
 async function read_sa_token(make_error = _default_error_factory) {
     try {
-       const buffer = await fs.promises.readFile(config.KUBE_SA_TOKEN_FILE);
-       return buffer.toString('utf8').trim();
-
+        const buffer = await fs.promises.readFile(config.KUBE_SA_TOKEN_FILE);
+        return buffer.toString('utf8').trim();
     } catch (err) {
-        throw make_error(`Could not namespace file at "${config.KUBE_SA_TOKEN_FILE}"`);
+        throw make_error(
+            `Could not namespace file at "${config.KUBE_SA_TOKEN_FILE}"`,
+        );
     }
 }
 
 async function exec_kubectl(command, output_format) {
     output_format = output_format.toLowerCase();
 
-    const output_opt = (output_format === 'none' || output_format === 'raw') ?
-        '' :
-        `-o=${output_format}`;
+    const output_opt =
+        output_format === 'none' || output_format === 'raw' ?
+            ''
+        :   `-o=${output_format}`;
 
-    const response = await os_utils.exec(
-        `kubectl ${command} ${output_opt}`,
-        { return_stdout: true }
-    );
+    const response = await os_utils.exec(`kubectl ${command} ${output_opt}`, {
+        return_stdout: true,
+    });
 
     if (output_format === 'none') {
         return '';
-
     } else if (output_format === 'json') {
         return JSON.parse(response);
-
     } else {
         return response;
     }
@@ -55,7 +55,7 @@ async function exec_kubectl(command, output_format) {
 function apply_conf(conf) {
     return os_utils.exec(
         `echo '${JSON.stringify(conf)}' | kubectl apply -f -`,
-        { return_stdout: true }
+        { return_stdout: true },
     );
 }
 
@@ -69,7 +69,10 @@ function get_resource(resource_type, resource_name) {
 }
 
 function patch_resource(resource_type, resource_name, patch) {
-    return exec_kubectl(`patch ${resource_type} ${resource_name} -p='${JSON.stringify(patch)}'`, 'json');
+    return exec_kubectl(
+        `patch ${resource_type} ${resource_name} -p='${JSON.stringify(patch)}'`,
+        'json',
+    );
 }
 
 function delete_resource(resource_type, resource_name) {
@@ -87,27 +90,30 @@ async function resource_exists(resource_type, resource_name) {
 
 async function api_exists(api_name, api_version = '') {
     const text = await exec_kubectl(`api-versions`, 'raw');
-    return text
-        .split('\n')
-        .some(api => {
-            const [name, version] = api.split('/');
-            return api_version ?
-                (api_name === name && api_version === version) :
-                (api_name === name);
-        });
+    return text.split('\n').some(api => {
+        const [name, version] = api.split('/');
+        return api_version ?
+                api_name === name && api_version === version
+            :   api_name === name;
+    });
 }
 
 function wait_for_delete(resource_type, resource_name, timeout = 300) {
     return exec_kubectl(
         `wait ${resource_type} ${resource_name} --for=delete --timeout=${timeout}s`,
-        'json'
+        'json',
     );
 }
 
-function wait_for_condition(resource_type, resource_name, condition, timeout = 300) {
+function wait_for_condition(
+    resource_type,
+    resource_name,
+    condition,
+    timeout = 300,
+) {
     return exec_kubectl(
         `wait ${resource_type} ${resource_name} --for condition=${condition} --timeout=${timeout}s`,
-        'json'
+        'json',
     );
 }
 

@@ -5,9 +5,9 @@
 const XML_CHAR_ENTITY_MAP = Object.freeze({
     '"': '&quot;',
     '&': '&amp;',
-    '\'': '&apos;',
+    "'": '&apos;',
     '<': '&lt;',
-    '>': '&gt;'
+    '>': '&gt;',
 });
 
 const XML_HEADER = '<?xml version="1.0" encoding="UTF-8"?>';
@@ -40,7 +40,7 @@ function encode_xml(object, ignore_header) {
 }
 
 function append_object(append, object) {
-    if (typeof(object) !== 'object') {
+    if (typeof object !== 'object') {
         append(encode_xml_str(object));
     } else if (Array.isArray(object)) {
         // arrays are encoded without adding new tags
@@ -52,10 +52,9 @@ function append_object(append, object) {
         // skip any keys from the prototype
         const object_own_keys = Object.keys(object);
         for (const key of object_own_keys) {
-
             // undefined values skip encoding the key tag altogether
             const val = object[key];
-            const val_type = typeof(val);
+            const val_type = typeof val;
             if (val_type === 'undefined') continue;
 
             // keys starting with _ are not considered tag names
@@ -73,7 +72,9 @@ function append_object(append, object) {
                     append('<' + key);
                     const attr_keys = Object.keys(val._attr);
                     for (const a of attr_keys) {
-                        append(' ' + a + '="' + encode_xml_str(val._attr[a]) + '"');
+                        append(
+                            ' ' + a + '="' + encode_xml_str(val._attr[a]) + '"',
+                        );
                     }
                     append('>');
                 } else {
@@ -91,7 +92,10 @@ function append_object(append, object) {
 }
 
 function encode_xml_str(s) {
-    return String(s).replace(/(["&'<>])/g, (str, ch) => XML_CHAR_ENTITY_MAP[ch]);
+    return String(s).replace(
+        /(["&'<>])/g,
+        (str, ch) => XML_CHAR_ENTITY_MAP[ch],
+    );
 }
 
 exports.encode_xml = encode_xml;

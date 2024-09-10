@@ -44,10 +44,8 @@ const test_schema_keywords = {
     },
 };
 
-
-mocha.describe('Test Schema Keywords', function() {
-
-    mocha.before('Adding Schema And Keywords', async function() {
+mocha.describe('Test Schema Keywords', function () {
+    mocha.before('Adding Schema And Keywords', async function () {
         ajv.addSchema(test_schema_keywords);
         ajv.addKeyword(schema_keywords.KEYWORDS.methods);
         ajv.addKeyword(schema_keywords.KEYWORDS.date);
@@ -57,7 +55,7 @@ mocha.describe('Test Schema Keywords', function() {
         ajv.addKeyword(schema_keywords.KEYWORDS.wrapper);
     });
 
-    mocha.it('Test keyword date', async function() {
+    mocha.it('Test keyword date', async function () {
         const validator = ajv.getSchema('test_schema_keywords#/methods/params');
         const should_pass = { key1: new Date() };
         assert.strictEqual(validator(should_pass), true);
@@ -65,7 +63,7 @@ mocha.describe('Test Schema Keywords', function() {
         assert.strictEqual(validator(should_fail), false);
     });
 
-    mocha.it('Test keyword idate', async function() {
+    mocha.it('Test keyword idate', async function () {
         const validator = ajv.getSchema('test_schema_keywords#/methods/params');
         const should_pass = { key2: Date.now() };
         assert.strictEqual(validator(should_pass), true);
@@ -73,7 +71,7 @@ mocha.describe('Test Schema Keywords', function() {
         assert.strictEqual(validator(should_fail), false);
     });
 
-    mocha.it('Test keyword objectid', async function() {
+    mocha.it('Test keyword objectid', async function () {
         const validator = ajv.getSchema('test_schema_keywords#/methods/params');
         const should_pass = { key3: new mongodb.ObjectId() };
         assert.strictEqual(validator(should_pass), true);
@@ -81,7 +79,7 @@ mocha.describe('Test Schema Keywords', function() {
         assert.strictEqual(validator(should_fail), false);
     });
 
-    mocha.it('Test keyword objectid as string', async function() {
+    mocha.it('Test keyword objectid as string', async function () {
         const validator = ajv.getSchema('test_schema_keywords#/methods/params');
         //Testing an objectId value as string with length = 24 and allowed characters
         const should_pass = { key3: '1234567890abcdefABCDEF00' };
@@ -97,7 +95,7 @@ mocha.describe('Test Schema Keywords', function() {
         assert.strictEqual(validator(should_fail3), false);
     });
 
-    mocha.it('Test keyword binary', async function() {
+    mocha.it('Test keyword binary', async function () {
         const validator = ajv.getSchema('test_schema_keywords#/methods/params');
         const should_pass = { key4: Buffer.from('buffer') };
         assert.strictEqual(validator(should_pass), true);
@@ -105,7 +103,7 @@ mocha.describe('Test Schema Keywords', function() {
         assert.strictEqual(validator(should_fail), false);
     });
 
-    mocha.it('Test keyword binary length', async function() {
+    mocha.it('Test keyword binary length', async function () {
         const validator = ajv.getSchema('test_schema_keywords#/methods/params');
         //Testing an exact stated size of buffer
         const should_pass = { key5: Buffer.from('exact') };
@@ -118,7 +116,7 @@ mocha.describe('Test Schema Keywords', function() {
         assert.strictEqual(validator(should_fail2), false);
     });
 
-    mocha.it('Test keyword wrapper', async function() {
+    mocha.it('Test keyword wrapper', async function () {
         const validator = ajv.getSchema('test_schema_keywords#/methods/params');
         //Testing a SensitiveString
         const should_pass1 = { key6: new SensitiveString('text') };
@@ -132,5 +130,4 @@ mocha.describe('Test Schema Keywords', function() {
         const should_fail = { key6: 1 };
         assert.strictEqual(validator(should_fail), false);
     });
-
 });

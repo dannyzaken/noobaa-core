@@ -5,7 +5,6 @@
  * https://docs.microsoft.com/en-us/rest/api/storageservices/put-block
  */
 async function put_blob_block(req, res) {
-
     const size = Number(req.headers['content-length']);
     // TODO: check content md5? what to do with x-ms-blob-content-md5?
     const reply = await req.object_sdk.upload_blob_block({

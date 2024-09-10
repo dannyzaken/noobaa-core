@@ -11,7 +11,6 @@ const config = require('../../../config');
 const size_utils = require('../../util/size_utils');
 // const system_store = require('../system_services/system_store').get_instance();
 
-
 /**
  * @param {nb.Tiering} tiering
  * @param {nb.TieringStatus} tiering_status See node_allocator.get_tiering_status()
@@ -26,15 +25,15 @@ function select_tier_for_write(tiering, tiering_status, start_tier_order) {
         if (!selected) selected = t;
         const tier_status = tiering_status[t.tier._id.toHexString()];
         const tier_has_space = t.tier.mirrors.every((mirror, i) =>
-            size_utils.json_to_bigint(tier_status.mirrors_storage[i].free)
-            .greater(config.MIN_TIER_FREE_THRESHOLD)
+            size_utils
+                .json_to_bigint(tier_status.mirrors_storage[i].free)
+                .greater(config.MIN_TIER_FREE_THRESHOLD),
         );
         if (!tier_has_space) continue;
         if (t.order < selected.order) selected = t;
     }
     return selected && selected.tier;
 }
-
 
 /**
  * To decide which mirror to use for the first writing mirror
@@ -54,10 +53,19 @@ function select_mirror_for_write(tier, tiering, tiering_status, location_info) {
     for (const mirror of tier.mirrors) {
         const mirror_status = tier_status.mirrors_storage[mirror_index];
         const local_pool = find_local_pool(mirror.spread_pools, location_info);
-        const is_mongo_included = mirror.spread_pools.some(pool => Boolean(pool.mongo_pool_info));
-        const is_local_pool_valid = local_pool && tier_status.pools[local_pool._id.toHexString()].valid_for_allocation;
-        const is_regular_pools_valid = size_utils.json_to_bigint(mirror_status.regular_free).greater(config.MIN_TIER_FREE_THRESHOLD);
-        const is_redundant_pools_valid = size_utils.json_to_bigint(mirror_status.redundant_free).greater(config.MIN_TIER_FREE_THRESHOLD);
+        const is_mongo_included = mirror.spread_pools.some(pool =>
+            Boolean(pool.mongo_pool_info),
+        );
+        const is_local_pool_valid =
+            local_pool &&
+            tier_status.pools[local_pool._id.toHexString()]
+                .valid_for_allocation;
+        const is_regular_pools_valid = size_utils
+            .json_to_bigint(mirror_status.regular_free)
+            .greater(config.MIN_TIER_FREE_THRESHOLD);
+        const is_redundant_pools_valid = size_utils
+            .json_to_bigint(mirror_status.redundant_free)
+            .greater(config.MIN_TIER_FREE_THRESHOLD);
 
         let weight = 0;
         if (is_mongo_included) {
@@ -70,7 +78,11 @@ function select_mirror_for_write(tier, tiering, tiering_status, location_info) {
             weight = 2;
         }
 
-        if (!selected || weight > selected_weight || (weight === selected_weight && Math.random() > 0.5)) {
+        if (
+            !selected ||
+            weight > selected_weight ||
+            (weight === selected_weight && Math.random() > 0.5)
+        ) {
             selected = mirror;
             selected_weight = weight;
         }
@@ -79,7 +91,6 @@ function select_mirror_for_write(tier, tiering, tiering_status, location_info) {
     }
     return selected;
 }
-
 
 /**
  * decide how to map a given chunk, either new, or existing
@@ -112,15 +123,25 @@ function map_chunk(chunk, tier, tiering, tiering_status, location_info) {
     let data_frags = tier_data_frags;
     let parity_frags = tier_parity_frags;
     if (data_frags !== chunk_data_frags) {
-        dbg.log0(`MirrorMapper: tier frags ${tier_data_frags}+${tier_parity_frags}`,
+        dbg.log0(
+            `MirrorMapper: tier frags ${tier_data_frags}+${tier_parity_frags}`,
             `requires recoding chunk ${chunk_data_frags}+${chunk_parity_frags}`,
-            '(not yet implemented)');
+            '(not yet implemented)',
+        );
         replicas = chunk_replicas;
         data_frags = chunk_data_frags;
         parity_frags = chunk_parity_frags;
     }
 
-    const mirror_for_write = is_new_chunk ? select_mirror_for_write(tier, tiering, tiering_status, location_info) : undefined;
+    const mirror_for_write =
+        is_new_chunk ?
+            select_mirror_for_write(
+                tier,
+                tiering,
+                tiering_status,
+                location_info,
+            )
+        :   undefined;
 
     for (let data_index = 0; data_index < data_frags; ++data_index) {
         map_frag(chunk.frag_by_index[`D${data_index}`]);
@@ -169,7 +190,10 @@ function map_chunk(chunk, tier, tiering, tiering_status, location_info) {
      * @param {nb.Frag} frag
      */
     function map_frag(frag) {
-        const accessible_blocks = _.filter(frag.blocks, block => block.is_accessible);
+        const accessible_blocks = _.filter(
+            frag.blocks,
+            block => block.is_accessible,
+        );
         if (is_new_chunk) {
             // new chunk
             map_frag_in_mirror(mirror_for_write);
@@ -186,24 +210,32 @@ function map_chunk(chunk, tier, tiering, tiering_status, location_info) {
         }
 
         /**
-         * @param {nb.TierMirror} mirror 
+         * @param {nb.TierMirror} mirror
          */
         function map_frag_in_mirror(mirror) {
             const used_blocks = [];
             const mirror_index = tier.mirrors.indexOf(mirror);
             const mirror_status = tier_status.mirrors_storage[mirror_index];
-            const is_regular_pools_valid = size_utils.json_to_bigint(mirror_status.regular_free)
+            const is_regular_pools_valid = size_utils
+                .json_to_bigint(mirror_status.regular_free)
                 .greater(config.MIN_TIER_FREE_THRESHOLD);
-            const is_redundant_pools_valid = size_utils.json_to_bigint(mirror_status.redundant_free)
+            const is_redundant_pools_valid = size_utils
+                .json_to_bigint(mirror_status.redundant_free)
                 .greater(config.MIN_TIER_FREE_THRESHOLD);
-            const [redundant_pools, regular_pools] = _.partition(mirror.spread_pools, _pool_has_redundancy);
+            const [redundant_pools, regular_pools] = _.partition(
+                mirror.spread_pools,
+                _pool_has_redundancy,
+            );
 
             let used_replicas = 0;
             let used_redundant_blocks = false;
             for (const block of accessible_blocks) {
                 // block on pools that do not belong to the current mirror anymore
                 // can be accessible but will eventually be deallocated
-                const block_pool_in_mirror = mirror.spread_pools.find(pool => pool._id.toHexString() === block.pool_id.toHexString());
+                const block_pool_in_mirror = mirror.spread_pools.find(
+                    pool =>
+                        pool._id.toHexString() === block.pool_id.toHexString(),
+                );
                 const is_misplaced = !block.node.writable;
                 if (!is_misplaced && block_pool_in_mirror) {
                     used_blocks.push(block);
@@ -220,35 +252,40 @@ function map_chunk(chunk, tier, tiering, tiering_status, location_info) {
             }
 
             if (used_replicas === replicas) {
-
                 for (let i = 0; i < used_blocks.length; ++i) {
                     blocks_in_use.add(used_blocks[i]);
                 }
-
             } else if (used_replicas < replicas) {
-
                 for (let i = 0; i < used_blocks.length; ++i) {
                     blocks_in_use.add(used_blocks[i]);
                 }
 
                 // We prefer to keep regular pools if possible, otherwise pick at random
-                const pools = used_replicas && !used_redundant_blocks && is_regular_pools_valid ?
-                    regular_pools : pick_pools();
+                const pools =
+                    (
+                        used_replicas &&
+                        !used_redundant_blocks &&
+                        is_regular_pools_valid
+                    ) ?
+                        regular_pools
+                    :   pick_pools();
 
                 // num_missing of required replicas, which are a must to have for the chunk
                 // In case of redundant pool allocation we consider one block as a fulfilment of all policy
                 // Notice that in case of redundant pools we expect to be here only on the first allocation
                 // Since the weight calculation above which adds max_replicas for every replica on redundant pool
                 // Will block us from performing the current context and statement.
-                const is_redundant = pools.length > 0 && pools === redundant_pools;
-                const num_missing = is_redundant ? 1 : Math.max(0, replicas - used_replicas);
+                const is_redundant =
+                    pools.length > 0 && pools === redundant_pools;
+                const num_missing =
+                    is_redundant ? 1 : Math.max(0, replicas - used_replicas);
 
                 // Notice that we push the minimum required replicas in higher priority
                 // This is done in order to insure that we will allocate them before the additional replicas
-                for (let i = 0; i < num_missing; ++i) chunk.add_block_allocation(frag, pools, mirror);
-
+                for (let i = 0; i < num_missing; ++i) {
+                    chunk.add_block_allocation(frag, pools, mirror);
+                }
             } else {
-
                 // To pick blocks to keep we sort by their creation timestamp in mongodb
                 // and will keep newest blocks before older blocks
                 // this approach helps to get rid of our "old" mapping decisions in favor of new decisions
@@ -257,11 +294,11 @@ function map_chunk(chunk, tier, tiering, tiering_status, location_info) {
                 for (let i = 0; i < used_blocks.length; ++i) {
                     if (keep_replicas >= replicas) break;
                     const block = used_blocks[i];
-                    keep_replicas += _pool_has_redundancy(block.pool) ? replicas : 1;
+                    keep_replicas +=
+                        _pool_has_redundancy(block.pool) ? replicas : 1;
                     blocks_in_use.add(block);
                 }
             }
-
 
             /**
              * Pick random pool which sets the allocation type between redundant/regular pools
@@ -270,18 +307,24 @@ function map_chunk(chunk, tier, tiering, tiering_status, location_info) {
             function pick_pools() {
                 // handle the corner cases of redundant pools not valid and regular are valid (or vice versa).
                 // in that case, return regular pools (or redundant pools in the opposite case).
-                if (is_regular_pools_valid && !is_redundant_pools_valid) return regular_pools;
-                if (!is_regular_pools_valid && is_redundant_pools_valid) return redundant_pools;
+                if (is_regular_pools_valid && !is_redundant_pools_valid) {
+                    return regular_pools;
+                }
+                if (!is_regular_pools_valid && is_redundant_pools_valid) {
+                    return redundant_pools;
+                }
 
                 // otherwise, pick a random pool to select which type to use.
-                const picked_pool = mirror.spread_pools[Math.max(_.random(mirror.spread_pools.length - 1), 0)];
+                const picked_pool =
+                    mirror.spread_pools[
+                        Math.max(_.random(mirror.spread_pools.length - 1), 0)
+                    ];
                 if (picked_pool && _pool_has_redundancy(picked_pool)) {
                     return redundant_pools;
                 } else {
                     return regular_pools;
                 }
             }
-
         }
     }
 }
@@ -297,8 +340,8 @@ function is_chunk_good_for_dedup(chunk) {
 function get_num_blocks_per_chunk(tier) {
     const {
         replicas = 1,
-            data_frags = 1,
-            parity_frags = 0,
+        data_frags = 1,
+        parity_frags = 0,
     } = tier.chunk_config.chunk_coder_config;
     return replicas * (data_frags + parity_frags);
 }
@@ -309,7 +352,10 @@ function get_num_blocks_per_chunk(tier) {
  * @param {nb.Block} block2
  */
 function _block_sort_newer_first(block1, block2) {
-    return block2._id.getTimestamp().getTime() - block1._id.getTimestamp().getTime();
+    return (
+        block2._id.getTimestamp().getTime() -
+        block1._id.getTimestamp().getTime()
+    );
 }
 
 // /**
@@ -358,9 +404,8 @@ function _block_sort_newer_first(block1, block2) {
 //     }
 // }
 
-
 /**
- * @param {nb.Pool} pool 
+ * @param {nb.Pool} pool
  * @returns {boolean}
  */
 function _pool_has_redundancy(pool) {
@@ -368,7 +413,7 @@ function _pool_has_redundancy(pool) {
 }
 
 // /**
-//  * 
+//  *
 //  * @param {nb.Chunk} chunk
 //  * @param {nb.LocationInfo} [location_info]
 //  */
@@ -409,9 +454,14 @@ function _pool_has_redundancy(pool) {
  * @param {nb.LocationInfo} [location_info]
  */
 function find_local_pool(pools, location_info) {
-    return location_info && pools.find(pool =>
-        (location_info.region && location_info.region === pool.region) ||
-        (location_info.pool_id === pool._id.toHexString())
+    return (
+        location_info &&
+        pools.find(
+            pool =>
+                (location_info.region &&
+                    location_info.region === pool.region) ||
+                location_info.pool_id === pool._id.toHexString(),
+        )
     );
 }
 

@@ -13,7 +13,6 @@ const chance = require('chance')();
 
 // https://tools.ietf.org/html/rfc5389
 const stun = {
-
     is_stun_packet: is_stun_packet,
     new_packet: new_packet,
     get_method_field: get_method_field,
@@ -36,7 +35,7 @@ const stun = {
     // Binding type is the only stun method currently in use
     BINDING_TYPE: 0x0001,
     // Constant stun magic key, defined by the protocol.
-    MAGIC_KEY: 0x2112A442,
+    MAGIC_KEY: 0x2112a442,
     // The key for XOR_MAPPED_ADDRESS includes magic key and transaction id
     XOR_KEY_OFFSET: 4,
     // ms between indications
@@ -52,7 +51,7 @@ const stun = {
         REQUEST: 0x0000,
         INDICATION: 0x0010,
         SUCCESS: 0x0100,
-        ERROR: 0x0110
+        ERROR: 0x0110,
     },
 
     // Attributes
@@ -66,8 +65,8 @@ const stun = {
         PASSWORD: 0x0007, // deprecated
         MESSAGE_INTEGRITY: 0x0008,
         ERROR_CODE: 0x0009,
-        UNKNOWN_ATTRIBUTES: 0x000A,
-        REFLECTED_FROM: 0x000B, // deprecated
+        UNKNOWN_ATTRIBUTES: 0x000a,
+        REFLECTED_FROM: 0x000b, // deprecated
         REALM: 0x0014,
         NONCE: 0x0015,
         XOR_MAPPED_ADDRESS: 0x0020,
@@ -77,7 +76,7 @@ const stun = {
         ICE_CONTROLLING: 0x0027,
         SOFTWARE: 0x8022,
         ALTERNATE_SERVER: 0x8023,
-        FINGERPRINT: 0x8028
+        FINGERPRINT: 0x8028,
     },
 
     // Error code
@@ -88,45 +87,44 @@ const stun = {
         420: 'Unknown Attribute',
         438: 'Stale Nonce',
         487: 'Role Conflict',
-        500: 'Server Error'
+        500: 'Server Error',
     },
 
-    PUBLIC_SERVERS: _.map([
-        //        'stun://52.28.108.6:3478', //NooBaa stun on EC2 (Frankfurt)
-        'stun://stun.l.google.com:19302',
-        'stun://stun1.l.google.com:19302',
-        'stun://stun2.l.google.com:19302',
-        'stun://stun3.l.google.com:19302',
-        'stun://stun4.l.google.com:19302',
-        // 'stun://stun.ekiga.net',
-        // 'stun://stun.ideasip.com',
-        // 'stun://stun.iptel.org',
-        // 'stun://stun.rixtelecom.se',
-        // 'stun://stun.schlund.de',
-        // 'stun://stunserver.org',
-        // 'stun://stun.softjoys.com',
-        // 'stun://stun.voiparound.com',
-        // 'stun://stun.voipbuster.com',
-        // 'stun://stun.voipstunt.com',
-        // 'stun://stun.voxgratia.org',
-        // 'stun://stun.xten.com',
-    ], url.parse)
+    PUBLIC_SERVERS: _.map(
+        [
+            //        'stun://52.28.108.6:3478', //NooBaa stun on EC2 (Frankfurt)
+            'stun://stun.l.google.com:19302',
+            'stun://stun1.l.google.com:19302',
+            'stun://stun2.l.google.com:19302',
+            'stun://stun3.l.google.com:19302',
+            'stun://stun4.l.google.com:19302',
+            // 'stun://stun.ekiga.net',
+            // 'stun://stun.ideasip.com',
+            // 'stun://stun.iptel.org',
+            // 'stun://stun.rixtelecom.se',
+            // 'stun://stun.schlund.de',
+            // 'stun://stunserver.org',
+            // 'stun://stun.softjoys.com',
+            // 'stun://stun.voiparound.com',
+            // 'stun://stun.voipbuster.com',
+            // 'stun://stun.voipstunt.com',
+            // 'stun://stun.voxgratia.org',
+            // 'stun://stun.xten.com',
+        ],
+        url.parse,
+    ),
 };
 stun.METHOD_NAMES = _.invert(stun.METHODS);
 stun.ATTR_NAMES = _.invert(stun.ATTRS);
 
 module.exports = stun;
 
-_.each(stun.PUBLIC_SERVERS, function(stun_url) {
+_.each(stun.PUBLIC_SERVERS, function (stun_url) {
     if (!stun_url.port) {
         stun_url.port =
-            stun_url.protocol === 'stuns:' ?
-            stun.PORT_TLS :
-            stun.PORT;
+            stun_url.protocol === 'stuns:' ? stun.PORT_TLS : stun.PORT;
     }
 });
-
-
 
 /**
  * detect stun packet according to header first byte
@@ -231,7 +229,7 @@ function get_tid_field(buffer) {
 function get_attrs_map(buffer) {
     const attrs = decode_attrs(buffer);
     const map = {};
-    _.each(attrs, function(attr) {
+    _.each(attrs, function (attr) {
         switch (attr.type) {
             case stun.ATTRS.XOR_MAPPED_ADDRESS:
             case stun.ATTRS.MAPPED_ADDRESS:
@@ -259,16 +257,16 @@ function get_attrs_map(buffer) {
     return map;
 }
 
-
 /**
  * decode packet attributes
  */
 function decode_attrs(buffer) {
-
     // limit the amount of work we are willing to do
     // in case someone decides to annoy us or just a bug
     if (buffer.length > 512) {
-        throw new Error('STUN PACKET TOO LONG, dropping buffer ' + buffer.length);
+        throw new Error(
+            'STUN PACKET TOO LONG, dropping buffer ' + buffer.length,
+        );
     }
 
     const attrs = [];
@@ -276,11 +274,12 @@ function decode_attrs(buffer) {
     const end = offset + get_attrs_len_field(buffer);
 
     while (offset < end) {
-
         // limit the amount of work we are willing to do
         // in case someone decides to annoy us or just a bug
         if (attrs.length > 10) {
-            throw new Error('STUN PACKET TOO MANY ATTRS dropping buffer ' + buffer.length);
+            throw new Error(
+                'STUN PACKET TOO MANY ATTRS dropping buffer ' + buffer.length,
+            );
         }
 
         const type = buffer.readUInt16BE(offset);
@@ -289,8 +288,14 @@ function decode_attrs(buffer) {
         offset += 2;
 
         if (length > 256) {
-            throw new Error('STUN PACKET ATTR TOO LONG type=' + type +
-                ' length=' + length + ' dropping buffer ' + buffer.length);
+            throw new Error(
+                'STUN PACKET ATTR TOO LONG type=' +
+                    type +
+                    ' length=' +
+                    length +
+                    ' dropping buffer ' +
+                    buffer.length,
+            );
         }
 
         const next = offset + length;
@@ -423,9 +428,7 @@ function encode_attrs(buffer, attrs) {
 
         offset = align_offset(next);
     }
-
 }
-
 
 /**
  * decode MAPPED-ADDRESS attribute
@@ -433,14 +436,14 @@ function encode_attrs(buffer, attrs) {
  * though XOR-MAPPED-ADDRESS is preferred to avoid routers messing with it
  */
 function decode_attr_mapped_addr(buffer, start, end) {
-    const family = (buffer.readUInt16BE(start) === 0x02) ? 6 : 4;
+    const family = buffer.readUInt16BE(start) === 0x02 ? 6 : 4;
     const port = buffer.readUInt16BE(start + 2);
     const address = ip_module.toString(buffer, start + 4, family);
 
     return {
         family: 'IPv' + family,
         port: port,
-        address: address
+        address: address,
     };
 }
 
@@ -449,10 +452,11 @@ function decode_attr_mapped_addr(buffer, start, end) {
  * this is the main reply to stun request.
  */
 function decode_attr_xor_mapped_addr(buffer, start, end) {
-    const family = (buffer.readUInt16BE(start) === 0x02) ? 6 : 4;
+    const family = buffer.readUInt16BE(start) === 0x02 ? 6 : 4;
 
     // xor the port against the magic key
-    const port = buffer.readUInt16BE(start + 2) ^
+    const port =
+        buffer.readUInt16BE(start + 2) ^
         buffer.readUInt16BE(stun.XOR_KEY_OFFSET);
 
     // xor the address against magic key and tid
@@ -468,7 +472,7 @@ function decode_attr_xor_mapped_addr(buffer, start, end) {
     return {
         family: 'IPv' + family,
         port: port,
-        address: address
+        address: address,
     };
 }
 
@@ -477,11 +481,11 @@ function decode_attr_xor_mapped_addr(buffer, start, end) {
  */
 function decode_attr_error_code(buffer, start, end) {
     const block = buffer.readUInt32BE(start);
-    const code = ((block & 0x700) * 100) + block & 0xff;
+    const code = ((block & 0x700) * 100 + block) & 0xff;
     const reason = buffer.readUInt32BE(start + 4);
     return {
         code: code,
-        reason: reason
+        reason: reason,
     };
 }
 
@@ -498,7 +502,6 @@ function decode_attr_unknown_attr(buffer, start, end) {
     return unknown_attrs;
 }
 
-
 /**
  * encode MAPPED-ADDRESS attribute
  * this is the main reply to stun request,
@@ -513,7 +516,6 @@ function encode_attr_mapped_addr(addr, buffer, offset, end) {
     ip_module.toBuffer(addr.address, buffer, offset + 4);
 }
 
-
 /**
  * encode XOR-MAPPED-ADDRESS attribute
  * this is the main reply to stun request.
@@ -522,7 +524,10 @@ function encode_attr_xor_mapped_addr(addr, buffer, offset, end) {
     buffer.writeUInt16BE(addr.family === 'IPv6' ? 0x02 : 0x01, offset);
 
     // xor the port against the magic key
-    buffer.writeUInt16BE(addr.port ^ buffer.readUInt16BE(stun.XOR_KEY_OFFSET), offset + 2);
+    buffer.writeUInt16BE(
+        addr.port ^ buffer.readUInt16BE(stun.XOR_KEY_OFFSET),
+        offset + 2,
+    );
 
     ip_module.toBuffer(addr.address, buffer, offset + 4);
     let k = stun.XOR_KEY_OFFSET;
@@ -532,17 +537,15 @@ function encode_attr_xor_mapped_addr(addr, buffer, offset, end) {
     }
 }
 
-
 /**
  * encode ERROR-CODE attribute
  */
 function encode_attr_error_code(err, buffer, start, end) {
     // eslint-disable-next-line no-bitwise
-    const code = (((err.code / 100) | 0) << 8) | ((err.code % 100) & 0xff);
+    const code = (((err.code / 100) | 0) << 8) | (err.code % 100 & 0xff);
     buffer.writeUInt32BE(code, start);
     buffer.writeUInt32BE(err.reason, start + 4);
 }
-
 
 /**
  * offsets are aligned up to 4 bytes
@@ -566,60 +569,102 @@ function test() {
     if (argv.stun_host) {
         stun_url = {
             hostname: argv.stun_host,
-            port: argv.stun_port || stun.PORT
+            port: argv.stun_port || stun.PORT,
         };
     }
-    socket.on('listening', function() {
+    socket.on('listening', function () {
         console.log('MY SOCKET ADDRESS', socket.address());
     });
-    socket.on('message', function(buffer, rinfo) {
+    socket.on('message', function (buffer, rinfo) {
         if (!is_stun_packet(buffer)) {
             console.log('NON STUN MESSAGE', buffer.toString(), 'from', rinfo);
             return;
         }
-        console.log('STUN', get_method_name(buffer), 'from', rinfo.address + ':' + rinfo.port);
+        console.log(
+            'STUN',
+            get_method_name(buffer),
+            'from',
+            rinfo.address + ':' + rinfo.port,
+        );
         const attrs = decode_attrs(buffer);
-        _.each(attrs, function(attr) {
-            console.log('  *',
+        _.each(attrs, function (attr) {
+            console.log(
+                '  *',
                 attr.attr,
                 '0x' + attr.type.toString(16),
                 '[len ' + attr.length + ']',
-                util.inspect(attr.value, { depth: null }));
+                util.inspect(attr.value, { depth: null }),
+            );
         });
         const method = get_method_field(buffer);
         if (method === stun.METHODS.REQUEST) {
-            const reply = new_packet(stun.METHODS.SUCCESS, [{
-                type: stun.ATTRS.XOR_MAPPED_ADDRESS,
-                value: {
-                    family: 'IPv4',
-                    port: rinfo.port,
-                    address: rinfo.address
-                }
-            }], buffer);
-            P.ninvoke(socket, 'send', reply, 0, reply.length, rinfo.port, rinfo.address);
+            const reply = new_packet(
+                stun.METHODS.SUCCESS,
+                [
+                    {
+                        type: stun.ATTRS.XOR_MAPPED_ADDRESS,
+                        value: {
+                            family: 'IPv4',
+                            port: rinfo.port,
+                            address: rinfo.address,
+                        },
+                    },
+                ],
+                buffer,
+            );
+            P.ninvoke(
+                socket,
+                'send',
+                reply,
+                0,
+                reply.length,
+                rinfo.port,
+                rinfo.address,
+            );
         }
     });
-    P.fcall(function() {
-            if (argv.bind) {
-                return P.ninvoke(socket, 'bind', argv.bind);
-            }
-        })
-        .then(function() {
-            const req = new_packet(stun.METHODS.REQUEST);
-            const ind = new_packet(stun.METHODS.INDICATION);
-            return loop();
+    P.fcall(function () {
+        if (argv.bind) {
+            return P.ninvoke(socket, 'bind', argv.bind);
+        }
+    }).then(function () {
+        const req = new_packet(stun.METHODS.REQUEST);
+        const ind = new_packet(stun.METHODS.INDICATION);
+        return loop();
 
-            function loop() {
-                if (argv.random) {
-                    stun_url = chance.pick(stun.PUBLIC_SERVERS);
-                }
-                return Promise.all([
-                        P.ninvoke(socket, 'send', req, 0, req.length, stun_url.port, stun_url.hostname),
-                        P.ninvoke(socket, 'send', ind, 0, ind.length, stun_url.port, stun_url.hostname)])
-                    .then(() => P.delay(stun.INDICATION_INTERVAL * chance.floating(stun.INDICATION_JITTER)))
-                    .then(loop);
+        function loop() {
+            if (argv.random) {
+                stun_url = chance.pick(stun.PUBLIC_SERVERS);
             }
-        });
+            return Promise.all([
+                P.ninvoke(
+                    socket,
+                    'send',
+                    req,
+                    0,
+                    req.length,
+                    stun_url.port,
+                    stun_url.hostname,
+                ),
+                P.ninvoke(
+                    socket,
+                    'send',
+                    ind,
+                    0,
+                    ind.length,
+                    stun_url.port,
+                    stun_url.hostname,
+                ),
+            ])
+                .then(() =>
+                    P.delay(
+                        stun.INDICATION_INTERVAL *
+                            chance.floating(stun.INDICATION_JITTER),
+                    ),
+                )
+                .then(loop);
+        }
+    });
 }
 
 if (require.main === module) {

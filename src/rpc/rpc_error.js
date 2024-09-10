@@ -3,9 +3,7 @@
 
 const _ = require('lodash');
 
-
 class RpcError extends Error {
-
     constructor(rpc_code, message, rpc_data) {
         const final_message = message || rpc_code || 'UNKNOWN RPC ERROR';
         super(final_message);
@@ -30,7 +28,6 @@ class RpcError extends Error {
     toString() {
         return 'RPC ERROR ' + this.rpc_code + ' ' + this.message;
     }
-
 }
 
 module.exports = RpcError;

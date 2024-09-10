@@ -7,14 +7,12 @@ const RpcWsConnection = require('./rpc_ws');
 const dbg = require('../util/debug_module')(__filename);
 const WS = global.WebSocket || require('ws');
 
-
 /**
  *
  * RpcWsServer
  *
  */
 class RpcWsServer extends EventEmitter {
-
     constructor(http_server) {
         super();
 
@@ -33,7 +31,7 @@ class RpcWsServer extends EventEmitter {
                     protocol: 'ws:',
                     slashes: true,
                     hostname: ws._socket.remoteAddress,
-                    port: ws._socket.remotePort
+                    port: ws._socket.remotePort,
                 });
                 const addr_url = url.parse(address);
                 conn = new RpcWsConnection(addr_url);
@@ -56,14 +54,10 @@ class RpcWsServer extends EventEmitter {
     }
 }
 
-
 function close_ws(ws) {
-    if (ws &&
-        ws.readyState !== WS.CLOSED &&
-        ws.readyState !== WS.CLOSING) {
+    if (ws && ws.readyState !== WS.CLOSED && ws.readyState !== WS.CLOSING) {
         ws.close();
     }
 }
-
 
 module.exports = RpcWsServer;

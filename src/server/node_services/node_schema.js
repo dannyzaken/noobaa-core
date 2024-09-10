@@ -24,36 +24,33 @@ const storage_stat_schema = {
         limit: {
             // top limit for used storage
             $ref: 'common_api#/definitions/bigint',
-        }
-    }
+        },
+    },
 };
 
 module.exports = {
     $id: 'node_schema',
     type: 'object',
-    required: [
-        '_id',
-        'name',
-    ],
+    required: ['_id', 'name'],
     properties: {
         _id: {
-            objectid: true
+            objectid: true,
         },
         name: {
-            type: 'string'
+            type: 'string',
         },
         system: {
-            objectid: true
+            objectid: true,
         },
         pool: {
-            objectid: true
+            objectid: true,
         },
         agent_config: {
-            objectid: true
+            objectid: true,
         },
         peer_id: {
             // the identifier used for p2p signaling
-            objectid: true
+            objectid: true,
         },
 
         // a uuid to identify the host machine of the node (one host can hold several nodes, one for each drive)
@@ -75,11 +72,11 @@ module.exports = {
         },
 
         mem_usage: {
-            type: 'number'
+            type: 'number',
         },
 
         cpu_usage: {
-            type: 'number'
+            type: 'number',
         },
 
         ip: {
@@ -108,31 +105,31 @@ module.exports = {
         },
 
         migrating_to_pool: {
-            idate: true
+            idate: true,
         },
         decommissioning: {
-            idate: true
+            idate: true,
         },
         decommissioned: {
-            idate: true
+            idate: true,
         },
         deleting: {
-            idate: true
+            idate: true,
         },
         deleted: {
-            idate: true
+            idate: true,
         },
         force_hide: {
-            idate: true
+            idate: true,
         },
         debug_mode: {
-            idate: true
+            idate: true,
         },
         enabled: {
             type: 'boolean',
         },
         geolocation: {
-            type: 'string'
+            type: 'string',
         },
 
         // node storage stats - sum of drives
@@ -153,9 +150,9 @@ module.exports = {
                         type: 'string',
                     },
                     // drive storage stats
-                    storage: storage_stat_schema
-                }
-            }
+                    storage: storage_stat_schema,
+                },
+            },
         },
 
         // OS information sent by the agent
@@ -163,68 +160,68 @@ module.exports = {
             type: 'object',
             properties: {
                 hostname: {
-                    type: 'string'
+                    type: 'string',
                 },
                 ostype: {
-                    type: 'string'
+                    type: 'string',
                 },
                 platform: {
-                    type: 'string'
+                    type: 'string',
                 },
                 arch: {
-                    type: 'string'
+                    type: 'string',
                 },
                 release: {
-                    type: 'string'
+                    type: 'string',
                 },
                 uptime: {
-                    idate: true
+                    idate: true,
                 },
                 loadavg: {
                     type: 'array',
                     items: {
-                        type: 'number'
-                    }
+                        type: 'number',
+                    },
                 },
                 totalmem: {
-                    type: 'number'
+                    type: 'number',
                 },
                 freemem: {
-                    type: 'number'
+                    type: 'number',
                 },
                 cpus: {
                     type: 'array',
                     items: {
                         type: 'object',
                         properties: {},
-                        additionalProperties: true
-                    }
+                        additionalProperties: true,
+                    },
                 },
                 networkInterfaces: {
                     type: 'object',
                     properties: {},
-                    additionalProperties: true
-                }
-            }
+                    additionalProperties: true,
+                },
+            },
         },
 
         latency_to_server: {
             type: 'array',
             items: {
-                type: 'number'
-            }
+                type: 'number',
+            },
         },
         latency_of_disk_read: {
             type: 'array',
             items: {
-                type: 'number'
-            }
+                type: 'number',
+            },
         },
         latency_of_disk_write: {
             type: 'array',
             items: {
-                type: 'number'
-            }
+                type: 'number',
+            },
         },
 
         is_cloud_node: {
@@ -240,7 +237,7 @@ module.exports = {
                 'BLOCK_STORE_GOOGLE',
                 'BLOCK_STORE_FS',
                 'ENDPOINT_S3',
-            ]
+            ],
         },
 
         is_mongo_node: {
@@ -261,22 +258,22 @@ module.exports = {
                 type: 'object',
                 properties: {
                     time: {
-                        idate: true
+                        idate: true,
                     },
                     action: {
-                        type: 'string'
+                        type: 'string',
                     },
                     reason: {
-                        type: 'string'
+                        type: 'string',
                     },
                     count_since: {
-                        idate: true
+                        idate: true,
                     },
                     count: {
-                        type: 'integer'
+                        type: 'integer',
                     },
-                }
-            }
+                },
+            },
         },
         srv_error: {
             type: 'object',
@@ -286,8 +283,8 @@ module.exports = {
                 },
                 message: {
                     type: 'string',
-                }
-            }
+                },
+            },
         },
         endpoint_stats: {
             type: 'array',
@@ -295,29 +292,28 @@ module.exports = {
                 type: 'object',
                 properties: {
                     time: {
-                        idate: true
+                        idate: true,
                     },
                     read_count: {
-                        type: 'integer'
+                        type: 'integer',
                     },
                     write_count: {
-                        type: 'integer'
+                        type: 'integer',
                     },
                     read_bytes: {
-                        type: 'integer'
+                        type: 'integer',
                     },
                     write_bytes: {
-                        type: 'integer'
+                        type: 'integer',
                     },
                     last_read: {
-                        idate: true
+                        idate: true,
                     },
                     last_write: {
-                        idate: true
+                        idate: true,
                     },
-                }
-            }
+                },
+            },
         },
-
-    }
+    },
 };

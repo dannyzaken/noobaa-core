@@ -9,11 +9,9 @@
 'use strict';
 
 module.exports = {
-
     $id: 'block_store_api',
 
     methods: {
-
         write_block: {
             method: 'POST',
             params: {
@@ -22,7 +20,7 @@ module.exports = {
                 properties: {
                     // [RPC_BUFFERS].data
                     block_md: {
-                        $ref: 'common_api#/definitions/block_md'
+                        $ref: 'common_api#/definitions/block_md',
                     },
                 },
             },
@@ -36,7 +34,7 @@ module.exports = {
                 properties: {
                     // [RPC_BUFFERS].data
                     block_md: {
-                        $ref: 'common_api#/definitions/block_md'
+                        $ref: 'common_api#/definitions/block_md',
                     },
                 },
             },
@@ -51,9 +49,9 @@ module.exports = {
                     verify_blocks: {
                         type: 'array',
                         items: {
-                            $ref: 'common_api#/definitions/block_md'
-                        }
-                    }
+                            $ref: 'common_api#/definitions/block_md',
+                        },
+                    },
                 },
             },
         },
@@ -67,27 +65,27 @@ module.exports = {
                     error: {
                         type: 'object',
                         additionalProperties: true,
-                        properties: {}
+                        properties: {},
                     },
-                    usage: { // the usage that was counted for failed operation - need to undo
+                    usage: {
+                        // the usage that was counted for failed operation - need to undo
                         type: 'object',
                         required: ['size', 'count'],
                         properties: {
                             size: {
-                                type: 'integer'
+                                type: 'integer',
                             },
                             count: {
-                                type: 'integer'
+                                type: 'integer',
                             },
-                        }
+                        },
                     },
                     op_type: {
                         type: 'string',
-                        enum: ['READ', 'WRITE']
-                    }
-
-                }
-            }
+                        enum: ['READ', 'WRITE'],
+                    },
+                },
+            },
         },
 
         delegate_write_block: {
@@ -97,18 +95,18 @@ module.exports = {
                 required: ['block_md', 'data_length'],
                 properties: {
                     block_md: {
-                        $ref: 'common_api#/definitions/block_md'
+                        $ref: 'common_api#/definitions/block_md',
                     },
                     data_length: {
-                        type: 'integer'
-                    }
+                        type: 'integer',
+                    },
                 },
             },
             reply: {
                 type: 'object',
                 additionalProperties: true,
-                properties: {}
-            }
+                properties: {},
+            },
         },
 
         delegate_read_block: {
@@ -118,7 +116,7 @@ module.exports = {
                 required: ['block_md'],
                 properties: {
                     block_md: {
-                        $ref: 'common_api#/definitions/block_md'
+                        $ref: 'common_api#/definitions/block_md',
                     },
                 },
             },
@@ -131,13 +129,13 @@ module.exports = {
                         required: ['block_md'],
                         properties: {
                             block_md: {
-                                $ref: 'common_api#/definitions/block_md'
+                                $ref: 'common_api#/definitions/block_md',
                             },
                             // [RPC_BUFFERS].data
                         },
-                    }
-                }
-            }
+                    },
+                },
+            },
         },
 
         get_block_store_info: {
@@ -149,19 +147,19 @@ module.exports = {
                     connection_params: {
                         type: 'object',
                         additionalProperties: true,
-                        properties: {}
+                        properties: {},
                     },
                     target_bucket: {
-                        type: 'string'
+                        type: 'string',
                     },
                     blocks_path: {
                         type: 'string',
                     },
                     disable_metadata: {
                         type: 'boolean',
-                    }
-                }
-            }
+                    },
+                },
+            },
         },
 
         update_store_usage: {
@@ -184,7 +182,7 @@ module.exports = {
                 required: ['block_md'],
                 properties: {
                     block_md: {
-                        $ref: 'common_api#/definitions/block_md'
+                        $ref: 'common_api#/definitions/block_md',
                     },
                 },
             },
@@ -194,12 +192,11 @@ module.exports = {
                 properties: {
                     // [RPC_BUFFERS].data
                     block_md: {
-                        $ref: 'common_api#/definitions/block_md'
+                        $ref: 'common_api#/definitions/block_md',
                     },
                 },
             },
         },
-
 
         replicate_block: {
             method: 'POST',
@@ -208,11 +205,11 @@ module.exports = {
                 required: ['target', 'source'],
                 properties: {
                     target: {
-                        $ref: 'common_api#/definitions/block_md'
+                        $ref: 'common_api#/definitions/block_md',
                     },
                     source: {
-                        $ref: 'common_api#/definitions/block_md'
-                    }
+                        $ref: 'common_api#/definitions/block_md',
+                    },
                 },
             },
         },
@@ -226,9 +223,9 @@ module.exports = {
                     block_ids: {
                         type: 'array',
                         items: {
-                            type: 'string'
-                        }
-                    }
+                            type: 'string',
+                        },
+                    },
                 },
             },
             reply: {
@@ -238,16 +235,15 @@ module.exports = {
                     failed_block_ids: {
                         type: 'array',
                         items: {
-                            type: 'string'
-                        }
+                            type: 'string',
+                        },
                     },
                     succeeded_block_ids: {
                         type: 'array',
                         items: {
-                            type: 'string'
-                        }
-                    }
-
+                            type: 'string',
+                        },
+                    },
                 },
             },
         },
@@ -261,12 +257,12 @@ module.exports = {
                     block_ids: {
                         type: 'array',
                         items: {
-                            type: 'string'
-                        }
+                            type: 'string',
+                        },
                     },
                     storage_class: {
-                        $ref: 'common_api#/definitions/storage_class_enum'
-                    }
+                        $ref: 'common_api#/definitions/storage_class_enum',
+                    },
                 },
             },
             reply: {
@@ -276,12 +272,11 @@ module.exports = {
                     moved_block_ids: {
                         type: 'array',
                         items: {
-                            type: 'string'
-                        }
+                            type: 'string',
+                        },
                     },
                 },
             },
         },
     },
-
 };

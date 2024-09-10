@@ -9,7 +9,6 @@ module.exports = {
     get_external_ipv4: get_external_ipv4,
 };
 
-
 /**
  *
  * get_main_external_ipv4
@@ -30,7 +29,6 @@ function get_main_external_ipv4() {
     return ips[0];
 }
 
-
 /**
  *
  * get_external_ipv4
@@ -42,8 +40,8 @@ function get_main_external_ipv4() {
  */
 function get_external_ipv4() {
     let ips;
-    _.each(os.networkInterfaces(), function(ifcs, name) {
-        _.each(ifcs, function(ifc) {
+    _.each(os.networkInterfaces(), function (ifcs, name) {
+        _.each(ifcs, function (ifc) {
             if (ifc.internal || !ifc.address || ifc.family !== 'IPv4') {
                 return;
             }

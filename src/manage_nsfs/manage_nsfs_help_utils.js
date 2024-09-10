@@ -1,7 +1,13 @@
 /* Copyright (C) 2024 NooBaa */
 'use strict';
 
-const { TYPES, ACTIONS, GLACIER_ACTIONS, DIAGNOSE_ACTIONS, UPGRADE_ACTIONS } = require('./manage_nsfs_constants');
+const {
+    TYPES,
+    ACTIONS,
+    GLACIER_ACTIONS,
+    DIAGNOSE_ACTIONS,
+    UPGRADE_ACTIONS,
+} = require('./manage_nsfs_constants');
 
 const HELP = `
 Help:
@@ -211,7 +217,6 @@ const GLACIER_RESTORE_OPTIONS = ``;
 
 const GLACIER_EXPIRY_OPTIONS = ``;
 
-
 const DIAGNOSE_OPTIONS = `
 Usage:
 
@@ -281,7 +286,6 @@ Usage:
 
 `;
 
-
 const UPGRADE_OPTIONS = `
 Usage:
 
@@ -317,8 +321,7 @@ config_dir_to_version, running_host etc.
 
 `;
 
-
-/** 
+/**
  * print_usage would print the help according to the arguments that were passed
  * @param {string} type
  * @param {string} action
@@ -335,7 +338,9 @@ function print_usage(type, action) {
             process.stdout.write(WHITELIST_FLAGS.trimStart());
             break;
         case TYPES.LOGGING:
-            process.stdout.write(LOGGING_FLAGS.trimStart() + CLI_MUTUAL_FLAGS.trimStart());
+            process.stdout.write(
+                LOGGING_FLAGS.trimStart() + CLI_MUTUAL_FLAGS.trimStart(),
+            );
             break;
         case TYPES.GLACIER:
             print_help_glacier(action);
@@ -354,26 +359,36 @@ function print_usage(type, action) {
     process.exit(0);
 }
 
-/** 
+/**
  * print_help_account would print the help options for account
  * @param {string} action
  */
 function print_help_account(action) {
     switch (action) {
         case ACTIONS.ADD:
-            process.stdout.write(ACCOUNT_FLAGS_ADD.trimStart() + CLI_MUTUAL_FLAGS.trimStart());
+            process.stdout.write(
+                ACCOUNT_FLAGS_ADD.trimStart() + CLI_MUTUAL_FLAGS.trimStart(),
+            );
             break;
         case ACTIONS.UPDATE:
-            process.stdout.write(ACCOUNT_FLAGS_UPDATE.trimStart() + CLI_MUTUAL_FLAGS.trimStart());
+            process.stdout.write(
+                ACCOUNT_FLAGS_UPDATE.trimStart() + CLI_MUTUAL_FLAGS.trimStart(),
+            );
             break;
         case ACTIONS.DELETE:
-            process.stdout.write(ACCOUNT_FLAGS_DELETE.trimStart() + CLI_MUTUAL_FLAGS.trimStart());
+            process.stdout.write(
+                ACCOUNT_FLAGS_DELETE.trimStart() + CLI_MUTUAL_FLAGS.trimStart(),
+            );
             break;
         case ACTIONS.STATUS:
-            process.stdout.write(ACCOUNT_FLAGS_STATUS.trimStart() + CLI_MUTUAL_FLAGS.trimStart());
+            process.stdout.write(
+                ACCOUNT_FLAGS_STATUS.trimStart() + CLI_MUTUAL_FLAGS.trimStart(),
+            );
             break;
         case ACTIONS.LIST:
-            process.stdout.write(ACCOUNT_FLAGS_LIST.trimStart() + CLI_MUTUAL_FLAGS.trimStart());
+            process.stdout.write(
+                ACCOUNT_FLAGS_LIST.trimStart() + CLI_MUTUAL_FLAGS.trimStart(),
+            );
             break;
         default:
             process.stdout.write(ACCOUNT_ACTIONS.trimStart());
@@ -381,26 +396,36 @@ function print_help_account(action) {
     process.exit(0);
 }
 
-/** 
+/**
  * print_help_bucket would print the help options for bucket
  * @param {string} action
  */
 function print_help_bucket(action) {
     switch (action) {
         case ACTIONS.ADD:
-            process.stdout.write(BUCKET_FLAGS_ADD.trimStart() + CLI_MUTUAL_FLAGS.trimStart());
+            process.stdout.write(
+                BUCKET_FLAGS_ADD.trimStart() + CLI_MUTUAL_FLAGS.trimStart(),
+            );
             break;
         case ACTIONS.UPDATE:
-            process.stdout.write(BUCKET_FLAGS_UPDATE.trimStart() + CLI_MUTUAL_FLAGS.trimStart());
+            process.stdout.write(
+                BUCKET_FLAGS_UPDATE.trimStart() + CLI_MUTUAL_FLAGS.trimStart(),
+            );
             break;
         case ACTIONS.DELETE:
-            process.stdout.write(BUCKET_FLAGS_DELETE.trimStart() + CLI_MUTUAL_FLAGS.trimStart());
+            process.stdout.write(
+                BUCKET_FLAGS_DELETE.trimStart() + CLI_MUTUAL_FLAGS.trimStart(),
+            );
             break;
         case ACTIONS.STATUS:
-            process.stdout.write(BUCKET_FLAGS_STATUS.trimStart() + CLI_MUTUAL_FLAGS.trimStart());
+            process.stdout.write(
+                BUCKET_FLAGS_STATUS.trimStart() + CLI_MUTUAL_FLAGS.trimStart(),
+            );
             break;
         case ACTIONS.LIST:
-            process.stdout.write(BUCKET_FLAGS_LIST.trimStart() + CLI_MUTUAL_FLAGS.trimStart());
+            process.stdout.write(
+                BUCKET_FLAGS_LIST.trimStart() + CLI_MUTUAL_FLAGS.trimStart(),
+            );
             break;
         default:
             process.stdout.write(BUCKET_ACTIONS.trimStart());
@@ -464,7 +489,6 @@ function print_help_upgrade(action) {
             process.stdout.write(UPGRADE_OPTIONS.trimStart());
     }
 }
-
 
 // EXPORTS
 exports.print_usage = print_usage;

@@ -4,12 +4,17 @@
 const dbg = require('../util/debug_module')(__filename);
 const { ManageCLIError } = require('./manage_nsfs_cli_errors');
 const { UPGRADE_ACTIONS } = require('./manage_nsfs_constants');
-const { ManageCLIResponse } = require('../manage_nsfs/manage_nsfs_cli_responses');
-const { throw_cli_error, write_stdout_response } = require('./manage_nsfs_cli_utils');
+const {
+    ManageCLIResponse,
+} = require('../manage_nsfs/manage_nsfs_cli_responses');
+const {
+    throw_cli_error,
+    write_stdout_response,
+} = require('./manage_nsfs_cli_utils');
 
 /**
  * manage_upgrade_operations handles cli upgrade operations
- * @param {string} action 
+ * @param {string} action
  * @returns {Promise<Void>}
  */
 async function manage_upgrade_operations(action, config_fs) {
@@ -49,9 +54,17 @@ async function exec_config_dir_upgrade() {
  */
 async function get_upgrade_status(config_fs) {
     try {
-        const system_config = await config_fs.get_system_config_file({ silent_if_missing: true });
-        let upgrade_status = system_config?.config_directory?.in_progress_upgrade;
-        if (!upgrade_status) upgrade_status = { message: 'Config directory upgrade status is empty, there is no ongoing config directory upgrade' };
+        const system_config = await config_fs.get_system_config_file({
+            silent_if_missing: true,
+        });
+        let upgrade_status =
+            system_config?.config_directory?.in_progress_upgrade;
+        if (!upgrade_status) {
+            upgrade_status = {
+                message:
+                    'Config directory upgrade status is empty, there is no ongoing config directory upgrade',
+            };
+        }
         write_stdout_response(ManageCLIResponse.UpgradeStatus, upgrade_status);
     } catch (err) {
         dbg.error('could not get upgrade status response', err);
@@ -66,10 +79,19 @@ async function get_upgrade_status(config_fs) {
  */
 async function get_upgrade_history(config_fs) {
     try {
-        const system_config = await config_fs.get_system_config_file({ silent_if_missing: true });
+        const system_config = await config_fs.get_system_config_file({
+            silent_if_missing: true,
+        });
         let upgrade_history = system_config?.config_directory?.upgrade_history;
-        if (!upgrade_history) upgrade_history = { message: 'Config directory upgrade history is empty' };
-        write_stdout_response(ManageCLIResponse.UpgradeHistory, upgrade_history);
+        if (!upgrade_history) {
+            upgrade_history = {
+                message: 'Config directory upgrade history is empty',
+            };
+        }
+        write_stdout_response(
+            ManageCLIResponse.UpgradeHistory,
+            upgrade_history,
+        );
     } catch (err) {
         dbg.error('could not get upgrade history response', err);
         throw_cli_error({ ...ManageCLIError.UpgradeHistoryFailed, cause: err });

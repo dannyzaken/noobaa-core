@@ -8,7 +8,6 @@
  *
  */
 module.exports = {
-
     $id: 'debug_api',
 
     methods: {
@@ -23,13 +22,12 @@ module.exports = {
                     },
                     level: {
                         type: 'integer',
-                    }
-                }
+                    },
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
-
-    }
+    },
 };

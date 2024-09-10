@@ -5,8 +5,7 @@ const mocha = require('mocha');
 const assert = require('assert');
 const LRUCache = require('../../util/lru_cache');
 
-mocha.describe('lru_cache', function() {
-
+mocha.describe('lru_cache', function () {
     // this is the data we are "caching" in this test
     const items = {
         a: 1,
@@ -35,30 +34,30 @@ mocha.describe('lru_cache', function() {
         },
     });
 
-    mocha.it('should load when first use of key', async function() {
+    mocha.it('should load when first use of key', async function () {
         assert.strictEqual(await cache.get_with_cache({ key: 'a' }), 1);
         assert.strictEqual(num_loads, 1);
         assert.strictEqual(num_validates, 0);
     });
-    mocha.it('should skip load if validated from cache', async function() {
+    mocha.it('should skip load if validated from cache', async function () {
         assert.strictEqual(await cache.get_with_cache({ key: 'a' }), 1);
         assert.strictEqual(num_loads, 1);
         assert.strictEqual(num_validates, 1);
     });
-    mocha.it('should reload if validate returns false', async function() {
+    mocha.it('should reload if validate returns false', async function () {
         items.a = 666;
         assert.strictEqual(await cache.get_with_cache({ key: 'a' }), 666);
         assert.strictEqual(num_loads, 2);
         assert.strictEqual(num_validates, 2);
     });
-    mocha.it('should reload after manual invalidate', async function() {
+    mocha.it('should reload after manual invalidate', async function () {
         items.a = 90210;
         cache.invalidate({ key: 'a' });
         assert.strictEqual(await cache.get_with_cache({ key: 'a' }), 90210);
         assert.strictEqual(num_loads, 3);
         assert.strictEqual(num_validates, 2);
     });
-    mocha.it('should reload after evicted down the lru', async function() {
+    mocha.it('should reload after evicted down the lru', async function () {
         items.a = 1;
         assert.strictEqual(await cache.get_with_cache({ key: 'b' }), 2);
         assert.strictEqual(num_loads, 4);
@@ -78,5 +77,4 @@ mocha.describe('lru_cache', function() {
         assert.strictEqual(cache.peek_cache({ key: 'c' }), 3);
         assert.strictEqual(cache.peek_cache({ key: 'd' }), 4);
     });
-
 });

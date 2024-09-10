@@ -7,26 +7,26 @@ module.exports = {
     required: ['_id', 'system', 'start_time', 'end_time'],
     properties: {
         _id: {
-            objectid: true
+            objectid: true,
         },
         system: {
-            objectid: true
+            objectid: true,
         },
         // start time of the aggregated report rounded to the aggregated_time_range
         start_time: {
-            idate: true
+            idate: true,
         },
         end_time: {
-            idate: true
+            idate: true,
         },
         bucket: {
-            objectid: true
+            objectid: true,
         },
         account: {
-            objectid: true
+            objectid: true,
         },
         endpoint_group: {
-            type: 'string'
+            type: 'string',
         },
         read_bytes: {
             type: 'integer',
@@ -39,6 +39,6 @@ module.exports = {
         },
         write_count: {
             type: 'integer',
-        }
-    }
+        },
+    },
 };

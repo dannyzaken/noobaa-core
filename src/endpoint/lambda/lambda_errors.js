@@ -3,17 +3,16 @@
 
 /**
  * @typedef {{
- *      code?: string, 
- *      message: string, 
+ *      code?: string,
+ *      message: string,
  *      http_code: number,
  *      detail?: string
  * }} LambdaErrorSpec
  */
 
 class LambdaError extends Error {
-
     /**
-     * @param {LambdaErrorSpec} error_spec 
+     * @param {LambdaErrorSpec} error_spec
      */
     constructor({ code, message, http_code, detail }) {
         super(message); // sets this.message
@@ -24,10 +23,9 @@ class LambdaError extends Error {
 
     reply() {
         return JSON.stringify({
-            Message: this.message
+            Message: this.message,
         });
     }
-
 }
 
 LambdaError.CodeStorageExceededException = Object.freeze({
@@ -52,7 +50,8 @@ LambdaError.ResourceNotFoundException = Object.freeze({
 });
 LambdaError.RequestTooLargeException = Object.freeze({
     code: 'RequestTooLargeException',
-    message: 'The request payload exceeded the Invoke request body JSON input limit.',
+    message:
+        'The request payload exceeded the Invoke request body JSON input limit.',
     http_code: 413,
 });
 LambdaError.ServiceException = Object.freeze({
@@ -72,7 +71,8 @@ LambdaError.UnsupportedMediaTypeException = Object.freeze({
 });
 LambdaError.RequestTimeTooSkewed = Object.freeze({
     code: 'RequestTimeTooSkewed',
-    message: 'The difference between the request time and the server\'s time is too large.',
+    message:
+        "The difference between the request time and the server's time is too large.",
     http_code: 403,
 });
 LambdaError.AccessDenied = Object.freeze({
@@ -82,7 +82,8 @@ LambdaError.AccessDenied = Object.freeze({
 });
 LambdaError.SignatureDoesNotMatch = Object.freeze({
     code: 'SignatureDoesNotMatch',
-    message: 'The request signature we calculated does not match the signature you provided. Check your AWS secret access key and signing method. For more information, see REST Authentication and SOAP Authentication for details.',
+    message:
+        'The request signature we calculated does not match the signature you provided. Check your AWS secret access key and signing method. For more information, see REST Authentication and SOAP Authentication for details.',
     http_code: 403,
 });
 LambdaError.MissingRequestBodyError = Object.freeze({
@@ -112,7 +113,8 @@ LambdaError.MaxMessageLengthExceeded = Object.freeze({
 
 LambdaError.NotImplemented = Object.freeze({
     code: 'NotImplemented',
-    message: 'A header you provided implies functionality that is not implemented.',
+    message:
+        'A header you provided implies functionality that is not implemented.',
     http_code: 501,
 });
 LambdaError.BadRequestWithoutCode = Object.freeze({
@@ -123,7 +125,8 @@ LambdaError.BadRequestWithoutCode = Object.freeze({
 });
 LambdaError.XAmzContentSHA256Mismatch = Object.freeze({
     code: 'XAmzContentSHA256Mismatch',
-    message: 'The provided \'x-amz-content-sha256\' header does not match what was computed.',
+    message:
+        "The provided 'x-amz-content-sha256' header does not match what was computed.",
     http_code: 400,
     // ClientComputedContentSHA256: '...',
     // S3ComputedContentSHA256: '...',

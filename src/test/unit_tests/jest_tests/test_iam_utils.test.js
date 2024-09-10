@@ -15,7 +15,11 @@ describe('create_arn', () => {
 
     it('create_arn without username should return basic structure', () => {
         const user_details = {};
-        const res = iam_utils.create_arn(dummy_account_id, user_details.username, user_details.iam_path);
+        const res = iam_utils.create_arn(
+            dummy_account_id,
+            user_details.username,
+            user_details.iam_path,
+        );
         expect(res).toBe(`${arn_prefix}${dummy_account_id}:user/`);
     });
 
@@ -23,17 +27,29 @@ describe('create_arn', () => {
         const user_details = {
             username: dummy_username,
         };
-        const res = iam_utils.create_arn(dummy_account_id, user_details.username, user_details.iam_path);
-        expect(res).toBe(`${arn_prefix}${dummy_account_id}:user/${dummy_username}`);
+        const res = iam_utils.create_arn(
+            dummy_account_id,
+            user_details.username,
+            user_details.iam_path,
+        );
+        expect(res).toBe(
+            `${arn_prefix}${dummy_account_id}:user/${dummy_username}`,
+        );
     });
 
     it('create_arn with username and AWS DEFAULT PATH should return only username in arn', () => {
         const user_details = {
             username: dummy_username,
-            iam_path: iam_constants.IAM_DEFAULT_PATH
+            iam_path: iam_constants.IAM_DEFAULT_PATH,
         };
-        const res = iam_utils.create_arn(dummy_account_id, user_details.username, user_details.iam_path);
-        expect(res).toBe(`${arn_prefix}${dummy_account_id}:user/${dummy_username}`);
+        const res = iam_utils.create_arn(
+            dummy_account_id,
+            user_details.username,
+            user_details.iam_path,
+        );
+        expect(res).toBe(
+            `${arn_prefix}${dummy_account_id}:user/${dummy_username}`,
+        );
     });
 
     it('create_arn with username and iam_path should return them in arn', () => {
@@ -41,8 +57,14 @@ describe('create_arn', () => {
             username: dummy_username,
             iam_path: dummy_iam_path,
         };
-        const res = iam_utils.create_arn(dummy_account_id, user_details.username, user_details.iam_path);
-        expect(res).toBe(`${arn_prefix}${dummy_account_id}:user${dummy_iam_path}${dummy_username}`);
+        const res = iam_utils.create_arn(
+            dummy_account_id,
+            user_details.username,
+            user_details.iam_path,
+        );
+        expect(res).toBe(
+            `${arn_prefix}${dummy_account_id}:user${dummy_iam_path}${dummy_username}`,
+        );
     });
 });
 
@@ -187,12 +209,18 @@ describe('validate_user_input_iam', () => {
 
         it('should return true when path is at the min or max length', () => {
             expect(iam_utils.validate_iam_path('/')).toBe(true);
-            expect(iam_utils.validate_iam_path('/'.repeat(max_length))).toBe(true);
+            expect(iam_utils.validate_iam_path('/'.repeat(max_length))).toBe(
+                true,
+            );
         });
 
         it('should return true when path is within the length constraint', () => {
-            expect(iam_utils.validate_iam_path('/'.repeat(min_length + 1))).toBe(true);
-            expect(iam_utils.validate_iam_path('/'.repeat(max_length - 1))).toBe(true);
+            expect(
+                iam_utils.validate_iam_path('/'.repeat(min_length + 1)),
+            ).toBe(true);
+            expect(
+                iam_utils.validate_iam_path('/'.repeat(max_length - 1)),
+            ).toBe(true);
         });
 
         it('should return true when path is valid', () => {
@@ -203,53 +231,83 @@ describe('validate_user_input_iam', () => {
 
         it('should throw error when path is invalid - not begins with /', () => {
             try {
-                iam_utils.validate_iam_path('a/b/', iam_constants.IAM_PARAMETER_NAME.IAM_PATH);
+                iam_utils.validate_iam_path(
+                    'a/b/',
+                    iam_constants.IAM_PARAMETER_NAME.IAM_PATH,
+                );
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
         it('should throw error when path is invalid - not ends with /', () => {
             try {
-                iam_utils.validate_iam_path('/a/b', iam_constants.IAM_PARAMETER_NAME.IAM_PATH);
+                iam_utils.validate_iam_path(
+                    '/a/b',
+                    iam_constants.IAM_PARAMETER_NAME.IAM_PATH,
+                );
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
         it('should throw error when path is invalid - not begins with / and not ends with /', () => {
             try {
-                iam_utils.validate_iam_path('a/b', iam_constants.IAM_PARAMETER_NAME.IAM_PATH);
+                iam_utils.validate_iam_path(
+                    'a/b',
+                    iam_constants.IAM_PARAMETER_NAME.IAM_PATH,
+                );
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
         it('should throw error when path is too short', () => {
             try {
                 const dummy_path = '';
-                iam_utils.validate_iam_path(dummy_path, iam_constants.IAM_PARAMETER_NAME.IAM_PATH);
+                iam_utils.validate_iam_path(
+                    dummy_path,
+                    iam_constants.IAM_PARAMETER_NAME.IAM_PATH,
+                );
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
         it('should throw error when path is too long', () => {
             try {
                 const dummy_path = 'A'.repeat(max_length + 1);
-                iam_utils.validate_iam_path(dummy_path, iam_constants.IAM_PARAMETER_NAME.IAM_PATH);
+                iam_utils.validate_iam_path(
+                    dummy_path,
+                    iam_constants.IAM_PARAMETER_NAME.IAM_PATH,
+                );
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
@@ -257,11 +315,17 @@ describe('validate_user_input_iam', () => {
             try {
                 // @ts-ignore
                 const invalid_path = null;
-                iam_utils.validate_iam_path(invalid_path, iam_constants.IAM_PARAMETER_NAME.IAM_PATH);
+                iam_utils.validate_iam_path(
+                    invalid_path,
+                    iam_constants.IAM_PARAMETER_NAME.IAM_PATH,
+                );
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
@@ -269,11 +333,17 @@ describe('validate_user_input_iam', () => {
             try {
                 const invalid_path = 1;
                 // @ts-ignore
-                iam_utils.validate_iam_path(invalid_path, iam_constants.IAM_PARAMETER_NAME.IAM_PATH);
+                iam_utils.validate_iam_path(
+                    invalid_path,
+                    iam_constants.IAM_PARAMETER_NAME.IAM_PATH,
+                );
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
@@ -281,11 +351,17 @@ describe('validate_user_input_iam', () => {
             try {
                 const invalid_path = {};
                 // @ts-ignore
-                iam_utils.validate_iam_path(invalid_path, iam_constants.IAM_PARAMETER_NAME.IAM_PATH);
+                iam_utils.validate_iam_path(
+                    invalid_path,
+                    iam_constants.IAM_PARAMETER_NAME.IAM_PATH,
+                );
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
@@ -293,11 +369,17 @@ describe('validate_user_input_iam', () => {
             try {
                 const invalid_path = false;
                 // @ts-ignore
-                iam_utils.validate_iam_path(invalid_path, iam_constants.IAM_PARAMETER_NAME.IAM_PATH);
+                iam_utils.validate_iam_path(
+                    invalid_path,
+                    iam_constants.IAM_PARAMETER_NAME.IAM_PATH,
+                );
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
     });
@@ -307,75 +389,131 @@ describe('validate_user_input_iam', () => {
         const max_length = 64;
         it('should return true when username is undefined', () => {
             let dummy_username;
-            const res = iam_utils.validate_username(dummy_username, iam_constants.IAM_PARAMETER_NAME.USERNAME);
+            const res = iam_utils.validate_username(
+                dummy_username,
+                iam_constants.IAM_PARAMETER_NAME.USERNAME,
+            );
             expect(res).toBeUndefined();
         });
 
         it('should return true when username is at the min or max length', () => {
-            expect(iam_utils.validate_username('a', iam_constants.IAM_PARAMETER_NAME.USERNAME)).toBe(true);
-            expect(iam_utils.validate_username('a'.repeat(max_length), iam_constants.IAM_PARAMETER_NAME.USERNAME)).toBe(true);
+            expect(
+                iam_utils.validate_username(
+                    'a',
+                    iam_constants.IAM_PARAMETER_NAME.USERNAME,
+                ),
+            ).toBe(true);
+            expect(
+                iam_utils.validate_username(
+                    'a'.repeat(max_length),
+                    iam_constants.IAM_PARAMETER_NAME.USERNAME,
+                ),
+            ).toBe(true);
         });
 
         it('should return true when username is within the length constraint', () => {
-            expect(iam_utils.validate_username('a'.repeat(min_length + 1), iam_constants.IAM_PARAMETER_NAME.USERNAME)).toBe(true);
-            expect(iam_utils.validate_username('a'.repeat(max_length - 1), iam_constants.IAM_PARAMETER_NAME.USERNAME)).toBe(true);
+            expect(
+                iam_utils.validate_username(
+                    'a'.repeat(min_length + 1),
+                    iam_constants.IAM_PARAMETER_NAME.USERNAME,
+                ),
+            ).toBe(true);
+            expect(
+                iam_utils.validate_username(
+                    'a'.repeat(max_length - 1),
+                    iam_constants.IAM_PARAMETER_NAME.USERNAME,
+                ),
+            ).toBe(true);
         });
 
         it('should return true when username is valid', () => {
             const dummy_username = 'Robert';
-            const res = iam_utils.validate_username(dummy_username, iam_constants.IAM_PARAMETER_NAME.USERNAME);
+            const res = iam_utils.validate_username(
+                dummy_username,
+                iam_constants.IAM_PARAMETER_NAME.USERNAME,
+            );
             expect(res).toBe(true);
         });
 
         it('should throw error when username is invalid - contains invalid character', () => {
             try {
-                iam_utils.validate_username('{}', iam_constants.IAM_PARAMETER_NAME.USERNAME);
+                iam_utils.validate_username(
+                    '{}',
+                    iam_constants.IAM_PARAMETER_NAME.USERNAME,
+                );
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
         it('should throw error when username is invalid - internal limitation (anonymous)', () => {
             try {
-                iam_utils.validate_username('anonymous', iam_constants.IAM_PARAMETER_NAME.USERNAME);
+                iam_utils.validate_username(
+                    'anonymous',
+                    iam_constants.IAM_PARAMETER_NAME.USERNAME,
+                );
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
         it('should throw error when username is invalid - internal limitation (with leading or trailing spaces)', () => {
             try {
-                iam_utils.validate_username('    name-with-spaces    ', iam_constants.IAM_PARAMETER_NAME.USERNAME);
+                iam_utils.validate_username(
+                    '    name-with-spaces    ',
+                    iam_constants.IAM_PARAMETER_NAME.USERNAME,
+                );
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
         it('should throw error when username is too short', () => {
             try {
                 const dummy_username = '';
-                iam_utils.validate_username(dummy_username, iam_constants.IAM_PARAMETER_NAME.USERNAME);
+                iam_utils.validate_username(
+                    dummy_username,
+                    iam_constants.IAM_PARAMETER_NAME.USERNAME,
+                );
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
         it('should throw error when username is too long', () => {
             try {
                 const dummy_username = 'A'.repeat(max_length + 1);
-                iam_utils.validate_username(dummy_username, iam_constants.IAM_PARAMETER_NAME.USERNAME);
+                iam_utils.validate_username(
+                    dummy_username,
+                    iam_constants.IAM_PARAMETER_NAME.USERNAME,
+                );
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
@@ -383,11 +521,17 @@ describe('validate_user_input_iam', () => {
             try {
                 // @ts-ignore
                 const invalid_username = null;
-                iam_utils.validate_username(invalid_username, iam_constants.IAM_PARAMETER_NAME.USERNAME);
+                iam_utils.validate_username(
+                    invalid_username,
+                    iam_constants.IAM_PARAMETER_NAME.USERNAME,
+                );
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
@@ -395,11 +539,17 @@ describe('validate_user_input_iam', () => {
             try {
                 const invalid_username = 1;
                 // @ts-ignore
-                iam_utils.validate_username(invalid_username, iam_constants.IAM_PARAMETER_NAME.USERNAME);
+                iam_utils.validate_username(
+                    invalid_username,
+                    iam_constants.IAM_PARAMETER_NAME.USERNAME,
+                );
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
@@ -407,11 +557,17 @@ describe('validate_user_input_iam', () => {
             try {
                 const invalid_username = {};
                 // @ts-ignore
-                iam_utils.validate_username(invalid_username, iam_constants.IAM_PARAMETER_NAME.USERNAME);
+                iam_utils.validate_username(
+                    invalid_username,
+                    iam_constants.IAM_PARAMETER_NAME.USERNAME,
+                );
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
@@ -419,11 +575,17 @@ describe('validate_user_input_iam', () => {
             try {
                 const invalid_username = false;
                 // @ts-ignore
-                iam_utils.validate_username(invalid_username, iam_constants.IAM_PARAMETER_NAME.USERNAME);
+                iam_utils.validate_username(
+                    invalid_username,
+                    iam_constants.IAM_PARAMETER_NAME.USERNAME,
+                );
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
     });
@@ -441,7 +603,9 @@ describe('validate_user_input_iam', () => {
         });
 
         it('should return true when marker is within the length constraint', () => {
-            expect(iam_utils.validate_marker('a'.repeat(min_length + 1))).toBe(true);
+            expect(iam_utils.validate_marker('a'.repeat(min_length + 1))).toBe(
+                true,
+            );
         });
 
         it('should return true when marker is valid', () => {
@@ -457,7 +621,10 @@ describe('validate_user_input_iam', () => {
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
@@ -468,7 +635,10 @@ describe('validate_user_input_iam', () => {
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
@@ -480,7 +650,10 @@ describe('validate_user_input_iam', () => {
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
@@ -492,7 +665,10 @@ describe('validate_user_input_iam', () => {
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
@@ -504,7 +680,10 @@ describe('validate_user_input_iam', () => {
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
@@ -516,7 +695,10 @@ describe('validate_user_input_iam', () => {
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
     });
@@ -531,13 +713,21 @@ describe('validate_user_input_iam', () => {
         });
 
         it('should return true when access_key is at the min or max length', () => {
-            expect(iam_utils.validate_access_key_id('a'.repeat(min_length))).toBe(true);
-            expect(iam_utils.validate_access_key_id('a'.repeat(max_length))).toBe(true);
+            expect(
+                iam_utils.validate_access_key_id('a'.repeat(min_length)),
+            ).toBe(true);
+            expect(
+                iam_utils.validate_access_key_id('a'.repeat(max_length)),
+            ).toBe(true);
         });
 
         it('should return true when access_key is within the length constraint', () => {
-            expect(iam_utils.validate_access_key_id('a'.repeat(min_length + 1))).toBe(true);
-            expect(iam_utils.validate_access_key_id('a'.repeat(max_length - 1))).toBe(true);
+            expect(
+                iam_utils.validate_access_key_id('a'.repeat(min_length + 1)),
+            ).toBe(true);
+            expect(
+                iam_utils.validate_access_key_id('a'.repeat(max_length - 1)),
+            ).toBe(true);
         });
 
         it('should return true when access_key is valid', () => {
@@ -552,7 +742,10 @@ describe('validate_user_input_iam', () => {
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
@@ -563,7 +756,10 @@ describe('validate_user_input_iam', () => {
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
@@ -574,7 +770,10 @@ describe('validate_user_input_iam', () => {
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
@@ -586,7 +785,10 @@ describe('validate_user_input_iam', () => {
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
@@ -598,7 +800,10 @@ describe('validate_user_input_iam', () => {
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
@@ -610,7 +815,10 @@ describe('validate_user_input_iam', () => {
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
@@ -622,7 +830,10 @@ describe('validate_user_input_iam', () => {
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
     });
@@ -647,7 +858,10 @@ describe('validate_user_input_iam', () => {
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
 
@@ -659,9 +873,11 @@ describe('validate_user_input_iam', () => {
                 throw new NoErrorThrownError();
             } catch (err) {
                 expect(err).toBeInstanceOf(IamError);
-                expect(err).toHaveProperty('code', IamError.ValidationError.code);
+                expect(err).toHaveProperty(
+                    'code',
+                    IamError.ValidationError.code,
+                );
             }
         });
-
     });
 });

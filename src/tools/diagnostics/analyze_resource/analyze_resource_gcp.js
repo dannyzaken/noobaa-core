@@ -10,12 +10,11 @@ const CloudVendor = require('./analyze_resource_cloud_vendor_abstract');
 
 /**
  * @typedef {{
- *      private_key_json: JSON, 
+ *      private_key_json: JSON,
  * }} AnalyzeGcpSpec
  */
 
 class AnalyzeGcp extends CloudVendor {
-
     constructor(private_key_json) {
         super(); // Constructors for derived classes must contain a 'super' call.
         const gcs_params = {
@@ -29,9 +28,7 @@ class AnalyzeGcp extends CloudVendor {
             maxResults: CloudVendor.MAX_KEYS,
         };
         dbg.log0(`Calling GCP bucket(${bucket}).getFiles`);
-        const [files] = await this.gcs
-            .bucket(bucket)
-            .getFiles(options);
+        const [files] = await this.gcs.bucket(bucket).getFiles(options);
         dbg.log0(`List object response: ${inspect(files)}`);
 
         this.file = '';
@@ -54,7 +51,9 @@ class AnalyzeGcp extends CloudVendor {
     }
 
     async write_object(bucket, key) {
-        dbg.log0(`Calling GCP bucket(${bucket}).file(${key}).createWriteStream`);
+        dbg.log0(
+            `Calling GCP bucket(${bucket}).file(${key}).createWriteStream`,
+        );
         const stream = await this.gcs
             .bucket(bucket)
             .file(key)
@@ -67,10 +66,7 @@ class AnalyzeGcp extends CloudVendor {
 
     async delete_object(bucket, key) {
         dbg.log0(`Calling GCP bucket(${bucket}).file(${key}).delete`);
-        await this.gcs
-            .bucket(bucket)
-            .file(key)
-            .delete();
+        await this.gcs.bucket(bucket).file(key).delete();
         dbg.log0(`Delete of ${key} done`);
     }
 }

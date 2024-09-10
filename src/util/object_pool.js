@@ -4,12 +4,14 @@
 const { make_array } = require('./js_utils');
 
 const alloc_empty_obj = () => ({});
-const noop = () => { /* noop */ };
+const noop = () => {
+    /* noop */
+};
 
 const rz_policy = Object.freeze({
     NO_RESIZE: 1,
     GROW_WHEN_EMPTY: 2,
-    GROW_AND_SHRINK: 3
+    GROW_AND_SHRINK: 3,
 });
 
 class ObjectPool {
@@ -30,11 +32,13 @@ class ObjectPool {
             allocator,
             initializer,
             empty_value = null,
-            resize_policy = rz_policy.GROW_WHEN_EMPTY
+            resize_policy = rz_policy.GROW_WHEN_EMPTY,
         } = options;
 
         if (!capacity && resize_policy === rz_policy.NO_RESIZE) {
-            console.warn('ObjectPool - Invalid operation, cannot create a pool without capacity');
+            console.warn(
+                'ObjectPool - Invalid operation, cannot create a pool without capacity',
+            );
         }
 
         this._initalize = initializer || noop;
@@ -56,9 +60,8 @@ class ObjectPool {
             // Duplicate the pool capacity.
             const old_capacity = this.capacity;
             this._items = make_array(old_capacity * 2, i =>
-                (i < old_capacity ? this._items[i] : this._allocate(i))
+                i < old_capacity ? this._items[i] : this._allocate(i),
             );
-
         }
 
         const item = this._items[this._next];
@@ -80,10 +83,11 @@ class ObjectPool {
 
         // The pool will shrink if we are using only a thired of it capacity,
         // in this case we half the pool capacity )
-        if (this._resize_policy === rz_policy.GROW_AND_SHRINK &&
+        if (
+            this._resize_policy === rz_policy.GROW_AND_SHRINK &&
             this.capacity > 16 &&
-            this._next < Math.floor((1 / 3) * this.capacity)) {
-
+            this._next < Math.floor((1 / 3) * this.capacity)
+        ) {
             const new_capacity = Math.floor(this.capacity / 2);
             this._items = make_array(new_capacity, i => this._items[i]);
         }

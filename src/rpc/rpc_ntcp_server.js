@@ -15,17 +15,16 @@ const RpcNtcpConnection = require('./rpc_ntcp');
  *
  */
 class RpcNtcpServer extends EventEmitter {
-
     constructor(tls_options) {
         super();
-        this.protocol = (tls_options ? 'ntls:' : 'ntcp:');
+        this.protocol = tls_options ? 'ntls:' : 'ntcp:';
         const Ntcp = nb_native().Ntcp;
         this.server = new Ntcp();
         this.server.on('connection', ntcp => this._on_connection(ntcp));
         this.server.on('close', err => {
-                dbg.log0('on close::', err);
-                this.emit('error', new Error('NTCP SERVER CLOSED'));
-            });
+            dbg.log0('on close::', err);
+            this.emit('error', new Error('NTCP SERVER CLOSED'));
+        });
         this.server.on('error', err => this.emit('error', err));
     }
 
@@ -56,11 +55,14 @@ class RpcNtcpServer extends EventEmitter {
             address = url.format({
                 protocol: this.protocol,
                 hostname: ntcp.remoteAddress,
-                port: ntcp.remotePort
+                port: ntcp.remotePort,
             });
             const addr_url = url.parse(address);
             const conn = new RpcNtcpConnection(addr_url);
-            dbg.log0('NTCP ACCEPT CONNECTION', conn.connid + ' ' + conn.url.href);
+            dbg.log0(
+                'NTCP ACCEPT CONNECTION',
+                conn.connid + ' ' + conn.url.href,
+            );
             conn.ntcp = ntcp;
             conn._init_tcp();
             conn.emit('connect');
@@ -70,7 +72,6 @@ class RpcNtcpServer extends EventEmitter {
             ntcp.close();
         }
     }
-
 }
 
 module.exports = RpcNtcpServer;

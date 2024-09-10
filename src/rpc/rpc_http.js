@@ -16,7 +16,8 @@ const { RPC_VERSION_NUMBER } = require('./rpc_message');
 
 const BASE_PATH = '/rpc/';
 const browser_location = global.window && global.window.location;
-const is_browser_secure = browser_location && browser_location.protocol === 'https:';
+const is_browser_secure =
+    browser_location && browser_location.protocol === 'https:';
 
 /**
  *
@@ -24,7 +25,6 @@ const is_browser_secure = browser_location && browser_location.protocol === 'htt
  *
  */
 class RpcHttpConnection extends RpcBaseConnection {
-
     // constructor(addr_url) { super(addr_url); }
 
     /**
@@ -50,11 +50,12 @@ class RpcHttpConnection extends RpcBaseConnection {
         // so we only manage a transient request-response.
         // see the transient = true handling
         if (this.url.protocol === 'http:' && is_browser_secure) {
-            throw new Error('HTTP INSECURE - cannot use http: from secure browser page');
+            throw new Error(
+                'HTTP INSECURE - cannot use http: from secure browser page',
+            );
         }
         setImmediate(() => this.emit('connect'));
     }
-
 
     /**
      *
@@ -69,7 +70,6 @@ class RpcHttpConnection extends RpcBaseConnection {
         }
     }
 
-
     /**
      *
      * send
@@ -77,10 +77,9 @@ class RpcHttpConnection extends RpcBaseConnection {
      */
     async _send(msg, op, req) {
         return op === 'res' ?
-            this.send_http_response(msg, req) :
-            this.send_http_request(msg, req);
+                this.send_http_response(msg, req)
+            :   this.send_http_request(msg, req);
     }
-
 
     /**
      *
@@ -101,7 +100,6 @@ class RpcHttpConnection extends RpcBaseConnection {
         res.end();
         this.res = null;
     }
-
 
     /**
      *
@@ -134,16 +132,21 @@ class RpcHttpConnection extends RpcBaseConnection {
             // tell browserify http module to use binary data
             responseType: 'arraybuffer',
             // Set the underlaying http/https agent
-            agent: http_utils.get_unsecured_agent(this.url.href)
+            agent: http_utils.get_unsecured_agent(this.url.href),
         };
 
         const http_req =
-            (http_options.protocol === 'https:') ?
-            https.request(http_options) :
-            http.request(http_options);
+            http_options.protocol === 'https:' ?
+                https.request(http_options)
+            :   http.request(http_options);
         this.req = http_req;
 
-        dbg.log3('HTTP request', http_req.method, http_req.path, http_req._headers);
+        dbg.log3(
+            'HTTP request',
+            http_req.method,
+            http_req.path,
+            http_req._headers,
+        );
 
         const send_defer = new P.Defer();
 
@@ -151,8 +154,14 @@ class RpcHttpConnection extends RpcBaseConnection {
         http_req.on('error', send_defer.reject);
 
         // once a response arrives read and handle it
-        http_req.on('response', http_res => this.handle_http_response(
-            http_req, http_res, send_defer, rpc_req.reqid));
+        http_req.on('response', http_res =>
+            this.handle_http_response(
+                http_req,
+                http_res,
+                send_defer,
+                rpc_req.reqid,
+            ),
+        );
 
         // send the request data
         for (let i = 0; i < msg.length; ++i) {
@@ -168,8 +177,14 @@ class RpcHttpConnection extends RpcBaseConnection {
      */
     async handle_http_request() {
         try {
-            const { buffers, total_length } = await buffer_utils.read_stream(this.req);
-            const msg_buffers = add_meta_buffer(buffers, total_length, this.req.headers);
+            const { buffers, total_length } = await buffer_utils.read_stream(
+                this.req,
+            );
+            const msg_buffers = add_meta_buffer(
+                buffers,
+                total_length,
+                this.req.headers,
+            );
             this.emit('message', msg_buffers);
         } catch (err) {
             dbg.error('handle_http_request: ERROR', err.stack || err);
@@ -191,14 +206,21 @@ class RpcHttpConnection extends RpcBaseConnection {
 
         try {
             // read the response data from the socket
-            const { buffers, total_length } = await buffer_utils.read_stream(res);
+            const { buffers, total_length } =
+                await buffer_utils.read_stream(res);
             // the connection's req is done so no need to abort it on close no more
             this.req = null;
             if (res.statusCode !== 200) {
-                throw new Error('HTTP ERROR ' + res.statusCode + ' to ' + this.url.href);
+                throw new Error(
+                    'HTTP ERROR ' + res.statusCode + ' to ' + this.url.href,
+                );
             }
             dbg.log3('HTTP RESPONSE', res.statusCode, 'length', total_length);
-            const msg_buffers = add_meta_buffer(buffers, total_length, res.headers);
+            const msg_buffers = add_meta_buffer(
+                buffers,
+                total_length,
+                res.headers,
+            );
             this.emit('message', msg_buffers);
         } catch (err) {
             // the connection's req is done so no need to abort it on close no more
@@ -207,16 +229,17 @@ class RpcHttpConnection extends RpcBaseConnection {
             this.emit('error', err);
         }
     }
-
 }
 
 function add_meta_buffer(buffers, total_length, headers) {
     const version_header = headers['x-noobaa-rpc-version'];
     const body_len_header = headers['x-noobaa-rpc-body-len'];
-    const rpc_version = version_header === undefined ?
-        RPC_VERSION_NUMBER : Number(version_header);
-    const rpc_body_len = body_len_header === undefined ?
-        total_length : Number(body_len_header);
+    const rpc_version =
+        version_header === undefined ? RPC_VERSION_NUMBER : (
+            Number(version_header)
+        );
+    const rpc_body_len =
+        body_len_header === undefined ? total_length : Number(body_len_header);
     const meta_buffer = Buffer.allocUnsafe(8);
     meta_buffer.writeUInt32BE(rpc_version, 0);
     meta_buffer.writeUInt32BE(rpc_body_len, 4);

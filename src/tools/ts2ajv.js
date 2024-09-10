@@ -74,25 +74,28 @@ function add_properties(node, def) {
     node.forEachChild(m => {
         const key = (m.name && m.name.text) || m.text || '???';
         switch (m.kind) {
-            case ts.SyntaxKind.HeritageClause:
-                {
-                    for (const type of m.types) {
-                        console.log(`*** TODO INHERIT ${node.name.text} from ${type.expression.text}`);
-                        // add_properties(type.expression, def);
-                    }
-                    break;
+            case ts.SyntaxKind.HeritageClause: {
+                for (const type of m.types) {
+                    console.log(
+                        `*** TODO INHERIT ${node.name.text} from ${type.expression.text}`,
+                    );
+                    // add_properties(type.expression, def);
                 }
-            case ts.SyntaxKind.PropertySignature:
-                {
-                    const type = m.type.typeName ? m.type.typeName.text : KINDS[m.type.kind];
-                    def.properties[key] = { type };
-                    break;
-                }
+                break;
+            }
+            case ts.SyntaxKind.PropertySignature: {
+                const type =
+                    m.type.typeName ? m.type.typeName.text : KINDS[m.type.kind];
+                def.properties[key] = { type };
+                break;
+            }
             case ts.SyntaxKind.Identifier:
             case ts.SyntaxKind.MethodSignature:
                 break;
             default:
-                console.log(`*** TODO PROPERTY ${node.name.text}.${key} : ${KINDS[m.kind]}(${m.kind})`);
+                console.log(
+                    `*** TODO PROPERTY ${node.name.text}.${key} : ${KINDS[m.kind]}(${m.kind})`,
+                );
                 break;
         }
     });

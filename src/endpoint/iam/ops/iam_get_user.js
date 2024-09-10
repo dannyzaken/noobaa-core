@@ -4,13 +4,14 @@
 const dbg = require('../../../util/debug_module')(__filename);
 const iam_utils = require('../iam_utils');
 const iam_constants = require('../iam_constants');
-const { CONTENT_TYPE_APP_FORM_URLENCODED } = require('../../../util/http_utils');
+const {
+    CONTENT_TYPE_APP_FORM_URLENCODED,
+} = require('../../../util/http_utils');
 
 /**
  * https://docs.aws.amazon.com/IAM/latest/APIReference/API_GetUser.html
  */
 async function get_user(req, res) {
-
     const params = {
         username: req.body.user_name,
     };
@@ -27,13 +28,17 @@ async function get_user(req, res) {
                     Path: reply.iam_path || iam_constants.IAM_DEFAULT_PATH,
                     UserName: reply.username,
                     Arn: reply.arn,
-                    CreateDate: iam_utils.format_iam_xml_date(reply.create_date),
-                    PasswordLastUsed: iam_utils.format_iam_xml_date(reply.password_last_used),
-                }
+                    CreateDate: iam_utils.format_iam_xml_date(
+                        reply.create_date,
+                    ),
+                    PasswordLastUsed: iam_utils.format_iam_xml_date(
+                        reply.password_last_used,
+                    ),
+                },
             },
             ResponseMetadata: {
                 RequestId: req.request_id,
-            }
+            },
         },
     };
 }

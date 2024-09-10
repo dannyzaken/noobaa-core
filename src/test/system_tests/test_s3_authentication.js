@@ -23,43 +23,43 @@ const TEST_PARAMS = {
 };
 
 const client = rpc.new_client({
-    address: 'ws://localhost:' + process.env.PORT
+    address: 'ws://localhost:' + process.env.PORT,
 });
 
 module.exports = {
-    run_test: run_test
+    run_test: run_test,
 };
 
 function authenticate() {
     const auth_params = {
         email: 'demo@noobaa.com',
         password: 'DeMo1',
-        system: 'demo'
+        system: 'demo',
     };
-    return P.fcall(function() {
+    return P.fcall(function () {
         return client.create_auth_token(auth_params);
     });
 }
 
 function test_s3_connection() {
-    return P.fcall(function() {
-            const s3 = new AWS.S3({
-                endpoint: TEST_PARAMS.ip,
-                accessKeyId: TEST_PARAMS.access_key,
-                secretAccessKey: TEST_PARAMS.secret_key,
-                sslEnabled: false,
-                s3ForcePathStyle: true,
-                signatureVersion: 'v4',
-                region: 'eu-central-1',
-            });
-            return P.ninvoke(s3, "listBuckets");
-        })
-        .then(() => true,
-            error => {
-                console.warn('Failed with', error, error.stack);
-                throw new Error(error);
-            }
-        );
+    return P.fcall(function () {
+        const s3 = new AWS.S3({
+            endpoint: TEST_PARAMS.ip,
+            accessKeyId: TEST_PARAMS.access_key,
+            secretAccessKey: TEST_PARAMS.secret_key,
+            sslEnabled: false,
+            s3ForcePathStyle: true,
+            signatureVersion: 'v4',
+            region: 'eu-central-1',
+        });
+        return P.ninvoke(s3, 'listBuckets');
+    }).then(
+        () => true,
+        error => {
+            console.warn('Failed with', error, error.stack);
+            throw new Error(error);
+        },
+    );
 }
 
 /*
@@ -87,37 +87,42 @@ function list_buckets() {
 
 function getSignedUrl(bucket, obj, expiry) {
     console.log('GENERATE SIGNED_URL OBJECT: ', obj, ' FROM BUCKET: ', bucket);
-    return P.fcall(function() {
-            const s3 = new AWS.S3({
-                endpoint: TEST_PARAMS.ip,
-                accessKeyId: TEST_PARAMS.access_key,
-                secretAccessKey: TEST_PARAMS.secret_key,
-                sslEnabled: false,
-                s3ForcePathStyle: true,
-                signatureVersion: 'v4',
-                region: 'eu-central-1',
-            });
-            return s3.getSignedUrl('getObject', {
-                Bucket: bucket,
-                Key: obj,
-                Expires: expiry || 604800
-            });
-        })
+    return P.fcall(function () {
+        const s3 = new AWS.S3({
+            endpoint: TEST_PARAMS.ip,
+            accessKeyId: TEST_PARAMS.access_key,
+            secretAccessKey: TEST_PARAMS.secret_key,
+            sslEnabled: false,
+            s3ForcePathStyle: true,
+            signatureVersion: 'v4',
+            region: 'eu-central-1',
+        });
+        return s3.getSignedUrl('getObject', {
+            Bucket: bucket,
+            Key: obj,
+            Expires: expiry || 604800,
+        });
+    })
         .then(() => P.delay(1000))
-        .then(url => url,
+        .then(
+            url => url,
             error => {
                 console.warn('Failed with', error, error.stack);
                 throw new Error(error);
-            }
+            },
         );
 }
 
 function httpGetAsPromise(url) {
     console.log('TEST SIGNED_URL: ', url);
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         return http.get(url, res => {
             if (res.statusCode >= 400) {
-                reject(new Error(`httpGetAsPromise failed ${url} ${res.statusCode} ${res.body}`));
+                reject(
+                    new Error(
+                        `httpGetAsPromise failed ${url} ${res.statusCode} ${res.body}`,
+                    ),
+                );
             } else {
                 resolve(res);
             }
@@ -127,7 +132,7 @@ function httpGetAsPromise(url) {
 
 function create_bucket(name) {
     console.log('CREATE BUCKET: ', name);
-    return P.fcall(function() {
+    return P.fcall(function () {
         const s3 = new AWS.S3({
             endpoint: TEST_PARAMS.ip,
             accessKeyId: TEST_PARAMS.access_key,
@@ -137,127 +142,141 @@ function create_bucket(name) {
             signatureVersion: 'v4',
             region: 'eu-central-1',
         });
-        return s3.createBucket({
-            Bucket: name
-        }, function(err, data) {
-            if (err) {
-                console.warn('Failed with', err, err.stack);
-                throw new Error(err);
-            } else {
-                return data;
-            }
-        });
-    });
-}
-
-function create_folder(bucket, folder) {
-    console.log('CREATE FOLDER: ', folder, ' IN BUCKET: ', bucket);
-    return P.fcall(function() {
-        const s3 = new AWS.S3({
-            endpoint: TEST_PARAMS.ip,
-            accessKeyId: TEST_PARAMS.access_key,
-            secretAccessKey: TEST_PARAMS.secret_key,
-            sslEnabled: false,
-            s3ForcePathStyle: true,
-            signatureVersion: 'v4',
-            region: 'eu-central-1',
-        });
-        return s3.putObject({
-            Bucket: bucket,
-            Key: folder + '/'
-        }, function(err, data) {
-            if (err) {
-                console.warn('Failed with', err, err.stack);
-                throw new Error(err);
-            } else {
-                return data;
-            }
-        });
-    });
-}
-
-function head_object(bucket, key) {
-    console.log('HEAD OBJECT: ', key, ' FROM BUCKET: ', bucket);
-    return P.fcall(function() {
-        const s3 = new AWS.S3({
-            endpoint: TEST_PARAMS.ip,
-            accessKeyId: TEST_PARAMS.access_key,
-            secretAccessKey: TEST_PARAMS.secret_key,
-            sslEnabled: false,
-            s3ForcePathStyle: true,
-            signatureVersion: 'v4',
-            region: 'eu-central-1',
-        });
-        return s3.headObject({
-            Bucket: bucket,
-            Key: key
-        }, function(err, data) {
-            if (err) {
-                console.warn('Failed with', err, err.stack);
-                throw new Error(err);
-            } else {
-                return data;
-            }
-        });
-    });
-}
-
-function get_object(bucket, key) {
-    console.log('GET OBJECT: ', key, ' FROM BUCKET: ', bucket);
-    return P.fcall(function() {
-        const s3 = new AWS.S3({
-            endpoint: TEST_PARAMS.ip,
-            accessKeyId: TEST_PARAMS.access_key,
-            secretAccessKey: TEST_PARAMS.secret_key,
-            sslEnabled: false,
-            s3ForcePathStyle: true,
-            signatureVersion: 'v4',
-            region: 'eu-central-1',
-        });
-        return s3.getObject({
-            Bucket: bucket,
-            Key: key
-        }, function(err, data) {
-            if (err) {
-                console.warn('Failed with', err, err.stack);
-                throw new Error(err);
-            } else {
-                return data;
-            }
-        });
-    });
-}
-
-function delete_object(bucket, key) {
-    console.log('DELETE OBJECT: ', key, ' FROM BUCKET: ', bucket);
-    return P.fcall(function() {
-        const s3 = new AWS.S3({
-            endpoint: TEST_PARAMS.ip,
-            accessKeyId: TEST_PARAMS.access_key,
-            secretAccessKey: TEST_PARAMS.secret_key,
-            sslEnabled: false,
-            s3ForcePathStyle: true,
-            signatureVersion: 'v4',
-            region: 'eu-central-1',
-        });
-        s3.deleteObject({
-                Bucket: bucket,
-                Key: key
+        return s3.createBucket(
+            {
+                Bucket: name,
             },
-            function(err, data) {
+            function (err, data) {
                 if (err) {
                     console.warn('Failed with', err, err.stack);
                     throw new Error(err);
                 } else {
                     return data;
                 }
-            });
+            },
+        );
+    });
+}
+
+function create_folder(bucket, folder) {
+    console.log('CREATE FOLDER: ', folder, ' IN BUCKET: ', bucket);
+    return P.fcall(function () {
+        const s3 = new AWS.S3({
+            endpoint: TEST_PARAMS.ip,
+            accessKeyId: TEST_PARAMS.access_key,
+            secretAccessKey: TEST_PARAMS.secret_key,
+            sslEnabled: false,
+            s3ForcePathStyle: true,
+            signatureVersion: 'v4',
+            region: 'eu-central-1',
+        });
+        return s3.putObject(
+            {
+                Bucket: bucket,
+                Key: folder + '/',
+            },
+            function (err, data) {
+                if (err) {
+                    console.warn('Failed with', err, err.stack);
+                    throw new Error(err);
+                } else {
+                    return data;
+                }
+            },
+        );
+    });
+}
+
+function head_object(bucket, key) {
+    console.log('HEAD OBJECT: ', key, ' FROM BUCKET: ', bucket);
+    return P.fcall(function () {
+        const s3 = new AWS.S3({
+            endpoint: TEST_PARAMS.ip,
+            accessKeyId: TEST_PARAMS.access_key,
+            secretAccessKey: TEST_PARAMS.secret_key,
+            sslEnabled: false,
+            s3ForcePathStyle: true,
+            signatureVersion: 'v4',
+            region: 'eu-central-1',
+        });
+        return s3.headObject(
+            {
+                Bucket: bucket,
+                Key: key,
+            },
+            function (err, data) {
+                if (err) {
+                    console.warn('Failed with', err, err.stack);
+                    throw new Error(err);
+                } else {
+                    return data;
+                }
+            },
+        );
+    });
+}
+
+function get_object(bucket, key) {
+    console.log('GET OBJECT: ', key, ' FROM BUCKET: ', bucket);
+    return P.fcall(function () {
+        const s3 = new AWS.S3({
+            endpoint: TEST_PARAMS.ip,
+            accessKeyId: TEST_PARAMS.access_key,
+            secretAccessKey: TEST_PARAMS.secret_key,
+            sslEnabled: false,
+            s3ForcePathStyle: true,
+            signatureVersion: 'v4',
+            region: 'eu-central-1',
+        });
+        return s3.getObject(
+            {
+                Bucket: bucket,
+                Key: key,
+            },
+            function (err, data) {
+                if (err) {
+                    console.warn('Failed with', err, err.stack);
+                    throw new Error(err);
+                } else {
+                    return data;
+                }
+            },
+        );
+    });
+}
+
+function delete_object(bucket, key) {
+    console.log('DELETE OBJECT: ', key, ' FROM BUCKET: ', bucket);
+    return P.fcall(function () {
+        const s3 = new AWS.S3({
+            endpoint: TEST_PARAMS.ip,
+            accessKeyId: TEST_PARAMS.access_key,
+            secretAccessKey: TEST_PARAMS.secret_key,
+            sslEnabled: false,
+            s3ForcePathStyle: true,
+            signatureVersion: 'v4',
+            region: 'eu-central-1',
+        });
+        s3.deleteObject(
+            {
+                Bucket: bucket,
+                Key: key,
+            },
+            function (err, data) {
+                if (err) {
+                    console.warn('Failed with', err, err.stack);
+                    throw new Error(err);
+                } else {
+                    return data;
+                }
+            },
+        );
     });
 }
 
 function delete_bucket(name) {
     console.log('DELETE BUCKET: ', name);
-    return P.fcall(function() {
+    return P.fcall(function () {
         const s3 = new AWS.S3({
             endpoint: TEST_PARAMS.ip,
             accessKeyId: TEST_PARAMS.access_key,
@@ -267,22 +286,25 @@ function delete_bucket(name) {
             signatureVersion: 'v4',
             region: 'eu-central-1',
         });
-        return s3.deleteBucket({
-            Bucket: name
-        }, function(err, data) {
-            if (err) {
-                console.warn('Failed with', err, err.stack);
-                throw new Error(err);
-            } else {
-                return (data);
-            }
-        });
+        return s3.deleteBucket(
+            {
+                Bucket: name,
+            },
+            function (err, data) {
+                if (err) {
+                    console.warn('Failed with', err, err.stack);
+                    throw new Error(err);
+                } else {
+                    return data;
+                }
+            },
+        );
     });
 }
 
 function delete_folder(bucket, folder) {
     console.log('DELETE FOLDER: ', folder, ' FROM BUCKET: ', bucket);
-    return P.fcall(function() {
+    return P.fcall(function () {
         const s3 = new AWS.S3({
             endpoint: TEST_PARAMS.ip,
             accessKeyId: TEST_PARAMS.access_key,
@@ -292,26 +314,29 @@ function delete_folder(bucket, folder) {
             signatureVersion: 'v4',
             region: 'eu-central-1',
         });
-        return s3.deleteObject({
-            Bucket: bucket,
-            Key: folder + '/'
-        }, function(err, data) {
-            if (err) {
-                console.warn('Failed with', err, err.stack);
-                throw new Error(err);
-            } else {
-                return data;
-            }
-        });
+        return s3.deleteObject(
+            {
+                Bucket: bucket,
+                Key: folder + '/',
+            },
+            function (err, data) {
+                if (err) {
+                    console.warn('Failed with', err, err.stack);
+                    throw new Error(err);
+                } else {
+                    return data;
+                }
+            },
+        );
     });
 }
 
 function main() {
     return run_test()
-        .then(function() {
+        .then(function () {
             process.exit(0);
         })
-        .catch(function() {
+        .catch(function () {
             process.exit(1);
         });
 }
@@ -321,11 +346,17 @@ function run_test() {
     const file_names = ['c3_нуба_1', 'c3_нуба_2', 'c3_нуба_3'];
     let fkey;
     let signed_url;
-    return authenticate().then(() => test_s3_connection())
+    return authenticate()
+        .then(() => test_s3_connection())
         .then(() => basic_server_ops.generate_random_file(file_sizes[0]))
         .then(fl => {
             fkey = fl;
-            return basic_server_ops.upload_file(TEST_PARAMS.ip, fkey, 'first.bucket', file_names[0]);
+            return basic_server_ops.upload_file(
+                TEST_PARAMS.ip,
+                fkey,
+                'first.bucket',
+                file_names[0],
+            );
         })
         .then(() => P.delay(1000))
         .then(() => head_object('first.bucket', file_names[0]))
@@ -342,7 +373,12 @@ function run_test() {
         .then(() => basic_server_ops.generate_random_file(file_sizes[1]))
         .then(fl => {
             fkey = fl;
-            return basic_server_ops.upload_file(TEST_PARAMS.ip, fkey, 's3testbucket', file_names[1]);
+            return basic_server_ops.upload_file(
+                TEST_PARAMS.ip,
+                fkey,
+                's3testbucket',
+                file_names[1],
+            );
         })
         .then(() => P.delay(1000))
         .then(() => head_object('s3testbucket', file_names[1]))
@@ -359,7 +395,12 @@ function run_test() {
         .then(() => basic_server_ops.generate_random_file(file_sizes[2]))
         .then(fl => {
             fkey = fl;
-            return basic_server_ops.upload_file(TEST_PARAMS.ip, fkey, 's3testbucket', 's3folder/' + file_names[2]);
+            return basic_server_ops.upload_file(
+                TEST_PARAMS.ip,
+                fkey,
+                's3testbucket',
+                's3folder/' + file_names[2],
+            );
         })
         .then(() => P.delay(1000))
         .then(() => head_object('s3testbucket', 's3folder/' + file_names[2]))
@@ -372,7 +413,9 @@ function run_test() {
             return httpGetAsPromise(url);
         })
         .then(() => P.delay(1000))
-        .then(() => getSignedUrl('s3testbucket', 's3folder/' + file_names[2], 1))
+        .then(() =>
+            getSignedUrl('s3testbucket', 's3folder/' + file_names[2], 1),
+        )
         .then(url => {
             signed_url = url;
             return httpGetAsPromise(url);

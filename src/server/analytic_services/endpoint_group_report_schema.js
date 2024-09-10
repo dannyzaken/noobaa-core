@@ -20,18 +20,18 @@ module.exports = {
                         type: 'object',
                         properties: {
                             count: { type: 'integer' },
-                            usage: { type: 'number' }
-                        }
+                            usage: { type: 'number' },
+                        },
                     },
                     memory: {
                         type: 'object',
                         properties: {
                             total: { type: 'integer' },
-                            used: { type: 'integer' }
-                        }
-                    }
-                }
-            }
-        }
-    }
+                            used: { type: 'integer' },
+                        },
+                    },
+                },
+            },
+        },
+    },
 };

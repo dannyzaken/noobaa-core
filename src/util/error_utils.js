@@ -18,7 +18,7 @@ function new_error_code(code, message, options) {
 
 /**
  * Remove the stack trace for errors that are too noisy with a stack.
- * @param {Error} err 
+ * @param {Error} err
  */
 function stackless(err) {
     err.stack = null;

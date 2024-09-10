@@ -7,7 +7,7 @@
 async function get_bucket_inventory(req) {
     await req.object_sdk.read_bucket({ name: req.params.bucket });
     return {
-        InventoryConfiguration: ''
+        InventoryConfiguration: '',
     };
 }
 

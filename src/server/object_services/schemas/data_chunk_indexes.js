@@ -1,7 +1,8 @@
 /* Copyright (C) 2016 NooBaa */
 'use strict';
 
-module.exports = [{
+module.exports = [
+    {
         postgres: true,
         fields: {
             _id: -1,
@@ -11,8 +12,8 @@ module.exports = [{
             name: 'id_desc',
             partialFilterExpression: {
                 deleted: null,
-            }
-        }
+            },
+        },
     },
     {
         fields: {
@@ -21,9 +22,9 @@ module.exports = [{
         options: {
             unique: false,
             partialFilterExpression: {
-                dedup_key: { $exists: true }
-            }
-        }
+                dedup_key: { $exists: true },
+            },
+        },
     },
     {
         fields: {
@@ -37,8 +38,8 @@ module.exports = [{
                 deleted: null,
                 tier: { $exists: true },
                 tier_lru: { $exists: true },
-            }
-        }
+            },
+        },
     },
     {
         // aggregate_chunks_by_delete_dates()
@@ -47,10 +48,10 @@ module.exports = [{
         },
         options: {
             unique: false,
-            name: "aggregate_by_delete_dates",
+            name: 'aggregate_by_delete_dates',
             partialFilterExpression: {
-                deleted: { $exists: true }
-            }
-        }
-    }
+                deleted: { $exists: true },
+            },
+        },
+    },
 ];

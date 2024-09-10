@@ -16,14 +16,14 @@ dbg.set_process_name(test_name);
 
 let bf_compatible;
 let cf_compatible;
-const POOL_NAME = "first-pool";
+const POOL_NAME = 'first-pool';
 const server = [];
 
 const {
     AWS_ACCESS_KEY_ID,
     AWS_SECRET_ACCESS_KEY,
     AZURE_STORAGE_ACCOUNT_NAME,
-    AZURE_STORAGE_ACCOUNT_KEY
+    AZURE_STORAGE_ACCOUNT_KEY,
 } = process.env;
 
 const cloud_list = ['COMPATIBLE'];
@@ -79,7 +79,10 @@ if (argv.help) {
 // we require this here so --help will not call datasets help.
 const dataset = require('../pipeline/dataset.js');
 
-const rpc = api.new_rpc_from_base_address(`wss://${mgmt_ip}:${mgmt_port_https}`, 'EXTERNAL');
+const rpc = api.new_rpc_from_base_address(
+    `wss://${mgmt_ip}:${mgmt_port_https}`,
+    'EXTERNAL',
+);
 const client = rpc.new_client({});
 
 const server_s3ops = new S3OPS({ ip: s3_ip, ssl_port: s3_port_https });
@@ -92,18 +95,18 @@ const conf = {
     aws: true,
     azure: true,
     compatible_V2: true,
-    compatible_V4: true
+    compatible_V4: true,
 };
 
 let connections_mapping = {
     COMPATIBLE: {
         auth_method: 'AWS_V4',
         name: 'COMPATIBLEConnection',
-        endpoint: "",
-        endpoint_type: "S3_COMPATIBLE",
-        identity: "123",
-        secret: "abc"
-    }
+        endpoint: '',
+        endpoint_type: 'S3_COMPATIBLE',
+        identity: '123',
+        secret: 'abc',
+    },
 };
 
 const dataset_params = {
@@ -144,11 +147,20 @@ const cases = [
     'delete resource compatible4http',
     'delete resource compatible4https',
 ];
-report.init_reporter({ suite: test_name, conf, mongo_report: true, cases: cases });
+report.init_reporter({
+    suite: test_name,
+    conf,
+    mongo_report: true,
+    cases: cases,
+});
 
 const AWSDefaultConnection = cf.getAWSConnection();
-connections_mapping = Object.assign(connections_mapping, { AWS: AWSDefaultConnection });
-connections_mapping = Object.assign(connections_mapping, { AZURE: blobops.AzureDefaultConnection });
+connections_mapping = Object.assign(connections_mapping, {
+    AWS: AWSDefaultConnection,
+});
+connections_mapping = Object.assign(connections_mapping, {
+    AZURE: blobops.AzureDefaultConnection,
+});
 
 let cloud_pools = [];
 let bucket_names = [];
@@ -160,7 +172,7 @@ async function set_rpc_and_create_auth_token(client_to_auth) {
     const auth_params = {
         email: 'demo@noobaa.com',
         password: 'DeMo1',
-        system: 'demo'
+        system: 'demo',
     };
     return client_to_auth.create_auth_token(auth_params);
 }
@@ -171,10 +183,14 @@ async function create_noobaa_for_compatible() {
             server.ip = compatible_ip;
             server.name = compatible_name;
             server.secret = compatible_password;
-            server.s3ops = new S3OPS({ ip: compatible_ip, port: compatible_port, system_verify_name: server.name });
+            server.s3ops = new S3OPS({
+                ip: compatible_ip,
+                port: compatible_port,
+                system_verify_name: server.name,
+            });
             console.log(server);
         } else {
-            await kf.deploy_server({ cpu: '400m', mem: '400Mi', });
+            await kf.deploy_server({ cpu: '400m', mem: '400Mi' });
         }
     } catch (err) {
         console.log(err);
@@ -183,9 +199,13 @@ async function create_noobaa_for_compatible() {
 
     try {
         const { address: s3_addr } = await kf.get_service_address('s3');
-        const { address: mgmt_addr, ports: mgmt_ports } = await kf.get_service_address('noobaa-mgmt', 'mgmt-https');
+        const { address: mgmt_addr, ports: mgmt_ports } =
+            await kf.get_service_address('noobaa-mgmt', 'mgmt-https');
         connections_mapping.COMPATIBLE.endpoint = `https://${s3_addr}`;
-        const rpc2 = api.new_rpc_from_base_address(`wss://${mgmt_addr}:${mgmt_ports}`, 'EXTERNAL');
+        const rpc2 = api.new_rpc_from_base_address(
+            `wss://${mgmt_addr}:${mgmt_ports}`,
+            'EXTERNAL',
+        );
         const client2 = rpc2.new_client({});
         await set_rpc_and_create_auth_token(client2);
         await test_utils.create_hosts_pool(client2, POOL_NAME, 3);
@@ -197,21 +217,29 @@ async function create_noobaa_for_compatible() {
     }
 
     try {
-        await cf_compatible.createConnection(connections_mapping.AZURE, 'AZURE');
-        await cf_compatible.createCloudPool(connections_mapping.AZURE.name, cloudPoolForCompatible, "noobaa-for-compatible");
+        await cf_compatible.createConnection(
+            connections_mapping.AZURE,
+            'AZURE',
+        );
+        await cf_compatible.createCloudPool(
+            connections_mapping.AZURE.name,
+            cloudPoolForCompatible,
+            'noobaa-for-compatible',
+        );
         report.success('create azure resource');
     } catch (err) {
         report.fail('create azure resource');
         throw err;
     }
-
 }
 
 async function clean_cloud_bucket(s3ops, bucket) {
     let run_list = true;
     console.log(`cleaning all files from ${bucket} in ${s3ops.ip}`);
     while (run_list) {
-        const list_files = await s3ops.get_list_files(bucket, '', { maxKeys: 1000 });
+        const list_files = await s3ops.get_list_files(bucket, '', {
+            maxKeys: 1000,
+        });
         if (list_files.length < 1000) {
             run_list = false;
         }
@@ -238,36 +266,60 @@ async function prepareCompatibleCloudPoolsEnv(type, version) {
             const cloud_pool_name = `${type}${version}${protocol}-bucket`;
             cloud_pools.push(cloud_pool_name);
             await bf_compatible.createBucket(target_bucket);
-            await bf_compatible.editBucketDataPlacement(cloudPoolForCompatible, target_bucket, 'SPREAD');
-            await cf.createCloudPool(connections_mapping[type].name, cloud_pool_name, target_bucket);
+            await bf_compatible.editBucketDataPlacement(
+                cloudPoolForCompatible,
+                target_bucket,
+                'SPREAD',
+            );
+            await cf.createCloudPool(
+                connections_mapping[type].name,
+                cloud_pool_name,
+                target_bucket,
+            );
             const bucket = cloud_pool_name.toLowerCase();
             await bucket_functions.createBucket(bucket);
             bucket_names.push(bucket);
-            await bucket_functions.editBucketDataPlacement(cloud_pool_name, bucket, 'SPREAD');
-            report.success(`create compatible ${version} ${protocol} resource`.toLowerCase());
+            await bucket_functions.editBucketDataPlacement(
+                cloud_pool_name,
+                bucket,
+                'SPREAD',
+            );
+            report.success(
+                `create compatible ${version} ${protocol} resource`.toLowerCase(),
+            );
             // }
         } catch (err) {
-            report.fail(`create compatible ${version} ${protocol} resource`.toLowerCase());
+            report.fail(
+                `create compatible ${version} ${protocol} resource`.toLowerCase(),
+            );
             throw err;
         }
     }
 }
 
 async function createCloudPools(type) {
-    if (type === "COMPATIBLE") {
+    if (type === 'COMPATIBLE') {
         await prepareCompatibleCloudPoolsEnv(type, 2); //Report inside
     } else {
         try {
             const cloud_pool_name = `${type}-bucket`;
             await cf.createConnection(connections_mapping[type], type);
             connections_names.push(connections_mapping[type].name);
-            await cf.createCloudPool(connections_mapping[type].name, cloud_pool_name, "noobaa-cloud-test");
+            await cf.createCloudPool(
+                connections_mapping[type].name,
+                cloud_pool_name,
+                'noobaa-cloud-test',
+            );
             cloud_pools.push(cloud_pool_name);
             const bucket = cloud_pool_name.toLowerCase();
             await bucket_functions.createBucket(bucket);
             bucket_names.push(bucket);
             report.success(`create ${type} resource`.toLowerCase());
-            await bucket_functions.editBucketDataPlacement(cloud_pool_name, bucket, 'SPREAD');
+            await bucket_functions.editBucketDataPlacement(
+                cloud_pool_name,
+                bucket,
+                'SPREAD',
+            );
             report.success(`create ${type} resource`.toLowerCase());
         } catch (err) {
             console.error(err);
@@ -281,9 +333,13 @@ async function _clean_env() {
     for (const bucket_name of bucket_names) {
         try {
             await clean_cloud_bucket(server_s3ops, bucket_name);
-            report.success(`delete all file from resource ${bucket_name.slice(0, bucket_name.lastIndexOf('-'))}`.toLowerCase());
+            report.success(
+                `delete all file from resource ${bucket_name.slice(0, bucket_name.lastIndexOf('-'))}`.toLowerCase(),
+            );
         } catch (err) {
-            report.fail(`delete all file from resource ${bucket_name.slice(0, bucket_name.lastIndexOf('-'))}`.toLowerCase());
+            report.fail(
+                `delete all file from resource ${bucket_name.slice(0, bucket_name.lastIndexOf('-'))}`.toLowerCase(),
+            );
             throw err;
         }
         await bucket_functions.deleteBucket(bucket_name);
@@ -292,9 +348,13 @@ async function _clean_env() {
     for (const cloud_pool of cloud_pools) {
         try {
             await cf.deleteCloudPool(cloud_pool);
-            report.success(`delete resource ${cloud_pool.slice(0, cloud_pool.lastIndexOf('-'))}`.toLowerCase());
+            report.success(
+                `delete resource ${cloud_pool.slice(0, cloud_pool.lastIndexOf('-'))}`.toLowerCase(),
+            );
         } catch (err) {
-            report.fail(`delete resource ${cloud_pool.slice(0, cloud_pool.lastIndexOf('-'))}`.toLowerCase());
+            report.fail(
+                `delete resource ${cloud_pool.slice(0, cloud_pool.lastIndexOf('-'))}`.toLowerCase(),
+            );
             throw err;
         }
     }
@@ -316,9 +376,12 @@ async function _run_dataset() {
         console.log(dataset_params);
         const report_params = {
             suite_name: 'cloud_test',
-            cases_prefix: `${bucket_name.slice(0, bucket_name.lastIndexOf('-'))}`
+            cases_prefix: `${bucket_name.slice(0, bucket_name.lastIndexOf('-'))}`,
         };
-        await dataset.init_parameters({ dataset_params: dataset_params, report_params: report_params });
+        await dataset.init_parameters({
+            dataset_params: dataset_params,
+            report_params: report_params,
+        });
         try {
             await dataset.run_test(true);
         } catch (e) {
@@ -337,7 +400,7 @@ async function main() {
         }
         await _run_dataset();
         await _clean_env();
-        await prepareCompatibleCloudPoolsEnv("COMPATIBLE", 4);
+        await prepareCompatibleCloudPoolsEnv('COMPATIBLE', 4);
         await _run_dataset();
         await _clean_env();
         console.log('cloud tests were successful!');

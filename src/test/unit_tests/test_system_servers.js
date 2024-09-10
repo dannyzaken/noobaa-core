@@ -1,5 +1,5 @@
 /* Copyright (C) 2016 NooBaa */
-/*eslint max-lines-per-function: ["error", 700]*/
+
 'use strict';
 
 // setup coretest first to prepare the env
@@ -15,10 +15,10 @@ const P = require('../../util/promise');
 const zip_utils = require('../../util/zip_utils');
 const config = require('../../../config');
 
-const check_deletion_ownership = require('../../server/system_services/pool_server').check_deletion_ownership;
+const check_deletion_ownership =
+    require('../../server/system_services/pool_server').check_deletion_ownership;
 
-mocha.describe('system_servers', function() {
-
+mocha.describe('system_servers', function () {
     const { rpc_client, SYSTEM, EMAIL, PASSWORD, POOL_LIST } = coretest;
     const DEFAULT_POOL_NAME = POOL_LIST[0].name;
     const PREFIX = 'system-servers';
@@ -41,44 +41,47 @@ mocha.describe('system_servers', function() {
     //  ACCOUNT  //
     ///////////////
 
-    mocha.it('account allowed buckets & allowed_bucket_creation', async function() {
-        this.timeout(90000); // eslint-disable-line no-invalid-this
-        const accounts_status = await rpc_client.account.accounts_status();
-        await assert(accounts_status.has_accounts, 'has_accounts');
+    mocha.it(
+        'account allowed buckets & allowed_bucket_creation',
+        async function () {
+            this.timeout(90000); // eslint-disable-line no-invalid-this
+            const accounts_status = await rpc_client.account.accounts_status();
+            await assert(accounts_status.has_accounts, 'has_accounts');
 
-        // We expect this to work now, because it is completely reasonable to
-        // have an account with no buckets.
-        // try {
-        //     await rpc_client.account.create_account({
-        //         name: EMAIL1,
-        //         email: EMAIL1,
-        //         has_login: false,
-        //         s3_access: true,
-        //         allow_bucket_creation: false
-        //     });
-        // } catch (err) {
-        //     if (err.rpc_code !== 'BAD_REQUEST') {
-        //         throw err;
-        //     }
-        // }
+            // We expect this to work now, because it is completely reasonable to
+            // have an account with no buckets.
+            // try {
+            //     await rpc_client.account.create_account({
+            //         name: EMAIL1,
+            //         email: EMAIL1,
+            //         has_login: false,
+            //         s3_access: true,
+            //         allow_bucket_creation: false
+            //     });
+            // } catch (err) {
+            //     if (err.rpc_code !== 'BAD_REQUEST') {
+            //         throw err;
+            //     }
+            // }
 
-        await rpc_client.account.create_account({
-            name: EMAIL1,
-            email: EMAIL1,
-            has_login: false,
-            s3_access: true,
-            allow_bucket_creation: true
-        });
+            await rpc_client.account.create_account({
+                name: EMAIL1,
+                email: EMAIL1,
+                has_login: false,
+                s3_access: true,
+                allow_bucket_creation: true,
+            });
 
-        await rpc_client.system.read_system();
-        await rpc_client.account.delete_account({ email: EMAIL1 });
-        await rpc_client.system.read_system();
-    });
-    mocha.it('setting up pools works', async function() {
+            await rpc_client.system.read_system();
+            await rpc_client.account.delete_account({ email: EMAIL1 });
+            await rpc_client.system.read_system();
+        },
+    );
+    mocha.it('setting up pools works', async function () {
         this.timeout(300000); // eslint-disable-line no-invalid-this
         await coretest.setup_pools(coretest.POOL_LIST);
     });
-    mocha.it('account works', async function() {
+    mocha.it('account works', async function () {
         if (config.DB_TYPE !== 'mongodb') this.skip(); // eslint-disable-line no-invalid-this
         this.timeout(90000); // eslint-disable-line no-invalid-this
         const accounts_status = await rpc_client.account.accounts_status();
@@ -100,7 +103,7 @@ mocha.describe('system_servers', function() {
             email: EMAIL1,
             has_login: false,
             s3_access: true,
-            default_resource: DEFAULT_POOL_NAME
+            default_resource: DEFAULT_POOL_NAME,
         });
         await rpc_client.system.read_system();
         await rpc_client.system.add_role({
@@ -118,7 +121,7 @@ mocha.describe('system_servers', function() {
         await rpc_client.system.list_systems();
         await rpc_client.events.read_activity_log({ limit: 2016 });
     });
-    mocha.it('account list with filters works', async function() {
+    mocha.it('account list with filters works', async function () {
         if (config.DB_TYPE !== 'mongodb') this.skip(); // eslint-disable-line no-invalid-this
         this.timeout(90000); // eslint-disable-line no-invalid-this
         const UID = 70;
@@ -135,8 +138,8 @@ mocha.describe('system_servers', function() {
                 uid: UID,
                 gid: GID,
                 new_buckets_path: '/test',
-                nsfs_only: false
-            }
+                nsfs_only: false,
+            },
         });
         await rpc_client.account.create_account({
             name: EMAIL2,
@@ -148,8 +151,8 @@ mocha.describe('system_servers', function() {
                 uid: UID + 1,
                 gid: GID + 1,
                 new_buckets_path: '/test1',
-                nsfs_only: false
-            }
+                nsfs_only: false,
+            },
         });
         await rpc_client.account.create_account({
             name: EMAIL4,
@@ -160,8 +163,8 @@ mocha.describe('system_servers', function() {
             nsfs_account_config: {
                 distinguished_name: 'rami11',
                 new_buckets_path: '/test1',
-                nsfs_only: false
-            }
+                nsfs_only: false,
+            },
         });
         const account_params = {
             name: EMAIL3,
@@ -171,9 +174,16 @@ mocha.describe('system_servers', function() {
             default_resource: DEFAULT_POOL_NAME,
         };
         try {
-            const dummy_resource_account_params = { ...account_params, default_resource: 'dummy_resource' };
-            await rpc_client.account.create_account(dummy_resource_account_params);
-            assert.fail('should not be able to create account with not existing default resource');
+            const dummy_resource_account_params = {
+                ...account_params,
+                default_resource: 'dummy_resource',
+            };
+            await rpc_client.account.create_account(
+                dummy_resource_account_params,
+            );
+            assert.fail(
+                'should not be able to create account with not existing default resource',
+            );
         } catch (err) {
             assert.ok(err.rpc_code === 'BAD_REQUEST');
         }
@@ -183,33 +193,46 @@ mocha.describe('system_servers', function() {
                 ...account_params,
                 name: undefined,
                 has_login: undefined,
-                default_resource: 'dummy_resource'
+                default_resource: 'dummy_resource',
             };
-            await rpc_client.account.update_account_s3_access(_.omitBy(dummy_resource_account_params, _.isUndefined));
-            assert.fail('should not be able to update account with not existing default resource');
+            await rpc_client.account.update_account_s3_access(
+                _.omitBy(dummy_resource_account_params, _.isUndefined),
+            );
+            assert.fail(
+                'should not be able to update account with not existing default resource',
+            );
         } catch (err) {
             assert.ok(err.rpc_code === 'BAD_REQUEST');
         }
         await rpc_client.system.read_system();
         const accountlistnofilter = await rpc_client.account.list_accounts({});
-        await assert(accountlistnofilter.accounts.length === 6, 'should return 6 accounts');
+        await assert(
+            accountlistnofilter.accounts.length === 6,
+            'should return 6 accounts',
+        );
         const accountlistfilter = await rpc_client.account.list_accounts({
             filter: {
                 fs_identity: {
                     uid: UID,
-                    gid: GID
-                }
-            }
+                    gid: GID,
+                },
+            },
         });
-        await assert(accountlistfilter.accounts.length === 1, 'should return 1 account');
+        await assert(
+            accountlistfilter.accounts.length === 1,
+            'should return 1 account',
+        );
         const accountlistfilter2 = await rpc_client.account.list_accounts({
             filter: {
                 fs_identity: {
                     distinguished_name: 'rami11',
-                }
-            }
+                },
+            },
         });
-        await assert(accountlistfilter2.accounts.length === 1, 'should return 1 account');
+        await assert(
+            accountlistfilter2.accounts.length === 1,
+            'should return 1 account',
+        );
         await rpc_client.account.delete_account({ email: EMAIL1 });
         await rpc_client.account.delete_account({ email: EMAIL2 });
         await rpc_client.account.delete_account({ email: EMAIL3 });
@@ -217,7 +240,7 @@ mocha.describe('system_servers', function() {
         await rpc_client.events.read_activity_log({ limit: 2016 });
     });
 
-    mocha.it('Calculate md5_etag for account works', async function() {
+    mocha.it('Calculate md5_etag for account works', async function () {
         await rpc_client.account.create_account({
             name: EMAIL1,
             email: EMAIL1,
@@ -250,38 +273,49 @@ mocha.describe('system_servers', function() {
     //  AUTH  //
     ////////////
 
-    mocha.it('auth works', function() {
+    mocha.it('auth works', function () {
         this.timeout(90000); // eslint-disable-line no-invalid-this
         return P.resolve()
             .then(() => rpc_client.auth.read_auth())
-            .then(() => rpc_client.auth.create_auth({
-                system: SYSTEM,
-                email: EMAIL,
-                password: PASSWORD,
-            }))
+            .then(() =>
+                rpc_client.auth.create_auth({
+                    system: SYSTEM,
+                    email: EMAIL,
+                    password: PASSWORD,
+                }),
+            )
             .then(() => rpc_client.system.read_system())
-            .then(res => rpc_client.auth.create_access_key_auth({
-                access_key: res.owner.access_keys[0].access_key.unwrap(),
-                string_to_sign: '',
-                signature: new S3Auth().sign(res.owner.access_keys[0].secret_key.unwrap(), '')
-            }).then(() => res))
-            .then(res => rpc_client.auth.create_access_key_auth({
-                access_key: res.owner.access_keys[0].access_key.unwrap(),
-                string_to_sign: 'blabla',
-                signature: 'blibli'
-            }))
+            .then(res =>
+                rpc_client.auth
+                    .create_access_key_auth({
+                        access_key:
+                            res.owner.access_keys[0].access_key.unwrap(),
+                        string_to_sign: '',
+                        signature: new S3Auth().sign(
+                            res.owner.access_keys[0].secret_key.unwrap(),
+                            '',
+                        ),
+                    })
+                    .then(() => res),
+            )
+            .then(res =>
+                rpc_client.auth.create_access_key_auth({
+                    access_key: res.owner.access_keys[0].access_key.unwrap(),
+                    string_to_sign: 'blabla',
+                    signature: 'blibli',
+                }),
+            )
             .then(
                 () => assert.ifError('should fail with UNAUTHORIZED'),
-                err => assert.strictEqual(err.rpc_code, 'UNAUTHORIZED')
+                err => assert.strictEqual(err.rpc_code, 'UNAUTHORIZED'),
             );
     });
-
 
     //////////////
     //  SYSTEM  //
     //////////////
 
-    mocha.it('system works', async function() {
+    mocha.it('system works', async function () {
         this.timeout(90000); // eslint-disable-line no-invalid-this
         await rpc_client.system.update_system({ name: SYS1 });
         await rpc_client.create_auth_token({
@@ -296,74 +330,93 @@ mocha.describe('system_servers', function() {
     //  POOL  //
     ////////////
 
-    mocha.it('pool works', async function() {
+    mocha.it('pool works', async function () {
         this.timeout(10 * 60 * 1000); // eslint-disable-line no-invalid-this
         const pool_name = 'test-pool';
         await rpc_client.pool.create_hosts_pool({
             is_managed: true,
             name: pool_name,
-            host_count: 1
+            host_count: 1,
         });
         await rpc_client.pool.scale_hosts_pool({
             name: pool_name,
-            host_count: 3
+            host_count: 3,
         });
         await rpc_client.system.read_system();
         await rpc_client.pool.delete_pool({ name: pool_name });
 
         // Need to wait or the test will not finish.
-        await P.wait_until(async () => {
-            const system = await rpc_client.system.read_system();
-            return !system.pools.find(pool => pool.name === pool_name);
-        }, 10 * 60 * 1000, 2500);
-    });
-
-    mocha.it('Deletion ownership check works for system owner', async function() {
-        config.RESTRICT_RESOURCE_DELETION = true;
-        this.timeout(90000); // eslint-disable-line no-invalid-this
-        check_deletion_ownership({
-            account: {
-                _id: 'owner'
+        await P.wait_until(
+            async () => {
+                const system = await rpc_client.system.read_system();
+                return !system.pools.find(pool => pool.name === pool_name);
             },
-            system: {
-                owner: {
-                    _id: 'owner'
-                }
-            }
-        }, 'resourceowner');
-        config.RESTRICT_RESOURCE_DELETION = false;
+            10 * 60 * 1000,
+            2500,
+        );
     });
 
-    mocha.it('Deletion ownership check works for resource owner', async function() {
-        config.RESTRICT_RESOURCE_DELETION = true;
-        this.timeout(90000); // eslint-disable-line no-invalid-this
-        check_deletion_ownership({
-            account: {
-                _id: 'resourceowner'
-            },
-            system: {
-                owner: {
-                    _id: 'owner'
-                }
-            }
-        }, 'resourceowner');
-        config.RESTRICT_RESOURCE_DELETION = false;
-    });
+    mocha.it(
+        'Deletion ownership check works for system owner',
+        async function () {
+            config.RESTRICT_RESOURCE_DELETION = true;
+            this.timeout(90000); // eslint-disable-line no-invalid-this
+            check_deletion_ownership(
+                {
+                    account: {
+                        _id: 'owner',
+                    },
+                    system: {
+                        owner: {
+                            _id: 'owner',
+                        },
+                    },
+                },
+                'resourceowner',
+            );
+            config.RESTRICT_RESOURCE_DELETION = false;
+        },
+    );
 
-    mocha.it('Deletion ownership check fails for non-owner', async function() {
+    mocha.it(
+        'Deletion ownership check works for resource owner',
+        async function () {
+            config.RESTRICT_RESOURCE_DELETION = true;
+            this.timeout(90000); // eslint-disable-line no-invalid-this
+            check_deletion_ownership(
+                {
+                    account: {
+                        _id: 'resourceowner',
+                    },
+                    system: {
+                        owner: {
+                            _id: 'owner',
+                        },
+                    },
+                },
+                'resourceowner',
+            );
+            config.RESTRICT_RESOURCE_DELETION = false;
+        },
+    );
+
+    mocha.it('Deletion ownership check fails for non-owner', async function () {
         config.RESTRICT_RESOURCE_DELETION = true;
         this.timeout(90000); // eslint-disable-line no-invalid-this
         try {
-            check_deletion_ownership({
-                account: {
-                    _id: 'notowner'
+            check_deletion_ownership(
+                {
+                    account: {
+                        _id: 'notowner',
+                    },
+                    system: {
+                        owner: {
+                            _id: 'owner',
+                        },
+                    },
                 },
-                system: {
-                    owner: {
-                        _id: 'owner'
-                    }
-                }
-            }, 'resourceowner');
+                'resourceowner',
+            );
             assert.fail('should fail with UNAUTHORIZED');
         } catch (err) {
             assert.strictEqual(err.rpc_code, 'UNAUTHORIZED');
@@ -376,7 +429,7 @@ mocha.describe('system_servers', function() {
     //  TIER  //
     ////////////
 
-    mocha.it('tier works', async function() {
+    mocha.it('tier works', async function () {
         this.timeout(90000); // eslint-disable-line no-invalid-this
         await rpc_client.tier.create_tier({
             name: TIER,
@@ -397,16 +450,18 @@ mocha.describe('system_servers', function() {
     //  TIERING_POLICY  //
     //////////////////////
 
-    mocha.it('tiering policy works', async function() {
+    mocha.it('tiering policy works', async function () {
         this.timeout(90000); // eslint-disable-line no-invalid-this
         await rpc_client.tiering_policy.create_policy({
             name: TIERING_POLICY,
-            tiers: [{
-                order: 0,
-                tier: TIER,
-                spillover: false,
-                disabled: false
-            }]
+            tiers: [
+                {
+                    order: 0,
+                    tier: TIER,
+                    spillover: false,
+                    disabled: false,
+                },
+            ],
         });
         await rpc_client.tiering_policy.read_policy({ name: TIERING_POLICY });
         await rpc_client.tiering_policy.update_policy({
@@ -415,19 +470,24 @@ mocha.describe('system_servers', function() {
                 avg_chunk: 999,
                 delta_chunk: 22,
             },
-            tiers: [{
-                order: 0,
-                tier: TIER,
-                spillover: false,
-                disabled: false
-            }, {
-                order: 1,
-                tier: TIER,
-                spillover: true,
-                disabled: false
-            }]
+            tiers: [
+                {
+                    order: 0,
+                    tier: TIER,
+                    spillover: false,
+                    disabled: false,
+                },
+                {
+                    order: 1,
+                    tier: TIER,
+                    spillover: true,
+                    disabled: false,
+                },
+            ],
         });
-        await rpc_client.tiering_policy.get_policy_pools({ name: TIERING_POLICY });
+        await rpc_client.tiering_policy.get_policy_pools({
+            name: TIERING_POLICY,
+        });
         await rpc_client.system.read_system();
     });
 
@@ -435,103 +495,137 @@ mocha.describe('system_servers', function() {
     //  BUCKET  //
     //////////////
 
-    mocha.it('bucket works', function() {
+    mocha.it('bucket works', function () {
         this.timeout(90000); // eslint-disable-line no-invalid-this
         return P.resolve()
-            .then(() => rpc_client.bucket.create_bucket({
-                name: BUCKET,
-                tiering: TIERING_POLICY,
-            }))
-            .then(() => rpc_client.bucket.read_bucket({
-                name: BUCKET,
-            }))
+            .then(() =>
+                rpc_client.bucket.create_bucket({
+                    name: BUCKET,
+                    tiering: TIERING_POLICY,
+                }),
+            )
+            .then(() =>
+                rpc_client.bucket.read_bucket({
+                    name: BUCKET,
+                }),
+            )
             .then(() => rpc_client.bucket.list_buckets())
-            .then(() => rpc_client.bucket.update_bucket({
-                name: BUCKET,
-                new_name: BUCKET + 1,
-                tiering: TIERING_POLICY //'default_tiering',
-            }))
-            .then(() => rpc_client.bucket.read_bucket({
-                name: BUCKET + 1,
-            }))
-            .then(() => rpc_client.bucket.update_bucket({
-                name: BUCKET + 1,
-                new_name: BUCKET,
-            }))
-            .then(() => rpc_client.bucket.update_bucket({
-                name: BUCKET,
-                quota: {
-                    size: {
-                        value: 10,
-                        unit: 'T'
-                    },
-                    quantity: {
-                        value: 50
-                    }
-                }
-            }))
-            .then(() => rpc_client.bucket.read_bucket({
-                name: BUCKET,
-            }))
-            .then(info => assert(info.quota && info.quota.size &&
-                info.quota.size.value === 10 && info.quota.size.unit === 'T' &&
-                info.quota.quantity && info.quota.quantity.value === 50))
-            .then(() => rpc_client.bucket.update_bucket({
-                name: BUCKET,
-                quota: null
-            }))
-            .then(() => rpc_client.bucket.read_bucket({
-                name: BUCKET,
-            }))
-            .then(info => assert(_.isUndefined(info.quota)))
-            .then(() => rpc_client.bucket.update_bucket({
+            .then(() =>
+                rpc_client.bucket.update_bucket({
+                    name: BUCKET,
+                    new_name: BUCKET + 1,
+                    tiering: TIERING_POLICY, //'default_tiering',
+                }),
+            )
+            .then(() =>
+                rpc_client.bucket.read_bucket({
+                    name: BUCKET + 1,
+                }),
+            )
+            .then(() =>
+                rpc_client.bucket.update_bucket({
+                    name: BUCKET + 1,
+                    new_name: BUCKET,
+                }),
+            )
+            .then(() =>
+                rpc_client.bucket.update_bucket({
                     name: BUCKET,
                     quota: {
-                        size: 0,
-                        unit: 'GIGABYTE'
-                    }
-                })
-                .then(() => {
-                        throw new Error('update bucket with 0 quota should fail');
+                        size: {
+                            value: 10,
+                            unit: 'T',
+                        },
+                        quantity: {
+                            value: 50,
+                        },
                     },
-                    () => _.noop) // update bucket with 0 quota should fail
+                }),
+            )
+            .then(() =>
+                rpc_client.bucket.read_bucket({
+                    name: BUCKET,
+                }),
+            )
+            .then(info =>
+                assert(
+                    info.quota &&
+                        info.quota.size &&
+                        info.quota.size.value === 10 &&
+                        info.quota.size.unit === 'T' &&
+                        info.quota.quantity &&
+                        info.quota.quantity.value === 50,
+                ),
+            )
+            .then(() =>
+                rpc_client.bucket.update_bucket({
+                    name: BUCKET,
+                    quota: null,
+                }),
+            )
+            .then(() =>
+                rpc_client.bucket.read_bucket({
+                    name: BUCKET,
+                }),
+            )
+            .then(info => assert(_.isUndefined(info.quota)))
+            .then(
+                () =>
+                    rpc_client.bucket
+                        .update_bucket({
+                            name: BUCKET,
+                            quota: {
+                                size: 0,
+                                unit: 'GIGABYTE',
+                            },
+                        })
+                        .then(
+                            () => {
+                                throw new Error(
+                                    'update bucket with 0 quota should fail',
+                                );
+                            },
+                            () => _.noop,
+                        ), // update bucket with 0 quota should fail
             );
     });
 
-    mocha.it('lambda triggers works', async function() {
+    mocha.it('lambda triggers works', async function () {
         if (config.DB_TYPE !== 'mongodb') this.skip(); // eslint-disable-line no-invalid-this
         this.timeout(90000); // eslint-disable-line no-invalid-this
-        const zipfile = await zip_utils.zip_from_files([{
-            path: 'main.js',
-            data: `
+        const zipfile = await zip_utils.zip_from_files([
+            {
+                path: 'main.js',
+                data: `
                     /* Copyright (C) 2016 NooBaa */
                     'use strict';
                     exports.handler = function(event, context, callback) {
                     coretest.log('func event', event);
                     callback();
                     };
-                    `
-        }]);
+                    `,
+            },
+        ]);
         const zipbuffer = await zip_utils.zip_to_buffer(zipfile);
         await rpc_client.func.create_func({
             config: {
                 name: 'func1',
                 version: '$LATEST',
-                handler: 'main.handler'
+                handler: 'main.handler',
             },
-            code: { zipfile_b64: zipbuffer.toString('base64') }
+            code: { zipfile_b64: zipbuffer.toString('base64') },
         });
         await rpc_client.bucket.add_bucket_lambda_trigger({
             bucket_name: BUCKET,
             event_name: 'ObjectCreated',
             func_name: 'func1',
-            object_prefix: '/bla/'
+            object_prefix: '/bla/',
         });
         const bucket = await rpc_client.bucket.read_bucket({ name: BUCKET });
         await rpc_client.bucket.update_bucket_lambda_trigger({
             bucket_name: BUCKET,
             id: bucket.triggers[0].id,
-            enabled: false
+            enabled: false,
         });
         await rpc_client.bucket.delete_bucket_lambda_trigger({
             bucket_name: BUCKET,
@@ -539,11 +633,11 @@ mocha.describe('system_servers', function() {
         });
         await rpc_client.func.delete_func({
             name: 'func1',
-            version: '$LATEST'
+            version: '$LATEST',
         });
     });
 
-    mocha.it('Calculate md5_etag for bucket works', async function() {
+    mocha.it('Calculate md5_etag for bucket works', async function () {
         this.timeout(90000); // eslint-disable-line no-invalid-this
 
         await rpc_client.bucket.create_bucket({
@@ -567,10 +661,13 @@ mocha.describe('system_servers', function() {
         await rpc_client.bucket.delete_bucket({ name: MD5_BUCKET });
     });
 
-    mocha.it('namespace works', async function() {
+    mocha.it('namespace works', async function () {
         if (config.SKIP_EXTERNAL_TESTS) this.skip(); // eslint-disable-line no-invalid-this
         this.timeout(90000); // eslint-disable-line no-invalid-this
-        if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
+        if (
+            !process.env.AWS_ACCESS_KEY_ID ||
+            !process.env.AWS_SECRET_ACCESS_KEY
+        ) {
             coretest.log('No AWS credentials found in env. Skipping test');
             this.skip(); // eslint-disable-line no-invalid-this
         }
@@ -580,12 +677,12 @@ mocha.describe('system_servers', function() {
             endpoint: 'https://s3.amazonaws.com',
             endpoint_type: 'AWS',
             identity: process.env.AWS_ACCESS_KEY_ID,
-            secret: process.env.AWS_SECRET_ACCESS_KEY
+            secret: process.env.AWS_SECRET_ACCESS_KEY,
         });
         await rpc_client.pool.create_namespace_resource({
             name: NAMESPACE_RESOURCE_NAME,
             connection: NAMESPACE_RESOURCE_CONNECTION,
-            target_bucket: BUCKET
+            target_bucket: BUCKET,
         });
         const nsr = { resource: NAMESPACE_RESOURCE_NAME };
         const nsr2 = { resource: NAMESPACE_RESOURCE_NAME_2 };
@@ -593,33 +690,41 @@ mocha.describe('system_servers', function() {
             name: NAMESPACE_BUCKET,
             namespace: {
                 read_resources: [nsr],
-                write_resource: nsr
+                write_resource: nsr,
             },
         });
         await rpc_client.bucket.create_bucket({
             name: NAMESPACE_BUCKET_SINGLE_NO_WR,
             namespace: {
-                read_resources: [nsr]
+                read_resources: [nsr],
             },
         });
         await rpc_client.bucket.create_bucket({
             name: NAMESPACE_BUCKET_MERGE_NO_WR,
             namespace: {
-                read_resources: [nsr, nsr2]
+                read_resources: [nsr, nsr2],
             },
         });
         await rpc_client.bucket.delete_bucket({ name: NAMESPACE_BUCKET });
-        await rpc_client.bucket.delete_bucket({ name: NAMESPACE_BUCKET_SINGLE_NO_WR });
-        await rpc_client.bucket.delete_bucket({ name: NAMESPACE_BUCKET_MERGE_NO_WR });
-        await rpc_client.pool.delete_namespace_resource({ name: NAMESPACE_RESOURCE_NAME });
-        await rpc_client.account.delete_external_connection({ connection_name: NAMESPACE_RESOURCE_CONNECTION });
+        await rpc_client.bucket.delete_bucket({
+            name: NAMESPACE_BUCKET_SINGLE_NO_WR,
+        });
+        await rpc_client.bucket.delete_bucket({
+            name: NAMESPACE_BUCKET_MERGE_NO_WR,
+        });
+        await rpc_client.pool.delete_namespace_resource({
+            name: NAMESPACE_RESOURCE_NAME,
+        });
+        await rpc_client.account.delete_external_connection({
+            connection_name: NAMESPACE_RESOURCE_CONNECTION,
+        });
     });
 
     /////////////
     //  STATS  //
     /////////////
 
-    mocha.it('stats works', async function() {
+    mocha.it('stats works', async function () {
         this.timeout(90000); // eslint-disable-line no-invalid-this
         await rpc_client.stats.get_systems_stats({});
         await rpc_client.stats.get_nodes_stats({});
@@ -631,11 +736,11 @@ mocha.describe('system_servers', function() {
     //  MISC  //
     ////////////
 
-    mocha.it('misc works', async function() {
+    mocha.it('misc works', async function () {
         this.timeout(90000); // eslint-disable-line no-invalid-this
         await rpc_client.debug.set_debug_level({
             module: 'rpc',
-            level: coretest.get_dbg_level()
+            level: coretest.get_dbg_level(),
         });
     });
 
@@ -643,20 +748,28 @@ mocha.describe('system_servers', function() {
     //  DELETIONS  //
     /////////////////
 
-    mocha.it('deletions works', async function() {
+    mocha.it('deletions works', async function () {
         this.timeout(90000); // eslint-disable-line no-invalid-this
         await rpc_client.bucket.delete_bucket({
             name: BUCKET,
         });
         try {
-            await rpc_client.tiering_policy.delete_policy({ name: TIERING_POLICY });
-            throw new Error('TIERING_POLICY: ' + TIERING_POLICY + ' should have been deleted by now');
+            await rpc_client.tiering_policy.delete_policy({
+                name: TIERING_POLICY,
+            });
+            throw new Error(
+                'TIERING_POLICY: ' +
+                    TIERING_POLICY +
+                    ' should have been deleted by now',
+            );
         } catch (err) {
             if (err.rpc_code !== 'NO_SUCH_TIERING_POLICY') throw err;
         }
         try {
             await rpc_client.tier.delete_tier({ name: TIER });
-            throw new Error('TIER: ' + TIER + ' should have been deleted by now');
+            throw new Error(
+                'TIER: ' + TIER + ' should have been deleted by now',
+            );
         } catch (err) {
             if (err.rpc_code !== 'NO_SUCH_TIER') throw err;
         }

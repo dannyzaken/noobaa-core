@@ -10,27 +10,27 @@ module.exports = {
         'start_time',
         'end_time',
         'resource_id',
-        'resource_type'
+        'resource_type',
     ],
     properties: {
         _id: {
-            objectid: true
+            objectid: true,
         },
         system: {
-            objectid: true
+            objectid: true,
         },
         start_time: {
-            idate: true
+            idate: true,
         },
         end_time: {
-            idate: true
+            idate: true,
         },
         resource_type: {
             type: 'string',
-            enum: ['NODE', 'NAMESPACE_RESOURCE']
+            enum: ['NODE', 'NAMESPACE_RESOURCE'],
         },
         resource_id: {
-            objectid: true
+            objectid: true,
         },
         read_bytes: {
             type: 'integer',
@@ -56,5 +56,5 @@ module.exports = {
         error_write_count: {
             type: 'integer',
         },
-    }
+    },
 };

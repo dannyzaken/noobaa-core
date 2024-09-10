@@ -25,7 +25,7 @@ function Histogram(master_label, structure) {
         return new Histogram(master_label, structure);
     }
 
-    if (typeof(master_label) !== 'undefined') {
+    if (typeof master_label !== 'undefined') {
         this._master_label = master_label;
     }
 
@@ -39,7 +39,7 @@ function Histogram(master_label, structure) {
     }
 }
 
-Histogram.prototype.add_value = function(value) {
+Histogram.prototype.add_value = function (value) {
     for (let i = this._bins.length - 1; i >= 0; --i) {
         if (value >= this._bins[i].start_val) {
             this._bins[i].count += 1;
@@ -49,16 +49,14 @@ Histogram.prototype.add_value = function(value) {
     }
 };
 
-
-Histogram.prototype.add_aggregated_values = function(values) {
+Histogram.prototype.add_aggregated_values = function (values) {
     for (let i = this._bins.length - 1; i >= 0; --i) {
         this._bins[i].count += values.count[i];
         this._bins[i].aggregated_sum += values.aggregated_sum[i];
     }
 };
 
-
-Histogram.prototype.get_object_data = function(skip_master_label) {
+Histogram.prototype.get_object_data = function (skip_master_label) {
     const ret = {
         master_label: skip_master_label ? this._master_label : '',
         bins: [],
@@ -66,32 +64,46 @@ Histogram.prototype.get_object_data = function(skip_master_label) {
     for (let i = 0; i < this._bins.length; ++i) {
         ret.bins.push({});
         ret.bins[i].label = this._bins[i].label;
-        ret.bins[i].range = this._bins[i].start_val + (i === this._bins.length - 1 ? '+' : '-' + this._bins[i + 1].start_val);
+        ret.bins[i].range =
+            this._bins[i].start_val +
+            (i === this._bins.length - 1 ?
+                '+'
+            :   '-' + this._bins[i + 1].start_val);
         ret.bins[i].count = this._bins[i].count;
-        ret.bins[i].avg = this._bins[i].count ?
-            Math.round(this._bins[i].aggregated_sum / this._bins[i].count) :
-            0;
+        ret.bins[i].avg =
+            this._bins[i].count ?
+                Math.round(this._bins[i].aggregated_sum / this._bins[i].count)
+            :   0;
     }
 
     return ret;
 };
 
-Histogram.prototype.get_string_data = function() {
-    let str = (typeof(this._master_label) === 'undefined' ? '' : this._master_label + '  ');
+Histogram.prototype.get_string_data = function () {
+    let str =
+        typeof this._master_label === 'undefined' ?
+            ''
+        :   this._master_label + '  ';
     for (let i = 0; i < this._bins.length; ++i) {
-        str += this._bins[i].label +
-            ' (' + this._bins[i].start_val +
-            (i === this._bins.length - 1 ? '+' : '-' + this._bins[i + 1].start_val) +
+        str +=
+            this._bins[i].label +
+            ' (' +
+            this._bins[i].start_val +
+            (i === this._bins.length - 1 ?
+                '+'
+            :   '-' + this._bins[i + 1].start_val) +
             '): count: ' +
             this._bins[i].count +
             ' avg: ' +
-            (this._bins[i].count ? Math.round(this._bins[i].aggregated_sum / this._bins[i].count) : '0') +
+            (this._bins[i].count ?
+                Math.round(this._bins[i].aggregated_sum / this._bins[i].count)
+            :   '0') +
             '  ';
     }
     str += '.';
     return str;
 };
 
-Histogram.prototype.get_master_label = function() {
-    return (typeof(this._master_label) === 'undefined' ? '' : this._master_label);
+Histogram.prototype.get_master_label = function () {
+    return typeof this._master_label === 'undefined' ? '' : this._master_label;
 };

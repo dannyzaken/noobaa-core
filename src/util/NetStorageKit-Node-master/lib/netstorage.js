@@ -22,22 +22,37 @@ class Netstorage {
     constructor(netstorageOpts) {
         this.netstorageOpts = netstorageOpts;
         if (!(this.netstorageOpts instanceof Object)) {
-            throw new TypeError('[Netstorage Error] options should be an object');
+            throw new TypeError(
+                '[Netstorage Error] options should be an object',
+            );
         }
-        if (!(this.netstorageOpts.hostname && this.netstorageOpts.keyName && this.netstorageOpts.key)) {
-            throw new Error('[Netstorage Error] You should input netstorage hostname, keyname and key all');
+        if (
+            !(
+                this.netstorageOpts.hostname &&
+                this.netstorageOpts.keyName &&
+                this.netstorageOpts.key
+            )
+        ) {
+            throw new Error(
+                '[Netstorage Error] You should input netstorage hostname, keyname and key all',
+            );
         }
         if (this.netstorageOpts.ssl === undefined) {
             this.netstorageOpts.ssl = false;
-        } else if (typeof(this.netstorageOpts.ssl) !== 'boolean') {
-            throw new TypeError('[Netstorage Error] "ssl" argument should be boolean type');
+        } else if (typeof this.netstorageOpts.ssl !== 'boolean') {
+            throw new TypeError(
+                '[Netstorage Error] "ssl" argument should be boolean type',
+            );
         }
 
         this.requestor = new APIRequest(this.netstorageOpts);
     }
 
     dir(opts, callback) {
-        return this.requestor.makeRequest(this.buildRequestOptions(this.dir.name, opts), callback);
+        return this.requestor.makeRequest(
+            this.buildRequestOptions(this.dir.name, opts),
+            callback,
+        );
     }
 
     // list(opts, callback) {
@@ -48,15 +63,19 @@ class Netstorage {
 
     download(params, callback) {
         if (params.path.endsWith('/')) {
-            return callback(new Error('[Netstorage Error] cannot download a directory'));
+            return callback(
+                new Error('[Netstorage Error] cannot download a directory'),
+            );
         }
 
-        return this.requestor.makeRequest({
+        return this.requestor.makeRequest(
+            {
                 action: 'download',
                 method: 'GET',
                 path: params.path,
             },
-            callback);
+            callback,
+        );
     }
 
     // du(ns_path, callback) {
@@ -71,30 +90,36 @@ class Netstorage {
     // }
 
     stat(opts, callback) {
-        return this.requestor.makeRequest({
+        return this.requestor.makeRequest(
+            {
                 action: 'stat&format=xml',
                 method: 'GET',
-                path: opts.path
+                path: opts.path,
             },
-            callback);
+            callback,
+        );
     }
 
     mkdir(opts, callback) {
-        return this.requestor.makeRequest({
+        return this.requestor.makeRequest(
+            {
                 action: 'mkdir',
                 method: 'POST',
-                path: opts.path
+                path: opts.path,
             },
-            callback);
+            callback,
+        );
     }
 
     rmdir(opts, callback) {
-        return this.requestor.makeRequest({
+        return this.requestor.makeRequest(
+            {
                 action: 'rmdir',
                 method: 'POST',
-                path: opts.path
+                path: opts.path,
             },
-            callback);
+            callback,
+        );
     }
 
     // mtime(ns_path, mtime, callback) {
@@ -109,12 +134,14 @@ class Netstorage {
     // }
 
     delete(ops, callback) {
-        return this.requestor.makeRequest({
+        return this.requestor.makeRequest(
+            {
                 action: 'delete',
                 method: 'POST',
-                path: ops.path
+                path: ops.path,
             },
-            callback);
+            callback,
+        );
     }
 
     // quick_delete(ns_path, callback) {
@@ -151,13 +178,15 @@ class Netstorage {
     // }
 
     upload(params, callback) {
-        return this.requestor.makeRequest({
+        return this.requestor.makeRequest(
+            {
                 action: 'upload',
                 method: 'PUT',
                 source: params.source,
-                path: params.path
+                path: params.path,
             },
-            callback);
+            callback,
+        );
     }
 
     buildRequestOptions(vmethod, vopts) {
@@ -166,26 +195,37 @@ class Netstorage {
         const baseActions = `${method}&format=xml`;
         if (typeof opts === 'object') {
             if (opts.path) {
-                if (opts.actions instanceof Object && Object.keys(opts.actions).length > 0) {
+                if (
+                    opts.actions instanceof Object &&
+                    Object.keys(opts.actions).length > 0
+                ) {
                     return {
-                        action: baseActions + this.buildRequestActions(opts.actions),
+                        action:
+                            baseActions +
+                            this.buildRequestActions(opts.actions),
                         method: 'GET',
-                        path: opts.path
+                        path: opts.path,
                     };
                 } else {
-                    throw new Error('[Netstorage Error] If an options object is passed, it must contain an "actions" object with key/value pairs for each action option');
+                    throw new Error(
+                        '[Netstorage Error] If an options object is passed, it must contain an "actions" object with key/value pairs for each action option',
+                    );
                 }
             } else {
-                throw new Error('[Netstorage Error] If an options object is passed, it must contain a "path" key/value pair');
+                throw new Error(
+                    '[Netstorage Error] If an options object is passed, it must contain a "path" key/value pair',
+                );
             }
         } else if (typeof opts === 'string') {
             return {
                 action: baseActions,
                 method: 'GET',
-                path: opts
+                path: opts,
             };
         } else {
-            throw new Error('[Netstorage Error] Options must be either a string path, or an object containing all desired options');
+            throw new Error(
+                '[Netstorage Error] Options must be either a string path, or an object containing all desired options',
+            );
         }
     }
 
@@ -197,7 +237,6 @@ class Netstorage {
         });
         return parsedActions;
     }
-
 }
 
 module.exports = Netstorage;

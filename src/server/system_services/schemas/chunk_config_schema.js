@@ -4,13 +4,8 @@
 module.exports = {
     $id: 'chunk_config_schema',
     type: 'object',
-    required: [
-        '_id',
-        'system',
-        'chunk_coder_config',
-    ],
+    required: ['_id', 'system', 'chunk_coder_config'],
     properties: {
-
         // identifiers
         _id: { objectid: true },
         system: { objectid: true },
@@ -26,7 +21,8 @@ module.exports = {
         //
         // In order to change encoding a new chunk_config should be created, keeping the old one forever!
         // Changing the chunk_config id in the tier will cause new chunks transcoded from the old chunks.
-        chunk_coder_config: { $ref: 'common_api#/definitions/chunk_coder_config' },
-
-    }
+        chunk_coder_config: {
+            $ref: 'common_api#/definitions/chunk_coder_config',
+        },
+    },
 };

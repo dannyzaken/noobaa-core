@@ -12,9 +12,8 @@ const RpcBaseConnection = require('./rpc_base_conn');
 const TCP_FRAME_CONFIG = {
     magic: 'TCPmagic',
     // maximum frame size allows a full object part to be sent plus some "change"
-    max_len: config.MAX_OBJECT_PART_SIZE + (1024 * 1024),
+    max_len: config.MAX_OBJECT_PART_SIZE + 1024 * 1024,
 };
-
 
 /**
  *
@@ -22,7 +21,6 @@ const TCP_FRAME_CONFIG = {
  *
  */
 class RpcTcpConnection extends RpcBaseConnection {
-
     // constructor(addr_url) { super(addr_url); }
 
     /**
@@ -32,17 +30,23 @@ class RpcTcpConnection extends RpcBaseConnection {
      */
     _connect() {
         if (this.url.protocol === 'tls:') {
-            this.tcp_conn = tls.connect({
-                port: this.url.port,
-                host: this.url.hostname,
-                // we allow self generated certificates to avoid public CA signing:
-                rejectUnauthorized: false,
-            }, () => this.emit('connect'));
+            this.tcp_conn = tls.connect(
+                {
+                    port: this.url.port,
+                    host: this.url.hostname,
+                    // we allow self generated certificates to avoid public CA signing:
+                    rejectUnauthorized: false,
+                },
+                () => this.emit('connect'),
+            );
         } else {
-            this.tcp_conn = net.connect({
-                port: this.url.port,
-                host: this.url.hostname,
-            }, () => this.emit('connect'));
+            this.tcp_conn = net.connect(
+                {
+                    port: this.url.port,
+                    host: this.url.hostname,
+                },
+                () => this.emit('connect'),
+            );
         }
         this._init_tcp();
     }
@@ -88,9 +92,9 @@ class RpcTcpConnection extends RpcBaseConnection {
         this.frame_stream = new FrameStream(
             tcp_conn,
             msg => this.emit('message', msg),
-            TCP_FRAME_CONFIG);
+            TCP_FRAME_CONFIG,
+        );
     }
-
 }
 
 module.exports = RpcTcpConnection;

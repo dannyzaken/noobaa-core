@@ -22,6 +22,8 @@ _.each(process.env, envKey => {
 });
 
 if (!isStringFound) {
-    console.error('Configured connection string in .env does not match provided storage account');
+    console.error(
+        'Configured connection string in .env does not match provided storage account',
+    );
     process.exit(1);
 }

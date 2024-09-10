@@ -18,13 +18,20 @@ class AccountSDK {
      *      accountspace?: nb.AccountSpace;
      * }} args
      */
-    constructor({ rpc_client, internal_rpc_client, bucketspace, accountspace }) {
+    constructor({
+        rpc_client,
+        internal_rpc_client,
+        bucketspace,
+        accountspace,
+    }) {
         this.rpc_client = rpc_client;
         this.internal_rpc_client = internal_rpc_client;
         this.requesting_account = undefined;
         this.auth_token = undefined;
         // Using bucketspace in load_requesting_account
-        this.bucketspace = bucketspace || new BucketSpaceNB({ rpc_client, internal_rpc_client });
+        this.bucketspace =
+            bucketspace ||
+            new BucketSpaceNB({ rpc_client, internal_rpc_client });
         const config_root = config.NSFS_NC_DEFAULT_CONF_DIR;
         this.accountspace = accountspace || new AccountSpaceFS({ config_root });
     }
@@ -38,7 +45,7 @@ class AccountSDK {
         return this.auth_token;
     }
 
-     /**
+    /**
      * @returns {nb.BucketSpace}
      */
     _get_bucketspace() {
@@ -53,8 +60,11 @@ class AccountSDK {
                 bucketspace: this._get_bucketspace(),
                 access_key: token.access_key,
             });
-            if (this.requesting_account?.nsfs_account_config?.distinguished_name) {
-                const distinguished_name = this.requesting_account.nsfs_account_config.distinguished_name.unwrap();
+            if (
+                this.requesting_account?.nsfs_account_config?.distinguished_name
+            ) {
+                const distinguished_name =
+                    this.requesting_account.nsfs_account_config.distinguished_name.unwrap();
                 const user = await dn_cache.get_with_cache({
                     bucketspace: this._get_bucketspace(),
                     distinguished_name,
@@ -64,8 +74,18 @@ class AccountSDK {
             }
         } catch (error) {
             dbg.error('load_requesting_account error:', error);
-            if (error.rpc_code === 'NO_SUCH_ACCOUNT') throw new RpcError('INVALID_ACCESS_KEY_ID', `Account with access_key not found`);
-            if (error.rpc_code === 'NO_SUCH_USER') throw new RpcError('UNAUTHORIZED', `Distinguished name associated with access_key not found`);
+            if (error.rpc_code === 'NO_SUCH_ACCOUNT') {
+                throw new RpcError(
+                    'INVALID_ACCESS_KEY_ID',
+                    `Account with access_key not found`,
+                );
+            }
+            if (error.rpc_code === 'NO_SUCH_USER') {
+                throw new RpcError(
+                    'UNAUTHORIZED',
+                    `Distinguished name associated with access_key not found`,
+                );
+            }
             throw error;
         }
     }
@@ -75,7 +95,10 @@ class AccountSDK {
         const token = this.get_auth_token();
         // If the request is signed (authenticated)
         if (token) {
-            signature_utils.authorize_request_account_by_token(token, this.requesting_account);
+            signature_utils.authorize_request_account_by_token(
+                token,
+                this.requesting_account,
+            );
             return;
         }
         throw new RpcError('UNAUTHORIZED', `No permission to access`);

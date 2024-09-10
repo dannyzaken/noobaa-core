@@ -10,8 +10,8 @@ describe('s3_utils', () => {
         it('should parse correctly when 0 < days < max days', () => {
             const req = {
                 body: {
-                    RestoreRequest: { Days: [1] }
-                }
+                    RestoreRequest: { Days: [1] },
+                },
             };
 
             const days = s3_utils.parse_restore_request_days(req);
@@ -21,31 +21,39 @@ describe('s3_utils', () => {
         it('should fail when days < 1', () => {
             const req = {
                 body: {
-                    RestoreRequest: { Days: [0] }
-                }
+                    RestoreRequest: { Days: [0] },
+                },
             };
 
-            expect(() => s3_utils.parse_restore_request_days(req)).toThrow(S3Error);
+            expect(() => s3_utils.parse_restore_request_days(req)).toThrow(
+                S3Error,
+            );
         });
 
         it('should fail when days > max_days - behaviour DENY', () => {
             const req = {
                 body: {
-                    RestoreRequest: { Days: [config.S3_RESTORE_REQUEST_MAX_DAYS + 1] }
-                }
+                    RestoreRequest: {
+                        Days: [config.S3_RESTORE_REQUEST_MAX_DAYS + 1],
+                    },
+                },
             };
 
             const initial = config.S3_RESTORE_REQUEST_MAX_DAYS_BEHAVIOUR;
             config.S3_RESTORE_REQUEST_MAX_DAYS_BEHAVIOUR = 'DENY';
-            expect(() => s3_utils.parse_restore_request_days(req)).toThrow(S3Error);
+            expect(() => s3_utils.parse_restore_request_days(req)).toThrow(
+                S3Error,
+            );
             config.S3_RESTORE_REQUEST_MAX_DAYS_BEHAVIOUR = initial;
         });
 
         it('should succeed when days > max_days - behaviour TRUNCATE', () => {
             const req = {
                 body: {
-                    RestoreRequest: { Days: [config.S3_RESTORE_REQUEST_MAX_DAYS + 1] }
-                }
+                    RestoreRequest: {
+                        Days: [config.S3_RESTORE_REQUEST_MAX_DAYS + 1],
+                    },
+                },
             };
 
             const initial = config.S3_RESTORE_REQUEST_MAX_DAYS_BEHAVIOUR;

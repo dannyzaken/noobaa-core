@@ -28,7 +28,6 @@
 // const data_block_schema = require('./schemas/data_block_schema');
 // const data_block_indexes = require('./schemas/data_block_indexes');
 
-
 // class MDStore {
 
 //     constructor(test_suffix = '') {
@@ -134,7 +133,6 @@
 //     /////////////
 //     // OBJECTS //
 //     /////////////
-
 
 //     async insert_object(info) {
 //         this._objects.validate(info);
@@ -826,7 +824,6 @@
 //         });
 //     }
 
-
 //     /**
 //      * _aggregate_objects_internal - counts the number of objects and sum of sizes,
 //      * both for the entire query, and per bucket.
@@ -1000,7 +997,6 @@
 //             })
 //             .then(obj => Boolean(obj));
 //     }
-
 
 //     ///////////
 //     // PARTS //
@@ -1192,7 +1188,6 @@
 //         dbg.warn(`Removed ${res.n} parts of object ${obj} from DB`);
 //     }
 
-
 //     ////////////
 //     // CHUNKS //
 //     ////////////
@@ -1324,7 +1319,6 @@
 //             })
 //             .then(chunks => postgres_utils.uniq_ids(chunks, '_id'));
 //     }
-
 
 //     aggregate_chunks_by_create_dates(from_time, till_time) {
 //         return this._aggregate_chunks_internal({
@@ -1784,7 +1778,6 @@
 // function make_md_id(id_str) {
 //     return new mongodb.ObjectId(id_str);
 // }
-
 
 // // EXPORTS
 // exports.MDStore = MDStore;

@@ -6,14 +6,8 @@ const SensitiveString = require('../../../util/sensitive_string');
 module.exports = {
     $id: 'account_schema',
     type: 'object',
-    required: [
-        '_id',
-        'name',
-        'email',
-        'has_login'
-    ],
+    required: ['_id', 'name', 'email', 'has_login'],
     properties: {
-
         // identity
         _id: { objectid: true },
         master_key_id: { objectid: true },
@@ -42,8 +36,8 @@ module.exports = {
                 properties: {
                     access_key: { $ref: 'common_api#/definitions/access_key' },
                     secret_key: { $ref: 'common_api#/definitions/secret_key' },
-                }
-            }
+                },
+            },
         },
 
         allowed_ips: {
@@ -54,8 +48,8 @@ module.exports = {
                 properties: {
                     start: { type: 'string' },
                     end: { type: 'string' },
-                }
-            }
+                },
+            },
         },
 
         bucket_claim_owner: { objectid: true },
@@ -69,27 +63,38 @@ module.exports = {
                     name: { type: 'string' },
                     access_key: { $ref: 'common_api#/definitions/access_key' },
                     secret_key: { $ref: 'common_api#/definitions/secret_key' },
-                    azure_log_access_keys: { $ref: 'common_api#/definitions/azure_log_access_keys' },
+                    azure_log_access_keys: {
+                        $ref: 'common_api#/definitions/azure_log_access_keys',
+                    },
                     aws_sts_arn: {
-                        type: 'string'
+                        type: 'string',
                     },
                     auth_method: {
                         type: 'string',
-                        enum: ['AWS_V2', 'AWS_V4']
+                        enum: ['AWS_V2', 'AWS_V4'],
                     },
                     endpoint: { type: 'string' },
                     region: { type: 'string' },
                     cp_code: { type: 'string' },
                     endpoint_type: {
                         type: 'string',
-                        enum: ['AWSSTS', 'AWS', 'AZURE', 'S3_COMPATIBLE', 'GOOGLE', 'FLASHBLADE', 'NET_STORAGE', 'IBM_COS']
+                        enum: [
+                            'AWSSTS',
+                            'AWS',
+                            'AZURE',
+                            'S3_COMPATIBLE',
+                            'GOOGLE',
+                            'FLASHBLADE',
+                            'NET_STORAGE',
+                            'IBM_COS',
+                        ],
                     },
-                }
-            }
+                },
+            },
         },
 
         force_md5_etag: {
-            type: 'boolean' // enable md5 calculation per account
+            type: 'boolean', // enable md5 calculation per account
         },
 
         preferences: {
@@ -97,17 +102,17 @@ module.exports = {
             properties: {
                 ui_theme: {
                     type: 'string',
-                    enum: ['DARK', 'LIGHT']
-                }
-            }
+                    enum: ['DARK', 'LIGHT'],
+                },
+            },
         },
         // nsfs properties for account
         nsfs_account_config: {
-            $ref: 'common_api#/definitions/nsfs_account_config'
+            $ref: 'common_api#/definitions/nsfs_account_config',
         },
 
         role_config: {
-            $ref: 'common_api#/definitions/role_config'
+            $ref: 'common_api#/definitions/role_config',
         },
-    }
+    },
 };

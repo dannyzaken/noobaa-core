@@ -1,5 +1,5 @@
 name: Nightly RPM Build - Master Branch
-on: 
+on:
   schedule:
     - cron: '0 23 * * *'
 

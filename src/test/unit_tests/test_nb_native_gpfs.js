@@ -10,9 +10,8 @@ const { get_process_fs_context } = require('../../util/native_fs_utils');
 
 const DEFAULT_FS_CONFIG = get_process_fs_context('GPFS');
 
-mocha.describe('nb_native fs', function() {
-
-    mocha.it('gpfs linkat - success', async function() {
+mocha.describe('nb_native fs', function () {
+    mocha.it('gpfs linkat - success', async function () {
         const { open } = nb_native().fs;
         const dir_path = '/gpfs/gpfs1/';
         const PATH = `link_success${Date.now()}_1`;
@@ -22,10 +21,9 @@ mocha.describe('nb_native fs', function() {
         await temp_file.linkfileat(DEFAULT_FS_CONFIG, full_path);
         await temp_file.close(DEFAULT_FS_CONFIG);
         await fs_utils.file_must_exist(full_path);
-
     });
 
-    mocha.it('gpfs linkat - success', async function() {
+    mocha.it('gpfs linkat - success', async function () {
         const { open } = nb_native().fs;
         const dir_path = '/gpfs/gpfs1/';
         const PATH = `unlink${Date.now()}_2`;
@@ -39,10 +37,9 @@ mocha.describe('nb_native fs', function() {
         await temp_file.close(DEFAULT_FS_CONFIG);
         await p2_file.close(DEFAULT_FS_CONFIG);
         await fs_utils.file_must_exist(full_path);
-
     });
 
-    mocha.it('gpfs linkat - failure', async function() {
+    mocha.it('gpfs linkat - failure', async function () {
         const { open } = nb_native().fs;
         const dir_path = '/gpfs/gpfs1/';
         const PATH = `unlink${Date.now()}_2`;
@@ -52,7 +49,11 @@ mocha.describe('nb_native fs', function() {
         const p2_file = await open(DEFAULT_FS_CONFIG, full_path);
         const temp_file = await open(DEFAULT_FS_CONFIG, dir_path, 'wt');
         try {
-            await temp_file.linkfileat(DEFAULT_FS_CONFIG, full_path, p2_file.fd);
+            await temp_file.linkfileat(
+                DEFAULT_FS_CONFIG,
+                full_path,
+                p2_file.fd,
+            );
         } catch (err) {
             assert.equal(err.code, 'EEXIST');
         }
@@ -60,7 +61,7 @@ mocha.describe('nb_native fs', function() {
         await p2_file.close(DEFAULT_FS_CONFIG);
     });
 
-    mocha.it('gpfs unlinkat - failure - verified fd = 0', async function() {
+    mocha.it('gpfs unlinkat - failure - verified fd = 0', async function () {
         const dir_path = '/gpfs/gpfs1/';
         const PATH1 = `unlink${Date.now()}_1`;
         const full_p = dir_path + PATH1;
@@ -75,9 +76,9 @@ mocha.describe('nb_native fs', function() {
             await dir_file.close(DEFAULT_FS_CONFIG);
         }
         await fs_utils.file_must_exist(full_p);
-        });
+    });
 
-    mocha.it('gpfs unlinkat - success - gpfs verification', async function() {
+    mocha.it('gpfs unlinkat - success - gpfs verification', async function () {
         const dir_path = '/gpfs/gpfs1/';
         const PATH1 = `unlink${Date.now()}_1`;
         const full_p = dir_path + PATH1;
@@ -91,7 +92,7 @@ mocha.describe('nb_native fs', function() {
         await file.close(DEFAULT_FS_CONFIG);
     });
 
-    mocha.it('gpfs unlink - failure EEXIST', async function() {
+    mocha.it('gpfs unlink - failure EEXIST', async function () {
         const dir_path = '/gpfs/gpfs1/';
         const PATH1 = `unlink${Date.now()}_1`;
         const PATH2 = `unlink${Date.now()}_2`;
@@ -117,7 +118,7 @@ mocha.describe('nb_native fs', function() {
     });
 
     // non existing throw invalid argument
-    mocha.it('gpfs unlink - failure EINVAL', async function() {
+    mocha.it('gpfs unlink - failure EINVAL', async function () {
         const dir_path = '/gpfs/gpfs1/';
         const PATH1 = `unlink${Date.now()}_1`;
         const full_p = dir_path + PATH1;

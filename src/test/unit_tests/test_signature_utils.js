@@ -17,27 +17,27 @@ function log(...args) {
     console.log(...args);
 }
 
-mocha.describe('signature_utils', function() {
-
+mocha.describe('signature_utils', function () {
     const SIG_TEST_SUITE = path.join(__dirname, 'signature_test_suite');
 
     const SECRETS = {
-        'AKIDEXAMPLE': 'wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY',
-        '123': 'abc',
-        'QlBdp923Pnpu2qxn9Qpj': 'YLIkByxr/V5LiBJIpZS+TpQvuFSYqDAD3bG5ePaY'
+        AKIDEXAMPLE: 'wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY',
+        123: 'abc',
+        QlBdp923Pnpu2qxn9Qpj: 'YLIkByxr/V5LiBJIpZS+TpQvuFSYqDAD3bG5ePaY',
     };
 
     const http_server = http.createServer(accept_signed_request);
 
-    mocha.before(function() {
+    mocha.before(function () {
         return new Promise((resolve, reject) =>
             http_server
-            .once('listening', resolve)
-            .once('error', reject)
-            .listen());
+                .once('listening', resolve)
+                .once('error', reject)
+                .listen(),
+        );
     });
 
-    mocha.after(function() {
+    mocha.after(function () {
         http_server.close();
     });
 
@@ -54,7 +54,6 @@ mocha.describe('signature_utils', function() {
     add_tests_from(path.join(SIG_TEST_SUITE, 'rgw'), '.sreq');
 
     function add_tests_from(fname, extension) {
-
         // try to read it as a directory,
         // if not a directory assume its a file
         try {
@@ -74,16 +73,24 @@ mocha.describe('signature_utils', function() {
         }
 
         if (test_name === 'get-header-value-multiline.sreq') {
-            console.warn('Skipping', test_name, '- the multiline header test is broken');
+            console.warn(
+                'Skipping',
+                test_name,
+                '- the multiline header test is broken',
+            );
             return;
         }
 
         if (test_name === 'post-vanilla-query-space.sreq') {
-            console.warn('Skipping', test_name, '- the query space test is broken');
+            console.warn(
+                'Skipping',
+                test_name,
+                '- the query space test is broken',
+            );
             return;
         }
 
-        mocha.it(test_name, function() {
+        mocha.it(test_name, function () {
             log('Test:', test_name);
             const request_data = fs.readFileSync(fname);
             return send_signed_request(request_data);
@@ -104,9 +111,11 @@ mocha.describe('signature_utils', function() {
         const index_lf2 = buf.indexOf(LF2);
         const index_crlf2 = buf.indexOf(CRLF2);
         const end_lf2 = index_lf2 >= 0 ? index_lf2 + LF2.length : buf.length;
-        const end_crlf2 = index_crlf2 >= 0 ? index_crlf2 + CRLF2.length : buf.length;
+        const end_crlf2 =
+            index_crlf2 >= 0 ? index_crlf2 + CRLF2.length : buf.length;
         const end = Math.min(end_lf2, end_crlf2);
-        const header = buf.slice(0, end)
+        const header = buf
+            .slice(0, end)
             .toString()
             .replaceAll(CRLF, LF)
             .replaceAll(LF, CRLF)
@@ -122,16 +131,21 @@ mocha.describe('signature_utils', function() {
      * @param {Buffer} signed_req_buf
      */
     async function send_signed_request(signed_req_buf) {
-        const server_addr = /** @type {net.AddressInfo} */ (http_server.address());
+        const server_addr = /** @type {net.AddressInfo} */ (
+            http_server.address()
+        );
         const socket = net.connect({ port: server_addr.port });
         const http_req_buf = fix_http_crlf(signed_req_buf);
         socket.write(http_req_buf);
         let reply = '';
-        await new Promise((resolve, reject) => socket
-            .setEncoding('utf8')
-            .on('data', data => { reply += data; })
-            .once('error', reject)
-            .once('end', resolve)
+        await new Promise((resolve, reject) =>
+            socket
+                .setEncoding('utf8')
+                .on('data', data => {
+                    reply += data;
+                })
+                .once('error', reject)
+                .once('end', resolve),
         );
         socket.destroy();
         reply = reply.trim();
@@ -159,36 +173,47 @@ mocha.describe('signature_utils', function() {
             req.url = parsed_url.pathname;
             req.query = parsed_url.query;
             const virtual_hosted_bucket = req.headers.host.split('.', 1)[0];
-            if ((/[a-zA-Z][a-zA-Z0-9]*/).test(virtual_hosted_bucket)) {
+            if (/[a-zA-Z][a-zA-Z0-9]*/.test(virtual_hosted_bucket)) {
                 req.virtual_hosted_bucket = virtual_hosted_bucket;
             }
             res.setHeader('Connection', 'close');
             if (req.method === 'OPTIONS') return res.end();
             log(
-                'Handle:', req.method, req.originalUrl,
-                'query', req.query,
-                'headers', req.headers);
+                'Handle:',
+                req.method,
+                req.originalUrl,
+                'query',
+                req.query,
+                'headers',
+                req.headers,
+            );
             const hasher = crypto.createHash('sha256');
-            await new Promise((resolve, reject) => req
-                .on('data', data => {
-                    hasher.update(data);
-                    body_len += data.length;
-                    log(`Request body length so far ${body_len}`);
-                })
-                .once('end', resolve)
-                .once('error', reject)
+            await new Promise((resolve, reject) =>
+                req
+                    .on('data', data => {
+                        hasher.update(data);
+                        body_len += data.length;
+                        log(`Request body length so far ${body_len}`);
+                    })
+                    .once('end', resolve)
+                    .once('error', reject),
             );
             const sha256_buf = hasher.digest();
-            log(`Request body ended body length ${body_len} sha256 ${sha256_buf.toString('hex')}`);
+            log(
+                `Request body ended body length ${body_len} sha256 ${sha256_buf.toString('hex')}`,
+            );
             const UNSIGNED_PAYLOAD = 'UNSIGNED-PAYLOAD';
             const STREAMING_PAYLOAD = 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD';
             const content_sha256_hdr = req.headers['x-amz-content-sha256'];
-            req.content_sha256_sig = req.query['X-Amz-Signature'] ?
-                UNSIGNED_PAYLOAD :
-                content_sha256_hdr;
-            if (typeof content_sha256_hdr === 'string' &&
+            req.content_sha256_sig =
+                req.query['X-Amz-Signature'] ?
+                    UNSIGNED_PAYLOAD
+                :   content_sha256_hdr;
+            if (
+                typeof content_sha256_hdr === 'string' &&
                 content_sha256_hdr !== UNSIGNED_PAYLOAD &&
-                content_sha256_hdr !== STREAMING_PAYLOAD) {
+                content_sha256_hdr !== STREAMING_PAYLOAD
+            ) {
                 req.content_sha256_buf = Buffer.from(content_sha256_hdr, 'hex');
                 if (req.content_sha256_buf.length !== 32) {
                     throw new Error('InvalidDigest');
@@ -200,21 +225,26 @@ mocha.describe('signature_utils', function() {
                 }
             } else {
                 req.content_sha256_buf = sha256_buf;
-                if (!req.content_sha256_sig) req.content_sha256_sig = req.content_sha256_buf.toString('hex');
+                if (!req.content_sha256_sig) {
+                    req.content_sha256_sig =
+                        req.content_sha256_buf.toString('hex');
+                }
             }
-            const auth_token = signature_utils.make_auth_token_from_request(req);
-            const signature = signature_utils.get_signature_from_auth_token(auth_token, SECRETS[auth_token.access_key]);
+            const auth_token =
+                signature_utils.make_auth_token_from_request(req);
+            const signature = signature_utils.get_signature_from_auth_token(
+                auth_token,
+                SECRETS[auth_token.access_key],
+            );
             log('auth_token', auth_token, 'signature', signature);
             if (signature !== auth_token.signature) {
                 throw new Error('Signature mismatch');
             }
             res.end(JSON.stringify(auth_token));
-
         } catch (err) {
             console.error('SIGNATURE ERROR', err.stack);
             res.statusCode = 500;
             res.end();
         }
     }
-
 });

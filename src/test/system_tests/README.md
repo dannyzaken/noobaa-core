@@ -1,28 +1,33 @@
 # noobaa-core deployment tests
+
 ===========
+
 ### Core Tests Table of Contents:
-* [Introduction](#introduction) - introduction
-* [Library Test](#library_test) - Creating a Library Test for the Framework
-* [test_upgrade_gcloud](#test_upgrade_gcloud) - Test Upgrade Flow on GCloud
-* [test_files_ul](#test_small_files_ul) - Test UL of small files
-* [Sample Test](#sample_test) - Sample system test for a template
 
+- [Introduction](#introduction) - introduction
+- [Library Test](#library_test) - Creating a Library Test for the Framework
+- [test_upgrade_gcloud](#test_upgrade_gcloud) - Test Upgrade Flow on GCloud
+- [test_files_ul](#test_small_files_ul) - Test UL of small files
+- [Sample Test](#sample_test) - Sample system test for a template
 
-* ### introduction
+- ### introduction
+
   The NooBaa deployment tests purpose is the verify various flows regarding initial deployment, NVA creation,
   upgrade etc.
   They can be combined with other more core functional tests to verify behavior after such flows.
 
-* ### library_test
+- ### library_test
+
   The testing framework can run tests by requiring them and running them instead of invoking a shell with node.
   In order to use this option, the test must export run_test(). See Sample test
 
-* ### test_upgrade_gcloud
+- ### test_upgrade_gcloud
+
   Same as test_upgrade_ec2, but for gcloud.
 
-* ### test_files_ul
+- ### test_files_ul
 
-* ### sample_test
+- ### sample_test
 
 ```
 "use strict";

@@ -19,8 +19,8 @@ class NewlineReader {
     /**
      * NewlineReader allows to read a file line by line while at max holding one line + 4096 bytes
      * in memory.
-     * @param {nb.NativeFSContext} fs_context 
-     * @param {string} filepath 
+     * @param {nb.NativeFSContext} fs_context
+     * @param {string} filepath
      * @param {'EXCLUSIVE' | 'SHARED'} [lock]
      */
     constructor(fs_context, filepath, lock) {
@@ -33,7 +33,7 @@ class NewlineReader {
 
         this.readoffset = 0;
         this.readresults = [];
-        this._partialread = "";
+        this._partialread = '';
         this.eof = false;
     }
 
@@ -49,7 +49,13 @@ class NewlineReader {
 
         // Will keep reading till we find at least one new line character
         while (!this._partialread.includes('\n')) {
-            const read = await this.fh.read(this.fs_context, this.buf, 0, this.buf.length, this.readoffset);
+            const read = await this.fh.read(
+                this.fs_context,
+                this.buf,
+                0,
+                this.buf.length,
+                this.readoffset,
+            );
             if (read === 0) {
                 this.eof = true;
                 return null;
@@ -72,10 +78,10 @@ class NewlineReader {
     /**
      * forEach takes a callback function and invokes it
      * with each line as parameter
-     * 
+     *
      * The callback function can return `false` if it wants
      * to stop the iteration.
-     * @param {(entry: string) => Promise<boolean>} cb 
+     * @param {(entry: string) => Promise<boolean>} cb
      * @returns {Promise<[number, boolean]>}
      */
     async forEach(cb) {
@@ -95,11 +101,13 @@ class NewlineReader {
      * forEachFilePathEntry is a wrapper around `forEach` where each entry in
      * log file is assumed to be a file path and the given callback function
      * is invoked with that entry wrapped in a class with some convenient wrappers.
-     * @param {(entry: NewlineReaderFilePathEntry) => Promise<boolean>} cb 
+     * @param {(entry: NewlineReaderFilePathEntry) => Promise<boolean>} cb
      * @returns {Promise<[number, boolean]>}
      */
     async forEachFilePathEntry(cb) {
-        return this.forEach(entry => cb(new NewlineReaderFilePathEntry(this.fs_context, entry)));
+        return this.forEach(entry =>
+            cb(new NewlineReaderFilePathEntry(this.fs_context, entry)),
+        );
     }
 
     // reset will reset the reader and will allow reading the file from
@@ -107,7 +115,7 @@ class NewlineReader {
     // was moved, this will still keep on reading from the previous FD.
     reset() {
         this.readresults = [];
-        this._partialread = "";
+        this._partialread = '';
         this.eof = false;
         this.readoffset = 0;
     }

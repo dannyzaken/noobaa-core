@@ -8,19 +8,32 @@ const config = require('../../../../config');
 const fs_utils = require('../../../util/fs_utils');
 const { ConfigFS } = require('../../../sdk/config_fs');
 const { TMP_PATH } = require('../../system_tests/test_utils');
-const { get_process_fs_context, is_path_exists } = require('../../../util/native_fs_utils');
+const {
+    get_process_fs_context,
+    is_path_exists,
+} = require('../../../util/native_fs_utils');
 
 const tmp_fs_path = path.join(TMP_PATH, 'test_config_fs');
 const config_root = path.join(tmp_fs_path, 'config_root');
 const config_root_backend = config.NSFS_NC_CONFIG_DIR_BACKEND;
 const fs_context = get_process_fs_context(config_root_backend);
 
-
 const DEFAULT_CONF_DIR_PATH = config.NSFS_NC_DEFAULT_CONF_DIR;
 const CUSTOM_CONF_DIR_PATH = path.join(TMP_PATH, 'redirected_config_dir');
-const REDIRECT_FILE_PATH = path.join(DEFAULT_CONF_DIR_PATH, config.NSFS_NC_CONF_DIR_REDIRECT_FILE);
-const default_config_fs = new ConfigFS(DEFAULT_CONF_DIR_PATH, config_root_backend, fs_context);
-const custom_config_fs = new ConfigFS(CUSTOM_CONF_DIR_PATH, config_root_backend, fs_context);
+const REDIRECT_FILE_PATH = path.join(
+    DEFAULT_CONF_DIR_PATH,
+    config.NSFS_NC_CONF_DIR_REDIRECT_FILE,
+);
+const default_config_fs = new ConfigFS(
+    DEFAULT_CONF_DIR_PATH,
+    config_root_backend,
+    fs_context,
+);
+const custom_config_fs = new ConfigFS(
+    CUSTOM_CONF_DIR_PATH,
+    config_root_backend,
+    fs_context,
+);
 const config_fs = new ConfigFS(config_root, config_root_backend, fs_context);
 
 const buckets_dir_name = '/buckets/';
@@ -31,14 +44,17 @@ const old_accounts_dir_name = '/accounts/';
 
 // WARNING:
 // The following test file will check the directory structure created using create_config_dirs_if_missing()
-// which is called when using noobaa-cli, for having an accurate test, it'll be blocked from running on an 
-// env having an existing default config directory and the test executer will be asked to remove the default 
+// which is called when using noobaa-cli, for having an accurate test, it'll be blocked from running on an
+// env having an existing default config directory and the test executer will be asked to remove the default
 // config directory before running the test again, do not run on production env or on any env where the existing config directory is being used
 describe('create_config_dirs_if_missing', () => {
-
     beforeAll(async () => {
-        const config_dir_exists = await is_path_exists(fs_context, DEFAULT_CONF_DIR_PATH);
-        const msg = `test_config_dir_restructure found an existing default config directory ${DEFAULT_CONF_DIR_PATH},` +
+        const config_dir_exists = await is_path_exists(
+            fs_context,
+            DEFAULT_CONF_DIR_PATH,
+        );
+        const msg =
+            `test_config_dir_restructure found an existing default config directory ${DEFAULT_CONF_DIR_PATH},` +
             `this test needs to test the creation of the config directory elements, therefore make sure ` +
             `the content of the config directory is not needed and remove it for ensuring a used config directory will not get deleted`;
         if (config_dir_exists) {
@@ -83,15 +99,14 @@ describe('create_config_dirs_if_missing', () => {
     });
 });
 
-
 /**
- * assert_config_dir asserts the config dir structure was created appropriately  
+ * assert_config_dir asserts the config dir structure was created appropriately
  * 1. default config dir exists
- * 2. if redirect file exists - 
- *    redirect config dir exists 
+ * 2. if redirect file exists -
+ *    redirect config dir exists
  * 3. sub directories exists under the redirect config dir if exists else under the default config dir
  * 4. old accounts/ folder does not exist
- * @param {String} config_dir_path 
+ * @param {String} config_dir_path
  */
 async function assert_config_dir(config_dir_path) {
     // config dir exists
@@ -99,7 +114,12 @@ async function assert_config_dir(config_dir_path) {
     expect(path_exists).toBe(true);
 
     // config subdirs do not exist
-    for (const dir of [buckets_dir_name, identities_dir_name, access_keys_dir_name, accounts_by_name]) {
+    for (const dir of [
+        buckets_dir_name,
+        identities_dir_name,
+        access_keys_dir_name,
+        accounts_by_name,
+    ]) {
         const path_to_check = path.join(config_dir_path, dir);
         path_exists = await is_path_exists(fs_context, path_to_check);
         expect(path_exists).toBe(true);
@@ -116,12 +136,16 @@ async function assert_config_dir(config_dir_path) {
  * @returns {Promise<Void>}
  */
 async function clean_config_dir() {
-    for (const dir of [buckets_dir_name, identities_dir_name, access_keys_dir_name, accounts_by_name]) {
+    for (const dir of [
+        buckets_dir_name,
+        identities_dir_name,
+        access_keys_dir_name,
+        accounts_by_name,
+    ]) {
         const default_path = path.join(config.NSFS_NC_DEFAULT_CONF_DIR, dir);
         await fs_utils.folder_delete(default_path);
         const custom_path = path.join(CUSTOM_CONF_DIR_PATH, dir);
         await fs_utils.folder_delete(custom_path);
-
     }
     await fs_utils.file_delete(REDIRECT_FILE_PATH);
     await fs_utils.folder_delete(config.NSFS_NC_DEFAULT_CONF_DIR);
@@ -130,7 +154,7 @@ async function clean_config_dir() {
 
 /**
  * create_config_dir will create the config directory on the file system
- * @param {String} config_dir 
+ * @param {String} config_dir
  * @returns {Promise<Void>}
  */
 async function create_config_dir(config_dir) {
@@ -145,6 +169,6 @@ async function create_redirect_file() {
     await nb_native().fs.writeFile(
         config_fs.fs_context,
         REDIRECT_FILE_PATH,
-        Buffer.from(CUSTOM_CONF_DIR_PATH)
+        Buffer.from(CUSTOM_CONF_DIR_PATH),
     );
 }

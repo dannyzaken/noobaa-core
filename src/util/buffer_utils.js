@@ -87,12 +87,12 @@ async function read_stream(readable) {
     };
     await new Promise((resolve, reject) =>
         readable
-        .on('data', data => {
-            res.buffers.push(data);
-            res.total_length += data.length;
-        })
-        .once('error', reject)
-        .once('end', resolve)
+            .on('data', data => {
+                res.buffers.push(data);
+                res.total_length += data.length;
+            })
+            .once('error', reject)
+            .once('end', resolve),
     );
     return res;
 }
@@ -115,12 +115,11 @@ function buffer_to_read_stream(buf) {
         read(size) {
             if (buf) this.push(buf);
             this.push(null);
-        }
+        },
     });
 }
 
 class WritableBuffers extends stream.Writable {
-
     constructor() {
         super();
         /** @type {Buffer[]} */
@@ -129,9 +128,9 @@ class WritableBuffers extends stream.Writable {
     }
 
     /**
-     * @param {Buffer} data 
-     * @param {string|null} encoding 
-     * @param {()=>void} callback 
+     * @param {Buffer} data
+     * @param {string|null} encoding
+     * @param {()=>void} callback
      */
     _write(data, encoding, callback) {
         // copy the buffer because the caller can reuse it after we call the callback
@@ -178,7 +177,6 @@ function write_to_stream(writable, buf) {
 }
 
 class BuffersPool {
-
     /**
      * @param {{
      *      buf_size: number;
@@ -202,7 +200,14 @@ class BuffersPool {
      * }>}
      */
     async get_buffer() {
-        dbg.log1('BufferPool.get_buffer: sem value', this.sem._value, 'waiting_value', this.sem._waiting_value, 'buffers length', this.buffers.length);
+        dbg.log1(
+            'BufferPool.get_buffer: sem value',
+            this.sem._value,
+            'waiting_value',
+            this.sem._waiting_value,
+            'buffers length',
+            this.buffers.length,
+        );
         let buffer = null;
         let warning_timer;
         // Lazy allocation of buffers pool, first cycle will take up buffers
@@ -230,43 +235,57 @@ class BuffersPool {
     }
 
     [util.inspect.custom]() {
-        return 'BufferPool.get_buffer: sem value: ' + this.sem._value +
-            ' waiting_value: ' + this.sem._waiting_value +
-            ' buffers length: ' + this.buffers.length;
+        return (
+            'BufferPool.get_buffer: sem value: ' +
+            this.sem._value +
+            ' waiting_value: ' +
+            this.sem._waiting_value +
+            ' buffers length: ' +
+            this.buffers.length
+        );
     }
 }
 
 class MultiSizeBuffersPool {
     /**
      * @param {{
-    *      sorted_buf_sizes: Array<{
-    *           size: number;
-    *           sem_size: number;
-    *      }>;
-    *      warning_timeout?: number;
-    *      sem_timeout?: number,
-    *      sem_timeout_error_code?: string;
-    *      sem_warning_timeout?: number;
-    *      buffer_alloc?: (size: number) => Buffer;
-    * }} params
-    */
-    constructor({ sorted_buf_sizes, warning_timeout, sem_timeout, sem_timeout_error_code, sem_warning_timeout, buffer_alloc}) {
-        this.pools = sorted_buf_sizes.map(({ size, sem_size }) =>
-            new BuffersPool({
-                buf_size: size,
-                sem: new Semaphore(sem_size, {
-                    timeout: sem_timeout,
-                    timeout_error_code: sem_timeout_error_code,
-                    warning_timeout: sem_warning_timeout,
+     *      sorted_buf_sizes: Array<{
+     *           size: number;
+     *           sem_size: number;
+     *      }>;
+     *      warning_timeout?: number;
+     *      sem_timeout?: number,
+     *      sem_timeout_error_code?: string;
+     *      sem_warning_timeout?: number;
+     *      buffer_alloc?: (size: number) => Buffer;
+     * }} params
+     */
+    constructor({
+        sorted_buf_sizes,
+        warning_timeout,
+        sem_timeout,
+        sem_timeout_error_code,
+        sem_warning_timeout,
+        buffer_alloc,
+    }) {
+        this.pools = sorted_buf_sizes.map(
+            ({ size, sem_size }) =>
+                new BuffersPool({
+                    buf_size: size,
+                    sem: new Semaphore(sem_size, {
+                        timeout: sem_timeout,
+                        timeout_error_code: sem_timeout_error_code,
+                        warning_timeout: sem_warning_timeout,
+                    }),
+                    warning_timeout: warning_timeout,
+                    buffer_alloc,
                 }),
-                warning_timeout: warning_timeout,
-                buffer_alloc
-        }));
+        );
     }
 
     /**
      * @returns {BuffersPool}
-    */
+     */
     get_buffers_pool(size) {
         const largest = this.pools[this.pools.length - 1];
         if (typeof size !== 'number' || size < 0) {

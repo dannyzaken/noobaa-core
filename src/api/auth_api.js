@@ -9,13 +9,12 @@
  *
  */
 module.exports = {
-
     $id: 'auth_api',
 
     methods: {
-
         create_auth: {
-            doc: 'Authenticate account with credentials, ' +
+            doc:
+                'Authenticate account with credentials, ' +
                 'and returns an access token. ' +
                 'supply a system name to create a token for acting on the system.',
             method: 'POST',
@@ -24,22 +23,21 @@ module.exports = {
                 // required: [],
                 properties: {
                     email: {
-                        doc: 'If email is provided the new authorization will refer to it. ' +
+                        doc:
+                            'If email is provided the new authorization will refer to it. ' +
                             'If no email, the currently authorized account will be used.',
                         $ref: 'common_api#/definitions/email',
                     },
                     password: {
-                        doc: 'If password is supplied then the email will be verified using it. ' +
+                        doc:
+                            'If password is supplied then the email will be verified using it. ' +
                             'If no password then the currently authorized account ' +
                             'should be permitted to delegate such authorization (e.g. admin).',
                         $ref: 'common_api#/definitions/password',
                     },
                     authorized_by: {
                         type: 'string',
-                        enum: [
-                            'noobaa',
-                            'oauth'
-                        ]
+                        enum: ['noobaa', 'oauth'],
                     },
                     system: {
                         type: 'string',
@@ -50,7 +48,7 @@ module.exports = {
                     extra: {
                         type: 'object',
                         additionalProperties: true,
-                        properties: {}
+                        properties: {},
                     },
                     expiry: {
                         type: 'integer',
@@ -66,15 +64,15 @@ module.exports = {
                         type: 'string',
                     },
                     info: {
-                        $ref: '#/definitions/auth_info'
-                    }
-                }
+                        $ref: '#/definitions/auth_info',
+                    },
+                },
             },
             auth: {
                 account: false,
                 system: false,
                 anonymous: true,
-            }
+            },
         },
 
         create_k8s_auth: {
@@ -85,9 +83,9 @@ module.exports = {
                 required: ['grant_code'],
                 properties: {
                     grant_code: {
-                        type: 'string'
-                    }
-                }
+                        type: 'string',
+                    },
+                },
             },
             reply: {
                 type: 'object',
@@ -97,19 +95,20 @@ module.exports = {
                         type: 'string',
                     },
                     info: {
-                        $ref: '#/definitions/auth_info'
-                    }
-                }
+                        $ref: '#/definitions/auth_info',
+                    },
+                },
             },
             auth: {
                 account: false,
                 system: false,
                 anonymous: true,
-            }
+            },
         },
 
         create_access_key_auth: {
-            doc: 'Authenticate account with access key, ' +
+            doc:
+                'Authenticate account with access key, ' +
                 'and returns an access token. ' +
                 'supply a system name to create a token for acting on the system.',
             method: 'POST',
@@ -128,7 +127,7 @@ module.exports = {
                     extra: {
                         type: 'object',
                         additionalProperties: true,
-                        properties: {}
+                        properties: {},
                     },
                     expiry: {
                         type: 'integer',
@@ -143,28 +142,27 @@ module.exports = {
                     token: {
                         type: 'string',
                     },
-                }
+                },
             },
             auth: {
                 account: false,
                 system: false,
                 anonymous: true,
-            }
+            },
         },
 
         read_auth: {
             doc: 'Get info about the authenticated token.',
             method: 'GET',
             reply: {
-                $ref: '#/definitions/auth_info'
+                $ref: '#/definitions/auth_info',
             },
             auth: {
                 account: false,
                 system: false,
                 anonymous: true,
-            }
-        }
-
+            },
+        },
     },
 
     definitions: {
@@ -182,7 +180,7 @@ module.exports = {
                             type: 'boolean',
                         },
                         must_change_password: {
-                            type: 'boolean'
+                            type: 'boolean',
                         },
                     },
                 },
@@ -193,14 +191,11 @@ module.exports = {
                         name: {
                             type: 'string',
                         },
-                    }
+                    },
                 },
                 authorized_by: {
                     type: 'string',
-                    enum: [
-                        'noobaa',
-                        'k8s'
-                    ]
+                    enum: ['noobaa', 'k8s'],
                 },
                 role: {
                     type: 'string',
@@ -208,9 +203,9 @@ module.exports = {
                 extra: {
                     type: 'object',
                     additionalProperties: true,
-                    properties: {}
+                    properties: {},
                 },
-            }
+            },
         },
     },
 };

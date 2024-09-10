@@ -1,9 +1,7 @@
 /* Copyright (C) 2016 NooBaa */
 'use strict';
 
-
 class MultiMarker {
-
     constructor({ start, end } = {}) {
         this.start = start;
         this.end = end;
@@ -45,10 +43,6 @@ class MultiMarker {
         if (a >= b) return a;
         return b;
     }
-
 }
-
-
-
 
 exports.MultiMarker = MultiMarker;

@@ -2,32 +2,52 @@
 'use strict';
 
 // disabling init_rand_seed as it takes longer than the actual test execution
-process.env.DISABLE_INIT_RANDOM_SEED = "true";
+process.env.DISABLE_INIT_RANDOM_SEED = 'true';
 
 const fs = require('fs');
 const path = require('path');
 const os_util = require('../../../util/os_utils');
 const fs_utils = require('../../../util/fs_utils');
 const { ConfigFS } = require('../../../sdk/config_fs');
-const { set_path_permissions_and_owner, TMP_PATH, generate_s3_policy,
-    set_nc_config_dir_in_config } = require('../../system_tests/test_utils');
-const { ACTIONS, TYPES } = require('../../../manage_nsfs/manage_nsfs_constants');
-const { get_process_fs_context, is_path_exists, get_bucket_tmpdir_full_path } = require('../../../util/native_fs_utils');
-const ManageCLIError = require('../../../manage_nsfs/manage_nsfs_cli_errors').ManageCLIError;
-const { ManageCLIResponse } = require('../../../manage_nsfs/manage_nsfs_cli_responses');
+const {
+    set_path_permissions_and_owner,
+    TMP_PATH,
+    generate_s3_policy,
+    set_nc_config_dir_in_config,
+} = require('../../system_tests/test_utils');
+const {
+    ACTIONS,
+    TYPES,
+} = require('../../../manage_nsfs/manage_nsfs_constants');
+const {
+    get_process_fs_context,
+    is_path_exists,
+    get_bucket_tmpdir_full_path,
+} = require('../../../util/native_fs_utils');
+const ManageCLIError =
+    require('../../../manage_nsfs/manage_nsfs_cli_errors').ManageCLIError;
+const {
+    ManageCLIResponse,
+} = require('../../../manage_nsfs/manage_nsfs_cli_responses');
 
 const tmp_fs_path = path.join(TMP_PATH, 'test_nc_nsfs_bucket_cli');
 const DEFAULT_FS_CONFIG = get_process_fs_context();
-const config_fs_account_options = { show_secrets: true, decrypt_secret_key: true };
+const config_fs_account_options = {
+    show_secrets: true,
+    decrypt_secret_key: true,
+};
 
 // eslint-disable-next-line max-lines-per-function
 describe('manage nsfs cli bucket flow', () => {
-
     describe('cli create bucket', () => {
         const config_root = path.join(tmp_fs_path, 'config_root_manage_nsfs');
         const config_fs = new ConfigFS(config_root);
         const root_path = path.join(tmp_fs_path, 'root_path_manage_nsfs/');
-        const bucket_storage_path = path.join(tmp_fs_path, 'root_path_manage_nsfs', 'bucket1');
+        const bucket_storage_path = path.join(
+            tmp_fs_path,
+            'root_path_manage_nsfs',
+            'bucket1',
+        );
         set_nc_config_dir_in_config(config_root);
 
         const account_defaults = {
@@ -63,7 +83,11 @@ describe('manage nsfs cli bucket flow', () => {
             const account_options = { config_root, ...account_defaults };
             await fs_utils.create_fresh_path(account_path);
             await fs_utils.file_must_exist(account_path);
-            await set_path_permissions_and_owner(account_path, account_options, 0o700);
+            await set_path_permissions_and_owner(
+                account_path,
+                account_options,
+                0o700,
+            );
             await exec_manage_cli(TYPES.ACCOUNT, action, account_options);
             // account add (account 2 without new_buckets_path)
             const account_options2 = { config_root, ...account_defaults2 };
@@ -78,106 +102,208 @@ describe('manage nsfs cli bucket flow', () => {
         it('should fail - cli create bucket - invalid option type (path as number)', async () => {
             const action = ACTIONS.ADD;
             const path_invalid = 4e34; // invalid should be string represents a path
-            const bucket_options = { config_root, ...bucket_defaults, path: path_invalid };
-            const res = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            expect(JSON.parse(res.stdout).error.message).toBe(ManageCLIError.InvalidArgumentType.message);
+            const bucket_options = {
+                config_root,
+                ...bucket_defaults,
+                path: path_invalid,
+            };
+            const res = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
+            expect(JSON.parse(res.stdout).error.message).toBe(
+                ManageCLIError.InvalidArgumentType.message,
+            );
         });
 
         it('should fail - cli create bucket - invalid option type (path as string)', async () => {
             const action = ACTIONS.ADD;
             const path_invalid = 'aaa'; // invalid should be string represents a path
-            const bucket_options = { config_root, ...bucket_defaults, path: path_invalid };
-            const res = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            expect(JSON.parse(res.stdout).error.message).toBe(ManageCLIError.InvalidStoragePath.message);
+            const bucket_options = {
+                config_root,
+                ...bucket_defaults,
+                path: path_invalid,
+            };
+            const res = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
+            expect(JSON.parse(res.stdout).error.message).toBe(
+                ManageCLIError.InvalidStoragePath.message,
+            );
         });
 
         it('cli create bucket use flag force_md5_etag', async () => {
             const action = ACTIONS.ADD;
             const force_md5_etag = 'true';
-            const bucket_options = { config_root, ...bucket_defaults, force_md5_etag };
+            const bucket_options = {
+                config_root,
+                ...bucket_defaults,
+                force_md5_etag,
+            };
             await fs_utils.create_fresh_path(bucket_options.path);
             await fs_utils.file_must_exist(bucket_options.path);
-            await set_path_permissions_and_owner(bucket_options.path, account_defaults, 0o700);
+            await set_path_permissions_and_owner(
+                bucket_options.path,
+                account_defaults,
+                0o700,
+            );
             await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            const bucket = await config_fs.get_bucket_by_name(bucket_defaults.name);
+            const bucket = await config_fs.get_bucket_by_name(
+                bucket_defaults.name,
+            );
             expect(bucket.force_md5_etag).toBe(true);
         });
 
         it('should fail - cli create bucket - owner does not have any permission to path', async () => {
             const action = ACTIONS.ADD;
-            const bucket_options = { config_root, ...bucket_defaults};
+            const bucket_options = { config_root, ...bucket_defaults };
             await fs_utils.create_fresh_path(bucket_options.path);
             await fs_utils.file_must_exist(bucket_options.path);
-            await set_path_permissions_and_owner(bucket_options.path, account_defaults, 0o077);
-            const res = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            expect(JSON.parse(res.stdout).error.code).toBe(ManageCLIError.InaccessibleStoragePath.code);
+            await set_path_permissions_and_owner(
+                bucket_options.path,
+                account_defaults,
+                0o077,
+            );
+            const res = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
+            expect(JSON.parse(res.stdout).error.code).toBe(
+                ManageCLIError.InaccessibleStoragePath.code,
+            );
         });
 
         it('should fail - cli create bucket - owner does not have write permission to path', async () => {
             const action = ACTIONS.ADD;
-            const bucket_options = { config_root, ...bucket_defaults};
+            const bucket_options = { config_root, ...bucket_defaults };
             await fs_utils.create_fresh_path(bucket_options.path);
             await fs_utils.file_must_exist(bucket_options.path);
-            await set_path_permissions_and_owner(bucket_options.path, account_defaults, 0o477);
-            const res = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            expect(JSON.parse(res.stdout).error.code).toBe(ManageCLIError.InaccessibleStoragePath.code);
+            await set_path_permissions_and_owner(
+                bucket_options.path,
+                account_defaults,
+                0o477,
+            );
+            const res = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
+            expect(JSON.parse(res.stdout).error.code).toBe(
+                ManageCLIError.InaccessibleStoragePath.code,
+            );
         });
 
         it('should fail - cli create bucket - owner does not have read permission to path', async () => {
             const action = ACTIONS.ADD;
-            const bucket_options = { config_root, ...bucket_defaults};
+            const bucket_options = { config_root, ...bucket_defaults };
             await fs_utils.create_fresh_path(bucket_options.path);
             await fs_utils.file_must_exist(bucket_options.path);
-            await set_path_permissions_and_owner(bucket_options.path, account_defaults, 0o277);
-            const res = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            expect(JSON.parse(res.stdout).error.code).toBe(ManageCLIError.InaccessibleStoragePath.code);
+            await set_path_permissions_and_owner(
+                bucket_options.path,
+                account_defaults,
+                0o277,
+            );
+            const res = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
+            expect(JSON.parse(res.stdout).error.code).toBe(
+                ManageCLIError.InaccessibleStoragePath.code,
+            );
         });
 
         it('cli create bucket - account can access path', async () => {
             const action = ACTIONS.ADD;
-            const bucket_options = { config_root, ...bucket_defaults};
+            const bucket_options = { config_root, ...bucket_defaults };
             await fs_utils.create_fresh_path(bucket_options.path);
             await fs_utils.file_must_exist(bucket_options.path);
-            await set_path_permissions_and_owner(bucket_options.path, account_defaults, 0o700);
+            await set_path_permissions_and_owner(
+                bucket_options.path,
+                account_defaults,
+                0o700,
+            );
             await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            const bucket = await config_fs.get_bucket_by_name(bucket_defaults.name);
+            const bucket = await config_fs.get_bucket_by_name(
+                bucket_defaults.name,
+            );
             await assert_bucket(bucket, bucket_options, config_fs);
         });
 
         it('cli create bucket - account can not access path  NC_DISABLE_ACCESS_CHECK = true - should succeed', async () => {
             const action = ACTIONS.ADD;
-            const bucket_options = { config_root, ...bucket_defaults};
+            const bucket_options = { config_root, ...bucket_defaults };
             await fs_utils.create_fresh_path(bucket_options.path);
             await fs_utils.file_must_exist(bucket_options.path);
             set_nc_config_dir_in_config(config_root);
-            await config_fs.create_config_json_file(JSON.stringify({ NC_DISABLE_ACCESS_CHECK: true }));
-            await set_path_permissions_and_owner(bucket_options.path, account_defaults, 0o000);
-            const res = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            expect(JSON.parse(res).response.code).toEqual(ManageCLIResponse.BucketCreated.code);
+            await config_fs.create_config_json_file(
+                JSON.stringify({ NC_DISABLE_ACCESS_CHECK: true }),
+            );
+            await set_path_permissions_and_owner(
+                bucket_options.path,
+                account_defaults,
+                0o000,
+            );
+            const res = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
+            expect(JSON.parse(res).response.code).toEqual(
+                ManageCLIResponse.BucketCreated.code,
+            );
         });
 
         it('cli create bucket - owner has iam_operate_on_root_account true', async () => {
             // update the account to have iam_operate_on_root_account true
             const { name } = account_defaults;
-            const account_options = { config_root, name, iam_operate_on_root_account: 'true'};
+            const account_options = {
+                config_root,
+                name,
+                iam_operate_on_root_account: 'true',
+            };
             let action = ACTIONS.UPDATE;
             await exec_manage_cli(TYPES.ACCOUNT, action, account_options);
 
             // create the bucket
             action = ACTIONS.ADD;
-            const bucket_options = { config_root, ...bucket_defaults};
+            const bucket_options = { config_root, ...bucket_defaults };
             await fs_utils.create_fresh_path(bucket_options.path);
             await fs_utils.file_must_exist(bucket_options.path);
-            await set_path_permissions_and_owner(bucket_options.path, account_defaults, 0o700);
-            const res = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            expect(JSON.parse(res).response.code).toEqual(ManageCLIResponse.BucketCreated.code);
+            await set_path_permissions_and_owner(
+                bucket_options.path,
+                account_defaults,
+                0o700,
+            );
+            const res = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
+            expect(JSON.parse(res).response.code).toEqual(
+                ManageCLIResponse.BucketCreated.code,
+            );
         });
 
         it('should fail - cli bucket add - without identifier', async () => {
             const action = ACTIONS.ADD;
-            const bucket_options = { config_root, owner: bucket_defaults.owner, path: bucket_defaults.path };
-            const res = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            expect(JSON.parse(res.stdout).error.code).toBe(ManageCLIError.MissingBucketNameFlag.code);
+            const bucket_options = {
+                config_root,
+                owner: bucket_defaults.owner,
+                path: bucket_defaults.path,
+            };
+            const res = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
+            expect(JSON.parse(res.stdout).error.code).toBe(
+                ManageCLIError.MissingBucketNameFlag.code,
+            );
         });
 
         it('should fail - cli create bucket - owner is an IAM account', async () => {
@@ -187,55 +313,111 @@ describe('manage nsfs cli bucket flow', () => {
 
             const { new_buckets_path: account_path } = account_defaults;
             const account_name = 'account-to-be-owned';
-            const account_options1 = { config_root, name: account_name, uid: 5555, gid: 5555,
-                new_buckets_path: account_path};
+            const account_options1 = {
+                config_root,
+                name: account_name,
+                uid: 5555,
+                gid: 5555,
+                new_buckets_path: account_path,
+            };
             await fs_utils.create_fresh_path(account_path);
             await fs_utils.file_must_exist(account_path);
-            await set_path_permissions_and_owner(account_path, account_options1, 0o700);
+            await set_path_permissions_and_owner(
+                account_path,
+                account_options1,
+                0o700,
+            );
             await exec_manage_cli(TYPES.ACCOUNT, ACTIONS.ADD, account_options1);
 
             // update the account to have the property owner
             // (we use this way because now we don't have the way to create IAM users through the noobaa cli)
-            const config_data = await config_fs.get_account_by_name(account_name, config_fs_account_options);
+            const config_data = await config_fs.get_account_by_name(
+                account_name,
+                config_fs_account_options,
+            );
             config_data.owner = account_id; // just so we can identify this account as IAM user;
             await config_fs.update_account_config_file(config_data);
             // create the bucket
             const action = ACTIONS.ADD;
-            const bucket_options = { config_root, ...bucket_defaults, owner: account_name};
+            const bucket_options = {
+                config_root,
+                ...bucket_defaults,
+                owner: account_name,
+            };
             await fs_utils.create_fresh_path(bucket_options.path);
             await fs_utils.file_must_exist(bucket_options.path);
-            await set_path_permissions_and_owner(bucket_options.path, { uid: account_options1.uid, gid: account_options1.gid }, 0o700);
-            const res = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            expect(JSON.parse(res.stdout).error.code).toBe(ManageCLIError.BucketSetForbiddenBucketOwnerIsIAMAccount.code);
+            await set_path_permissions_and_owner(
+                bucket_options.path,
+                { uid: account_options1.uid, gid: account_options1.gid },
+                0o700,
+            );
+            const res = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
+            expect(JSON.parse(res.stdout).error.code).toBe(
+                ManageCLIError.BucketSetForbiddenBucketOwnerIsIAMAccount.code,
+            );
         });
 
         it('cli create bucket - with bucket policy (principal by name)', async () => {
-                const action = ACTIONS.ADD;
-                const principal_by_name = account_defaults2.name;
-                const bucket_policy = generate_s3_policy(principal_by_name, bucket_defaults.name, ['s3:*']).policy;
-                const bucket_policy_string = JSON.stringify(bucket_policy);
-                const bucket_options = { config_root, ...bucket_defaults, bucket_policy: `'${bucket_policy_string}'`}; // notice bucket_policy with quotes ('')
-                await fs_utils.create_fresh_path(bucket_options.path);
-                await fs_utils.file_must_exist(bucket_options.path);
-                await set_path_permissions_and_owner(bucket_options.path, account_defaults, 0o700);
-                await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-                const bucket = await config_fs.get_bucket_by_name(bucket_defaults.name);
-                await assert_bucket(bucket, bucket_options, config_fs);
-                expect(bucket.s3_policy).toStrictEqual(bucket_policy);
+            const action = ACTIONS.ADD;
+            const principal_by_name = account_defaults2.name;
+            const bucket_policy = generate_s3_policy(
+                principal_by_name,
+                bucket_defaults.name,
+                ['s3:*'],
+            ).policy;
+            const bucket_policy_string = JSON.stringify(bucket_policy);
+            const bucket_options = {
+                config_root,
+                ...bucket_defaults,
+                bucket_policy: `'${bucket_policy_string}'`,
+            }; // notice bucket_policy with quotes ('')
+            await fs_utils.create_fresh_path(bucket_options.path);
+            await fs_utils.file_must_exist(bucket_options.path);
+            await set_path_permissions_and_owner(
+                bucket_options.path,
+                account_defaults,
+                0o700,
+            );
+            await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
+            const bucket = await config_fs.get_bucket_by_name(
+                bucket_defaults.name,
+            );
+            await assert_bucket(bucket, bucket_options, config_fs);
+            expect(bucket.s3_policy).toStrictEqual(bucket_policy);
         });
 
         it('cli create bucket - with bucket policy (principal by id)', async () => {
             const action = ACTIONS.ADD;
-            const account2 = await config_fs.get_account_by_name(account_defaults2.name);
+            const account2 = await config_fs.get_account_by_name(
+                account_defaults2.name,
+            );
             const principal_by_id = account2._id;
-            const bucket_policy = generate_s3_policy(principal_by_id, bucket_defaults.name, ['s3:*']).policy;
+            const bucket_policy = generate_s3_policy(
+                principal_by_id,
+                bucket_defaults.name,
+                ['s3:*'],
+            ).policy;
             const bucket_policy_string = JSON.stringify(bucket_policy);
-            const bucket_options = { config_root, ...bucket_defaults, bucket_policy: `'${bucket_policy_string}'`}; // notice bucket_policy with quotes ('')
+            const bucket_options = {
+                config_root,
+                ...bucket_defaults,
+                bucket_policy: `'${bucket_policy_string}'`,
+            }; // notice bucket_policy with quotes ('')
             await fs_utils.create_fresh_path(bucket_options.path);
             await fs_utils.file_must_exist(bucket_options.path);
-            await set_path_permissions_and_owner(bucket_options.path, account_defaults, 0o700);
+            await set_path_permissions_and_owner(
+                bucket_options.path,
+                account_defaults,
+                0o700,
+            );
             await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            const bucket = await config_fs.get_bucket_by_name(bucket_defaults.name);
+            const bucket = await config_fs.get_bucket_by_name(
+                bucket_defaults.name,
+            );
             await assert_bucket(bucket, bucket_options, config_fs);
             expect(bucket.s3_policy).toStrictEqual(bucket_policy);
         });
@@ -246,8 +428,15 @@ describe('manage nsfs cli bucket flow', () => {
         const config_root = path.join(tmp_fs_path, 'config_root_manage_nsfs1');
         const config_fs = new ConfigFS(config_root);
         const root_path = path.join(tmp_fs_path, 'root_path_manage_nsfs1/');
-        const bucket_storage_path = path.join(tmp_fs_path, 'root_path_manage_nsfs1', 'bucket1');
-        const path_to_json_bucket_options_dir = path.join(tmp_fs_path, 'options');
+        const bucket_storage_path = path.join(
+            tmp_fs_path,
+            'root_path_manage_nsfs1',
+            'bucket1',
+        );
+        const path_to_json_bucket_options_dir = path.join(
+            tmp_fs_path,
+            'options',
+        );
         set_nc_config_dir_in_config(config_root);
 
         const account_name = 'account_test';
@@ -274,13 +463,21 @@ describe('manage nsfs cli bucket flow', () => {
             const account_options = { config_root, ...account_defaults };
             await fs_utils.create_fresh_path(account_path);
             await fs_utils.file_must_exist(account_path);
-            await set_path_permissions_and_owner(account_path, account_options, 0o700);
+            await set_path_permissions_and_owner(
+                account_path,
+                account_options,
+                0o700,
+            );
             await exec_manage_cli(TYPES.ACCOUNT, action, account_options);
-            // give permission on bucket path to bucket owner 
+            // give permission on bucket path to bucket owner
             const { path: bucket_path } = bucket_defaults;
             await fs_utils.create_fresh_path(bucket_path);
             await fs_utils.file_must_exist(bucket_path);
-            await set_path_permissions_and_owner(bucket_path, account_options, 0o700);
+            await set_path_permissions_and_owner(
+                bucket_path,
+                account_options,
+                0o700,
+            );
         });
 
         afterEach(async () => {
@@ -291,45 +488,88 @@ describe('manage nsfs cli bucket flow', () => {
 
         it('cli create bucket using from_file with required options', async () => {
             const action = ACTIONS.ADD;
-            const bucket_options = { name: bucket_defaults.name, owner: bucket_defaults.owner, path: bucket_defaults.path };
+            const bucket_options = {
+                name: bucket_defaults.name,
+                owner: bucket_defaults.owner,
+                path: bucket_defaults.path,
+            };
             // write the json_file_options
-            const path_to_option_json_file_name = await create_json_bucket_options(path_to_json_bucket_options_dir, bucket_options);
-            const command_flags = {config_root, from_file: path_to_option_json_file_name};
+            const path_to_option_json_file_name =
+                await create_json_bucket_options(
+                    path_to_json_bucket_options_dir,
+                    bucket_options,
+                );
+            const command_flags = {
+                config_root,
+                from_file: path_to_option_json_file_name,
+            };
             // create the bucket and check the details
             await exec_manage_cli(type, action, command_flags);
             // compare the details
-            const bucket = await config_fs.get_bucket_by_name(bucket_defaults.name);
+            const bucket = await config_fs.get_bucket_by_name(
+                bucket_defaults.name,
+            );
             await assert_bucket(bucket, bucket_options, config_fs);
         });
 
         it('cli create bucket using from_file with optional options (fs_backend)', async () => {
             const action = ACTIONS.ADD;
             const fs_backend = 'GPFS';
-            const bucket_options = { name: bucket_defaults.name, owner: bucket_defaults.owner, path: bucket_defaults.path,
-                fs_backend: fs_backend };
+            const bucket_options = {
+                name: bucket_defaults.name,
+                owner: bucket_defaults.owner,
+                path: bucket_defaults.path,
+                fs_backend: fs_backend,
+            };
             // write the json_file_options
-            const path_to_option_json_file_name = await create_json_bucket_options(path_to_json_bucket_options_dir, bucket_options);
-            const command_flags = {config_root, from_file: path_to_option_json_file_name};
+            const path_to_option_json_file_name =
+                await create_json_bucket_options(
+                    path_to_json_bucket_options_dir,
+                    bucket_options,
+                );
+            const command_flags = {
+                config_root,
+                from_file: path_to_option_json_file_name,
+            };
             // create the bucket and check the details
             await exec_manage_cli(type, action, command_flags);
             // compare the details
-            const bucket = await config_fs.get_bucket_by_name(bucket_defaults.name);
+            const bucket = await config_fs.get_bucket_by_name(
+                bucket_defaults.name,
+            );
             await assert_bucket(bucket, bucket_options, config_fs);
             expect(bucket.fs_backend).toEqual(bucket_options.fs_backend);
         });
 
         it('cli create bucket using from_file with optional options (bucket_policy)', async () => {
             const action = ACTIONS.ADD;
-            const bucket_policy = generate_s3_policy('*', bucket_defaults.name, ['s3:*']).policy;
-            const bucket_options = { name: bucket_defaults.name, owner: bucket_defaults.owner, path: bucket_defaults.path,
-                bucket_policy: bucket_policy };
+            const bucket_policy = generate_s3_policy(
+                '*',
+                bucket_defaults.name,
+                ['s3:*'],
+            ).policy;
+            const bucket_options = {
+                name: bucket_defaults.name,
+                owner: bucket_defaults.owner,
+                path: bucket_defaults.path,
+                bucket_policy: bucket_policy,
+            };
             // write the json_file_options
-            const path_to_option_json_file_name = await create_json_bucket_options(path_to_json_bucket_options_dir, bucket_options);
-            const command_flags = {config_root, from_file: path_to_option_json_file_name};
+            const path_to_option_json_file_name =
+                await create_json_bucket_options(
+                    path_to_json_bucket_options_dir,
+                    bucket_options,
+                );
+            const command_flags = {
+                config_root,
+                from_file: path_to_option_json_file_name,
+            };
             // create the bucket and check the details
             await exec_manage_cli(type, action, command_flags);
             // compare the details
-            const bucket = await config_fs.get_bucket_by_name(bucket_defaults.name);
+            const bucket = await config_fs.get_bucket_by_name(
+                bucket_defaults.name,
+            );
             await assert_bucket(bucket, bucket_options, config_fs);
             expect(bucket.bucket_policy).toEqual(bucket_options.s3_policy);
         });
@@ -338,85 +578,165 @@ describe('manage nsfs cli bucket flow', () => {
             const action = ACTIONS.ADD;
             const name = bucket_defaults.name;
             // write the json_file_options
-            const path_to_option_json_file_name = await create_json_bucket_options(path_to_json_bucket_options_dir, bucket_defaults);
-            const command_flags = {config_root, from_file: path_to_option_json_file_name, name }; // name should be in file only
+            const path_to_option_json_file_name =
+                await create_json_bucket_options(
+                    path_to_json_bucket_options_dir,
+                    bucket_defaults,
+                );
+            const command_flags = {
+                config_root,
+                from_file: path_to_option_json_file_name,
+                name,
+            }; // name should be in file only
             const res = await exec_manage_cli(type, action, command_flags);
-            expect(JSON.parse(res.stdout).error.code).toBe(ManageCLIError.InvalidArgument.code);
+            expect(JSON.parse(res.stdout).error.code).toBe(
+                ManageCLIError.InvalidArgument.code,
+            );
         });
 
         it('should fail - cli create bucket using from_file with invalid option (lala) in the file', async () => {
             const action = ACTIONS.ADD;
-            const bucket_options = { name: bucket_defaults.name, owner: bucket_defaults.owner, path: bucket_defaults.path, lala: 'lala'}; // lala invalid option
+            const bucket_options = {
+                name: bucket_defaults.name,
+                owner: bucket_defaults.owner,
+                path: bucket_defaults.path,
+                lala: 'lala',
+            }; // lala invalid option
             // write the json_file_options
-            const path_to_option_json_file_name = await create_json_bucket_options(path_to_json_bucket_options_dir, bucket_options);
-            const command_flags = {config_root, from_file: path_to_option_json_file_name };
+            const path_to_option_json_file_name =
+                await create_json_bucket_options(
+                    path_to_json_bucket_options_dir,
+                    bucket_options,
+                );
+            const command_flags = {
+                config_root,
+                from_file: path_to_option_json_file_name,
+            };
             const res = await exec_manage_cli(type, action, command_flags);
-            expect(JSON.parse(res.stdout).error.code).toBe(ManageCLIError.InvalidArgument.code);
+            expect(JSON.parse(res.stdout).error.code).toBe(
+                ManageCLIError.InvalidArgument.code,
+            );
         });
 
         it('should fail - cli create bucket using from_file with invalid option (creation_date) in the file', async () => {
             const action = ACTIONS.ADD;
-            const bucket_options = { name: bucket_defaults.name, owner: bucket_defaults.owner, path: bucket_defaults.path,
-                creation_date: new Date().toISOString()}; // creation_date invalid option (user cannot set it)
+            const bucket_options = {
+                name: bucket_defaults.name,
+                owner: bucket_defaults.owner,
+                path: bucket_defaults.path,
+                creation_date: new Date().toISOString(),
+            }; // creation_date invalid option (user cannot set it)
             // write the json_file_options
-            const path_to_option_json_file_name = await create_json_bucket_options(path_to_json_bucket_options_dir, bucket_options);
-            const command_flags = {config_root, from_file: path_to_option_json_file_name };
+            const path_to_option_json_file_name =
+                await create_json_bucket_options(
+                    path_to_json_bucket_options_dir,
+                    bucket_options,
+                );
+            const command_flags = {
+                config_root,
+                from_file: path_to_option_json_file_name,
+            };
             const res = await exec_manage_cli(type, action, command_flags);
-            expect(JSON.parse(res.stdout).error.code).toBe(ManageCLIError.InvalidArgument.code);
+            expect(JSON.parse(res.stdout).error.code).toBe(
+                ManageCLIError.InvalidArgument.code,
+            );
         });
 
         it('should fail - cli create bucket using from_file with from_file inside the JSON file', async () => {
             const action = ACTIONS.ADD;
-            const bucket_options = { name: bucket_defaults.name, owner: bucket_defaults.owner, path: bucket_defaults.path,
-                from_file: 'blabla' }; //from_file inside options JSON file
+            const bucket_options = {
+                name: bucket_defaults.name,
+                owner: bucket_defaults.owner,
+                path: bucket_defaults.path,
+                from_file: 'blabla',
+            }; //from_file inside options JSON file
             // write the json_file_options
-            const path_to_option_json_file_name = await create_json_bucket_options(path_to_json_bucket_options_dir, bucket_options);
-            const command_flags = {config_root, from_file: path_to_option_json_file_name };
+            const path_to_option_json_file_name =
+                await create_json_bucket_options(
+                    path_to_json_bucket_options_dir,
+                    bucket_options,
+                );
+            const command_flags = {
+                config_root,
+                from_file: path_to_option_json_file_name,
+            };
             const res = await exec_manage_cli(type, action, command_flags);
-            expect(JSON.parse(res.stdout).error.code).toBe(ManageCLIError.InvalidArgument.code);
+            expect(JSON.parse(res.stdout).error.code).toBe(
+                ManageCLIError.InvalidArgument.code,
+            );
         });
 
         it('should fail - cli create bucket using from_file with invalid option type (in the file)', async () => {
             const action = ACTIONS.ADD;
-            const bucket_options = { name: bucket_defaults.name, owner: 1234, path: bucket_defaults.path }; // owner should be string (not number)
+            const bucket_options = {
+                name: bucket_defaults.name,
+                owner: 1234,
+                path: bucket_defaults.path,
+            }; // owner should be string (not number)
             // write the json_file_options
-            const path_to_option_json_file_name = await create_json_bucket_options(path_to_json_bucket_options_dir, bucket_options);
-            const command_flags = {config_root, from_file: path_to_option_json_file_name };
+            const path_to_option_json_file_name =
+                await create_json_bucket_options(
+                    path_to_json_bucket_options_dir,
+                    bucket_options,
+                );
+            const command_flags = {
+                config_root,
+                from_file: path_to_option_json_file_name,
+            };
             const res = await exec_manage_cli(type, action, command_flags);
-            expect(JSON.parse(res.stdout).error.code).toBe(ManageCLIError.InvalidArgumentType.code);
+            expect(JSON.parse(res.stdout).error.code).toBe(
+                ManageCLIError.InvalidArgumentType.code,
+            );
         });
 
         it('should fail - cli create bucket using from_file with invalid path', async () => {
             const action = ACTIONS.ADD;
-            const command_flags = {config_root, from_file: 'blabla'}; //invalid path 
+            const command_flags = { config_root, from_file: 'blabla' }; //invalid path
             const res = await exec_manage_cli(type, action, command_flags);
-            expect(JSON.parse(res.stdout).error.code).toBe(ManageCLIError.InvalidFilePath.code);
+            expect(JSON.parse(res.stdout).error.code).toBe(
+                ManageCLIError.InvalidFilePath.code,
+            );
         });
 
         it('should fail - cli create bucket using from_file with invalid JSON file', async () => {
             const action = ACTIONS.ADD;
-            const bucket_options = { name: bucket_defaults.name, owner: bucket_defaults.owner, path: bucket_defaults.path };
+            const bucket_options = {
+                name: bucket_defaults.name,
+                owner: bucket_defaults.owner,
+                path: bucket_defaults.path,
+            };
             // write invalid json_file_options
             const option_json_file_name = `${bucket_options.name}_options.json`;
-            const path_to_option_json_file_name = path.join(path_to_json_bucket_options_dir, option_json_file_name);
+            const path_to_option_json_file_name = path.join(
+                path_to_json_bucket_options_dir,
+                option_json_file_name,
+            );
             const content = JSON.stringify(bucket_options) + 'blabla'; // invalid JSON
             await fs.promises.writeFile(path_to_option_json_file_name, content);
             // write the json_file_options
-            const command_flags = {config_root, from_file: path_to_option_json_file_name};
+            const command_flags = {
+                config_root,
+                from_file: path_to_option_json_file_name,
+            };
             // create the bucket
             await exec_manage_cli(type, action, command_flags);
             // compare the details
             const res = await exec_manage_cli(type, action, command_flags);
-            expect(JSON.parse(res.stdout).error.code).toBe(ManageCLIError.InvalidJSONFile.code);
+            expect(JSON.parse(res.stdout).error.code).toBe(
+                ManageCLIError.InvalidJSONFile.code,
+            );
         });
-
     });
 
     describe('cli update bucket', () => {
         const config_root = path.join(tmp_fs_path, 'config_root_manage_nsfs2');
         const config_fs = new ConfigFS(config_root);
         const root_path = path.join(tmp_fs_path, 'root_path_manage_nsfs2/');
-        const bucket_storage_path = path.join(tmp_fs_path, 'root_path_manage_nsfs2', 'bucket1');
+        const bucket_storage_path = path.join(
+            tmp_fs_path,
+            'root_path_manage_nsfs2',
+            'bucket1',
+        );
         set_nc_config_dir_in_config(config_root);
 
         const account_name = 'account_test';
@@ -451,7 +771,11 @@ describe('manage nsfs cli bucket flow', () => {
             let account_options = { config_root, ...account_defaults };
             await fs_utils.create_fresh_path(account_path);
             await fs_utils.file_must_exist(account_path);
-            await set_path_permissions_and_owner(account_path, account_options, 0o700);
+            await set_path_permissions_and_owner(
+                account_path,
+                account_options,
+                0o700,
+            );
             await exec_manage_cli(TYPES.ACCOUNT, action, account_options);
 
             // account add 2
@@ -459,7 +783,11 @@ describe('manage nsfs cli bucket flow', () => {
             account_options = { config_root, ...account_defaults2 };
             await fs_utils.create_fresh_path(account_path);
             await fs_utils.file_must_exist(account_path);
-            await set_path_permissions_and_owner(account_path, account_options, 0o700);
+            await set_path_permissions_and_owner(
+                account_path,
+                account_options,
+                0o700,
+            );
             await exec_manage_cli(TYPES.ACCOUNT, action, account_options);
 
             // bucket add
@@ -467,8 +795,16 @@ describe('manage nsfs cli bucket flow', () => {
             const bucket_options = { config_root, ...bucket_defaults };
             await fs_utils.create_fresh_path(bucket_path);
             await fs_utils.file_must_exist(bucket_path);
-            await set_path_permissions_and_owner(bucket_path, account_defaults, 0o700);
-            const resp = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
+            await set_path_permissions_and_owner(
+                bucket_path,
+                account_defaults,
+                0o700,
+            );
+            const resp = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
             const bucket_resp = JSON.parse(resp);
             expect(bucket_resp.response.reply._id).not.toBeNull();
         });
@@ -481,104 +817,204 @@ describe('manage nsfs cli bucket flow', () => {
         it('cli update bucket set force_md5_etag', async () => {
             const action = ACTIONS.UPDATE;
             const force_md5_etag = 'true';
-            const bucket_options = { config_root, name: bucket_defaults.name, force_md5_etag };
+            const bucket_options = {
+                config_root,
+                name: bucket_defaults.name,
+                force_md5_etag,
+            };
             await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            let bucket_config = await config_fs.get_bucket_by_name(bucket_defaults.name);
+            let bucket_config = await config_fs.get_bucket_by_name(
+                bucket_defaults.name,
+            );
             expect(bucket_config.force_md5_etag).toBe(true);
 
             bucket_options.force_md5_etag = 'false';
             await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            bucket_config = await config_fs.get_bucket_by_name(bucket_defaults.name);
+            bucket_config = await config_fs.get_bucket_by_name(
+                bucket_defaults.name,
+            );
             expect(bucket_config.force_md5_etag).toBe(false);
         });
 
-        it('cli update bucket unset flag force_md5_etag', async function() {
+        it('cli update bucket unset flag force_md5_etag', async function () {
             // first set the value of force_md5_etag to be true
             const action = ACTIONS.UPDATE;
             const force_md5_etag = 'true';
-            const bucket_options = { config_root, name: bucket_defaults.name, force_md5_etag };
+            const bucket_options = {
+                config_root,
+                name: bucket_defaults.name,
+                force_md5_etag,
+            };
             await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            let bucket_config = await config_fs.get_bucket_by_name(bucket_defaults.name);
+            let bucket_config = await config_fs.get_bucket_by_name(
+                bucket_defaults.name,
+            );
             expect(bucket_config.force_md5_etag).toBe(true);
 
             // unset force_md5_etag
-            const empty_string = '\'\'';
+            const empty_string = "''";
             bucket_options.force_md5_etag = empty_string;
             await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            bucket_config = await config_fs.get_bucket_by_name(bucket_defaults.name);
+            bucket_config = await config_fs.get_bucket_by_name(
+                bucket_defaults.name,
+            );
             expect(bucket_config.force_md5_etag).toBeUndefined();
         });
 
         it('should fail - cli update bucket without a property to update', async () => {
             const action = ACTIONS.UPDATE;
             const account_options = { config_root, name: bucket_defaults.name };
-            const res = await exec_manage_cli(TYPES.BUCKET, action, account_options);
-            expect(JSON.parse(res.stdout).error.message).toBe(ManageCLIError.MissingUpdateProperty.message);
+            const res = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                account_options,
+            );
+            expect(JSON.parse(res.stdout).error.message).toBe(
+                ManageCLIError.MissingUpdateProperty.message,
+            );
         });
 
         it('should fail - cli update bucket owner - owner does not have any permission to path', async () => {
             const action = ACTIONS.UPDATE;
-            const bucket_options = { config_root, name: bucket_defaults.name, owner: account_defaults2.name};
+            const bucket_options = {
+                config_root,
+                name: bucket_defaults.name,
+                owner: account_defaults2.name,
+            };
             await fs_utils.create_fresh_path(bucket_defaults.path);
             await fs_utils.file_must_exist(bucket_defaults.path);
-            await set_path_permissions_and_owner(bucket_defaults.path, account_defaults2, 0o077);
-            const res = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            expect(JSON.parse(res.stdout).error.code).toBe(ManageCLIError.InaccessibleStoragePath.code);
+            await set_path_permissions_and_owner(
+                bucket_defaults.path,
+                account_defaults2,
+                0o077,
+            );
+            const res = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
+            expect(JSON.parse(res.stdout).error.code).toBe(
+                ManageCLIError.InaccessibleStoragePath.code,
+            );
         });
 
         it('should fail - cli update bucket owner - owner does not have write permission to path', async () => {
             const action = ACTIONS.UPDATE;
-            const bucket_options = { config_root, name: bucket_defaults.name, owner: account_defaults2.name};
+            const bucket_options = {
+                config_root,
+                name: bucket_defaults.name,
+                owner: account_defaults2.name,
+            };
             await fs_utils.create_fresh_path(bucket_defaults.path);
             await fs_utils.file_must_exist(bucket_defaults.path);
-            await set_path_permissions_and_owner(bucket_defaults.path, account_defaults2, 0o477);
-            const res = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            expect(JSON.parse(res.stdout).error.code).toBe(ManageCLIError.InaccessibleStoragePath.code);
+            await set_path_permissions_and_owner(
+                bucket_defaults.path,
+                account_defaults2,
+                0o477,
+            );
+            const res = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
+            expect(JSON.parse(res.stdout).error.code).toBe(
+                ManageCLIError.InaccessibleStoragePath.code,
+            );
         });
 
         it('should fail - cli update bucket owner - owner does not have read permission to path', async () => {
             const action = ACTIONS.UPDATE;
-            const bucket_options = { config_root, name: bucket_defaults.name, owner: account_defaults2.name};
+            const bucket_options = {
+                config_root,
+                name: bucket_defaults.name,
+                owner: account_defaults2.name,
+            };
             await fs_utils.create_fresh_path(bucket_defaults.path);
             await fs_utils.file_must_exist(bucket_defaults.path);
-            await set_path_permissions_and_owner(bucket_defaults.path, account_defaults2, 0o277);
-            const res = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            expect(JSON.parse(res.stdout).error.code).toBe(ManageCLIError.InaccessibleStoragePath.code);
+            await set_path_permissions_and_owner(
+                bucket_defaults.path,
+                account_defaults2,
+                0o277,
+            );
+            const res = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
+            expect(JSON.parse(res.stdout).error.code).toBe(
+                ManageCLIError.InaccessibleStoragePath.code,
+            );
         });
 
         it('cli update bucket owner - account can access path', async () => {
             const action = ACTIONS.UPDATE;
-            const bucket_options = { config_root, name: bucket_defaults.name, owner: account_defaults2.name};
+            const bucket_options = {
+                config_root,
+                name: bucket_defaults.name,
+                owner: account_defaults2.name,
+            };
             await fs_utils.create_fresh_path(bucket_defaults.path);
             await fs_utils.file_must_exist(bucket_defaults.path);
-            await set_path_permissions_and_owner(bucket_defaults.path, account_defaults2, 0o700);
+            await set_path_permissions_and_owner(
+                bucket_defaults.path,
+                account_defaults2,
+                0o700,
+            );
             await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            const bucket = await config_fs.get_bucket_by_name(bucket_defaults.name);
-            const owner_data = await config_fs.get_identity_by_id(bucket.owner_account);
+            const bucket = await config_fs.get_bucket_by_name(
+                bucket_defaults.name,
+            );
+            const owner_data = await config_fs.get_identity_by_id(
+                bucket.owner_account,
+            );
             expect(owner_data.name).toBe(account_defaults2.name);
         });
 
         it('should fail - cli bucket update - without identifier', async () => {
             const action = ACTIONS.UPDATE;
             const bucket_options = { config_root };
-            const res = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            expect(JSON.parse(res.stdout).error.code).toBe(ManageCLIError.MissingBucketNameFlag.code);
+            const res = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
+            expect(JSON.parse(res.stdout).error.code).toBe(
+                ManageCLIError.MissingBucketNameFlag.code,
+            );
         });
 
         it('cli update bucket owner - owner has iam_operate_on_root_account true', async () => {
             // update the account to have iam_operate_on_root_account true
             const { name } = account_defaults2;
-            const account_options = { config_root, name, iam_operate_on_root_account: 'true'};
+            const account_options = {
+                config_root,
+                name,
+                iam_operate_on_root_account: 'true',
+            };
             let action = ACTIONS.UPDATE;
             await exec_manage_cli(TYPES.ACCOUNT, action, account_options);
 
             action = ACTIONS.UPDATE;
-            const bucket_options = { config_root, name: bucket_defaults.name, owner: account_defaults2.name};
+            const bucket_options = {
+                config_root,
+                name: bucket_defaults.name,
+                owner: account_defaults2.name,
+            };
             await fs_utils.create_fresh_path(bucket_defaults.path);
             await fs_utils.file_must_exist(bucket_defaults.path);
-            await set_path_permissions_and_owner(bucket_defaults.path, account_defaults2, 0o700);
-            const res = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            expect(JSON.parse(res).response.code).toEqual(ManageCLIResponse.BucketUpdated.code);
+            await set_path_permissions_and_owner(
+                bucket_defaults.path,
+                account_defaults2,
+                0o700,
+            );
+            const res = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
+            expect(JSON.parse(res).response.code).toEqual(
+                ManageCLIResponse.BucketUpdated.code,
+            );
         });
 
         it('should fail - cli update bucket - owner is an IAM account', async () => {
@@ -588,55 +1024,110 @@ describe('manage nsfs cli bucket flow', () => {
 
             const { new_buckets_path: account_path } = account_defaults;
             const account_name_iam_account = 'account-to-be-owned';
-            const account_options1 = { config_root, name: account_name_iam_account, uid: 5555, gid: 5555,
-                new_buckets_path: account_path};
+            const account_options1 = {
+                config_root,
+                name: account_name_iam_account,
+                uid: 5555,
+                gid: 5555,
+                new_buckets_path: account_path,
+            };
             await fs_utils.create_fresh_path(account_path);
             await fs_utils.file_must_exist(account_path);
-            await set_path_permissions_and_owner(account_path, account_options1, 0o700);
+            await set_path_permissions_and_owner(
+                account_path,
+                account_options1,
+                0o700,
+            );
             await exec_manage_cli(TYPES.ACCOUNT, ACTIONS.ADD, account_options1);
 
             // update the account to have the property owner
             // (we use this way because now we don't have the way to create IAM users through the noobaa cli)
-            const config_data = await config_fs.get_account_by_name(account_name_iam_account);
+            const config_data = await config_fs.get_account_by_name(
+                account_name_iam_account,
+            );
             config_data.owner = account_id; // just so we can identify this account as IAM user;
             await config_fs.update_account_config_file(config_data);
             // update the bucket
             const action = ACTIONS.UPDATE;
-            const bucket_options = { config_root, name: bucket_defaults.name, owner: account_name_iam_account};
+            const bucket_options = {
+                config_root,
+                name: bucket_defaults.name,
+                owner: account_name_iam_account,
+            };
             await fs_utils.create_fresh_path(bucket_defaults.path);
             await fs_utils.file_must_exist(bucket_defaults.path);
-            await set_path_permissions_and_owner(bucket_defaults.path, account_options1, 0o700);
-            const res = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            expect(JSON.parse(res.stdout).error.code).toBe(ManageCLIError.BucketSetForbiddenBucketOwnerIsIAMAccount.code);
+            await set_path_permissions_and_owner(
+                bucket_defaults.path,
+                account_options1,
+                0o700,
+            );
+            const res = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
+            expect(JSON.parse(res.stdout).error.code).toBe(
+                ManageCLIError.BucketSetForbiddenBucketOwnerIsIAMAccount.code,
+            );
         });
 
         it('cli update bucket - with bucket policy (principal by name)', async () => {
             const action = ACTIONS.UPDATE;
             const principal_by_name = account_defaults2.name;
-            const bucket_policy = generate_s3_policy(principal_by_name, bucket_defaults.name, ['s3:*']).policy;
+            const bucket_policy = generate_s3_policy(
+                principal_by_name,
+                bucket_defaults.name,
+                ['s3:*'],
+            ).policy;
             const bucket_policy_string = JSON.stringify(bucket_policy);
-            const bucket_options = { config_root, ...bucket_defaults, bucket_policy: `'${bucket_policy_string}'`}; // notice bucket_policy with quotes ('')
+            const bucket_options = {
+                config_root,
+                ...bucket_defaults,
+                bucket_policy: `'${bucket_policy_string}'`,
+            }; // notice bucket_policy with quotes ('')
             await fs_utils.create_fresh_path(bucket_options.path);
             await fs_utils.file_must_exist(bucket_options.path);
-            await set_path_permissions_and_owner(bucket_options.path, account_defaults, 0o700);
+            await set_path_permissions_and_owner(
+                bucket_options.path,
+                account_defaults,
+                0o700,
+            );
             await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            const bucket = await config_fs.get_bucket_by_name(bucket_defaults.name);
+            const bucket = await config_fs.get_bucket_by_name(
+                bucket_defaults.name,
+            );
             await assert_bucket(bucket, bucket_options, config_fs);
             expect(bucket.s3_policy).toStrictEqual(bucket_policy);
-         });
+        });
 
-         it('cli update bucket - with bucket policy (principal by id)', async () => {
+        it('cli update bucket - with bucket policy (principal by id)', async () => {
             const action = ACTIONS.UPDATE;
-            const account2 = await config_fs.get_account_by_name(account_defaults2.name);
+            const account2 = await config_fs.get_account_by_name(
+                account_defaults2.name,
+            );
             const principal_by_id = account2._id;
-            const bucket_policy = generate_s3_policy(principal_by_id, bucket_defaults.name, ['s3:*']).policy;
+            const bucket_policy = generate_s3_policy(
+                principal_by_id,
+                bucket_defaults.name,
+                ['s3:*'],
+            ).policy;
             const bucket_policy_string = JSON.stringify(bucket_policy);
-            const bucket_options = { config_root, ...bucket_defaults, bucket_policy: `'${bucket_policy_string}'`}; // notice bucket_policy with quotes ('')
+            const bucket_options = {
+                config_root,
+                ...bucket_defaults,
+                bucket_policy: `'${bucket_policy_string}'`,
+            }; // notice bucket_policy with quotes ('')
             await fs_utils.create_fresh_path(bucket_options.path);
             await fs_utils.file_must_exist(bucket_options.path);
-            await set_path_permissions_and_owner(bucket_options.path, account_defaults, 0o700);
+            await set_path_permissions_and_owner(
+                bucket_options.path,
+                account_defaults,
+                0o700,
+            );
             await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            const bucket = await config_fs.get_bucket_by_name(bucket_defaults.name);
+            const bucket = await config_fs.get_bucket_by_name(
+                bucket_defaults.name,
+            );
             await assert_bucket(bucket, bucket_options, config_fs);
             expect(bucket.s3_policy).toStrictEqual(bucket_policy);
         });
@@ -646,7 +1137,11 @@ describe('manage nsfs cli bucket flow', () => {
         const config_root = path.join(tmp_fs_path, 'config_root_manage_nsfs3');
         const config_fs = new ConfigFS(config_root);
         const root_path = path.join(tmp_fs_path, 'root_path_manage_nsfs3/');
-        const bucket_storage_path = path.join(tmp_fs_path, 'root_path_manage_nsfs3', 'bucket1');
+        const bucket_storage_path = path.join(
+            tmp_fs_path,
+            'root_path_manage_nsfs3',
+            'bucket1',
+        );
         set_nc_config_dir_in_config(config_root);
 
         let bucket_temp_dir_path;
@@ -675,7 +1170,11 @@ describe('manage nsfs cli bucket flow', () => {
             const account_options = { config_root, ...account_defaults };
             await fs_utils.create_fresh_path(account_path);
             await fs_utils.file_must_exist(account_path);
-            await set_path_permissions_and_owner(account_path, account_options, 0o700);
+            await set_path_permissions_and_owner(
+                account_path,
+                account_options,
+                0o700,
+            );
             await exec_manage_cli(TYPES.ACCOUNT, action, account_options);
 
             // bucket add
@@ -683,13 +1182,24 @@ describe('manage nsfs cli bucket flow', () => {
             const bucket_options = { config_root, ...bucket_defaults };
             await fs_utils.create_fresh_path(bucket_path);
             await fs_utils.file_must_exist(bucket_path);
-            await set_path_permissions_and_owner(bucket_path, account_options, 0o700);
-            const resp = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
+            await set_path_permissions_and_owner(
+                bucket_path,
+                account_options,
+                0o700,
+            );
+            const resp = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
             const bucket_resp = JSON.parse(resp);
             expect(bucket_resp.response.reply._id).not.toBeNull();
 
             // create temp dir
-            bucket_temp_dir_path = get_bucket_tmpdir_full_path(bucket_storage_path, bucket_resp.response.reply._id);
+            bucket_temp_dir_path = get_bucket_tmpdir_full_path(
+                bucket_storage_path,
+                bucket_resp.response.reply._id,
+            );
             await fs_utils.create_fresh_path(bucket_temp_dir_path);
             await fs_utils.file_must_exist(bucket_temp_dir_path);
         });
@@ -700,68 +1210,142 @@ describe('manage nsfs cli bucket flow', () => {
         });
 
         it('cli delete bucket and delete temp dir', async () => {
-            let path_exists = await is_path_exists(DEFAULT_FS_CONFIG, bucket_temp_dir_path);
+            let path_exists = await is_path_exists(
+                DEFAULT_FS_CONFIG,
+                bucket_temp_dir_path,
+            );
             expect(path_exists).toBe(true);
-            const bucket_options = { config_root, name: 'bucket1'};
+            const bucket_options = { config_root, name: 'bucket1' };
             const action = ACTIONS.DELETE;
             await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            path_exists = await is_path_exists(DEFAULT_FS_CONFIG, bucket_temp_dir_path);
+            path_exists = await is_path_exists(
+                DEFAULT_FS_CONFIG,
+                bucket_temp_dir_path,
+            );
             expect(path_exists).toBe(false);
         });
 
         it('cli delete bucket with force flag, when bucket path is not empty', async () => {
-            //here a dummy file is creating in bucket storage location(bucket_defaults.path) 
-            await create_json_file(bucket_defaults.path, 'test.json', {test: 'data'});
-            const delete_bucket_options = { config_root, name: bucket_defaults.name, force: true};
-            const resp = await exec_manage_cli(TYPES.BUCKET, ACTIONS.DELETE, delete_bucket_options);
-            expect(JSON.parse(resp.trim()).response.code).toBe(ManageCLIResponse.BucketDeleted.code);
-            const is_bucket_exists = await config_fs.is_bucket_exists(bucket_defaults.name);
+            //here a dummy file is creating in bucket storage location(bucket_defaults.path)
+            await create_json_file(bucket_defaults.path, 'test.json', {
+                test: 'data',
+            });
+            const delete_bucket_options = {
+                config_root,
+                name: bucket_defaults.name,
+                force: true,
+            };
+            const resp = await exec_manage_cli(
+                TYPES.BUCKET,
+                ACTIONS.DELETE,
+                delete_bucket_options,
+            );
+            expect(JSON.parse(resp.trim()).response.code).toBe(
+                ManageCLIResponse.BucketDeleted.code,
+            );
+            const is_bucket_exists = await config_fs.is_bucket_exists(
+                bucket_defaults.name,
+            );
             expect(is_bucket_exists).toBe(false);
         });
 
         it('should fail - cli delete bucket when bucket path is not empty', async () => {
-            //here a dummy file is creating in bucket storage location(bucket_defaults.path), 
-            await create_json_file(bucket_defaults.path, 'test1.json', {test: 'data'});
-            const delete_bucket_options = { config_root, name: bucket_defaults.name};
-            const resp = await exec_manage_cli(TYPES.BUCKET, ACTIONS.DELETE, delete_bucket_options);
-            expect(JSON.parse(resp.stdout).error.code).toBe(ManageCLIError.BucketDeleteForbiddenHasObjects.code);
-            const is_bucket_exists = await config_fs.is_bucket_exists(bucket_defaults.name);
+            //here a dummy file is creating in bucket storage location(bucket_defaults.path),
+            await create_json_file(bucket_defaults.path, 'test1.json', {
+                test: 'data',
+            });
+            const delete_bucket_options = {
+                config_root,
+                name: bucket_defaults.name,
+            };
+            const resp = await exec_manage_cli(
+                TYPES.BUCKET,
+                ACTIONS.DELETE,
+                delete_bucket_options,
+            );
+            expect(JSON.parse(resp.stdout).error.code).toBe(
+                ManageCLIError.BucketDeleteForbiddenHasObjects.code,
+            );
+            const is_bucket_exists = await config_fs.is_bucket_exists(
+                bucket_defaults.name,
+            );
             expect(is_bucket_exists).toBe(true);
         });
 
-        it('cli delete bucket force flag with valid boolean string(\'true\')', async () => {
-            //here a dummy file is creating in bucket storage location(bucket_defaults.path) 
-            await create_json_file(bucket_defaults.path, 'test.json', {test: 'data'});
+        it("cli delete bucket force flag with valid boolean string('true')", async () => {
+            //here a dummy file is creating in bucket storage location(bucket_defaults.path)
+            await create_json_file(bucket_defaults.path, 'test.json', {
+                test: 'data',
+            });
             // force wth valid string value 'true'
-            const delete_bucket_options = { config_root, name: bucket_defaults.name, force: 'true'};
-            const resp = await exec_manage_cli(TYPES.BUCKET, ACTIONS.DELETE, delete_bucket_options);
-            expect(JSON.parse(resp.trim()).response.code).toBe(ManageCLIResponse.BucketDeleted.code);
-            const is_bucket_exists = await config_fs.is_bucket_exists(bucket_defaults.name);
+            const delete_bucket_options = {
+                config_root,
+                name: bucket_defaults.name,
+                force: 'true',
+            };
+            const resp = await exec_manage_cli(
+                TYPES.BUCKET,
+                ACTIONS.DELETE,
+                delete_bucket_options,
+            );
+            expect(JSON.parse(resp.trim()).response.code).toBe(
+                ManageCLIResponse.BucketDeleted.code,
+            );
+            const is_bucket_exists = await config_fs.is_bucket_exists(
+                bucket_defaults.name,
+            );
             expect(is_bucket_exists).toBe(false);
         });
 
-        it('should fail - cli delete bucket force flag with invalid boolean string(\'nottrue\')', async () => {
-            const delete_bucket_options = { config_root, name: bucket_defaults.name, force: 'nottrue'};
-            const resp = await exec_manage_cli(TYPES.BUCKET, ACTIONS.DELETE, delete_bucket_options);
-            expect(JSON.parse(resp.stdout).error.code).toBe(ManageCLIError.InvalidBooleanValue.code);
+        it("should fail - cli delete bucket force flag with invalid boolean string('nottrue')", async () => {
+            const delete_bucket_options = {
+                config_root,
+                name: bucket_defaults.name,
+                force: 'nottrue',
+            };
+            const resp = await exec_manage_cli(
+                TYPES.BUCKET,
+                ACTIONS.DELETE,
+                delete_bucket_options,
+            );
+            expect(JSON.parse(resp.stdout).error.code).toBe(
+                ManageCLIError.InvalidBooleanValue.code,
+            );
         });
 
         it('should fail - cli bucket delete - without identifier', async () => {
             const action = ACTIONS.DELETE;
             const bucket_options = { config_root };
-            const res = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            expect(JSON.parse(res.stdout).error.code).toBe(ManageCLIError.MissingBucketNameFlag.code);
+            const res = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
+            expect(JSON.parse(res.stdout).error.code).toBe(
+                ManageCLIError.MissingBucketNameFlag.code,
+            );
         });
 
         it('cli delete bucket when path was deleted first', async () => {
             await fs_utils.folder_delete(`${bucket_defaults.path}`);
-            const path_exists = await is_path_exists(DEFAULT_FS_CONFIG, bucket_defaults.path);
+            const path_exists = await is_path_exists(
+                DEFAULT_FS_CONFIG,
+                bucket_defaults.path,
+            );
             expect(path_exists).toBe(false);
-            const bucket_options = { config_root, name: 'bucket1'};
+            const bucket_options = { config_root, name: 'bucket1' };
             const action = ACTIONS.DELETE;
-            const res = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            expect(JSON.parse(res.trim()).response.code).toBe(ManageCLIResponse.BucketDeleted.code);
-            const is_bucket_exists = await config_fs.is_bucket_exists(bucket_defaults.name);
+            const res = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
+            expect(JSON.parse(res.trim()).response.code).toBe(
+                ManageCLIResponse.BucketDeleted.code,
+            );
+            const is_bucket_exists = await config_fs.is_bucket_exists(
+                bucket_defaults.name,
+            );
             expect(is_bucket_exists).toBe(false);
         });
     });
@@ -769,7 +1353,11 @@ describe('manage nsfs cli bucket flow', () => {
     describe('cli status bucket ', () => {
         const config_root = path.join(tmp_fs_path, 'config_root_manage_nsfs4');
         const root_path = path.join(tmp_fs_path, 'root_path_manage_nsfs4/');
-        const bucket_storage_path = path.join(tmp_fs_path, 'root_path_manage_nsfs4', 'bucket1');
+        const bucket_storage_path = path.join(
+            tmp_fs_path,
+            'root_path_manage_nsfs4',
+            'bucket1',
+        );
         set_nc_config_dir_in_config(config_root);
 
         const account_name = 'account_test';
@@ -797,7 +1385,11 @@ describe('manage nsfs cli bucket flow', () => {
             const account_options = { config_root, ...account_defaults };
             await fs_utils.create_fresh_path(account_path);
             await fs_utils.file_must_exist(account_path);
-            await set_path_permissions_and_owner(account_path, account_options, 0o700);
+            await set_path_permissions_and_owner(
+                account_path,
+                account_options,
+                0o700,
+            );
             await exec_manage_cli(TYPES.ACCOUNT, action, account_options);
 
             // bucket add
@@ -805,8 +1397,16 @@ describe('manage nsfs cli bucket flow', () => {
             const bucket_options = { config_root, ...bucket_defaults };
             await fs_utils.create_fresh_path(bucket_path);
             await fs_utils.file_must_exist(bucket_path);
-            await set_path_permissions_and_owner(bucket_path, account_options, 0o700);
-            const resp = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
+            await set_path_permissions_and_owner(
+                bucket_path,
+                account_options,
+                0o700,
+            );
+            const resp = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
             const bucket_resp = JSON.parse(resp);
             expect(bucket_resp.response.reply._id).not.toBeNull();
         });
@@ -819,16 +1419,25 @@ describe('manage nsfs cli bucket flow', () => {
         it('should fail - cli bucket status - without identifier', async () => {
             const bucket_options = { config_root }; // without name
             const action = ACTIONS.STATUS;
-            const res = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            expect(JSON.parse(res.stdout).error.code).toBe(ManageCLIError.MissingBucketNameFlag.code);
+            const res = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
+            expect(JSON.parse(res.stdout).error.code).toBe(
+                ManageCLIError.MissingBucketNameFlag.code,
+            );
         });
-
     });
 
     describe('cli list bucket', () => {
         const config_root = path.join(tmp_fs_path, 'config_root_manage_nsfs5');
         const root_path = path.join(tmp_fs_path, 'root_path_manage_nsfs5/');
-        const bucket_storage_path = path.join(tmp_fs_path, 'root_path_manage_nsfs5', 'bucket1');
+        const bucket_storage_path = path.join(
+            tmp_fs_path,
+            'root_path_manage_nsfs5',
+            'bucket1',
+        );
         set_nc_config_dir_in_config(config_root);
 
         const account_name = 'account_test';
@@ -856,7 +1465,11 @@ describe('manage nsfs cli bucket flow', () => {
             const account_options = { config_root, ...account_defaults };
             await fs_utils.create_fresh_path(account_path);
             await fs_utils.file_must_exist(account_path);
-            await set_path_permissions_and_owner(account_path, account_options, 0o700);
+            await set_path_permissions_and_owner(
+                account_path,
+                account_options,
+                0o700,
+            );
             await exec_manage_cli(TYPES.ACCOUNT, action, account_options);
 
             // bucket add
@@ -864,8 +1477,16 @@ describe('manage nsfs cli bucket flow', () => {
             const bucket_options = { config_root, ...bucket_defaults };
             await fs_utils.create_fresh_path(bucket_path);
             await fs_utils.file_must_exist(bucket_path);
-            await set_path_permissions_and_owner(bucket_path, account_options, 0o700);
-            const resp = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
+            await set_path_permissions_and_owner(
+                bucket_path,
+                account_options,
+                0o700,
+            );
+            const resp = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
             const bucket_resp = JSON.parse(resp);
             expect(bucket_resp.response.reply._id).not.toBeNull();
         });
@@ -878,21 +1499,29 @@ describe('manage nsfs cli bucket flow', () => {
         it('cli list filter by name (bucket2) - empty result', async () => {
             const bucket_options = { config_root, name: 'bucket2' };
             const action = ACTIONS.LIST;
-            const res = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            expect(JSON.parse(res).response.reply.map(item => item.name))
-                .toEqual(expect.arrayContaining([]));
+            const res = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
+            expect(
+                JSON.parse(res).response.reply.map(item => item.name),
+            ).toEqual(expect.arrayContaining([]));
         });
 
         it('cli list filter by name (bucket1)', async () => {
             const bucket_options = { config_root, name: 'bucket1' };
             const action = ACTIONS.LIST;
-            const res = await exec_manage_cli(TYPES.BUCKET, action, bucket_options);
-            expect(JSON.parse(res).response.reply.map(item => item.name))
-                .toEqual(expect.arrayContaining(['bucket1']));
+            const res = await exec_manage_cli(
+                TYPES.BUCKET,
+                action,
+                bucket_options,
+            );
+            expect(
+                JSON.parse(res).response.reply.map(item => item.name),
+            ).toEqual(expect.arrayContaining(['bucket1']));
         });
-
     });
-
 });
 
 /**
@@ -924,19 +1553,25 @@ async function exec_manage_cli(type, action, options) {
     return res;
 }
 
-
-/** 
+/**
  * create_json_bucket_options would create a JSON file with the options (key-value) inside file
  * @param {string} path_to_json_bucket_options_dir
  * @param {object} bucket_options
  */
-async function create_json_bucket_options(path_to_json_bucket_options_dir, bucket_options) {
+async function create_json_bucket_options(
+    path_to_json_bucket_options_dir,
+    bucket_options,
+) {
     const option_json_file_name = `${bucket_options.name}_options.json`;
-    const path_to_option_json_file_name = await create_json_file(path_to_json_bucket_options_dir, option_json_file_name, bucket_options);
+    const path_to_option_json_file_name = await create_json_file(
+        path_to_json_bucket_options_dir,
+        option_json_file_name,
+        bucket_options,
+    );
     return path_to_option_json_file_name;
 }
 
-/** 
+/**
  * create_json_file would create a JSON file with the data
  * @param {string} path_to_dir
  * @param {string} file_name

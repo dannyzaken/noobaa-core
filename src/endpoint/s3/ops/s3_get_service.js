@@ -15,10 +15,13 @@ async function list_buckets(req) {
             Buckets: reply.buckets.map(bucket => ({
                 Bucket: {
                     Name: bucket.name.unwrap(),
-                    CreationDate: bucket.creation_date ? s3_utils.format_s3_xml_date(bucket.creation_date) : date,
-                }
-            }))
-        }
+                    CreationDate:
+                        bucket.creation_date ?
+                            s3_utils.format_s3_xml_date(bucket.creation_date)
+                        :   date,
+                },
+            })),
+        },
     };
 }
 

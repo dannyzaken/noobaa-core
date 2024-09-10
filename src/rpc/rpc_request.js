@@ -17,7 +17,6 @@ const RPC_BUFFERS = Symbol('RPC_BUFFERS');
  *
  */
 class RpcRequest {
-
     static get RPC_BUFFERS() {
         return RPC_BUFFERS;
     }
@@ -44,9 +43,7 @@ class RpcRequest {
     }
 
     get base_info() {
-        return `srv ${
-            this.srv
-        } reqid ${
+        return `srv ${this.srv} reqid ${
             this.reqid || '<no-reqid-yet>'
         } connid ${
             this.connection ? this.connection.connid : '<no-connection-yet>'
@@ -55,13 +52,9 @@ class RpcRequest {
 
     get took_info() {
         if (!this.took_srv) return '';
-        return `took [${
-            this.took_srv.toFixed(1)
-        }+${
-            this.took_flight.toFixed(1)
-        }=${
-            this.took_total.toFixed(1)
-        }]`;
+        return `took [${this.took_srv.toFixed(1)}+${this.took_flight.toFixed(
+            1,
+        )}=${this.took_total.toFixed(1)}]`;
     }
 
     _new_request(api, method_api, params, auth_token) {
@@ -84,17 +77,17 @@ class RpcRequest {
             reqid: this.reqid,
             api: this.api.$id,
             method: this.method_api.name,
-            params: this.params && js_utils.omit_symbol(this.params, RPC_BUFFERS),
+            params:
+                this.params && js_utils.omit_symbol(this.params, RPC_BUFFERS),
             auth_token: this.auth_token || undefined,
-            buffers: rpc_buffers && _.map(rpc_buffers, (buf, name) => ({
-                name,
-                len: buf.length
-            }))
+            buffers:
+                rpc_buffers &&
+                _.map(rpc_buffers, (buf, name) => ({
+                    name,
+                    len: buf.length,
+                })),
         };
-        return new RpcMessage(
-            body,
-            rpc_buffers && Object.values(rpc_buffers)
-        );
+        return new RpcMessage(body, rpc_buffers && Object.values(rpc_buffers));
     }
 
     /**
@@ -112,18 +105,19 @@ class RpcRequest {
             // the message is not encoded by
             body.error = _.pick(this.error, 'message', 'rpc_code', 'rpc_data');
             return new RpcMessage(body);
-
         } else {
             const rpc_buffers = this.reply && this.reply[RPC_BUFFERS];
             body.reply = js_utils.omit_symbol(this.reply, RPC_BUFFERS);
-            body.buffers = rpc_buffers && _.map(rpc_buffers, (buf, name) => ({
-                name,
-                len: buf.length
-            }));
+            body.buffers =
+                rpc_buffers &&
+                _.map(rpc_buffers, (buf, name) => ({
+                    name,
+                    len: buf.length,
+                }));
 
             return new RpcMessage(
                 body,
-                rpc_buffers && Object.values(rpc_buffers)
+                rpc_buffers && Object.values(rpc_buffers),
             );
         }
     }
@@ -161,7 +155,10 @@ class RpcRequest {
             if (msg.body.buffers) {
                 const buffers = {};
                 _.forEach(msg.body.buffers, a => {
-                    buffers[a.name] = buffer_utils.extract_join(msg.buffers, a.len);
+                    buffers[a.name] = buffer_utils.extract_join(
+                        msg.buffers,
+                        a.len,
+                    );
                 });
                 this.reply[RPC_BUFFERS] = buffers;
             }

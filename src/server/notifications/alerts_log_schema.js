@@ -6,20 +6,13 @@ const SensitiveString = require('../../util/sensitive_string');
 module.exports = {
     $id: 'alerts_log_schema',
     type: 'object',
-    required: [
-        '_id',
-        'system',
-        'time',
-        'severity',
-        'alert',
-        'read'
-    ],
+    required: ['_id', 'system', 'time', 'severity', 'alert', 'read'],
     properties: {
         _id: {
-            objectid: true
+            objectid: true,
         },
         system: {
-            objectid: true
+            objectid: true,
         },
         time: {
             date: true,
@@ -33,6 +26,6 @@ module.exports = {
         },
         read: {
             type: 'boolean',
-        }
-    }
+        },
+    },
 };

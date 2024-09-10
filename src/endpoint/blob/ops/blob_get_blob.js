@@ -35,14 +35,14 @@ async function get_blob(req, res) {
         obj_id: object_md.obj_id,
         bucket: req.params.bucket,
         key: req.params.key,
-        content_type: object_md.content_type
+        content_type: object_md.content_type,
     };
 
     try {
         const range_header = req.headers['x-ms-range'] || req.headers.range;
         const ranges = http_utils.normalize_http_ranges(
             http_utils.parse_http_ranges(range_header),
-            obj_size
+            obj_size,
         );
         if (ranges) {
             // reply with HTTP 206 Partial Content
@@ -60,14 +60,23 @@ async function get_blob(req, res) {
             }
             res.statusCode = 206;
         } else {
-            if (get_range_md5) throw new BlobError(BlobError.InvalidHeaderValue);
-            if (object_md.md5_b64) res.setHeader('Content-MD5', object_md.md5_b64);
+            if (get_range_md5) {
+                throw new BlobError(BlobError.InvalidHeaderValue);
+            }
+            if (object_md.md5_b64) {
+                res.setHeader('Content-MD5', object_md.md5_b64);
+            }
             // stream the entire object to the response
             dbg.log1('reading object', req.path, obj_size);
         }
     } catch (err) {
         if (err.ranges_code === 400) {
-            dbg.log1('bad range request', req.headers.range, req.path, obj_size);
+            dbg.log1(
+                'bad range request',
+                req.headers.range,
+                req.path,
+                obj_size,
+            );
             throw new BlobError(BlobError.InvalidArgument);
         }
         if (err.ranges_code === 416) {
@@ -114,7 +123,6 @@ async function get_blob(req, res) {
         read_stream.pipe(res);
     }
 }
-
 
 module.exports = {
     handler: get_blob,

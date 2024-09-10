@@ -10,7 +10,7 @@ const signature_utils = require('../../util/signature_utils');
 const IAM_MAX_BODY_LEN = 4 * 1024 * 1024;
 
 const IAM_XML_ROOT_ATTRS = Object.freeze({
-    xmlns: 'https://iam.amazonaws.com/doc/2010-05-08/'
+    xmlns: 'https://iam.amazonaws.com/doc/2010-05-08/',
 });
 
 const RPC_ERRORS_TO_IAM = Object.freeze({
@@ -19,20 +19,20 @@ const RPC_ERRORS_TO_IAM = Object.freeze({
     INVALID_ACCESS_KEY_ID: IamError.InvalidClientTokenId,
     DEACTIVATED_ACCESS_KEY_ID: IamError.InvalidClientTokenIdInactiveAccessKey,
     NO_SUCH_ACCOUNT: IamError.AccessDeniedException,
-    NO_SUCH_ROLE: IamError.AccessDeniedException
+    NO_SUCH_ROLE: IamError.AccessDeniedException,
 });
 
 const ACTIONS = Object.freeze({
-    'CreateUser': 'create_user',
-    'GetUser': 'get_user',
-    'UpdateUser': 'update_user',
-    'DeleteUser': 'delete_user',
-    'ListUsers': 'list_users',
-    'CreateAccessKey': 'create_access_key',
-    'GetAccessKeyLastUsed': 'get_access_key_last_used',
-    'UpdateAccessKey': 'update_access_key',
-    'DeleteAccessKey': 'delete_access_key',
-    'ListAccessKeys': 'list_access_keys',
+    CreateUser: 'create_user',
+    GetUser: 'get_user',
+    UpdateUser: 'update_user',
+    DeleteUser: 'delete_user',
+    ListUsers: 'list_users',
+    CreateAccessKey: 'create_access_key',
+    GetAccessKeyLastUsed: 'get_access_key_last_used',
+    UpdateAccessKey: 'update_access_key',
+    DeleteAccessKey: 'delete_access_key',
+    ListAccessKeys: 'list_access_keys',
 });
 
 // notice: shows all methods as method post
@@ -60,7 +60,6 @@ async function iam_rest(req, res) {
 }
 
 async function handle_request(req, res) {
-
     http_utils.set_amz_headers(req, res);
 
     if (req.method === 'OPTIONS') {
@@ -80,7 +79,7 @@ async function handle_request(req, res) {
         error_missing_content_length: IamError.InternalFailure,
         error_invalid_token: IamError.InvalidClientTokenId,
         error_token_expired: IamError.ExpiredToken,
-        auth_token: () => signature_utils.make_auth_token_from_request(req)
+        auth_token: () => signature_utils.make_auth_token_from_request(req),
     };
     http_utils.check_headers(req, headers_options);
 
@@ -109,14 +108,23 @@ async function handle_request(req, res) {
     authenticate_request(req);
     await authorize_request(req);
 
-    dbg.log1('IAM REQUEST', req.method, req.originalUrl, 'op', op_name, 'request_id', req.request_id, req.headers);
+    dbg.log1(
+        'IAM REQUEST',
+        req.method,
+        req.originalUrl,
+        'op',
+        op_name,
+        'request_id',
+        req.request_id,
+        req.headers,
+    );
 
     const reply = await op.handler(req, res);
     add_response_metadata_if_not_exists(reply, req.request_id); // unique to IAM
     http_utils.send_reply(req, res, reply, {
         ...options,
         body: op.body,
-        reply: op.reply
+        reply: op.reply,
     });
 }
 
@@ -149,14 +157,20 @@ function parse_op_name(req, action) {
 
 function handle_error(req, res, err) {
     const iam_err =
-        ((err instanceof IamError) && err) ||
-        new IamError(RPC_ERRORS_TO_IAM[err.rpc_code] || IamError.InternalFailure);
+        (err instanceof IamError && err) ||
+        new IamError(
+            RPC_ERRORS_TO_IAM[err.rpc_code] || IamError.InternalFailure,
+        );
 
     const reply = iam_err.reply(req.request_id);
-    dbg.error('IAM ERROR', reply,
-        req.method, req.originalUrl,
+    dbg.error(
+        'IAM ERROR',
+        reply,
+        req.method,
+        req.originalUrl,
         JSON.stringify(req.headers),
-        err.stack || err);
+        err.stack || err,
+    );
     if (res.headersSent) {
         dbg.log0('Sending error xml in body, but too late for headers...');
     } else {
@@ -170,23 +184,30 @@ function handle_error(req, res, err) {
 // we only support request with specific type
 function verify_op_request_body_type(req) {
     const headers = req.headers['content-type'];
-    if (headers === undefined || !headers.includes(http_utils.CONTENT_TYPE_APP_FORM_URLENCODED)) {
-        dbg.error(`verify_op_request_body_type: should have header ${http_utils.CONTENT_TYPE_APP_FORM_URLENCODED} ` +
-            `in request, currently the headers are: ${headers}`);
+    if (
+        headers === undefined ||
+        !headers.includes(http_utils.CONTENT_TYPE_APP_FORM_URLENCODED)
+    ) {
+        dbg.error(
+            `verify_op_request_body_type: should have header ${http_utils.CONTENT_TYPE_APP_FORM_URLENCODED} ` +
+                `in request, currently the headers are: ${headers}`,
+        );
         // GAP - need to make sure which error we need to throw
         throw new IamError(IamError.InvalidParameterValue);
     }
 }
 
 // this function was added to protect the structure of IAM reply
-// and make sure that every op has ResponseMetadata inside it 
+// and make sure that every op has ResponseMetadata inside it
 // (in case developers add new ops in endpoint/iam/ops and accidentally did not add it)
 // structure of reply: { <op>Response { <op>Result (if exists), ResponseMetadata } }
 function add_response_metadata_if_not_exists(reply, request_id) {
     const reply_keys = Object.keys(reply);
     if (reply_keys.length !== 1) {
-        dbg.error('add_response_metadata_if_not_exists: reply structure does not meet standards' +
-        'should have only one object inside reply');
+        dbg.error(
+            'add_response_metadata_if_not_exists: reply structure does not meet standards' +
+                'should have only one object inside reply',
+        );
         throw new IamError(IamError.InternalFailure);
     }
     const reply_response_key = reply_keys[0];

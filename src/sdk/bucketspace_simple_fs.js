@@ -8,13 +8,11 @@ const SensitiveString = require('../util/sensitive_string');
 const { S3Error } = require('../endpoint/s3/s3_errors');
 const native_fs_utils = require('../util/native_fs_utils');
 
-
 /**
  * @implements {nb.BucketSpace}
  */
 class BucketSpaceSimpleFS {
-
-    constructor({fs_root}) {
+    constructor({ fs_root }) {
         this.fs_root = fs_root;
         this.fs_context = {
             uid: process.getuid(),
@@ -32,19 +30,25 @@ class BucketSpaceSimpleFS {
         return {};
     }
 
-
     ////////////
     // BUCKET //
     ////////////
     /**
-    * @param {nb.ObjectSDK} object_sdk
-    * @returns {Promise<object>}
-    */
+     * @param {nb.ObjectSDK} object_sdk
+     * @returns {Promise<object>}
+     */
     async list_buckets(object_sdk) {
         try {
-            const entries = await nb_native().fs.readdir(this.fs_context, this.fs_root);
-            const dirs_only = entries.filter(entree => native_fs_utils.isDirectory(entree));
-            const buckets = dirs_only.map(e => ({ name: new SensitiveString(e.name) }));
+            const entries = await nb_native().fs.readdir(
+                this.fs_context,
+                this.fs_root,
+            );
+            const dirs_only = entries.filter(entree =>
+                native_fs_utils.isDirectory(entree),
+            );
+            const buckets = dirs_only.map(e => ({
+                name: new SensitiveString(e.name),
+            }));
             return { buckets };
         } catch (err) {
             if (err.code === 'ENOENT') {
@@ -60,7 +64,10 @@ class BucketSpaceSimpleFS {
             const { name } = params;
             const bucket_path = path.join(this.fs_root, name);
             console.log(`BucketSpaceSimpleFS: read_bucket ${bucket_path}`);
-            const bucket_dir_stat = await nb_native().fs.stat(this.fs_context, bucket_path);
+            const bucket_dir_stat = await nb_native().fs.stat(
+                this.fs_context,
+                bucket_path,
+            );
             if (!native_fs_utils.isDirectory(bucket_dir_stat)) {
                 throw new S3Error(S3Error.NoSuchBucket);
             }
@@ -110,7 +117,11 @@ class BucketSpaceSimpleFS {
             console.log(`BucketSpaceSimpleFS: create_bucket ${bucket_path}`);
             // eslint-disable-next-line no-bitwise
             const unmask_mode = config.BASE_MODE_DIR & ~config.NSFS_UMASK;
-            await nb_native().fs.mkdir(this.fs_context, bucket_path, unmask_mode);
+            await nb_native().fs.mkdir(
+                this.fs_context,
+                bucket_path,
+                unmask_mode,
+            );
         } catch (err) {
             if (err.code === 'ENOENT') {
                 console.error('BucketSpaceSimpleFS: root dir not found', err);
@@ -121,10 +132,10 @@ class BucketSpaceSimpleFS {
     }
 
     /**
-    * @param {object} params
-    * @param {nb.ObjectSDK} object_sdk
-    * @returns {Promise<object>}
-    */
+     * @param {object} params
+     * @param {nb.ObjectSDK} object_sdk
+     * @returns {Promise<object>}
+     */
     async delete_bucket(params, object_sdk) {
         try {
             const { name } = params;
@@ -209,9 +220,9 @@ class BucketSpaceSimpleFS {
     }
 
     /**
-    * @param {object} params
-    * @returns {Promise<object>}
-    */
+     * @param {object} params
+     * @returns {Promise<object>}
+     */
     async get_bucket_website(params) {
         // TODO
     }
@@ -230,7 +241,7 @@ class BucketSpaceSimpleFS {
 
     async get_bucket_policy(params) {
         return {
-            policy: undefined
+            policy: undefined,
         };
     }
 
@@ -245,7 +256,6 @@ class BucketSpaceSimpleFS {
     async put_object_lock_configuration(params, object_sdk) {
         // TODO
     }
-
 
     /////////////////////
     // BUCKET LOGGING  //

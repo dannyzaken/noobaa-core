@@ -11,11 +11,11 @@ const BlockStoreBase = require('./block_store_base').BlockStoreBase;
 const { RpcError } = require('../../rpc');
 const Storage = require('../../util/google_storage_wrap');
 
-
 class BlockStoreGoogle extends BlockStoreBase {
-
     constructor(options) {
-        dbg.log0(`creating new BlockStoreGoogle with base_path ${options.cloud_path}`);
+        dbg.log0(
+            `creating new BlockStoreGoogle with base_path ${options.cloud_path}`,
+        );
         super(options);
         this.cloud_info = options.cloud_info;
         this.base_path = options.cloud_path;
@@ -24,15 +24,15 @@ class BlockStoreGoogle extends BlockStoreBase {
         this.usage_md_key = 'noobaa_usage';
         this._usage = {
             size: 0,
-            count: 0
+            count: 0,
         };
 
         this.cloud = new Storage({
             projectId: this.cloud_info.google.project_id,
             credentials: {
                 client_email: this.cloud_info.google.client_email,
-                private_key: this.cloud_info.google.private_key
-            }
+                private_key: this.cloud_info.google.private_key,
+            },
         });
         this.bucket = this.cloud.bucket(this.cloud_info.target_bucket);
         this.usage_file = this.bucket.file(this.usage_path);
@@ -41,10 +41,18 @@ class BlockStoreGoogle extends BlockStoreBase {
     async init() {
         try {
             const md_res = await this.usage_file.getMetadata();
-            const usage_data = _.get(md_res[0], `metadata.${this.usage_md_key}`);
+            const usage_data = _.get(
+                md_res[0],
+                `metadata.${this.usage_md_key}`,
+            );
             if (usage_data) {
                 this._usage = this._decode_block_md(usage_data);
-                dbg.log0('found usage data in', this.usage_path, 'usage_data = ', this._usage);
+                dbg.log0(
+                    'found usage data in',
+                    this.usage_path,
+                    'usage_data = ',
+                    this._usage,
+                );
             }
         } catch (err) {
             if (err.code === 404) {
@@ -61,7 +69,7 @@ class BlockStoreGoogle extends BlockStoreBase {
         return {
             total: size_utils.sum_bigint_json(free, usage.size),
             free: free,
-            used: usage.size
+            used: usage.size,
         };
     }
 
@@ -71,17 +79,19 @@ class BlockStoreGoogle extends BlockStoreBase {
 
     _count_usage() {
         // TODO: count usage from cloud
-        return this._usage || {
-            size: 0,
-            count: 0
-        };
+        return (
+            this._usage || {
+                size: 0,
+                count: 0,
+            }
+        );
     }
 
     _get_block_store_info() {
         const connection_params = {
             project_id: this.cloud_info.google.project_id,
             client_email: this.cloud_info.google.client_email,
-            private_key: this.cloud_info.google.private_key
+            private_key: this.cloud_info.google.private_key,
         };
         return {
             connection_params,
@@ -116,7 +126,7 @@ class BlockStoreGoogle extends BlockStoreBase {
         const store_block_md = this._decode_block_md(block_md_b64);
         return {
             block_md: store_block_md,
-            store_md5
+            store_md5,
         };
     }
 
@@ -126,7 +136,7 @@ class BlockStoreGoogle extends BlockStoreBase {
             const file = this.bucket.file(block_key);
             const [data, md_res] = await Promise.all([
                 buffer_utils.read_stream_join(file.createReadStream()),
-                file.getMetadata()
+                file.getMetadata(),
             ]);
             const block_md_b64 =
                 _.get(md_res[0], 'metadata.noobaablockmd') ||
@@ -136,7 +146,7 @@ class BlockStoreGoogle extends BlockStoreBase {
             }
             return {
                 data,
-                block_md: this._decode_block_md(block_md_b64)
+                block_md: this._decode_block_md(block_md_b64),
             };
         } catch (err) {
             // from: https://cloud.google.com/nodejs/docs/reference/storage/1.6.x/File#createReadStream
@@ -157,17 +167,16 @@ class BlockStoreGoogle extends BlockStoreBase {
         const write_stream = target_file.createWriteStream({
             metadata: {
                 metadata: {
-                    noobaablockmd: encoded_md
-                }
+                    noobaablockmd: encoded_md,
+                },
             },
-
         });
         dbg.log3('writing block id to cloud: ', key);
         try {
             await buffer_utils.write_to_stream(write_stream, data);
             const usage = {
                 size: data.length + encoded_md.length,
-                count: 1
+                count: 1,
             };
             if (!options || !options.ignore_usage) {
                 return this._update_usage(usage);
@@ -180,15 +189,26 @@ class BlockStoreGoogle extends BlockStoreBase {
     async _handle_error(err, block_id) {
         dbg.error('got error on read\\write operation', err);
         if (err.code === 403) {
-            throw new RpcError('AUTH_FAILED', `access denied to the google cloud bucket ${this.cloud_info.target_bucket}. got error ${err}`);
+            throw new RpcError(
+                'AUTH_FAILED',
+                `access denied to the google cloud bucket ${this.cloud_info.target_bucket}. got error ${err}`,
+            );
         } else if (err.code === 404) {
-            dbg.error('got 404 error when trying to read block. checking if bucket exists');
+            dbg.error(
+                'got 404 error when trying to read block. checking if bucket exists',
+            );
             try {
                 await this.bucket.getMetadata();
-                throw new RpcError('NOT_FOUND', `block ${this._block_key(block_id.id)} not found`);
+                throw new RpcError(
+                    'NOT_FOUND',
+                    `block ${this._block_key(block_id.id)} not found`,
+                );
             } catch (bucket_err) {
                 if (bucket_err.code === 404) {
-                    throw new RpcError('STORAGE_NOT_EXIST', `google cloud bucket ${this.cloud_info.target_bucket} not found. got error ${err}`);
+                    throw new RpcError(
+                        'STORAGE_NOT_EXIST',
+                        `google cloud bucket ${this.cloud_info.target_bucket} not found. got error ${err}`,
+                    );
                 }
             }
         }
@@ -200,7 +220,7 @@ class BlockStoreGoogle extends BlockStoreBase {
         metadata[this.usage_md_key] = this._encode_block_md(this._usage);
         await this.bucket.upload('/dev/null', {
             destination: this.usage_path,
-            metadata: { metadata }
+            metadata: { metadata },
         });
     }
 
@@ -212,7 +232,7 @@ class BlockStoreGoogle extends BlockStoreBase {
             // force=true to avoid breaking on the first error
             await this.bucket.deleteFiles({
                 prefix: this.base_path,
-                force: true
+                force: true,
             });
         } catch (err) {
             dbg.error('got error on cleanup_target_path', this.base_path, err);
@@ -220,12 +240,11 @@ class BlockStoreGoogle extends BlockStoreBase {
         dbg.log0(`completed cleanup of objects with perfix ${this.base_path}`);
     }
 
-
     async _delete_blocks(block_ids) {
         // Todo: Assuming that all requested blocks were deleted, which a bit naive
         const deleted_storage = {
             size: 0,
-            count: 0
+            count: 0,
         };
         const failed_to_delete_block_ids = [];
         // limit concurrency to 10
@@ -235,8 +254,9 @@ class BlockStoreGoogle extends BlockStoreBase {
             try {
                 const md_res = await file.getMetadata();
                 await file.delete();
-                const size = Number(md_res[0].size) +
-                    _.get(md_res[0], 'metadata.noobaablockmd.length', 0) ||
+                const size =
+                    Number(md_res[0].size) +
+                        _.get(md_res[0], 'metadata.noobaablockmd.length', 0) ||
                     _.get(md_res[0], 'metadata.noobaa_block_md.length', 0);
                 deleted_storage.size -= size;
                 deleted_storage.count -= 1;
@@ -249,26 +269,39 @@ class BlockStoreGoogle extends BlockStoreBase {
         this._update_usage(deleted_storage);
         return {
             failed_block_ids: failed_to_delete_block_ids,
-            succeeded_block_ids: _.difference(block_ids, failed_to_delete_block_ids)
+            succeeded_block_ids: _.difference(
+                block_ids,
+                failed_to_delete_block_ids,
+            ),
         };
     }
 
     async test_store_validity() {
-        const block_key = this._block_key(`test-delete-non-existing-key-${Date.now()}`);
+        const block_key = this._block_key(
+            `test-delete-non-existing-key-${Date.now()}`,
+        );
         try {
             const file = this.bucket.file(block_key);
             await file.delete();
         } catch (err) {
             if (err.code !== 404) {
-                dbg.error('in _test_cloud_service - delete failed:', err, _.omit(this.cloud_info, 'access_keys'));
+                dbg.error(
+                    'in _test_cloud_service - delete failed:',
+                    err,
+                    _.omit(this.cloud_info, 'access_keys'),
+                );
                 if (err.code === 403) {
-                    throw new RpcError('AUTH_FAILED', `access denied to the s3 bucket ${this.cloud_info.target_bucket}. got error ${err}`);
+                    throw new RpcError(
+                        'AUTH_FAILED',
+                        `access denied to the s3 bucket ${this.cloud_info.target_bucket}. got error ${err}`,
+                    );
                 }
-                dbg.warn(`unexpected error (code=${err.code}) from file.delete during test. ignoring..`);
+                dbg.warn(
+                    `unexpected error (code=${err.code}) from file.delete during test. ignoring..`,
+                );
             }
         }
     }
-
 }
 
 // EXPORTS

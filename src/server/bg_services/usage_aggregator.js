@@ -5,7 +5,9 @@ const _ = require('lodash');
 const moment = require('moment');
 
 const dbg = require('../../util/debug_module')(__filename);
-const { EndpointStatsStore } = require('../analytic_services/endpoint_stats_store');
+const {
+    EndpointStatsStore,
+} = require('../analytic_services/endpoint_stats_store');
 const system_store = require('../system_services/system_store').get_instance();
 const size_utils = require('../../util/size_utils');
 
@@ -19,13 +21,15 @@ const ZERO_STATS = {
 async function get_bandwidth_report(params) {
     const { time_range } = params;
     if (time_range !== 'day' && time_range !== 'hour') {
-        throw new Error(`wrong report time_range. should be day or hour. got ${time_range}`);
+        throw new Error(
+            `wrong report time_range. should be day or hour. got ${time_range}`,
+        );
     }
 
     const reports = await EndpointStatsStore.instance.get_bandwidth_reports({
         since: moment(params.since).startOf(time_range).valueOf(),
         till: moment(params.till).endOf(time_range).valueOf(),
-        buckets: params.bucket
+        buckets: params.bucket,
     });
 
     const by_bucket_and_date = reports.reduce((mapping, report) => {
@@ -40,7 +44,7 @@ async function get_bandwidth_report(params) {
                 date,
                 bucket: bucket.name,
                 timestamp: report.start_time,
-                ...ZERO_STATS
+                ...ZERO_STATS,
             };
             mapping.set(key, record);
         }
@@ -50,10 +54,7 @@ async function get_bandwidth_report(params) {
         return mapping;
     }, new Map());
 
-    return _.sortBy(
-        [...by_bucket_and_date.values()],
-        'date'
-    );
+    return _.sortBy([...by_bucket_and_date.values()], 'date');
 }
 
 async function get_bandwith_over_time(params) {
@@ -65,13 +66,13 @@ async function get_bandwith_over_time(params) {
     const reports = await EndpointStatsStore.instance.get_bandwidth_reports({
         ..._.pick(params, ['buckets', 'accounts', 'endpoint_groups']),
         since,
-        till
+        till,
     });
 
     // Build time slots array to return
     const length = (till - since) / step;
     const time_slots = Array.from({ length }).map((unused, i) => {
-        const start_time = since + (i * step);
+        const start_time = since + i * step;
         const end_time = start_time + step - 1;
         return { ...ZERO_STATS, start_time, end_time };
     });
@@ -85,7 +86,8 @@ async function get_bandwith_over_time(params) {
 }
 
 async function get_accounts_bandwidth_usage(query) {
-    const reports = await EndpointStatsStore.instance.get_bandwidth_reports(query);
+    const reports =
+        await EndpointStatsStore.instance.get_bandwidth_reports(query);
     const by_account = _.groupBy(reports, report => report.account);
     return Object.entries(by_account)
         .map(pair => {
@@ -96,7 +98,8 @@ async function get_accounts_bandwidth_usage(query) {
             }
 
             return reportList.reduce(
-                (acc, report) => _accumulate_bandwidth(acc, report), { account: account.email, ...ZERO_STATS }
+                (acc, report) => _accumulate_bandwidth(acc, report),
+                { account: account.email, ...ZERO_STATS },
             );
         })
         .filter(Boolean);
@@ -116,9 +119,15 @@ async function background_worker() {
 
 function _accumulate_bandwidth(acc, update) {
     acc.read_count += update.read_count || 0;
-    acc.read_bytes = size_utils.sum_bigint_json(acc.read_bytes, update.read_bytes || 0);
+    acc.read_bytes = size_utils.sum_bigint_json(
+        acc.read_bytes,
+        update.read_bytes || 0,
+    );
     acc.write_count += update.write_count || 0;
-    acc.write_bytes = size_utils.sum_bigint_json(acc.write_bytes, update.write_bytes || 0);
+    acc.write_bytes = size_utils.sum_bigint_json(
+        acc.write_bytes,
+        update.write_bytes || 0,
+    );
     return acc;
 }
 

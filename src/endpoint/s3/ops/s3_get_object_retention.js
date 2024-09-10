@@ -15,7 +15,7 @@ async function get_object_retention(req) {
     const object_retention = await req.object_sdk.get_object_retention({
         bucket: req.params.bucket,
         key: req.params.key,
-        version_id: s3_utils.parse_version_id(req.query.versionId)
+        version_id: s3_utils.parse_version_id(req.query.versionId),
     });
 
     const parsed = s3_utils.parse_to_camel_case(object_retention);

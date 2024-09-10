@@ -11,12 +11,16 @@ const _ = require('lodash');
 const mocha = require('mocha');
 const assert = require('assert');
 const P = require('../../util/promise');
-const AgentBlocksVerifier = require('../../server/bg_services/agent_blocks_verifier').AgentBlocksVerifier;
+const AgentBlocksVerifier =
+    require('../../server/bg_services/agent_blocks_verifier').AgentBlocksVerifier;
 const db_client = require('../../util/db_client');
 const schema_utils = require('../../util/schema_utils');
 const mongodb = require('mongodb');
 const config = require('../../../config');
-const { ChunkDB, BlockDB } = require('../../server/object_services/map_db_types');
+const {
+    ChunkDB,
+    BlockDB,
+} = require('../../server/object_services/map_db_types');
 
 class VerifierMock extends AgentBlocksVerifier {
     /**
@@ -27,7 +31,13 @@ class VerifierMock extends AgentBlocksVerifier {
      * @param {nb.Pool[]} pools
      * @param {string} test_suffix
      */
-    constructor(blocks = [], nodes = [], chunks = [], pools = [], test_suffix = '') {
+    constructor(
+        blocks = [],
+        nodes = [],
+        chunks = [],
+        pools = [],
+        test_suffix = '',
+    ) {
         super(`VerifierMock-${test_suffix}`);
         console.log('VerifierMock INIT', test_suffix, blocks, nodes, chunks);
         this.blocks = blocks;
@@ -46,12 +56,24 @@ class VerifierMock extends AgentBlocksVerifier {
      * @returns {Promise<nb.BlockSchemaDB[]>}
      */
     async iterate_all_blocks(marker, limit, deleted_only) {
-        assert(marker === undefined || marker === null || this.is_valid_md_id(marker),
-            'Marker not null or valid ObjectId');
-        assert(limit === config.AGENT_BLOCKS_VERIFIER_BATCH_SIZE, 'Wrong verifier config limit');
-        assert(deleted_only === false, 'Verifier should check only non deleted and non reclaimed blocks');
+        assert(
+            marker === undefined ||
+                marker === null ||
+                this.is_valid_md_id(marker),
+            'Marker not null or valid ObjectId',
+        );
+        assert(
+            limit === config.AGENT_BLOCKS_VERIFIER_BATCH_SIZE,
+            'Wrong verifier config limit',
+        );
+        assert(
+            deleted_only === false,
+            'Verifier should check only non deleted and non reclaimed blocks',
+        );
         // TODO: Pay attention to marker and limit
-        return this.blocks.filter(block => (deleted_only ? block.deleted : !block.deleted));
+        return this.blocks.filter(block =>
+            deleted_only ? block.deleted : !block.deleted,
+        );
     }
 
     is_valid_md_id(id_str) {
@@ -69,7 +91,11 @@ class VerifierMock extends AgentBlocksVerifier {
         const docs_list = docs && !_.isArray(docs) ? [docs] : docs;
         const node_ids = db_client.instance().uniq_ids(docs_list, doc_path);
         const nodes = this.nodes.filter(node =>
-            _.includes(node_ids.map(node_id => String(node_id)), String(node._id)));
+            _.includes(
+                node_ids.map(node_id => String(node_id)),
+                String(node._id),
+            ),
+        );
         const chunks_idmap = _.keyBy(this.chunks, '_id');
         const nodes_idmap = _.keyBy(nodes, '_id');
         const pools_name = _.keyBy(this.pools, 'name');
@@ -85,8 +111,14 @@ class VerifierMock extends AgentBlocksVerifier {
                 db_block.set_node(node, pools_name[node.pool]);
                 db_block.set_digest_type('sha1');
             } else {
-                console.warn('populate_nodes: missing node for id',
-                    id, 'DOC', block, 'IDMAP', _.keys(nodes_idmap));
+                console.warn(
+                    'populate_nodes: missing node for id',
+                    id,
+                    'DOC',
+                    block,
+                    'IDMAP',
+                    _.keys(nodes_idmap),
+                );
             }
             return db_block;
         });
@@ -99,15 +131,24 @@ class VerifierMock extends AgentBlocksVerifier {
     }
 
     verify_blocks(rpc_params, target_params) {
-        assert(target_params &&
-            _.difference(Object.keys(target_params), ['address', 'timeout']).length === 0,
-            'Verifier should only send to address with timeout');
-        assert(rpc_params &&
-            _.difference(Object.keys(rpc_params), ['verify_blocks']).length === 0,
-            'Verifier should only have verify_blocks in parameters');
+        assert(
+            target_params &&
+                _.difference(Object.keys(target_params), ['address', 'timeout'])
+                    .length === 0,
+            'Verifier should only send to address with timeout',
+        );
+        assert(
+            rpc_params &&
+                _.difference(Object.keys(rpc_params), ['verify_blocks'])
+                    .length === 0,
+            'Verifier should only have verify_blocks in parameters',
+        );
 
         const block_ids = rpc_params.verify_blocks.map(block => {
-            assert(this.is_valid_md_id(block.id), 'Block id not valid ObjectId');
+            assert(
+                this.is_valid_md_id(block.id),
+                'Block id not valid ObjectId',
+            );
             assert(block.address, 'Block id without node address');
             assert(block.digest_type, 'Block without digest_type');
             assert(block.digest_b64, 'Block without digest_b64');
@@ -117,32 +158,44 @@ class VerifierMock extends AgentBlocksVerifier {
         console.log('verify_blocks', block_ids, 'node', target_params.address);
         return P.resolve();
     }
-
 }
 
-
-mocha.describe('mocked agent_blocks_verifier', function() {
+mocha.describe('mocked agent_blocks_verifier', function () {
     const tier_id = new mongodb.ObjectId();
     const bucket_id = new mongodb.ObjectId();
     const system_id = new mongodb.ObjectId();
 
-    mocha.it('should verify blocks on nodes', function() {
+    mocha.it('should verify blocks on nodes', function () {
         const self = this; // eslint-disable-line no-invalid-this
         const nodes = [make_node('bla2', false)];
-        const chunk_coder_configs = [{
-            _id: new mongodb.ObjectId(),
-            chunk_coder_config: {
-                frag_digest_type: 'sloth_type'
-            }
-        }];
-        const chunks = [make_schema_chunk(chunk_coder_configs[0]._id, [make_schema_frag()])];
+        const chunk_coder_configs = [
+            {
+                _id: new mongodb.ObjectId(),
+                chunk_coder_config: {
+                    frag_digest_type: 'sloth_type',
+                },
+            },
+        ];
+        const chunks = [
+            make_schema_chunk(chunk_coder_configs[0]._id, [make_schema_frag()]),
+        ];
         const pools = [make_schema_pool('pool1')];
-        const blocks = [make_schema_block(chunks[0].frags[0]._id, chunks[0]._id, nodes[0]._id, pools[0]._id)];
+        const blocks = [
+            make_schema_block(
+                chunks[0].frags[0]._id,
+                chunks[0]._id,
+                nodes[0]._id,
+                pools[0]._id,
+            ),
+        ];
         const verifier_mock = new VerifierMock(blocks, nodes, chunks, pools);
         return P.resolve()
             .then(() => verifier_mock.run_agent_blocks_verifier())
             .then(() => {
-                assert(verifier_mock.verified_blocks.length === 1, self.test.title);
+                assert(
+                    verifier_mock.verified_blocks.length === 1,
+                    self.test.title,
+                );
             })
             .catch(err => {
                 console.error(err, err.stack);
@@ -150,24 +203,38 @@ mocha.describe('mocked agent_blocks_verifier', function() {
             });
     });
 
-    mocha.it('should not verify blocks on offline nodes', function() {
+    mocha.it('should not verify blocks on offline nodes', function () {
         const self = this; // eslint-disable-line no-invalid-this
         const nodes = [make_node('bla1', true)];
-        const chunk_coder_configs = [{
-            _id: new mongodb.ObjectId(),
-            chunk_coder_config: {
-                frag_digest_type: 'sloth_type'
-            }
-        }];
-        const chunks = [make_schema_chunk(chunk_coder_configs[0]._id, [make_schema_frag()])];
+        const chunk_coder_configs = [
+            {
+                _id: new mongodb.ObjectId(),
+                chunk_coder_config: {
+                    frag_digest_type: 'sloth_type',
+                },
+            },
+        ];
+        const chunks = [
+            make_schema_chunk(chunk_coder_configs[0]._id, [make_schema_frag()]),
+        ];
         const pools = [make_schema_pool('pool1')];
-        const blocks = [make_schema_block(chunks[0].frags[0]._id, chunks[0]._id, nodes[0]._id, pools[0]._id)];
+        const blocks = [
+            make_schema_block(
+                chunks[0].frags[0]._id,
+                chunks[0]._id,
+                nodes[0]._id,
+                pools[0]._id,
+            ),
+        ];
 
         const verifier_mock = new VerifierMock(blocks, nodes, chunks, pools);
         return P.resolve()
             .then(() => verifier_mock.run_agent_blocks_verifier())
             .then(() => {
-                assert(verifier_mock.verified_blocks.length === 0, self.test.title);
+                assert(
+                    verifier_mock.verified_blocks.length === 0,
+                    self.test.title,
+                );
             })
             .catch(err => {
                 console.error(err, err.stack);
@@ -175,25 +242,39 @@ mocha.describe('mocked agent_blocks_verifier', function() {
             });
     });
 
-    mocha.it('should not verify blocks on non existing nodes', function() {
+    mocha.it('should not verify blocks on non existing nodes', function () {
         const self = this; // eslint-disable-line no-invalid-this
         // const nodes = [make_node('node1')];
-        const chunk_coder_configs = [{
-            _id: new mongodb.ObjectId(),
-            system: system_id,
-            chunk_coder_config: {
-                frag_digest_type: 'sloth_type'
-            }
-        }];
-        const chunks = [make_schema_chunk(chunk_coder_configs[0]._id, [make_schema_frag()])];
+        const chunk_coder_configs = [
+            {
+                _id: new mongodb.ObjectId(),
+                system: system_id,
+                chunk_coder_config: {
+                    frag_digest_type: 'sloth_type',
+                },
+            },
+        ];
+        const chunks = [
+            make_schema_chunk(chunk_coder_configs[0]._id, [make_schema_frag()]),
+        ];
         const pools = [make_schema_pool('pool1')];
-        const blocks = [make_schema_block(chunks[0].frags[0]._id, chunks[0]._id, new mongodb.ObjectId(), pools[0]._id)];
+        const blocks = [
+            make_schema_block(
+                chunks[0].frags[0]._id,
+                chunks[0]._id,
+                new mongodb.ObjectId(),
+                pools[0]._id,
+            ),
+        ];
 
         const verifier_mock = new VerifierMock(blocks, [], chunks, pools);
         return P.resolve()
             .then(() => verifier_mock.run_agent_blocks_verifier())
             .then(() => {
-                assert(verifier_mock.verified_blocks.length === 0, self.test.title);
+                assert(
+                    verifier_mock.verified_blocks.length === 0,
+                    self.test.title,
+                );
             })
             .catch(err => {
                 console.error(err, err.stack);
@@ -216,7 +297,7 @@ mocha.describe('mocked agent_blocks_verifier', function() {
             system: system_id,
             bucket: bucket_id,
             pool: pool_id,
-            size: 20
+            size: 20,
         };
     }
 
@@ -227,7 +308,7 @@ mocha.describe('mocked agent_blocks_verifier', function() {
     function make_schema_frag() {
         return {
             _id: new mongodb.ObjectId(),
-            digest: Buffer.from('bla')
+            digest: Buffer.from('bla'),
         };
     }
 
@@ -251,7 +332,7 @@ mocha.describe('mocked agent_blocks_verifier', function() {
             cipher_key: undefined,
             cipher_iv: undefined,
             cipher_auth_tag: undefined,
-            frags
+            frags,
         };
     }
 
@@ -297,8 +378,7 @@ mocha.describe('mocked agent_blocks_verifier', function() {
             name: name,
             system: undefined,
             resource_type: 'HOSTS',
-            pool_node_type: 'BLOCK_STORE_S3'
+            pool_node_type: 'BLOCK_STORE_S3',
         };
     }
-
 });

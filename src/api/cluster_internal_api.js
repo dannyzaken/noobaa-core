@@ -9,7 +9,6 @@
  *
  */
 module.exports = {
-
     $id: 'cluster_internal_api',
 
     methods: {
@@ -18,7 +17,16 @@ module.exports = {
             method: 'POST',
             params: {
                 type: 'object',
-                required: ['topology', 'master_ip', 'cluster_id', 'secret', 'role', 'shard', 'jwt_secret', 'ssl_certs'],
+                required: [
+                    'topology',
+                    'master_ip',
+                    'cluster_id',
+                    'secret',
+                    'role',
+                    'shard',
+                    'jwt_secret',
+                    'ssl_certs',
+                ],
                 properties: {
                     ip: {
                         type: 'string',
@@ -27,51 +35,51 @@ module.exports = {
                         type: 'string',
                     },
                     cluster_id: {
-                        type: 'string'
+                        type: 'string',
                     },
                     secret: {
-                        type: 'string'
+                        type: 'string',
                     },
                     jwt_secret: {
-                        type: 'string'
+                        type: 'string',
                     },
                     role: {
-                        $ref: 'cluster_server_api#/definitions/cluster_member_role'
+                        $ref: 'cluster_server_api#/definitions/cluster_member_role',
                     },
                     shard: {
                         type: 'string',
                     },
                     location: {
-                        type: 'string'
+                        type: 'string',
                     },
                     topology: {
                         type: 'object',
                         additionalProperties: true,
-                        properties: {}
+                        properties: {},
                     },
                     new_hostname: {
-                        type: 'string'
+                        type: 'string',
                     },
                     ssl_certs: {
                         type: 'object',
                         required: ['root_ca', 'server_cert', 'client_cert'],
                         properties: {
                             root_ca: {
-                                type: 'string'
+                                type: 'string',
                             },
                             server_cert: {
-                                type: 'string'
+                                type: 'string',
                             },
                             client_cert: {
-                                type: 'string'
+                                type: 'string',
                             },
-                        }
-                    }
-                }
+                        },
+                    },
+                },
             },
             auth: {
-                system: false
-            }
+                system: false,
+            },
         },
 
         verify_join_conditions: {
@@ -82,28 +90,28 @@ module.exports = {
                 required: ['secret'],
                 properties: {
                     secret: {
-                        type: 'string'
-                    }
-                }
+                        type: 'string',
+                    },
+                },
             },
             reply: {
                 type: 'object',
                 required: ['caller_address', 'hostname', 'result'],
                 properties: {
                     caller_address: {
-                        type: 'string'
+                        type: 'string',
                     },
                     hostname: {
-                        type: 'string'
+                        type: 'string',
                     },
                     result: {
-                        $ref: 'cluster_server_api#/definitions/verify_new_member_result'
-                    }
-                }
+                        $ref: 'cluster_server_api#/definitions/verify_new_member_result',
+                    },
+                },
             },
             auth: {
-                system: false
-            }
+                system: false,
+            },
         },
 
         get_secret: {
@@ -114,13 +122,13 @@ module.exports = {
                 required: ['secret'],
                 properties: {
                     secret: {
-                        type: 'string'
+                        type: 'string',
                     },
-                }
+                },
             },
             auth: {
-                system: false
-            }
+                system: false,
+            },
         },
 
         get_version: {
@@ -131,13 +139,13 @@ module.exports = {
                 required: ['version'],
                 properties: {
                     version: {
-                        type: 'string'
+                        type: 'string',
                     },
-                }
+                },
             },
             auth: {
-                system: false
-            }
+                system: false,
+            },
         },
 
         news_config_servers: {
@@ -153,19 +161,19 @@ module.exports = {
                             type: 'object',
                             properties: {
                                 address: {
-                                    type: 'string'
+                                    type: 'string',
                                 },
-                            }
+                            },
                         },
                     },
                     cluster_id: {
-                        type: 'string'
+                        type: 'string',
                     },
                 },
             },
             auth: {
-                system: false
-            }
+                system: false,
+            },
         },
 
         redirect_to_cluster_master: {
@@ -175,8 +183,8 @@ module.exports = {
                 type: 'string',
             },
             auth: {
-                system: false
-            }
+                system: false,
+            },
         },
 
         news_updated_topology: {
@@ -185,11 +193,11 @@ module.exports = {
             params: {
                 type: 'object',
                 additionalProperties: true,
-                properties: {}
+                properties: {},
             },
             auth: {
-                system: false
-            }
+                system: false,
+            },
         },
 
         news_replicaset_servers: {
@@ -198,11 +206,11 @@ module.exports = {
             params: {
                 type: 'object',
                 additionalProperties: true,
-                properties: {}
+                properties: {},
             },
             auth: {
-                system: false
-            }
+                system: false,
+            },
         },
 
         apply_set_debug_level: {
@@ -216,12 +224,12 @@ module.exports = {
                     },
                     level: {
                         type: 'integer',
-                    }
+                    },
                 },
             },
             auth: {
                 system: 'admin',
-            }
+            },
         },
 
         collect_server_diagnostics: {
@@ -234,7 +242,7 @@ module.exports = {
             },
             auth: {
                 system: 'admin',
-            }
+            },
         },
 
         apply_read_server_time: {
@@ -245,7 +253,7 @@ module.exports = {
                 properties: {
                     target_secret: {
                         type: 'string',
-                    }
+                    },
                 },
             },
             reply: {
@@ -253,7 +261,7 @@ module.exports = {
             },
             auth: {
                 system: false,
-            }
+            },
         },
 
         set_hostname_internal: {
@@ -263,15 +271,14 @@ module.exports = {
                 required: ['hostname'],
                 properties: {
                     hostname: {
-                        type: 'string'
-                    }
-                }
+                        type: 'string',
+                    },
+                },
             },
             auth: {
                 system: false,
-            }
+            },
         },
-
     },
 
     definitions: {
@@ -280,13 +287,13 @@ module.exports = {
             required: ['timezone'],
             properties: {
                 target_secret: {
-                    type: 'string'
+                    type: 'string',
                 },
                 timezone: {
-                    type: 'string'
+                    type: 'string',
                 },
                 epoch: {
-                    type: 'number'
+                    type: 'number',
                 },
             },
         },

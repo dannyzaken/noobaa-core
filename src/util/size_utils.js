@@ -45,7 +45,9 @@ BigInteger.PETABYTE = new BigInteger(PETABYTE);
 // however BigInteger creates 3 prototypes internally (Integer, SmallInteger, BigInteger)
 // and writes the 'toJSON' property explicitly for all of them, we have to overwrite all 3.
 const IntegerPrototype = BigInteger.prototype;
-const BigIntegerPrototype = Object.getPrototypeOf(BigInteger.PETABYTE.multiply(BigInteger.PETABYTE));
+const BigIntegerPrototype = Object.getPrototypeOf(
+    BigInteger.PETABYTE.multiply(BigInteger.PETABYTE),
+);
 const SmallIntegerPrototype = Object.getPrototypeOf(BigInteger.zero);
 IntegerPrototype.toJSON = bigint_to_json_method;
 BigIntegerPrototype.toJSON = bigint_to_json_method;
@@ -65,10 +67,12 @@ function bigint_to_json(bi) {
     const dm = bi.divmod(BigInteger.PETABYTE);
     const peta = dm.quotient.toJSNumber();
     const n = dm.remainder.toJSNumber();
-    return peta ? {
-        n: n,
-        peta: peta,
-    } : n;
+    return peta ?
+            {
+                n: n,
+                peta: peta,
+            }
+        :   n;
 }
 
 /**
@@ -77,7 +81,7 @@ function bigint_to_json(bi) {
 function json_to_bigint(x) {
     let n = 0;
     let peta = 0;
-    if (x && typeof(x) === 'object' && 'n' in x && 'peta' in x) {
+    if (x && typeof x === 'object' && 'n' in x && 'peta' in x) {
         n = Math.floor(x.n) || 0;
         peta = Math.floor(x.peta) || 0;
     } else {
@@ -98,7 +102,6 @@ function to_bigint_storage(storage) {
     return _.mapValues(storage, x => bigint_to_json(json_to_bigint(x)));
 }
 
-
 function to_storage_bigint(storage) {
     return _.mapValues(storage, x => json_to_bigint(x));
 }
@@ -111,7 +114,7 @@ function to_storage_bigint(storage) {
 function bigint_to_bytes(bigint) {
     const peta = _.isUndefined(bigint.peta) ? 0 : bigint.peta;
     const n = _.isUndefined(bigint.n) ? bigint : bigint.n;
-    return (peta * PETABYTE) + n;
+    return peta * PETABYTE + n;
 }
 
 /**
@@ -144,9 +147,11 @@ function size_unit_to_bigint(size, unit) {
      * int = 1; decimalLength = 4
      * BigInt(12536) * GIGABYTE / 10^4 = 1346042750n Bytes
      */
-    const splittedSize = size.toString().split(".");
-    const int = BigInt(splittedSize[0] + (splittedSize[1] ? splittedSize[1] : ""));
-    const decimalLength = (splittedSize[1] ? splittedSize[1].length : 0);
+    const splittedSize = size.toString().split('.');
+    const int = BigInt(
+        splittedSize[0] + (splittedSize[1] ? splittedSize[1] : ''),
+    );
+    const decimalLength = splittedSize[1] ? splittedSize[1].length : 0;
     const multiplier = 10n ** BigInt(decimalLength);
     return (int * big) / multiplier;
 }
@@ -155,7 +160,8 @@ function size_unit_to_bigint(size, unit) {
  * mult_factor & div_factor must be positive integers.
  */
 function reduce_storage(reducer, storage_items, mult_factor, div_factor) {
-    const accumulator = _.reduce(storage_items,
+    const accumulator = _.reduce(
+        storage_items,
         (acc, item) => {
             _.each(SOTRAGE_OBJ_KEYS, key => {
                 if (item && !_.isUndefined(item[key])) {
@@ -164,9 +170,11 @@ function reduce_storage(reducer, storage_items, mult_factor, div_factor) {
             });
             return acc;
         },
-        make_object(SOTRAGE_OBJ_KEYS, key => []));
+        make_object(SOTRAGE_OBJ_KEYS, key => []),
+    );
 
-    return _.reduce(accumulator,
+    return _.reduce(
+        accumulator,
         (storage, values, key) => {
             if (!_.isEmpty(values)) {
                 // reduce the values using the provided reducer (sum/min)
@@ -179,7 +187,9 @@ function reduce_storage(reducer, storage_items, mult_factor, div_factor) {
                 storage[key] = bigint_to_json(factored_value);
             }
             return storage;
-        }, {});
+        },
+        {},
+    );
 }
 
 // returns the sum of 2 bigints in json format
@@ -189,14 +199,13 @@ function sum_bigint_json(a, b) {
     return bigint_a.plus(bigint_b).toJSON();
 }
 
-
 function size_min(values) {
     let n_min = PETABYTE;
     let peta_min = 100000;
-    values.forEach(function(v) {
+    values.forEach(function (v) {
         let n = 0;
         let peta = 0;
-        if (typeof(v) === 'number') {
+        if (typeof v === 'number') {
             n = v;
         } else if (v) {
             n = v.n;
@@ -212,19 +221,21 @@ function size_min(values) {
             peta_min = peta;
         }
     });
-    return peta_min ? {
-        n: n_min,
-        peta: peta_min,
-    } : n_min;
+    return peta_min ?
+            {
+                n: n_min,
+                peta: peta_min,
+            }
+        :   n_min;
 }
 
 function size_max(values) {
     let n_max = 0;
     let peta_max = 0;
-    values.forEach(function(v) {
+    values.forEach(function (v) {
         let n = 0;
         let peta = 0;
-        if (typeof(v) === 'number') {
+        if (typeof v === 'number') {
             n = v;
         } else if (v) {
             n = v.n;
@@ -240,22 +251,21 @@ function size_max(values) {
             peta_max = peta;
         }
     });
-    return peta_max ? {
-        n: n_max,
-        peta: peta_max,
-    } : n_max;
+    return peta_max ?
+            {
+                n: n_max,
+                peta: peta_max,
+            }
+        :   n_max;
 }
-
 
 function reduce_minimum(key, values) {
     return size_min(values);
 }
 
-
 function reduce_maximum(key, values) {
     return size_max(values);
 }
-
 
 /**
  * return a formatted string for the given size such as 12 KB or 130.5 GB.
@@ -265,9 +275,9 @@ function reduce_maximum(key, values) {
 function human_size(bytes) {
     let x;
     let i = 0;
-    if (typeof(bytes) === 'object') {
+    if (typeof bytes === 'object') {
         if (bytes.peta) {
-            x = bytes.peta + (bytes.n / PETABYTE);
+            x = bytes.peta + bytes.n / PETABYTE;
             i = 5;
         } else {
             x = bytes.n;
@@ -295,7 +305,6 @@ function human_size(bytes) {
     }
 }
 
-
 /**
  *
  * human_offset
@@ -311,7 +320,7 @@ function human_offset(offset) {
     let peta;
     let mod;
 
-    if (typeof(offset) === 'object') {
+    if (typeof offset === 'object') {
         peta = offset.peta;
         n = offset.n;
         sign = '';
@@ -356,11 +365,10 @@ function string_to_bigint(str, base) {
     let res = 0n;
     const arr = str.split('');
     for (const char of arr) {
-        res = BigInt(parseInt(char, base)) + (BigInt(base) * res);
+        res = BigInt(parseInt(char, base)) + BigInt(base) * res;
     }
     return res;
 }
-
 
 exports.BigInteger = BigInteger;
 exports.bigint_to_json = bigint_to_json;

@@ -3,7 +3,7 @@
 
 /**
  * This module exists so as to export the common function `getGlacierBackend`
- * 
+ *
  * Keeping this in the generic.js creates cyclic dependency issue.w
  */
 
@@ -19,10 +19,10 @@ const { GlacierBackend } = require('./backend');
  */
 function getGlacierBackend(typ = config.NSFS_GLACIER_BACKEND) {
     switch (typ) {
-    case 'TAPECLOUD':
-        return new TapeCloudGlacierBackend();
-    default:
-        throw new Error('invalid backend type provide');
+        case 'TAPECLOUD':
+            return new TapeCloudGlacierBackend();
+        default:
+            throw new Error('invalid backend type provide');
     }
 }
 

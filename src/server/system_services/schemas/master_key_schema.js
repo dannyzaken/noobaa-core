@@ -4,9 +4,7 @@
 module.exports = {
     $id: 'master_key_schema',
     type: 'object',
-    required: [
-        '_id',
-    ],
+    required: ['_id'],
     properties: {
         _id: { objectid: true },
         description: { type: 'string' },
@@ -18,6 +16,6 @@ module.exports = {
         cipher_type: { $ref: 'common_api#/definitions/cipher_type' },
         cipher_key: { binary: true },
         cipher_iv: { binary: true },
-        disabled: { type: 'boolean' }
-    }
+        disabled: { type: 'boolean' },
+    },
 };

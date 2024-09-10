@@ -12,18 +12,15 @@ const DEFAULT_PARAMS = {
 };
 
 class LRUItem {
-
     constructor(lru, id, time) {
         this.lru = lru;
         this.id = id;
         this.time = time;
         this.usage = 1;
     }
-
 }
 
 class LRU {
-
     /**
      * @param {{
      *  max_usage?: number,
@@ -32,7 +29,10 @@ class LRU {
      * }} params
      */
     constructor(params) {
-        this.params = _.defaults(_.pick(params, _.keys(DEFAULT_PARAMS)), DEFAULT_PARAMS);
+        this.params = _.defaults(
+            _.pick(params, _.keys(DEFAULT_PARAMS)),
+            DEFAULT_PARAMS,
+        );
         this.list = new LinkedList(this.params.name);
         this.map = new Map();
         this.usage = 0;
@@ -56,7 +56,10 @@ class LRU {
         const now = this.params.expiry_ms ? Date.now() : 0;
         if (item) {
             // check if not expired
-            if (!this.params.expiry_ms || (now < item.time + this.params.expiry_ms)) {
+            if (
+                !this.params.expiry_ms ||
+                now < item.time + this.params.expiry_ms
+            ) {
                 // hit - move to front to mark as recently used
                 if (this.list.remove(item)) {
                     this.list.push_front(item);
@@ -127,8 +130,6 @@ class LRU {
         assert.strictEqual(this.usage, usage);
         assert(usage <= this.params.max_usage);
     }
-
 }
-
 
 module.exports = LRU;

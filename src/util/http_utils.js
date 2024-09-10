@@ -34,45 +34,43 @@ const { HTTP_PROXY, HTTPS_PROXY, NO_PROXY, NODE_EXTRA_CA_CERTS } = process.env;
 const http_agent = new http.Agent();
 const https_agent = new https.Agent();
 const unsecured_https_agent = new https.Agent({ rejectUnauthorized: false });
-const http_proxy_agent = HTTP_PROXY ?
-    new HttpProxyAgent(HTTP_PROXY) : null;
-const https_proxy_agent = HTTPS_PROXY ?
-    new HttpsProxyAgent(HTTPS_PROXY) : null;
-const unsecured_https_proxy_agent = HTTPS_PROXY ?
-    new HttpsProxyAgent(HTTPS_PROXY, { rejectUnauthorized: false }) : null;
+const http_proxy_agent = HTTP_PROXY ? new HttpProxyAgent(HTTP_PROXY) : null;
+const https_proxy_agent = HTTPS_PROXY ? new HttpsProxyAgent(HTTPS_PROXY) : null;
+const unsecured_https_proxy_agent =
+    HTTPS_PROXY ?
+        new HttpsProxyAgent(HTTPS_PROXY, { rejectUnauthorized: false })
+    :   null;
 
-const no_proxy_list =
-    (NO_PROXY ? NO_PROXY.split(',') : []).map(addr => {
-        if (ip.isV4Format(addr) || ip.isV6Format(addr)) {
-            return {
-                kind: 'IP',
-                addr
-            };
-        }
-
-        try {
-            ip.cidr(addr);
-            return {
-                kind: 'CIDR',
-                addr
-            };
-        } catch {
-            // noop
-        }
-
-        if (addr.startsWith('.')) {
-            return {
-                kind: 'FQDN_SUFFIX',
-                addr
-            };
-        }
-
+const no_proxy_list = (NO_PROXY ? NO_PROXY.split(',') : []).map(addr => {
+    if (ip.isV4Format(addr) || ip.isV6Format(addr)) {
         return {
-            kind: 'FQDN',
-            addr
+            kind: 'IP',
+            addr,
         };
-    });
+    }
 
+    try {
+        ip.cidr(addr);
+        return {
+            kind: 'CIDR',
+            addr,
+        };
+    } catch {
+        // noop
+    }
+
+    if (addr.startsWith('.')) {
+        return {
+            kind: 'FQDN_SUFFIX',
+            addr,
+        };
+    }
+
+    return {
+        kind: 'FQDN',
+        addr,
+    };
+});
 
 const parse_xml_to_js = xml2js.parseStringPromise;
 const non_printable_regexp = /[\x00-\x1F]/;
@@ -91,12 +89,9 @@ function parse_url_query(req) {
 function parse_client_ip(req) {
     // The general format of x-forwarded-for: client, proxy1, proxy2, proxy3
     const fwd =
-        req.headers['x-forwarded-for'] ||
-        req.connection.remoteAddress ||
-        '';
+        req.headers['x-forwarded-for'] || req.connection.remoteAddress || '';
     return fwd.includes(',') ? fwd.split(',', 1)[0] : fwd;
 }
-
 
 /**
  * @typedef {{
@@ -108,8 +103,8 @@ function parse_client_ip(req) {
  */
 
 /**
- * 
- * @param {*} req 
+ *
+ * @param {*} req
  * @param {*} prefix
  * @returns {MDConditions|void}
  */
@@ -119,13 +114,15 @@ function get_md_conditions(req, prefix) {
     prefix = prefix || '';
     if (req.headers[prefix + 'if-modified-since']) {
         cond = cond || {};
-        cond.if_modified_since =
-            (new Date(req.headers[prefix + 'if-modified-since'])).getTime();
+        cond.if_modified_since = new Date(
+            req.headers[prefix + 'if-modified-since'],
+        ).getTime();
     }
     if (req.headers[prefix + 'if-unmodified-since']) {
         cond = cond || {};
-        cond.if_unmodified_since =
-            (new Date(req.headers[prefix + 'if-unmodified-since'])).getTime();
+        cond.if_unmodified_since = new Date(
+            req.headers[prefix + 'if-unmodified-since'],
+        ).getTime();
     }
     if (req.headers[prefix + 'if-match']) {
         cond = cond || {};
@@ -142,7 +139,6 @@ function get_md_conditions(req, prefix) {
  * see https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.24
  */
 function match_etag(condition, etag) {
-
     // trim white space
     condition = condition.trim();
 
@@ -156,7 +152,8 @@ function match_etag(condition, etag) {
 
     // split the condition on commas followed by proper quoted-string
     // the then compare to find any match
-    return condition.split(/,(?=\s*"[^"]*"\s*)/)
+    return condition
+        .split(/,(?=\s*"[^"]*"\s*)/)
         .some(c => c.trim() === `"${etag}"`);
 }
 
@@ -170,7 +167,10 @@ function parse_http_ranges(range_header) {
     if (eq_index < 0) throw_ranges_error(400);
     const units = range_header.slice(0, eq_index);
     if (units !== 'bytes') throw_ranges_error(400);
-    return range_header.slice(eq_index + 1).split(',').map(_parse_one_http_range);
+    return range_header
+        .slice(eq_index + 1)
+        .split(',')
+        .map(_parse_one_http_range);
 }
 
 function _parse_one_http_range(range_str) {
@@ -224,7 +224,9 @@ function normalize_http_ranges(ranges, size, throw_error_ranges = false) {
             r.end = size;
         } else if (r.end > size) {
             if (throw_error_ranges) {
-                throw Object.assign(new Error('Invalid Argument'), { code: 'InvalidArgument' });
+                throw Object.assign(new Error('Invalid Argument'), {
+                    code: 'InvalidArgument',
+                });
             }
             r.end = size;
         }
@@ -239,8 +241,7 @@ function throw_ranges_error(ranges_code) {
 }
 
 async function read_and_parse_body(req, options) {
-    if (options.body.type === 'empty' ||
-        options.body.type === 'raw') {
+    if (options.body.type === 'empty' || options.body.type === 'raw') {
         return;
     }
     await read_request_body(req, options);
@@ -255,7 +256,9 @@ function read_request_body(req, options) {
         req.on('data', chunk => {
             content_len += chunk.length;
             if (content_len > options.MAX_BODY_LEN) {
-                return reject(new options.ErrorClass(options.error_max_body_len_exceeded));
+                return reject(
+                    new options.ErrorClass(options.error_max_body_len_exceeded),
+                );
             }
             sha256.update(chunk);
             // Parse the data after the length check
@@ -267,7 +270,11 @@ function read_request_body(req, options) {
             const sha256_buf = sha256.digest();
             if (req.content_sha256_buf) {
                 if (Buffer.compare(sha256_buf, req.content_sha256_buf)) {
-                    return reject(new options.ErrorClass(options.error_body_sha256_mismatch));
+                    return reject(
+                        new options.ErrorClass(
+                            options.error_body_sha256_mismatch,
+                        ),
+                    );
                 }
             } else {
                 req.content_sha256_buf = sha256_buf;
@@ -284,7 +291,10 @@ async function parse_request_body(req, options) {
     }
     if (options.body.type === 'xml') {
         try {
-            const data = await parse_xml_to_js(req.body, options.body.xml_options);
+            const data = await parse_xml_to_js(
+                req.body,
+                options.body.xml_options,
+            );
             req.body = data;
             return;
         } catch (err) {
@@ -312,8 +322,13 @@ async function parse_request_body(req, options) {
             throw new options.ErrorClass(options.error_invalid_body);
         }
     }
-    dbg.error('HTTP BODY UNEXPECTED TYPE', req.method, req.originalUrl,
-        JSON.stringify(req.headers), options);
+    dbg.error(
+        'HTTP BODY UNEXPECTED TYPE',
+        req.method,
+        req.originalUrl,
+        JSON.stringify(req.headers),
+        options,
+    );
     throw new Error(`HTTP BODY UNEXPECTED TYPE ${options.body.type}`);
 }
 
@@ -324,36 +339,53 @@ function send_reply(req, res, reply, options) {
         return;
     }
     if (!reply || options.reply.type === 'empty') {
-        if (!options.reply.keep_status_code && req.method === 'DELETE' &&
-            (!res.statusCode || res.statusCode < 300)) {
+        if (
+            !options.reply.keep_status_code &&
+            req.method === 'DELETE' &&
+            (!res.statusCode || res.statusCode < 300)
+        ) {
             res.statusCode = 204;
         }
-        dbg.log1('HTTP REPLY EMPTY', req.method, req.originalUrl,
-            JSON.stringify(req.headers), res.statusCode);
+        dbg.log1(
+            'HTTP REPLY EMPTY',
+            req.method,
+            req.originalUrl,
+            JSON.stringify(req.headers),
+            res.statusCode,
+        );
         res.end();
         return;
     }
     if (options.reply.type === 'xml') {
-        const xml_root = options.XML_ROOT_ATTRS ?
-            _.mapValues(reply, val => {
-                if (val._attr) {
-                    _.defaults(val._attr, options.XML_ROOT_ATTRS);
-                    return val;
-                } else {
-                    return {
-                        _attr: options.XML_ROOT_ATTRS,
-                        _content: val
-                    };
-                }
-            }) :
-            reply;
+        const xml_root =
+            options.XML_ROOT_ATTRS ?
+                _.mapValues(reply, val => {
+                    if (val._attr) {
+                        _.defaults(val._attr, options.XML_ROOT_ATTRS);
+                        return val;
+                    } else {
+                        return {
+                            _attr: options.XML_ROOT_ATTRS,
+                            _content: val,
+                        };
+                    }
+                })
+            :   reply;
         // TODO: Refactor later on to support potential headers response and delayed XML body
         // This is done for the complete since we assign the XML header only in body prior to responding
-        const xml_reply = xml_utils.encode_xml(xml_root, /* ignore_header */ res.headersSent);
-        dbg.log1('HTTP REPLY XML', req.method, req.originalUrl,
+        const xml_reply = xml_utils.encode_xml(
+            xml_root,
+            /* ignore_header */ res.headersSent,
+        );
+        dbg.log1(
+            'HTTP REPLY XML',
+            req.method,
+            req.originalUrl,
             JSON.stringify(req.headers),
             xml_reply.length <= 2000 ?
-            xml_reply : xml_reply.slice(0, 1000) + ' ... ' + xml_reply.slice(-1000));
+                xml_reply
+            :   xml_reply.slice(0, 1000) + ' ... ' + xml_reply.slice(-1000),
+        );
         if (res.headersSent) {
             dbg.log0('Sending xml reply in body, bit too late for headers');
         } else {
@@ -365,15 +397,25 @@ function send_reply(req, res, reply, options) {
     }
     if (options.reply.type === 'json') {
         const json_reply = JSON.stringify(reply);
-        dbg.log1('HTTP REPLY JSON', req.method, req.originalUrl,
-            JSON.stringify(req.headers), json_reply);
+        dbg.log1(
+            'HTTP REPLY JSON',
+            req.method,
+            req.originalUrl,
+            JSON.stringify(req.headers),
+            json_reply,
+        );
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('Content-Length', Buffer.byteLength(json_reply));
         res.end(json_reply);
         return;
     }
-    dbg.error('HTTP REPLY UNEXPECTED TYPE', req.method, req.originalUrl,
-        JSON.stringify(req.headers), options);
+    dbg.error(
+        'HTTP REPLY UNEXPECTED TYPE',
+        req.method,
+        req.originalUrl,
+        JSON.stringify(req.headers),
+        options,
+    );
     res.statusCode = 500;
     res.end();
 }
@@ -386,7 +428,9 @@ function should_proxy(hostname) {
     dbg.log2(`should_proxy: hostname ${hostname} isIp ${isIp}`);
 
     for (const { kind, addr } of no_proxy_list) {
-        dbg.log3(`should_proxy: an item from no_proxy_list: kind ${kind} addr ${addr}`);
+        dbg.log3(
+            `should_proxy: an item from no_proxy_list: kind ${kind} addr ${addr}`,
+        );
         if (isIp) {
             if (kind === 'IP' && ip.isEqual(addr, hostname)) {
                 return false;
@@ -394,7 +438,6 @@ function should_proxy(hostname) {
             if (kind === 'CIDR' && ip.cidrSubnet(addr).contains(hostname)) {
                 return false;
             }
-
         } else {
             if (kind === 'FQDN_SUFFIX' && hostname.endsWith(addr)) {
                 return false;
@@ -420,20 +463,27 @@ function get_default_agent(endpoint) {
  */
 function get_unsecured_agent(endpoint) {
     const is_aws_address = cloud_utils.is_aws_endpoint(endpoint);
-    const hostname = url.parse(endpoint) ? url.parse(endpoint).hostname : endpoint;
-    const is_localhost = _.isString(hostname) && hostname.toLowerCase() === 'localhost';
-    return _get_http_agent(endpoint, is_localhost || (!is_aws_address && _.isEmpty(NODE_EXTRA_CA_CERTS)));
+    const hostname =
+        url.parse(endpoint) ? url.parse(endpoint).hostname : endpoint;
+    const is_localhost =
+        _.isString(hostname) && hostname.toLowerCase() === 'localhost';
+    return _get_http_agent(
+        endpoint,
+        is_localhost || (!is_aws_address && _.isEmpty(NODE_EXTRA_CA_CERTS)),
+    );
 }
 
 function _get_http_agent(endpoint, request_unsecured) {
     const { protocol, hostname } = url.parse(endpoint);
     const should_proxy_by_hostname = should_proxy(hostname);
-    dbg.log2(`_get_http_agent: ` +
-        `endpoint ${endpoint} request_unsecured ${request_unsecured} ` +
-        `protocol ${protocol} hostname ${hostname} should_proxy(hostname) ${should_proxy_by_hostname} ` +
-        `Boolean(HTTPS_PROXY) ${Boolean(HTTPS_PROXY)} Boolean(HTTP_PROXY) ${Boolean(HTTP_PROXY)}`);
+    dbg.log2(
+        `_get_http_agent: ` +
+            `endpoint ${endpoint} request_unsecured ${request_unsecured} ` +
+            `protocol ${protocol} hostname ${hostname} should_proxy(hostname) ${should_proxy_by_hostname} ` +
+            `Boolean(HTTPS_PROXY) ${Boolean(HTTPS_PROXY)} Boolean(HTTP_PROXY) ${Boolean(HTTP_PROXY)}`,
+    );
 
-    if (protocol === "https:" || protocol === "wss:") {
+    if (protocol === 'https:' || protocol === 'wss:') {
         if (HTTPS_PROXY && should_proxy_by_hostname) {
             if (request_unsecured) {
                 return unsecured_https_proxy_agent;
@@ -454,8 +504,8 @@ function _get_http_agent(endpoint, request_unsecured) {
 
 function get_agent_by_endpoint(endpoint) {
     return cloud_utils.is_aws_endpoint(endpoint) ?
-        get_default_agent(endpoint) :
-        get_unsecured_agent(endpoint);
+            get_default_agent(endpoint)
+        :   get_unsecured_agent(endpoint);
 }
 
 function update_http_agents(options) {
@@ -473,19 +523,23 @@ function update_https_agents(options) {
     Object.assign(https_agent, options);
     Object.assign(unsecured_https_agent, options);
     if (https_proxy_agent) Object.assign(https_proxy_agent, options);
-    if (unsecured_https_proxy_agent) Object.assign(unsecured_https_proxy_agent, options);
+    if (unsecured_https_proxy_agent) {
+        Object.assign(unsecured_https_proxy_agent, options);
+    }
 }
 
 function make_https_request(options, body, body_encoding) {
     const { agent, hostname, rejectUnauthorized = true } = options;
     if (!agent) {
-        options.agent = rejectUnauthorized ?
-            get_default_agent(`https://${hostname}`) :
-            get_unsecured_agent(`https://${hostname}`);
+        options.agent =
+            rejectUnauthorized ?
+                get_default_agent(`https://${hostname}`)
+            :   get_unsecured_agent(`https://${hostname}`);
     }
 
     return new Promise((resolve, reject) => {
-        https.request(options, resolve)
+        https
+            .request(options, resolve)
             .on('error', reject)
             .end(body, body_encoding);
     });
@@ -493,9 +547,7 @@ function make_https_request(options, body, body_encoding) {
 
 async function make_http_request(options, body) {
     return new Promise((resolve, reject) => {
-        http.request(options, resolve)
-            .on('error', reject)
-            .end(body);
+        http.request(options, resolve).on('error', reject).end(body);
     });
 }
 
@@ -507,7 +559,9 @@ function set_keep_alive_whitespace_interval(res) {
     let count = 0;
     res.keep_alive_whitespace_interval = setInterval(() => {
         count += 1;
-        dbg.log0(`keep_alive_whitespace_interval headersSent=${res.headersSent} count=${count}`);
+        dbg.log0(
+            `keep_alive_whitespace_interval headersSent=${res.headersSent} count=${count}`,
+        );
         if (res.headersSent) {
             // Keep the connection alive with white spaces
             res.write(' ');
@@ -554,12 +608,19 @@ function check_headers(req, options) {
         throw new options.ErrorClass(options.error_bad_request);
     }
 
-    if (req.headers['azure-metadata-handling'] && !_.includes(['ExcludeIfInvalid', 'FailIfInvalid', 'RenameIfInvalid'], req.headers['azure-metadata-handling'])) {
+    if (
+        req.headers['azure-metadata-handling'] &&
+        !_.includes(
+            ['ExcludeIfInvalid', 'FailIfInvalid', 'RenameIfInvalid'],
+            req.headers['azure-metadata-handling'],
+        )
+    ) {
         throw new options.ErrorClass(options.error_bad_request);
     }
 
-
-    if (req.method === 'POST' || req.method === 'PUT') parse_content_length(req, options);
+    if (req.method === 'POST' || req.method === 'PUT') {
+        parse_content_length(req, options);
+    }
 
     const content_md5_b64 = req.headers['content-md5'];
     if (typeof content_md5_b64 === 'string') {
@@ -570,12 +631,13 @@ function check_headers(req, options) {
     }
 
     const content_sha256_hdr = req.headers['x-amz-content-sha256'];
-    req.content_sha256_sig = req.query['X-Amz-Signature'] ?
-        UNSIGNED_PAYLOAD :
-        content_sha256_hdr;
-    if (typeof content_sha256_hdr === 'string' &&
+    req.content_sha256_sig =
+        req.query['X-Amz-Signature'] ? UNSIGNED_PAYLOAD : content_sha256_hdr;
+    if (
+        typeof content_sha256_hdr === 'string' &&
         content_sha256_hdr !== UNSIGNED_PAYLOAD &&
-        content_sha256_hdr !== STREAMING_PAYLOAD) {
+        content_sha256_hdr !== STREAMING_PAYLOAD
+    ) {
         req.content_sha256_buf = Buffer.from(content_sha256_hdr, 'hex');
         if (req.content_sha256_buf.length !== 32) {
             throw new options.ErrorClass(options.error_invalid_digest);
@@ -588,8 +650,9 @@ function check_headers(req, options) {
         content_sha256_hdr === STREAMING_PAYLOAD;
 
     const req_time =
-        time_utils.parse_amz_date(req.headers['x-amz-date'] || req.query['X-Amz-Date']) ||
-        time_utils.parse_http_header_date(req.headers.date);
+        time_utils.parse_amz_date(
+            req.headers['x-amz-date'] || req.query['X-Amz-Date'],
+        ) || time_utils.parse_http_header_date(req.headers.date);
 
     const auth_token = options.auth_token(req);
     const is_not_anonymous_req = Boolean(auth_token && auth_token.access_key);
@@ -598,7 +661,9 @@ function check_headers(req, options) {
         throw new options.ErrorClass(options.error_access_denied);
     }
 
-    if (Math.abs(Date.now() - req_time) > config.AMZ_DATE_MAX_TIME_SKEW_MILLIS) {
+    if (
+        Math.abs(Date.now() - req_time) > config.AMZ_DATE_MAX_TIME_SKEW_MILLIS
+    ) {
         throw new options.ErrorClass(options.error_request_time_too_skewed);
     }
 }
@@ -666,7 +731,10 @@ function set_cors_headers_sts(req, res) {
 }
 
 function parse_content_length(req, options) {
-    const size = Number(req.headers['x-amz-decoded-content-length'] || req.headers['content-length']);
+    const size = Number(
+        req.headers['x-amz-decoded-content-length'] ||
+            req.headers['content-length'],
+    );
     const copy = req.headers['x-amz-copy-source'];
     if (!copy && (!Number.isInteger(size) || size < 0)) {
         dbg.warn('Missing content-length', req.headers['content-length']);
@@ -680,10 +748,14 @@ function authorize_session_token(req, options) {
         return;
     }
     try {
-        req.session_token = jwt_utils.authorize_jwt_token(req.headers['x-amz-security-token']);
+        req.session_token = jwt_utils.authorize_jwt_token(
+            req.headers['x-amz-security-token'],
+        );
     } catch (err) {
         dbg.error('http_utils.authorize_session_token JWT VERIFY FAILED', err);
-        if (err.name === 'TokenExpiredError') throw new options.ErrorClass(options.error_token_expired);
+        if (err.name === 'TokenExpiredError') {
+            throw new options.ErrorClass(options.error_token_expired);
+        }
         throw new options.ErrorClass(options.error_invalid_token);
     }
 }
@@ -702,8 +774,6 @@ function validate_server_ip_whitelist(req) {
     throw new S3Error(S3Error.AccessDenied);
 }
 
-
-
 // This function is intended to provide partial functionalaty to replace the deprecated request npm module (https://www.npmjs.com/package/request)
 // Before using this function, make sure it provides your needs., or consider using more full featured library like axios (https://www.npmjs.com/package/axios)
 // e.g.: one drawback of this implementation is that it does not follow redirects (this can be fixed by using 3rd party modules)
@@ -715,7 +785,6 @@ function http_get(uri, options) {
         client.get(uri, options, resolve).on('error', reject);
     });
 }
-
 
 exports.parse_url_query = parse_url_query;
 exports.parse_client_ip = parse_client_ip;

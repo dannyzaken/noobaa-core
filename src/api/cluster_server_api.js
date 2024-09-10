@@ -9,7 +9,6 @@
  *
  */
 module.exports = {
-
     $id: 'cluster_server_api',
 
     methods: {
@@ -24,24 +23,24 @@ module.exports = {
                         type: 'string',
                     },
                     secret: {
-                        type: 'string'
+                        type: 'string',
                     },
                     role: {
-                        $ref: '#/definitions/cluster_member_role'
+                        $ref: '#/definitions/cluster_member_role',
                     },
                     shard: {
-                        type: 'string'
+                        type: 'string',
                     },
                     location: {
-                        type: 'string'
+                        type: 'string',
                     },
                     new_hostname: {
-                        type: 'string'
-                    }
+                        type: 'string',
+                    },
                 },
             },
             auth: {
-                system: 'admin'
+                system: 'admin',
             },
         },
 
@@ -56,12 +55,12 @@ module.exports = {
                         type: 'string',
                     },
                     target_secret: {
-                        type: 'string'
-                    }
+                        type: 'string',
+                    },
                 },
             },
             auth: {
-                system: 'admin'
+                system: 'admin',
             },
         },
 
@@ -76,12 +75,12 @@ module.exports = {
                     },
                     level: {
                         type: 'integer',
-                    }
+                    },
                 },
             },
             auth: {
                 system: 'admin',
-            }
+            },
         },
 
         diagnose_system: {
@@ -91,7 +90,7 @@ module.exports = {
                 properties: {
                     target_secret: {
                         type: 'string',
-                    }
+                    },
                 },
             },
             reply: {
@@ -99,7 +98,7 @@ module.exports = {
             },
             auth: {
                 system: 'admin',
-            }
+            },
         },
 
         read_server_time: {
@@ -110,7 +109,7 @@ module.exports = {
                 properties: {
                     target_secret: {
                         type: 'string',
-                    }
+                    },
                 },
             },
             reply: {
@@ -118,9 +117,8 @@ module.exports = {
             },
             auth: {
                 system: 'admin',
-            }
+            },
         },
-
 
         update_server_conf: {
             method: 'POST',
@@ -129,19 +127,19 @@ module.exports = {
                 required: ['target_secret'],
                 properties: {
                     target_secret: {
-                        type: 'string'
+                        type: 'string',
                     },
                     hostname: {
-                        type: 'string'
+                        type: 'string',
                     },
                     location: {
-                        type: 'string'
-                    }
-                }
+                        type: 'string',
+                    },
+                },
             },
             auth: {
                 system: 'admin',
-            }
+            },
         },
 
         check_cluster_status: {
@@ -153,17 +151,17 @@ module.exports = {
                     required: ['secret', 'status'],
                     properties: {
                         secret: {
-                            type: 'string'
+                            type: 'string',
                         },
                         status: {
-                            $ref: 'system_api#/definitions/service_status_enum'
-                        }
-                    }
-                }
+                            $ref: 'system_api#/definitions/service_status_enum',
+                        },
+                    },
+                },
             },
             auth: {
-                system: false
-            }
+                system: false,
+            },
         },
 
         verify_candidate_join_conditions: {
@@ -177,28 +175,28 @@ module.exports = {
                         type: 'string',
                     },
                     secret: {
-                        type: 'string'
+                        type: 'string',
                     },
-                }
+                },
             },
             reply: {
                 type: 'object',
                 required: ['result'],
                 properties: {
                     result: {
-                        $ref: '#/definitions/verify_new_member_result'
+                        $ref: '#/definitions/verify_new_member_result',
                     },
                     hostname: {
-                        type: 'string'
+                        type: 'string',
                     },
                     version: {
-                        type: 'string'
-                    }
-                }
+                        type: 'string',
+                    },
+                },
             },
             auth: {
-                system: false
-            }
+                system: false,
+            },
         },
 
         verify_new_ip: {
@@ -212,34 +210,34 @@ module.exports = {
                         type: 'string',
                     },
                     secret: {
-                        type: 'string'
+                        type: 'string',
                     },
-                }
+                },
             },
             reply: {
                 type: 'object',
                 required: ['result'],
                 properties: {
                     result: {
-                        $ref: '#/definitions/verify_new_ip_result'
+                        $ref: '#/definitions/verify_new_ip_result',
                     },
-                }
+                },
             },
             auth: {
-                system: false
-            }
+                system: false,
+            },
         },
 
         ping: {
             method: 'GET',
             reply: {
                 enum: ['PONG'],
-                type: 'string'
+                type: 'string',
             },
             auth: {
-                system: false
-            }
-        }
+                system: false,
+            },
+        },
     },
 
     definitions: {
@@ -249,7 +247,8 @@ module.exports = {
         },
 
         verify_new_member_result: {
-            enum: ['OKAY',
+            enum: [
+                'OKAY',
                 'SECRET_MISMATCH',
                 'VERSION_MISMATCH',
                 'ALREADY_A_MEMBER',
@@ -258,14 +257,14 @@ module.exports = {
                 'ADDING_SELF',
                 'NO_NTP_SET',
                 'CONNECTION_TIMEOUT_ORIGIN',
-                'CONNECTION_TIMEOUT_NEW'
+                'CONNECTION_TIMEOUT_NEW',
             ],
-            type: 'string'
+            type: 'string',
         },
 
         verify_new_ip_result: {
             enum: ['OKAY', 'SECRET_MISMATCH', 'UNREACHABLE'],
-            type: 'string'
-        }
+            type: 'string',
+        },
     },
 };

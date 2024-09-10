@@ -4,7 +4,6 @@
 const config = require('../../../../config');
 
 module.exports = [
-
     // TODO index ??? find_objects() not indexed for the create_time
 
     {
@@ -24,10 +23,9 @@ module.exports = [
                 deleted: null,
                 upload_started: null,
                 version_past: null,
-            }
-        }
+            },
+        },
     },
-
 
     //////////////
     // VERSIONS //
@@ -49,14 +47,14 @@ module.exports = [
                 deleted: null,
                 upload_started: null,
                 version_enabled: null,
-            }
-        }
+            },
+        },
     },
 
     {
         // find_object_by_version()
         // find_object_prev_version()
-        // list_object_versions()       
+        // list_object_versions()
         // has_any_completed_objects_in_bucket()
         fields: {
             bucket: 1,
@@ -69,10 +67,9 @@ module.exports = [
             partialFilterExpression: {
                 deleted: null,
                 upload_started: null,
-            }
-        }
+            },
+        },
     },
-
 
     /////////////
     // UPLOADS //
@@ -90,12 +87,10 @@ module.exports = [
             unique: true,
             partialFilterExpression: {
                 deleted: null,
-                upload_started: { $exists: true }
-            }
-        }
+                upload_started: { $exists: true },
+            },
+        },
     },
-
-
 
     ///////////////////////////
     // MD AGGREGATOR INDEXES //
@@ -108,11 +103,11 @@ module.exports = [
         },
         options: {
             unique: false,
-            name: "aggregate_by_create_dates",
+            name: 'aggregate_by_create_dates',
             partialFilterExpression: {
-                create_time: { $exists: true }
-            }
-        }
+                create_time: { $exists: true },
+            },
+        },
     },
     {
         // aggregate_objects_by_delete_dates()
@@ -121,14 +116,12 @@ module.exports = [
         },
         options: {
             unique: false,
-            name: "aggregate_by_delete_dates",
+            name: 'aggregate_by_delete_dates',
             partialFilterExpression: {
-                deleted: { $exists: true }
-            }
-        }
+                deleted: { $exists: true },
+            },
+        },
     },
-
-
 
     ////////////////////////
     // BUCKET AGGREGATION //
@@ -144,8 +137,8 @@ module.exports = [
             unique: false,
             partialFilterExpression: {
                 deleted: null,
-            }
-        }
+            },
+        },
     },
 
     //////////////////////
@@ -157,15 +150,15 @@ module.exports = [
             deleted: 1,
             // we include reclaimed as extra index field to separate from aggregate_objects_by_delete_dates index.
             // note that reclaimed is always null here by partialFilterExpression.
-            reclaimed: 1
+            reclaimed: 1,
         },
         options: {
             name: 'deleted_unreclaimed_index',
             unique: false,
             partialFilterExpression: {
                 deleted: { $exists: true },
-                reclaimed: null
-            }
-        }
+                reclaimed: null,
+            },
+        },
     },
 ];

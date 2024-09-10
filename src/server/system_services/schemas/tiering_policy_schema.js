@@ -6,15 +6,8 @@ const SensitiveString = require('../../../util/sensitive_string');
 module.exports = {
     $id: 'tiering_policy_schema',
     type: 'object',
-    required: [
-        '_id',
-        'name',
-        'system',
-        'chunk_split_config',
-        'tiers',
-    ],
+    required: ['_id', 'name', 'system', 'chunk_split_config', 'tiers'],
     properties: {
-
         // identifiers
         _id: { objectid: true },
         name: { wrapper: SensitiveString },
@@ -24,7 +17,9 @@ module.exports = {
         // chunk_split_config defines how to split objects to chunks for common dedup
         // NOTE: changing this config will not allow dedup with existing chunks
         // because the split boundaries will not be detected the same as before
-        chunk_split_config: { $ref: 'common_api#/definitions/chunk_split_config' },
+        chunk_split_config: {
+            $ref: 'common_api#/definitions/chunk_split_config',
+        },
 
         tiers: {
             type: 'array',
@@ -35,9 +30,9 @@ module.exports = {
                     order: { type: 'integer' },
                     tier: { objectid: true },
                     spillover: { type: 'boolean' },
-                    disabled: { type: 'boolean' }
-                }
-            }
+                    disabled: { type: 'boolean' },
+                },
+            },
         },
-    }
+    },
 };

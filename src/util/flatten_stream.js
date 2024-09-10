@@ -11,7 +11,6 @@ const stream = require('stream');
  *
  */
 class FlattenStream extends stream.Transform {
-
     constructor() {
         super({
             objectMode: true,
@@ -27,7 +26,6 @@ class FlattenStream extends stream.Transform {
         }
         return callback();
     }
-
 }
 
 module.exports = FlattenStream;

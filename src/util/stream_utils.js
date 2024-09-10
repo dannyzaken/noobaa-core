@@ -5,9 +5,8 @@ const util = require('util');
 const stream = require('stream');
 const events = require('events');
 
-
 /**
- * @param {stream.Writable} writable 
+ * @param {stream.Writable} writable
  * @returns {Promise}
  */
 async function wait_drain(writable, options) {
@@ -23,21 +22,22 @@ function get_tap_stream(func) {
             func(data, encoding);
             this.push(data);
             callback();
-        }
+        },
     });
-
 }
 
 const async_pipeline = util.promisify(stream.pipeline);
 
 /**
- * 
- * @param {(stream.Readable | stream.Writable | stream.Duplex)[]} streams 
- * @param {boolean} reuse_last_stream 
+ *
+ * @param {(stream.Readable | stream.Writable | stream.Duplex)[]} streams
+ * @param {boolean} reuse_last_stream
  * @returns {Promise<void>}
  */
 async function pipeline(streams, reuse_last_stream) {
-    if (!streams || !streams.length) throw new Error('Pipeline called without streams');
+    if (!streams || !streams.length) {
+        throw new Error('Pipeline called without streams');
+    }
     if (streams.find(strm => strm.destroyed)) {
         const err = new Error('Pipeline called on destroyed stream');
         for (const strm of streams) {

@@ -2,18 +2,31 @@
 'use strict';
 
 // disabling init_rand_seed as it takes longer than the actual test execution
-process.env.DISABLE_INIT_RANDOM_SEED = "true";
+process.env.DISABLE_INIT_RANDOM_SEED = 'true';
 
 const fs = require('fs');
 const path = require('path');
 const fs_utils = require('../../../util/fs_utils');
-const { exec_manage_cli, set_path_permissions_and_owner, TMP_PATH, set_nc_config_dir_in_config } = require('../../system_tests/test_utils');
-const { TYPES, ACTIONS } = require('../../../manage_nsfs/manage_nsfs_constants');
-const ManageCLIError = require('../../../manage_nsfs/manage_nsfs_cli_errors').ManageCLIError;
-const ManageCLIResponse = require('../../../manage_nsfs/manage_nsfs_cli_responses').ManageCLIResponse;
+const {
+    exec_manage_cli,
+    set_path_permissions_and_owner,
+    TMP_PATH,
+    set_nc_config_dir_in_config,
+} = require('../../system_tests/test_utils');
+const {
+    TYPES,
+    ACTIONS,
+} = require('../../../manage_nsfs/manage_nsfs_constants');
+const ManageCLIError =
+    require('../../../manage_nsfs/manage_nsfs_cli_errors').ManageCLIError;
+const ManageCLIResponse =
+    require('../../../manage_nsfs/manage_nsfs_cli_responses').ManageCLIResponse;
 
 const tmp_fs_path = path.join(TMP_PATH, 'test_nc_nsfs_account_cli');
-const config_root = path.join(tmp_fs_path, 'config_root_account_mkm_integration');
+const config_root = path.join(
+    tmp_fs_path,
+    'config_root_account_mkm_integration',
+);
 const root_path = path.join(tmp_fs_path, 'root_path_account_mkm_integration/');
 const defaults = {
     _id: 'account1',
@@ -44,7 +57,9 @@ describe('manage nsfs cli account flow + fauly master key flow', () => {
                 await update_account();
                 fail('should have failed with InvalidMasterKey');
             } catch (err) {
-                expect(JSON.parse(err.stdout).error.code).toBe(ManageCLIError.InvalidMasterKey.code);
+                expect(JSON.parse(err.stdout).error.code).toBe(
+                    ManageCLIError.InvalidMasterKey.code,
+                );
             }
         });
 
@@ -61,7 +76,9 @@ describe('manage nsfs cli account flow + fauly master key flow', () => {
             expect(status_res.response.reply.email).toBe(name);
             expect(status_res.response.reply.nsfs_account_config.uid).toBe(uid);
             expect(status_res.response.reply.nsfs_account_config.gid).toBe(gid);
-            expect(status_res.response.reply.nsfs_account_config.new_buckets_path).toBe(new_buckets_path);
+            expect(
+                status_res.response.reply.nsfs_account_config.new_buckets_path,
+            ).toBe(new_buckets_path);
         });
 
         it('should fail | cli account status show secret ', async () => {
@@ -69,27 +86,35 @@ describe('manage nsfs cli account flow + fauly master key flow', () => {
                 await status_account(true);
                 fail('should have failed with InvalidMasterKey');
             } catch (err) {
-                expect(JSON.parse(err.stdout).error.code).toBe(ManageCLIError.InvalidMasterKey.code);
+                expect(JSON.parse(err.stdout).error.code).toBe(
+                    ManageCLIError.InvalidMasterKey.code,
+                );
             }
         });
 
         it('cli account delete', async () => {
             const delete_res = await delete_account_flow();
-            expect(delete_res.response.code).toBe(ManageCLIResponse.AccountDeleted.code);
+            expect(delete_res.response.code).toBe(
+                ManageCLIResponse.AccountDeleted.code,
+            );
         });
     });
 
     describe('cli account mkm integrations - active master key is corrupted', () => {
-
         beforeEach(async () => {
             await setup_nc_system_and_first_account();
             // corrupt active master key in master key json file
             const master_keys_json_path = `${config_root}/master_keys.json`;
-            const master_keys_data = await fs.promises.readFile(master_keys_json_path);
+            const master_keys_data = await fs.promises.readFile(
+                master_keys_json_path,
+            );
             const master_keys_json = JSON.parse(master_keys_data.toString());
             master_keys_json.active_master_key = 'bla';
             await fs_utils.file_delete(master_keys_json_path);
-            await fs.promises.writeFile(master_keys_json_path, JSON.stringify(master_keys_json));
+            await fs.promises.writeFile(
+                master_keys_json_path,
+                JSON.stringify(master_keys_json),
+            );
         });
 
         afterEach(async () => {
@@ -99,10 +124,15 @@ describe('manage nsfs cli account flow + fauly master key flow', () => {
 
         it('should fail | cli create account', async () => {
             try {
-                await create_account({ ...defaults, name: 'account_corrupted_mk' });
+                await create_account({
+                    ...defaults,
+                    name: 'account_corrupted_mk',
+                });
                 fail('should have failed with InvalidMasterKey');
             } catch (err) {
-                expect(JSON.parse(err.stdout).error.code).toBe(ManageCLIError.InvalidMasterKey.code);
+                expect(JSON.parse(err.stdout).error.code).toBe(
+                    ManageCLIError.InvalidMasterKey.code,
+                );
             }
         });
 
@@ -111,7 +141,9 @@ describe('manage nsfs cli account flow + fauly master key flow', () => {
                 await update_account();
                 fail('should have failed with InvalidMasterKey');
             } catch (err) {
-                expect(JSON.parse(err.stdout).error.code).toBe(ManageCLIError.InvalidMasterKey.code);
+                expect(JSON.parse(err.stdout).error.code).toBe(
+                    ManageCLIError.InvalidMasterKey.code,
+                );
             }
         });
 
@@ -128,7 +160,9 @@ describe('manage nsfs cli account flow + fauly master key flow', () => {
             expect(status_res.response.reply.email).toBe(name);
             expect(status_res.response.reply.nsfs_account_config.uid).toBe(uid);
             expect(status_res.response.reply.nsfs_account_config.gid).toBe(gid);
-            expect(status_res.response.reply.nsfs_account_config.new_buckets_path).toBe(new_buckets_path);
+            expect(
+                status_res.response.reply.nsfs_account_config.new_buckets_path,
+            ).toBe(new_buckets_path);
         });
 
         it('should fail | cli account status show secret ', async () => {
@@ -136,26 +170,34 @@ describe('manage nsfs cli account flow + fauly master key flow', () => {
                 await status_account(true);
                 fail('should have failed with InvalidMasterKey');
             } catch (err) {
-                expect(JSON.parse(err.stdout).error.code).toBe(ManageCLIError.InvalidMasterKey.code);
+                expect(JSON.parse(err.stdout).error.code).toBe(
+                    ManageCLIError.InvalidMasterKey.code,
+                );
             }
         });
 
         it('cli account delete', async () => {
             const delete_res = await delete_account_flow();
-            expect(delete_res.response.code).toBe(ManageCLIResponse.AccountDeleted.code);
+            expect(delete_res.response.code).toBe(
+                ManageCLIResponse.AccountDeleted.code,
+            );
         });
     });
     describe('cli account mkm integrations - master_keys_by_id is corrupted', () => {
-
         beforeEach(async () => {
             await setup_nc_system_and_first_account();
             // corrupt master_keys_by_id in master key json file
             const master_keys_json_path = `${config_root}/master_keys.json`;
-            const master_keys_data = await fs.promises.readFile(master_keys_json_path);
+            const master_keys_data = await fs.promises.readFile(
+                master_keys_json_path,
+            );
             const master_keys_json = JSON.parse(master_keys_data.toString());
             master_keys_json.master_keys_by_id = undefined;
             await fs_utils.file_delete(master_keys_json_path);
-            await fs.promises.writeFile(master_keys_json_path, JSON.stringify(master_keys_json));
+            await fs.promises.writeFile(
+                master_keys_json_path,
+                JSON.stringify(master_keys_json),
+            );
         });
 
         afterEach(async () => {
@@ -165,10 +207,15 @@ describe('manage nsfs cli account flow + fauly master key flow', () => {
 
         it('should fail | cli create account', async () => {
             try {
-                await create_account({ ...defaults, name: 'account_corrupted_mk' });
+                await create_account({
+                    ...defaults,
+                    name: 'account_corrupted_mk',
+                });
                 fail('should have failed with InvalidMasterKey');
             } catch (err) {
-                expect(JSON.parse(err.stdout).error.code).toBe(ManageCLIError.InvalidMasterKey.code);
+                expect(JSON.parse(err.stdout).error.code).toBe(
+                    ManageCLIError.InvalidMasterKey.code,
+                );
             }
         });
 
@@ -177,7 +224,9 @@ describe('manage nsfs cli account flow + fauly master key flow', () => {
                 await update_account();
                 fail('should have failed with InvalidMasterKey');
             } catch (err) {
-                expect(JSON.parse(err.stdout).error.code).toBe(ManageCLIError.InvalidMasterKey.code);
+                expect(JSON.parse(err.stdout).error.code).toBe(
+                    ManageCLIError.InvalidMasterKey.code,
+                );
             }
         });
 
@@ -194,7 +243,9 @@ describe('manage nsfs cli account flow + fauly master key flow', () => {
             expect(status_res.response.reply.email).toBe(name);
             expect(status_res.response.reply.nsfs_account_config.uid).toBe(uid);
             expect(status_res.response.reply.nsfs_account_config.gid).toBe(gid);
-            expect(status_res.response.reply.nsfs_account_config.new_buckets_path).toBe(new_buckets_path);
+            expect(
+                status_res.response.reply.nsfs_account_config.new_buckets_path,
+            ).toBe(new_buckets_path);
         });
 
         it('should fail | cli account status show secret ', async () => {
@@ -202,13 +253,17 @@ describe('manage nsfs cli account flow + fauly master key flow', () => {
                 await status_account(true);
                 fail('should have failed with InvalidMasterKey');
             } catch (err) {
-                expect(JSON.parse(err.stdout).error.code).toBe(ManageCLIError.InvalidMasterKey.code);
+                expect(JSON.parse(err.stdout).error.code).toBe(
+                    ManageCLIError.InvalidMasterKey.code,
+                );
             }
         });
 
         it('cli account delete', async () => {
             const delete_res = await delete_account_flow();
-            expect(delete_res.response.code).toBe(ManageCLIResponse.AccountDeleted.code);
+            expect(delete_res.response.code).toBe(
+                ManageCLIResponse.AccountDeleted.code,
+            );
         });
     });
 });
@@ -216,7 +271,13 @@ describe('manage nsfs cli account flow + fauly master key flow', () => {
 async function create_account(account_options) {
     const action = ACTIONS.ADD;
     const { type, name, new_buckets_path, uid, gid } = account_options;
-    const account_cmd_options = { config_root, name, new_buckets_path, uid, gid };
+    const account_cmd_options = {
+        config_root,
+        name,
+        new_buckets_path,
+        uid,
+        gid,
+    };
     const res = await exec_manage_cli(type, action, account_cmd_options);
     const parsed_res = JSON.parse(res);
     return parsed_res;
@@ -226,7 +287,12 @@ async function update_account() {
     const action = ACTIONS.UPDATE;
     const { type, name, new_buckets_path } = defaults;
     const new_uid = '1111';
-    const account_options = { config_root, name, new_buckets_path, uid: new_uid };
+    const account_options = {
+        config_root,
+        name,
+        new_buckets_path,
+        uid: new_uid,
+    };
     const res = await exec_manage_cli(type, action, account_options);
     const parsed_res = JSON.parse(res);
     return parsed_res;
@@ -274,6 +340,10 @@ async function setup_nc_system_and_first_account() {
     const account_options = { config_root, name, new_buckets_path, uid, gid };
     await fs_utils.create_fresh_path(new_buckets_path);
     await fs_utils.file_must_exist(new_buckets_path);
-    await set_path_permissions_and_owner(new_buckets_path, account_options, 0o700);
+    await set_path_permissions_and_owner(
+        new_buckets_path,
+        account_options,
+        0o700,
+    );
     await exec_manage_cli(type, action, account_options);
 }

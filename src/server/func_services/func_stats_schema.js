@@ -4,34 +4,28 @@
 module.exports = {
     $id: 'func_stats_schema',
     type: 'object',
-    required: [
-        '_id',
-        'system',
-        'func',
-        'time',
-        'took',
-    ],
+    required: ['_id', 'system', 'func', 'time', 'took'],
     properties: {
         _id: {
-            objectid: true
+            objectid: true,
         },
         system: {
-            objectid: true
+            objectid: true,
         },
         func: {
-            objectid: true
+            objectid: true,
         },
         time: {
-            date: true
+            date: true,
         },
         took: {
-            type: 'number'
+            type: 'number',
         },
         error: {
-            type: 'boolean'
+            type: 'boolean',
         },
         error_msg: {
-            type: 'string'
+            type: 'string',
         },
-    }
+    },
 };

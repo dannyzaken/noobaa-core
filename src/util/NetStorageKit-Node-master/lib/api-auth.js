@@ -10,7 +10,9 @@ class Auth {
         }
 
         if (!(this.opts.key && this.opts.keyName)) {
-            throw new Error('[Auth Error] options object should contain key and keyName attributes');
+            throw new Error(
+                '[Auth Error] options object should contain key and keyName attributes',
+            );
         }
     }
 
@@ -19,10 +21,11 @@ class Auth {
         let acs_auth_sign = '';
 
         try {
-            acs_auth_data = `5, 0.0.0.0, 0.0.0.0, ${Math.floor(Date.now() / 1000)}, ${Math.floor((Math.random() * 100000))}, ${this.opts.keyName}`;
+            acs_auth_data = `5, 0.0.0.0, 0.0.0.0, ${Math.floor(Date.now() / 1000)}, ${Math.floor(Math.random() * 100000)}, ${this.opts.keyName}`;
             const sign_string = `${netstoragePath}\nx-akamai-acs-action:${actionHeaders}\n`;
             const message = acs_auth_data + sign_string;
-            acs_auth_sign = crypto.createHmac('sha256', this.opts.key)
+            acs_auth_sign = crypto
+                .createHmac('sha256', this.opts.key)
                 .update(message)
                 .digest('base64');
         } catch (err) {

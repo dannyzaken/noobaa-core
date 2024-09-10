@@ -15,17 +15,20 @@ const input_format_Parquet = 'Parquet';
  * https://docs.aws.amazon.com/AmazonS3/latest/API/API_SelectObjectContent.html
  */
 async function post_object_select(req, res) {
-
     if (!nb_native().S3Select) {
         throw new S3Error(S3Error.S3SelectNotCompiled);
     }
-    if (req?.body?.SelectObjectContentRequest?.InputSerialization[0]?.Parquet && !nb_native()?.select_parquet) {
+    if (
+        req?.body?.SelectObjectContentRequest?.InputSerialization[0]?.Parquet &&
+        !nb_native()?.select_parquet
+    ) {
         throw new S3Error(S3Error.S3SelectParquetNotCompiled);
     }
 
     req.object_sdk.setup_abort_controller(req, res);
     const agent_header = req.headers['user-agent'];
-    const noobaa_trigger_agent = agent_header && agent_header.includes('exec-env/NOOBAA_FUNCTION');
+    const noobaa_trigger_agent =
+        agent_header && agent_header.includes('exec-env/NOOBAA_FUNCTION');
     const encryption = s3_utils.parse_encryption(req);
     const http_req_select_params = req.body.SelectObjectContentRequest;
     const version_id = s3_utils.parse_version_id(req.query.versionId);
@@ -60,7 +63,7 @@ async function post_object_select(req, res) {
                 params.end = Number(scan_range.End);
             } else {
                 //if only End is specified, start from {End} bytes from the end.
-                params.start = object_md.size - (Number(scan_range.End));
+                params.start = object_md.size - Number(scan_range.End);
             }
         }
     }
@@ -82,25 +85,30 @@ async function post_object_select(req, res) {
 
     //currently s3select can only output in the same format as input format
     if (Array.isArray(http_req_select_params.OutputSerialization)) {
-        const output_serialization = http_req_select_params.OutputSerialization[0];
-        if ((input_format === input_format_CSV && !output_serialization.CSV) ||
-            (input_format === input_format_JSON && !output_serialization.JSON) ||
-            (input_format === input_format_Parquet && !output_serialization.CSV)) {
-                throw new S3Error(S3Error.OutputInputFormatMismatch);
-            }
+        const output_serialization =
+            http_req_select_params.OutputSerialization[0];
+        if (
+            (input_format === input_format_CSV && !output_serialization.CSV) ||
+            (input_format === input_format_JSON &&
+                !output_serialization.JSON) ||
+            (input_format === input_format_Parquet && !output_serialization.CSV)
+        ) {
+            throw new S3Error(S3Error.OutputInputFormatMismatch);
+        }
     }
 
-    dbg.log3("input_serialization = ", input_serialization);
+    dbg.log3('input_serialization = ', input_serialization);
 
     /**@type {nb.S3SelectOptions} */
     const select_args = {
         query: http_req_select_params.Expression[0],
         input_format: input_format,
-        input_serialization_format: http_req_select_params.InputSerialization[0][input_format][0], //can be more lenient
+        input_serialization_format:
+            http_req_select_params.InputSerialization[0][input_format][0], //can be more lenient
         records_header_buf: S3SelectStream.records_message_headers,
         size_bytes: object_md.size,
         filepath: undefined,
-        fs_context: undefined
+        fs_context: undefined,
     };
     //extra args for parquet file
     if (input_format === input_format_Parquet) {
@@ -111,20 +119,23 @@ async function post_object_select(req, res) {
         }
         const fs_context = nsfs.prepare_fs_context(req.object_sdk);
         const filepath = await nsfs._find_version_path(fs_context, params);
-        dbg.log2("FILEPATH nsfs = ", filepath);
+        dbg.log2('FILEPATH nsfs = ', filepath);
         select_args.filepath = filepath;
         select_args.fs_context = fs_context;
     }
     const s3select = new S3SelectStream(select_args);
-    dbg.log2("select_args = ", select_args);
+    dbg.log2('select_args = ', select_args);
 
     s3select.on('error', err => {
-        dbg.error("s3select error:", err, ", for path = ", req.path);
+        dbg.error('s3select error:', err, ', for path = ', req.path);
         res.end(S3SelectStream.error_message);
     });
 
     //pipe s3select result into http result
-    stream_utils.pipeline([s3select, res], true /*res is a write stream, no need for resume*/);
+    stream_utils.pipeline(
+        [s3select, res],
+        true /*res is a write stream, no need for resume*/,
+    );
 
     if (input_format === 'Parquet') {
         //Parquet is not streamed. Instead the s3select will read
@@ -133,7 +144,10 @@ async function post_object_select(req, res) {
     } else {
         //send s3select pipe to read_object_stream.
         //in some cases (currently nsfs) it will pipe object stream into our pipe (s3select)
-        const read_stream = await req.object_sdk.read_object_stream(params, s3select);
+        const read_stream = await req.object_sdk.read_object_stream(
+            params,
+            s3select,
+        );
         if (read_stream) {
             // if read_stream supports closing, then we handle abort cases such as http disconnection
             // by calling the close method to stop it from buffering more data which will go to waste.
@@ -141,7 +155,10 @@ async function post_object_select(req, res) {
                 req.object_sdk.add_abort_handler(() => read_stream.close());
             }
             //in other cases, we need to pipe the read stream ourselves
-            stream_utils.pipeline([read_stream, s3select], true /*no need to resume s3select*/);
+            stream_utils.pipeline(
+                [read_stream, s3select],
+                true /*no need to resume s3select*/,
+            );
         }
     }
 }

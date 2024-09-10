@@ -21,8 +21,11 @@ function background_worker() {
     }
 
     dbg.log2(`checking cluster_master`);
-    dbg.log0('no local cluster info or server is not part of a cluster. therefore will be cluster master');
-    return cutil.send_master_update(true)
+    dbg.log0(
+        'no local cluster info or server is not part of a cluster. therefore will be cluster master',
+    );
+    return cutil
+        .send_master_update(true)
         .then(() => {
             if (!is_cluster_master) {
                 bg_workers.run_master_workers();

@@ -6,19 +6,18 @@ const mocha = require('mocha');
 const assert = require('assert');
 const LinkedList = require('../../util/linked_list');
 
-mocha.describe('linked_list', function() {
-
-    mocha.it('should create ok', function() {
+mocha.describe('linked_list', function () {
+    mocha.it('should create ok', function () {
         const ll = new LinkedList();
         _.noop(ll); // lint unused bypass
     });
 
-    mocha.it('should handle single item', function() {
+    mocha.it('should handle single item', function () {
         const ll = new LinkedList();
         assert(ll.is_empty());
         assert.strictEqual(ll.length, 0);
         const item = {
-            foo: 'bar'
+            foo: 'bar',
         };
         ll.push_front(item);
         assert.strictEqual(ll.get_front(), item);
@@ -37,17 +36,16 @@ mocha.describe('linked_list', function() {
         assert(!ll.pop_back());
     });
 
-    mocha.it('should throw mixing item between lists', function() {
+    mocha.it('should throw mixing item between lists', function () {
         const l1 = new LinkedList();
         const l2 = new LinkedList();
         const item = {};
         l1.push_front(item);
-        assert.throws(function() {
+        assert.throws(function () {
             l2.push_front(item);
         }, Error);
-        assert.throws(function() {
+        assert.throws(function () {
             l2.remove(item);
         }, Error);
     });
-
 });

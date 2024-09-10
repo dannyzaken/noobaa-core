@@ -9,7 +9,6 @@ const BlobError = require('../blob_errors').BlobError;
  * https://docs.microsoft.com/en-us/rest/api/storageservices/list-blobs
  */
 async function get_container_list(req, res) {
-
     const max_keys_received = Number(req.query.maxresults || 1000);
     if (!_.isInteger(max_keys_received) || max_keys_received < 0) {
         throw new BlobError(BlobError.InvalidArgument);
@@ -45,7 +44,9 @@ async function get_container_list(req, res) {
                                 LeaseStatus: 'unlocked',
                                 LeaseState: 'available',
                                 ServerEncrypted: false,
-                                'Last-Modified': (new Date(obj.create_time)).toUTCString(),
+                                'Last-Modified': new Date(
+                                    obj.create_time,
+                                ).toUTCString(),
                                 'Content-Length': obj.size,
                                 'Content-Type': obj.content_type,
                                 // 'Content-Encoding': {},
@@ -53,17 +54,17 @@ async function get_container_list(req, res) {
                                 // 'Content-MD5': {},
                                 // 'Cache-Control': {},
                                 // 'Content-Disposition': {},
-                            }
-                        }
+                            },
+                        },
                     })),
                     reply.common_prefixes.map(prefix => ({
                         BlobPrefix: {
-                            Name: prefix
-                        }
-                    }))
+                            Name: prefix,
+                        },
+                    })),
                 ],
             },
-        }
+        },
     };
 }
 

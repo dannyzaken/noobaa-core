@@ -21,21 +21,19 @@ function get_base_address(address_list, options = {}) {
         secure = true,
     } = options;
 
-    const api_list = address_list.filter(addr =>
-        (!service || addr.service === service) &&
-        addr.api === api
+    const api_list = address_list.filter(
+        addr => (!service || addr.service === service) && addr.api === api,
     );
 
     const default_port = api_default_ports[api];
     if (hint === 'EXTERNAL') {
-        const external_addrs = api_list.filter(addr =>
-            addr.kind === 'EXTERNAL' &&
-            addr.secure === secure
+        const external_addrs = api_list.filter(
+            addr => addr.kind === 'EXTERNAL' && addr.secure === secure,
         );
 
         if (external_addrs.length > 0) {
-            const [{ hostname, port }] = external_addrs.sort((addr1, addr2) =>
-                addr2.weight - addr1.weight
+            const [{ hostname, port }] = external_addrs.sort(
+                (addr1, addr2) => addr2.weight - addr1.weight,
             );
             return construct_url({ protocol, hostname, port });
         }
@@ -44,14 +42,13 @@ function get_base_address(address_list, options = {}) {
     }
 
     if (hint === 'INTERNAL') {
-        const internal_addrs = api_list.filter(addr =>
-            addr.kind === 'INTERNAL' &&
-            addr.secure === secure
+        const internal_addrs = api_list.filter(
+            addr => addr.kind === 'INTERNAL' && addr.secure === secure,
         );
 
         if (internal_addrs.length > 0) {
-            const [{ hostname, port }] = internal_addrs.sort((addr1, addr2) =>
-                addr2.weight - addr1.weight
+            const [{ hostname, port }] = internal_addrs.sort(
+                (addr1, addr2) => addr2.weight - addr1.weight,
             );
             return construct_url({ protocol, hostname, port });
         }

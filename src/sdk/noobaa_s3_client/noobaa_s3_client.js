@@ -8,7 +8,7 @@ const { HttpProxyAgent } = require('http-proxy-agent');
 const { HttpsProxyAgent } = require('https-proxy-agent');
 const { S3ClientSDKV2 } = require('./noobaa_s3_client_sdkv2');
 const { S3ClientAutoRegion } = require('./noobaa_s3_client_sdkv3');
-const { NodeHttpHandler } = require("@smithy/node-http-handler");
+const { NodeHttpHandler } = require('@smithy/node-http-handler');
 const config = require('../../../config');
 const http_utils = require('../../util/http_utils');
 const cloud_utils = require('../../util/cloud_utils');
@@ -21,7 +21,10 @@ function get_s3_client_v3_params(params) {
     if (should_use_sdk_v2(params)) {
         change_s3_client_params_to_v2_structure(params);
         s3_client = new S3ClientSDKV2(params);
-    } else if (params.endpoint && cloud_utils.is_aws_endpoint(params.endpoint)) {
+    } else if (
+        params.endpoint &&
+        cloud_utils.is_aws_endpoint(params.endpoint)
+    ) {
         // to avoid redirection in case of aws endpoint we will omit the endpoint when creating the s3-client.
         const params_without_endpoint = _.omit(params, 'endpoint');
         s3_client = new S3ClientAutoRegion(params_without_endpoint);
@@ -36,7 +39,10 @@ function get_s3_client_v3_params(params) {
 // 1. by the flag AWS_SDK_VERSION_3_ENABLED (we use it as a workaround in case we want to use only AWS SDK V2 - set to false).
 // 2. signatureVersion defined? if it is 'v2' (signature version v2 is only supported in AWS SDK V2)
 function should_use_sdk_v2(params) {
-    return !config.AWS_SDK_VERSION_3_ENABLED || (params.signatureVersion && params.signatureVersion === 'v2');
+    return (
+        !config.AWS_SDK_VERSION_3_ENABLED ||
+        (params.signatureVersion && params.signatureVersion === 'v2')
+    );
 }
 
 // we will use this function in debugging to print the class type easily
@@ -68,7 +74,7 @@ function change_s3_client_params_to_v2_structure(params) {
         // If you are passing custom endpoint which uses http, then you need to provide httpAgent
         const agent = http_utils.get_agent_by_endpoint(params.endpoint);
         params.httpOptions = {
-            agent
+            agent,
         };
         delete params.requestHandler;
     }
@@ -89,21 +95,23 @@ function get_requestHandler_with_suitable_agent(endpoint) {
     const agent = http_utils.get_agent_by_endpoint(endpoint);
     if (agent instanceof https.Agent || agent instanceof HttpsProxyAgent) {
         return new NodeHttpHandler({
-            httpsAgent: agent
+            httpsAgent: agent,
         });
     } else if (agent instanceof http.Agent || agent instanceof HttpProxyAgent) {
         return new NodeHttpHandler({
-            httpAgent: agent
+            httpAgent: agent,
         });
     } else {
-        throw new Error(`Protocol of ${endpoint} doesn't have a matching agent (valid only for HTTP, HTTPS, WSS only)`);
+        throw new Error(
+            `Protocol of ${endpoint} doesn't have a matching agent (valid only for HTTP, HTTPS, WSS only)`,
+        );
     }
 }
 
 /**
  * When using aws sdk v3 we get the error object with values that start with an uppercase instead of lowercase
  * we want to fix this value to be start with a lowercase (example: v2: code, v3: Code).
- * 
+ *
  * @param {object} err
  */
 function fix_error_object(err) {
@@ -111,11 +119,11 @@ function fix_error_object(err) {
         if (Object.hasOwn(err, key)) {
             // Currently we want to fix only the value "Code",
             // if we will want to fix all the values we can remove this "if" statement
-            if (key === "Code") {
+            if (key === 'Code') {
                 const lowercaseKey = key.toLowerCase();
                 // If we remove the "if" statement above (key === "Code") then we need to check also key !== lowercaseKey
                 // to avoid running over a valid value.
-                // remove the next comment and delete the if 2 lines below. 
+                // remove the next comment and delete the if 2 lines below.
                 // if (key !== lowercaseKey && !Object.hasOwn(err, lowercaseKey)) {
                 if (!Object.hasOwn(err, lowercaseKey)) {
                     err[lowercaseKey] = err[key];
@@ -127,7 +135,9 @@ function fix_error_object(err) {
 
 // EXPORTS
 exports.get_s3_client_v3_params = get_s3_client_v3_params;
-exports.change_s3_client_params_to_v2_structure = change_s3_client_params_to_v2_structure;
+exports.change_s3_client_params_to_v2_structure =
+    change_s3_client_params_to_v2_structure;
 exports.get_sdk_class_str = get_sdk_class_str;
 exports.fix_error_object = fix_error_object;
-exports.get_requestHandler_with_suitable_agent = get_requestHandler_with_suitable_agent;
+exports.get_requestHandler_with_suitable_agent =
+    get_requestHandler_with_suitable_agent;

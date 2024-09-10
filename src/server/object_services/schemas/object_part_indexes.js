@@ -18,8 +18,8 @@ module.exports = [
             partialFilterExpression: {
                 obj: { $exists: true },
                 deleted: null,
-            }
-        }
+            },
+        },
     },
     {
         fields: {
@@ -29,8 +29,8 @@ module.exports = [
             unique: false,
             partialFilterExpression: {
                 chunk: { $exists: true },
-            }
-        }
+            },
+        },
     },
     {
         fields: {
@@ -42,8 +42,8 @@ module.exports = [
             partialFilterExpression: {
                 chunk: { $exists: true },
                 deleted: null,
-            }
-        }
+            },
+        },
     },
     {
         // This index is used for queries where we want to find all the chunks of a specific object
@@ -56,7 +56,7 @@ module.exports = [
             partialFilterExpression: {
                 obj: { $exists: true },
                 deleted: { $exists: true },
-            }
-        }
-    }
+            },
+        },
+    },
 ];

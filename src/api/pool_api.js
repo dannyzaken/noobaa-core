@@ -8,7 +8,6 @@
  *
  */
 module.exports = {
-
     $id: 'pool_api',
 
     methods: {
@@ -17,41 +16,37 @@ module.exports = {
             method: 'POST',
             params: {
                 type: 'object',
-                required: [
-                    'name',
-                    'is_managed',
-                    'host_count',
-                ],
+                required: ['name', 'is_managed', 'host_count'],
                 properties: {
                     name: {
-                        type: 'string'
+                        type: 'string',
                     },
                     is_managed: {
-                        type: 'boolean'
+                        type: 'boolean',
                     },
                     host_count: {
                         type: 'integer',
-                        minimum: 1
+                        minimum: 1,
                     },
                     host_config: {
                         type: 'object',
                         properties: {
                             volume_size: {
-                                $ref: 'common_api#/definitions/bigint'
-                            }
-                        }
+                                $ref: 'common_api#/definitions/bigint',
+                            },
+                        },
                     },
                     backingstore: {
-                        $ref: '#/definitions/backingstore_definition'
+                        $ref: '#/definitions/backingstore_definition',
                     },
-                }
+                },
             },
             reply: {
-                type: 'string'
+                type: 'string',
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         create_cloud_pool: {
@@ -71,19 +66,19 @@ module.exports = {
                         type: 'string',
                     },
                     backingstore: {
-                        $ref: '#/definitions/backingstore_definition'
+                        $ref: '#/definitions/backingstore_definition',
                     },
                     available_capacity: {
-                        $ref: 'common_api#/definitions/bigint'
+                        $ref: 'common_api#/definitions/bigint',
                     },
                     storage_limit: {
-                        $ref: 'common_api#/definitions/bigint'
-                    }
-                }
+                        $ref: 'common_api#/definitions/bigint',
+                    },
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         create_namespace_resource: {
@@ -103,11 +98,11 @@ module.exports = {
                         type: 'string',
                     },
                     nsfs_config: {
-                        $ref: 'common_api#/definitions/nsfs_config'
+                        $ref: 'common_api#/definitions/nsfs_config',
                     },
                     access_mode: {
                         type: 'string',
-                        enum: ['READ_ONLY', 'READ_WRITE']
+                        enum: ['READ_ONLY', 'READ_WRITE'],
                     },
                     namespace_store: {
                         type: 'object',
@@ -119,13 +114,13 @@ module.exports = {
                             namespace: {
                                 type: 'string',
                             },
-                        }
+                        },
                     },
-                }
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         create_mongo_pool: {
@@ -137,12 +132,12 @@ module.exports = {
                 properties: {
                     name: {
                         type: 'string',
-                    }
-                }
+                    },
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         read_pool: {
@@ -155,14 +150,14 @@ module.exports = {
                     name: {
                         type: 'string',
                     },
-                }
+                },
             },
             reply: {
-                $ref: '#/definitions/pool_extended_info'
+                $ref: '#/definitions/pool_extended_info',
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         read_namespace_resource: {
@@ -175,14 +170,14 @@ module.exports = {
                     name: {
                         type: 'string',
                     },
-                }
+                },
             },
             reply: {
-                $ref: '#/definitions/namespace_resource_info'
+                $ref: '#/definitions/namespace_resource_info',
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         delete_pool: {
@@ -195,11 +190,11 @@ module.exports = {
                     name: {
                         type: 'string',
                     },
-                }
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         delete_namespace_resource: {
@@ -212,11 +207,11 @@ module.exports = {
                     name: {
                         type: 'string',
                     },
-                }
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         get_associated_buckets: {
@@ -229,17 +224,17 @@ module.exports = {
                     name: {
                         type: 'string',
                     },
-                }
+                },
             },
             reply: {
                 type: 'array',
                 items: {
-                    type: 'string'
-                }
+                    type: 'string',
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         get_cloud_services_stats: {
@@ -251,7 +246,7 @@ module.exports = {
                 properties: {
                     start_date: { idate: true },
                     end_date: { idate: true },
-                }
+                },
             },
             reply: {
                 type: 'array',
@@ -260,27 +255,35 @@ module.exports = {
                     properties: {
                         service: {
                             type: 'string',
-                            enum: ['AWSSTS', 'AWS', 'AZURE', 'S3_COMPATIBLE', 'GOOGLE', 'FLASHBLADE', 'NET_STORAGE', 'IBM_COS']
+                            enum: [
+                                'AWSSTS',
+                                'AWS',
+                                'AZURE',
+                                'S3_COMPATIBLE',
+                                'GOOGLE',
+                                'FLASHBLADE',
+                                'NET_STORAGE',
+                                'IBM_COS',
+                            ],
                         },
                         read_count: {
-                            type: 'integer'
+                            type: 'integer',
                         },
                         write_count: {
-                            type: 'integer'
+                            type: 'integer',
                         },
                         read_bytes: {
-                            $ref: 'common_api#/definitions/bigint'
+                            $ref: 'common_api#/definitions/bigint',
                         },
                         write_bytes: {
-                            $ref: 'common_api#/definitions/bigint'
+                            $ref: 'common_api#/definitions/bigint',
                         },
                     },
-
-                }
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         get_pool_history: {
@@ -292,10 +295,10 @@ module.exports = {
                     pool_list: {
                         type: 'array',
                         items: {
-                            type: 'string'
-                        }
-                    }
-                }
+                            type: 'string',
+                        },
+                    },
+                },
             },
             reply: {
                 type: 'array',
@@ -304,7 +307,7 @@ module.exports = {
                     required: ['timestamp', 'pool_list'],
                     properties: {
                         timestamp: {
-                            idate: true
+                            idate: true,
                         },
                         pool_list: {
                             type: 'array',
@@ -313,23 +316,23 @@ module.exports = {
                                 required: ['name', 'storage'],
                                 properties: {
                                     name: {
-                                        type: 'string'
+                                        type: 'string',
                                     },
                                     storage: {
-                                        $ref: 'common_api#/definitions/storage_info'
+                                        $ref: 'common_api#/definitions/storage_info',
                                     },
                                     resource_type: {
-                                        $ref: '#/definitions/resource_type'
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                                        $ref: '#/definitions/resource_type',
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
         assign_pool_to_region: {
             doc: 'Add a region tag to a resource',
@@ -344,11 +347,11 @@ module.exports = {
                     region: {
                         type: 'string',
                     },
-                }
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         update_issues_report: {
@@ -365,16 +368,16 @@ module.exports = {
                         type: 'string',
                     },
                     namespace_resource_id: {
-                        objectid: true
+                        objectid: true,
                     },
                     monitoring: {
-                        type: 'boolean'
-                    }
-                }
+                        type: 'boolean',
+                    },
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         update_last_monitoring: {
@@ -388,17 +391,17 @@ module.exports = {
                         idate: true,
                     },
                     namespace_resource_id: {
-                        objectid: true
+                        objectid: true,
                     },
-                }
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         scale_hosts_pool: {
-            doc: 'Change the pool\'s underlaying host count',
+            doc: "Change the pool's underlaying host count",
             method: 'POST',
             params: {
                 type: 'object',
@@ -408,17 +411,17 @@ module.exports = {
                         type: 'string',
                     },
                     host_count: {
-                        type: 'integer'
-                    }
-                }
+                        type: 'integer',
+                    },
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         update_cloud_pool: {
-            doc: 'Update the cloud pool\'s properties',
+            doc: "Update the cloud pool's properties",
             method: 'POST',
             params: {
                 type: 'object',
@@ -428,20 +431,20 @@ module.exports = {
                         type: 'string',
                     },
                     available_capacity: {
-                        $ref: 'common_api#/definitions/bigint'
+                        $ref: 'common_api#/definitions/bigint',
                     },
                     storage_limit: {
-                        $ref: 'common_api#/definitions/bigint'
-                    }
-                }
+                        $ref: 'common_api#/definitions/bigint',
+                    },
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         update_hosts_pool: {
-            doc: 'Update the pool\'s underlaying host count from the operator',
+            doc: "Update the pool's underlaying host count from the operator",
             method: 'POST',
             params: {
                 type: 'object',
@@ -450,15 +453,15 @@ module.exports = {
                     name: {
                         type: 'string',
                     },
-                }
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         get_hosts_pool_agent_config: {
-            doc: 'Read the hosts pool\'s agent config',
+            doc: "Read the hosts pool's agent config",
             method: 'GET',
             params: {
                 type: 'object',
@@ -467,14 +470,14 @@ module.exports = {
                     name: {
                         type: 'string',
                     },
-                }
+                },
             },
             reply: {
-                type: 'string'
+                type: 'string',
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         get_namespace_resource_operator_info: {
@@ -487,7 +490,7 @@ module.exports = {
                     name: {
                         type: 'string',
                     },
-                }
+                },
             },
             reply: {
                 type: 'object',
@@ -495,13 +498,13 @@ module.exports = {
                     access_key: { $ref: 'common_api#/definitions/access_key' },
                     secret_key: { $ref: 'common_api#/definitions/secret_key' },
                     need_k8s_sync: {
-                        type: 'boolean'
-                    }
-                }
+                        type: 'boolean',
+                    },
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
 
         set_namespace_store_info: {
@@ -512,16 +515,16 @@ module.exports = {
                 required: ['name', 'namespace'],
                 properties: {
                     name: {
-                        type: 'string'
+                        type: 'string',
                     },
                     namespace: {
-                        type: 'string'
+                        type: 'string',
                     },
-                }
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
     },
 
@@ -535,8 +538,8 @@ module.exports = {
                 },
                 namespace: {
                     type: 'string',
-                }
-            }
+                },
+            },
         },
         pool_definition: {
             type: 'object',
@@ -548,10 +551,10 @@ module.exports = {
                 nodes: {
                     type: 'array',
                     items: {
-                        $ref: 'node_api#/definitions/node_identity'
-                    }
-                }
-            }
+                        $ref: 'node_api#/definitions/node_identity',
+                    },
+                },
+            },
         },
 
         namespace_resource_info: {
@@ -559,44 +562,49 @@ module.exports = {
             required: ['name'],
             properties: {
                 name: {
-                    type: 'string'
+                    type: 'string',
                 },
                 endpoint: {
-                    type: 'string'
+                    type: 'string',
                 },
                 endpoint_type: {
-                    $ref: 'common_api#/definitions/endpoint_type'
+                    $ref: 'common_api#/definitions/endpoint_type',
                 },
                 auth_method: {
-                    $ref: 'common_api#/definitions/cloud_auth_method'
+                    $ref: 'common_api#/definitions/cloud_auth_method',
                 },
                 target_bucket: {
-                    type: 'string'
+                    type: 'string',
                 },
                 cp_code: {
-                    type: 'string'
+                    type: 'string',
                 },
                 identity: {
-                    $ref: 'common_api#/definitions/access_key'
+                    $ref: 'common_api#/definitions/access_key',
                 },
                 fs_root_path: {
-                    type: 'string'
+                    type: 'string',
                 },
                 fs_backend: {
-                    $ref: 'common_api#/definitions/fs_backend'
+                    $ref: 'common_api#/definitions/fs_backend',
                 },
                 mode: {
                     type: 'string',
-                    enum: ['OPTIMAL', 'STORAGE_NOT_EXIST', 'AUTH_FAILED', 'IO_ERRORS']
+                    enum: [
+                        'OPTIMAL',
+                        'STORAGE_NOT_EXIST',
+                        'AUTH_FAILED',
+                        'IO_ERRORS',
+                    ],
                 },
                 undeletable: {
-                    $ref: 'common_api#/definitions/undeletable_enum'
+                    $ref: 'common_api#/definitions/undeletable_enum',
                 },
                 access_mode: {
                     type: 'string',
-                    enum: ['READ_ONLY', 'READ_WRITE']
+                    enum: ['READ_ONLY', 'READ_WRITE'],
                 },
-            }
+            },
         },
 
         // Currently the extended info has an addition of secret_key
@@ -605,46 +613,48 @@ module.exports = {
             required: ['name'],
             properties: {
                 id: {
-                    objectid: true
+                    objectid: true,
                 },
                 name: {
-                    type: 'string'
+                    type: 'string',
                 },
                 endpoint: {
-                    type: 'string'
+                    type: 'string',
                 },
                 endpoint_type: {
-                    $ref: 'common_api#/definitions/endpoint_type'
+                    $ref: 'common_api#/definitions/endpoint_type',
                 },
                 auth_method: {
-                    $ref: 'common_api#/definitions/cloud_auth_method'
+                    $ref: 'common_api#/definitions/cloud_auth_method',
                 },
                 target_bucket: {
-                    type: 'string'
+                    type: 'string',
                 },
                 access_key: { $ref: 'common_api#/definitions/access_key' },
-                azure_log_access_keys: { $ref: 'common_api#/definitions/azure_log_access_keys' },
+                azure_log_access_keys: {
+                    $ref: 'common_api#/definitions/azure_log_access_keys',
+                },
                 cp_code: {
-                    type: 'string'
+                    type: 'string',
                 },
                 secret_key: { $ref: 'common_api#/definitions/secret_key' },
                 fs_root_path: {
-                    type: 'string'
+                    type: 'string',
                 },
                 fs_backend: {
-                    $ref: 'common_api#/definitions/fs_backend'
+                    $ref: 'common_api#/definitions/fs_backend',
                 },
                 access_mode: {
                     type: 'string',
-                    enum: ['READ_ONLY', 'READ_WRITE']
+                    enum: ['READ_ONLY', 'READ_WRITE'],
                 },
                 aws_sts_arn: {
-                    type: 'string'
+                    type: 'string',
                 },
                 region: {
-                    type: 'string'
+                    type: 'string',
                 },
-            }
+            },
         },
 
         pool_extended_info: {
@@ -654,26 +664,26 @@ module.exports = {
                 'storage',
                 'associated_accounts',
                 'resource_type',
-                'is_managed'
+                'is_managed',
             ],
             properties: {
                 name: {
-                    type: 'string'
+                    type: 'string',
                 },
                 nodes: {
-                    $ref: 'node_api#/definitions/nodes_aggregate_info'
+                    $ref: 'node_api#/definitions/nodes_aggregate_info',
                 },
                 storage_nodes: {
-                    $ref: 'node_api#/definitions/nodes_aggregate_info'
+                    $ref: 'node_api#/definitions/nodes_aggregate_info',
                 },
                 s3_nodes: {
-                    $ref: 'node_api#/definitions/nodes_aggregate_info'
+                    $ref: 'node_api#/definitions/nodes_aggregate_info',
                 },
                 hosts: {
                     type: 'object',
                     properties: {
                         configured_count: {
-                            type: 'integer'
+                            type: 'integer',
                         },
                         count: {
                             type: 'integer',
@@ -691,75 +701,73 @@ module.exports = {
                                 },
                                 GATEWAY: {
                                     type: 'integer',
-                                }
-                            }
-                        }
-
-                    }
-
+                                },
+                            },
+                        },
+                    },
                 },
                 storage: {
-                    $ref: 'common_api#/definitions/storage_info'
+                    $ref: 'common_api#/definitions/storage_info',
                 },
                 io_stats: {
                     type: 'object',
                     properties: {
                         read_count: {
-                            type: 'integer'
+                            type: 'integer',
                         },
                         write_count: {
-                            type: 'integer'
+                            type: 'integer',
                         },
                         read_bytes: {
-                            $ref: 'common_api#/definitions/bigint'
+                            $ref: 'common_api#/definitions/bigint',
                         },
                         write_bytes: {
-                            $ref: 'common_api#/definitions/bigint'
+                            $ref: 'common_api#/definitions/bigint',
                         },
-                    }
+                    },
                 },
                 undeletable: {
-                    $ref: 'common_api#/definitions/undeletable_enum'
+                    $ref: 'common_api#/definitions/undeletable_enum',
                 },
                 data_activities: {
                     type: 'object',
                     properties: {
                         host_count: {
-                            type: 'integer'
+                            type: 'integer',
                         },
                         activities: {
-                            $ref: 'node_api#/definitions/data_activities'
-                        }
-                    }
+                            $ref: 'node_api#/definitions/data_activities',
+                        },
+                    },
                 },
                 cloud_info: {
                     type: 'object',
                     properties: {
                         endpoint: {
-                            type: 'string'
+                            type: 'string',
                         },
                         endpoint_type: {
-                            $ref: 'common_api#/definitions/endpoint_type'
+                            $ref: 'common_api#/definitions/endpoint_type',
                         },
                         target_bucket: {
-                            type: 'string'
+                            type: 'string',
                         },
                         auth_method: {
-                            $ref: 'common_api#/definitions/cloud_auth_method'
+                            $ref: 'common_api#/definitions/cloud_auth_method',
                         },
                         created_by: {
-                            $ref: 'common_api#/definitions/email'
+                            $ref: 'common_api#/definitions/email',
                         },
                         node_name: {
-                            type: 'string'
+                            type: 'string',
                         },
                         host: {
-                            type: 'string'
+                            type: 'string',
                         },
                         identity: {
-                            $ref: 'common_api#/definitions/access_key'
-                        }
-                    }
+                            $ref: 'common_api#/definitions/access_key',
+                        },
+                    },
                 },
                 mongo_info: {
                     type: 'object',
@@ -770,32 +778,32 @@ module.exports = {
                     type: 'object',
                     properties: {
                         volume_size: {
-                            $ref: 'common_api#/definitions/bigint'
-                        }
-                    }
+                            $ref: 'common_api#/definitions/bigint',
+                        },
+                    },
                 },
                 pool_node_type: {
-                    $ref: 'common_api#/definitions/node_type'
+                    $ref: 'common_api#/definitions/node_type',
                 },
                 resource_type: {
-                    $ref: '#/definitions/resource_type'
+                    $ref: '#/definitions/resource_type',
                 },
                 mode: {
-                    $ref: '#/definitions/pool_mode'
+                    $ref: '#/definitions/pool_mode',
                 },
                 associated_accounts: {
                     type: 'array',
                     items: { $ref: 'common_api#/definitions/email' },
                 },
                 region: {
-                    type: 'string'
+                    type: 'string',
                 },
                 is_managed: {
-                    type: 'boolean'
+                    type: 'boolean',
                 },
                 create_time: {
-                    idate: true
-                }
+                    idate: true,
+                },
             },
         },
 
@@ -815,15 +823,15 @@ module.exports = {
                             nodes_count: {
                                 type: 'integer',
                             },
-                        }
-                    }
-                }
-            }
+                        },
+                    },
+                },
+            },
         },
 
         resource_type: {
             type: 'string',
-            enum: ['HOSTS', 'CLOUD', 'INTERNAL']
+            enum: ['HOSTS', 'CLOUD', 'INTERNAL'],
         },
 
         pool_mode: {
@@ -849,8 +857,8 @@ module.exports = {
                 'IO_ERRORS',
                 'STORAGE_NOT_EXIST',
                 'AUTH_FAILED',
-                'OPTIMAL'
-            ]
+                'OPTIMAL',
+            ],
         },
-    }
+    },
 };

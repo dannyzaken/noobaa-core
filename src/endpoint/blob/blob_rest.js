@@ -7,7 +7,6 @@ const BlobError = require('./blob_errors').BlobError;
 const http_utils = require('../../util/http_utils');
 
 const BLOB_OPS = js_utils.deep_freeze({
-
     // SERVICE
     get_service_list: require('./ops/blob_get_service_list'),
     get_service_stats: require('./ops/blob_get_service_stats'),
@@ -55,7 +54,6 @@ async function blob_rest(req, res) {
 }
 
 async function handle_request(req, res) {
-
     // fill up standard response headers
     res.setHeader('x-ms-request-id', req.request_id);
     res.setHeader('x-ms-version', '2016-05-31');
@@ -64,9 +62,14 @@ async function handle_request(req, res) {
     // but anyway we allow it by the agent server.
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers',
-        'Content-Type,Content-MD5,Date,ETag,Authorization,x-ms-version,x-ms-date');
+    res.setHeader(
+        'Access-Control-Allow-Methods',
+        'GET,POST,PUT,DELETE,OPTIONS',
+    );
+    res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type,Content-MD5,Date,ETag,Authorization,x-ms-version,x-ms-date',
+    );
     res.setHeader('Access-Control-Expose-Headers', 'ETag');
 
     if (req.method === 'OPTIONS') {
@@ -81,11 +84,24 @@ async function handle_request(req, res) {
 
     // resolve the op to call
     const op_name = parse_op_name(req);
-    dbg.log0('BLOB REQUEST', req.method, req.originalUrl,
-        'op', op_name, 'request_id', req.request_id, req.headers);
+    dbg.log0(
+        'BLOB REQUEST',
+        req.method,
+        req.originalUrl,
+        'op',
+        op_name,
+        'request_id',
+        req.request_id,
+        req.headers,
+    );
     const op = BLOB_OPS[op_name];
     if (!op || !op.handler) {
-        dbg.error('BLOB TODO (NotImplemented)', op_name, req.method, req.originalUrl);
+        dbg.error(
+            'BLOB TODO (NotImplemented)',
+            op_name,
+            req.method,
+            req.originalUrl,
+        );
         throw new BlobError(BlobError.InternalError);
     }
 
@@ -119,7 +135,8 @@ function check_headers(req) {
 function authenticate_request(req) {
     // temporary - until we implement authentication
     const auth_server = require('../../server/common_services/auth_server'); // eslint-disable-line global-require
-    const system_store = require('../../server/system_services/system_store').get_instance(); // eslint-disable-line global-require
+    const system_store =
+        require('../../server/system_services/system_store').get_instance(); // eslint-disable-line global-require
     try {
         // TODO: fix authentication. currently autherizes everything.
         const system = system_store.data.systems[0];
@@ -144,11 +161,14 @@ function parse_op_name(req) {
     const pos = index < 0 ? u.length : index;
     const bucket = decodeURIComponent(u.slice(1, pos));
     // replace hadoop _$folder$ in key
-    const key = decodeURIComponent(u.slice(pos + 1)).replace(/_\$folder\$/, '/');
+    const key = decodeURIComponent(u.slice(pos + 1)).replace(
+        /_\$folder\$/,
+        '/',
+    );
     req.params = { bucket, key };
     return req.query.comp ?
-        `${m}_${resource}_${req.query.comp}` :
-        `${m}_${resource}`;
+            `${m}_${resource}_${req.query.comp}`
+        :   `${m}_${resource}`;
 }
 
 /**
@@ -156,23 +176,28 @@ function parse_op_name(req) {
  */
 function handle_error(req, res, err) {
     const blob_err =
-        ((err instanceof BlobError) && err) ||
-        new BlobError(RPC_ERRORS_TO_BLOB[err.rpc_code] || BlobError.InternalError);
+        (err instanceof BlobError && err) ||
+        new BlobError(
+            RPC_ERRORS_TO_BLOB[err.rpc_code] || BlobError.InternalError,
+        );
 
     // usage_report.s3_errors_info.total_errors += 1;
     // usage_report.s3_errors_info[blob_err.code] = (usage_report.s3_errors_info[blob_err.code] || 0) + 1;
 
     const reply = blob_err.reply();
-    dbg.error('BLOB ERROR', reply,
-        req.method, req.originalUrl,
+    dbg.error(
+        'BLOB ERROR',
+        reply,
+        req.method,
+        req.originalUrl,
         JSON.stringify(req.headers),
-        err.stack || err);
+        err.stack || err,
+    );
     res.statusCode = blob_err.http_code;
     res.setHeader('Content-Type', 'application/xml');
     res.setHeader('Content-Length', Buffer.byteLength(reply));
     res.end(reply);
 }
-
 
 // EXPORTS
 module.exports = blob_rest;

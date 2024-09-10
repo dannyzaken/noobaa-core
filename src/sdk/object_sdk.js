@@ -42,7 +42,8 @@ const bucket_namespace_cache = new LRUCache({
      */
     make_key: params => params.name,
     load: params => params.sdk._load_bucket_namespace(params),
-    validate: (data, params) => params.sdk._validate_bucket_namespace(data, params),
+    validate: (data, params) =>
+        params.sdk._validate_bucket_namespace(data, params),
 });
 
 const account_cache = new LRUCache({
@@ -57,7 +58,8 @@ const account_cache = new LRUCache({
      * }} params
      */
     make_key: ({ access_key }) => access_key,
-    load: async ({ bucketspace, access_key }) => bucketspace.read_account_by_access_key({ access_key }),
+    load: async ({ bucketspace, access_key }) =>
+        bucketspace.read_account_by_access_key({ access_key }),
 });
 
 const dn_cache = new LRUCache({
@@ -67,20 +69,25 @@ const dn_cache = new LRUCache({
     /**
      * Set type for the generic template
      * @param {{
-    *      distinguished_name: string;
-    * }} params
-    */
+     *      distinguished_name: string;
+     * }} params
+     */
     make_key: ({ distinguished_name }) => distinguished_name,
-    load: async ({ distinguished_name }) => native_fs_utils.get_user_by_distinguished_name({ distinguished_name }),
- });
+    load: async ({ distinguished_name }) =>
+        native_fs_utils.get_user_by_distinguished_name({ distinguished_name }),
+});
 
-const MULTIPART_NAMESPACES = [
-    'NET_STORAGE'
+const MULTIPART_NAMESPACES = ['NET_STORAGE'];
+const required_obj_properties = [
+    'obj_id',
+    'bucket',
+    'key',
+    'size',
+    'content_type',
+    'etag',
 ];
-const required_obj_properties = ['obj_id', 'bucket', 'key', 'size', 'content_type', 'etag'];
 
 class ObjectSDK {
-
     /**
      * @param {{
      *      rpc_client: nb.APIClient;
@@ -90,14 +97,22 @@ class ObjectSDK {
      *      stats?: import('./endpoint_stats_collector').EndpointStatsCollector;
      * }} args
      */
-    constructor({ rpc_client, internal_rpc_client, object_io, bucketspace, stats }) {
+    constructor({
+        rpc_client,
+        internal_rpc_client,
+        object_io,
+        bucketspace,
+        stats,
+    }) {
         this.auth_token = undefined;
         this.requesting_account = undefined;
         this.rpc_client = rpc_client;
         this.internal_rpc_client = internal_rpc_client;
         this.object_io = object_io;
         this.stats = stats;
-        this.bucketspace = bucketspace || new BucketSpaceNB({ rpc_client, internal_rpc_client });
+        this.bucketspace =
+            bucketspace ||
+            new BucketSpaceNB({ rpc_client, internal_rpc_client });
         this.abort_controller = new AbortController();
     }
 
@@ -106,8 +121,8 @@ class ObjectSDK {
      * in order to handle aborting requests gracefully. The `abort_controller` member will
      * be used to signal async flows that abort was detected.
      * @see {@link https://nodejs.org/docs/latest/api/globals.html#class-abortcontroller}
-     * @param {import('http').IncomingMessage} req 
-     * @param {import('http').ServerResponse} res 
+     * @param {import('http').IncomingMessage} req
+     * @param {import('http').ServerResponse} res
      */
     setup_abort_controller(req, res) {
         res.once('error', err => {
@@ -133,12 +148,16 @@ class ObjectSDK {
 
         req.once('aborted', () => {
             dbg.log0('request aborted', req.url);
-            this.abort_controller.abort(new Error('request aborted ' + req.url));
+            this.abort_controller.abort(
+                new Error('request aborted ' + req.url),
+            );
         });
     }
 
     throw_if_aborted() {
-        if (this.abort_controller.signal.aborted) throw new Error('request aborted signal');
+        if (this.abort_controller.signal.aborted) {
+            throw new Error('request aborted signal');
+        }
     }
 
     add_abort_handler(handler) {
@@ -158,32 +177,47 @@ class ObjectSDK {
     }
 
     /**
-     * @param {string} name 
+     * @param {string} name
      * @returns {Promise<nb.Namespace>}
      */
     async _get_bucket_namespace(name) {
-        const { ns } = await bucket_namespace_cache.get_with_cache({ sdk: this, name });
+        const { ns } = await bucket_namespace_cache.get_with_cache({
+            sdk: this,
+            name,
+        });
         return ns;
     }
 
     async read_bucket_sdk_website_info(name) {
-        const { bucket } = await bucket_namespace_cache.get_with_cache({ sdk: this, name });
+        const { bucket } = await bucket_namespace_cache.get_with_cache({
+            sdk: this,
+            name,
+        });
         return bucket.website;
     }
 
     async read_bucket_sdk_namespace_info(name) {
-        const { bucket } = await bucket_namespace_cache.get_with_cache({ sdk: this, name });
+        const { bucket } = await bucket_namespace_cache.get_with_cache({
+            sdk: this,
+            name,
+        });
         return bucket.namespace;
     }
 
     async read_bucket_sdk_config_info(name) {
-        const { bucket } = await bucket_namespace_cache.get_with_cache({ sdk: this, name });
+        const { bucket } = await bucket_namespace_cache.get_with_cache({
+            sdk: this,
+            name,
+        });
         return bucket;
     }
 
     async read_bucket_sdk_caching_info(name) {
         try {
-            const { bucket } = await bucket_namespace_cache.get_with_cache({ sdk: this, name });
+            const { bucket } = await bucket_namespace_cache.get_with_cache({
+                sdk: this,
+                name,
+            });
             return bucket.namespace ? bucket.namespace.caching : undefined;
         } catch (error) {
             dbg.error('read_bucket_sdk_caching_info error', error);
@@ -191,7 +225,10 @@ class ObjectSDK {
     }
 
     async read_bucket_sdk_policy_info(name) {
-        const { bucket } = await bucket_namespace_cache.get_with_cache({ sdk: this, name });
+        const { bucket } = await bucket_namespace_cache.get_with_cache({
+            sdk: this,
+            name,
+        });
         const policy_info = {
             s3_policy: bucket.s3_policy,
             system_owner: bucket.system_owner, // note that bucketspace_fs currently doesn't return system_owner
@@ -202,7 +239,10 @@ class ObjectSDK {
     }
 
     async read_bucket_usage_info(name) {
-        const { bucket } = await bucket_namespace_cache.get_with_cache({ sdk: this, name });
+        const { bucket } = await bucket_namespace_cache.get_with_cache({
+            sdk: this,
+            name,
+        });
         return bucket.bucket_info.data;
     }
 
@@ -213,13 +253,22 @@ class ObjectSDK {
     async load_requesting_account(req) {
         try {
             const token = this.get_auth_token();
-            if (this._get_bucketspace().is_nsfs_containerized_user_anonymous(token)) return;
+            if (
+                this._get_bucketspace().is_nsfs_containerized_user_anonymous(
+                    token,
+                )
+            ) {
+                return;
+            }
             this.requesting_account = await account_cache.get_with_cache({
                 bucketspace: this._get_bucketspace(),
                 access_key: token ? token.access_key : anonymous_access_key,
             });
-            if (this.requesting_account?.nsfs_account_config?.distinguished_name) {
-                const distinguished_name = this.requesting_account.nsfs_account_config.distinguished_name.unwrap();
+            if (
+                this.requesting_account?.nsfs_account_config?.distinguished_name
+            ) {
+                const distinguished_name =
+                    this.requesting_account.nsfs_account_config.distinguished_name.unwrap();
                 const user = await dn_cache.get_with_cache({
                     bucketspace: this._get_bucketspace(),
                     distinguished_name,
@@ -229,8 +278,18 @@ class ObjectSDK {
             }
         } catch (error) {
             dbg.error('load_requesting_account error:', error);
-            if (error.rpc_code === 'NO_SUCH_ACCOUNT') throw new RpcError('INVALID_ACCESS_KEY_ID', `Account with access_key not found`);
-            if (error.rpc_code === 'NO_SUCH_USER') throw new RpcError('UNAUTHORIZED', `Distinguished name associated with access_key not found`);
+            if (error.rpc_code === 'NO_SUCH_ACCOUNT') {
+                throw new RpcError(
+                    'INVALID_ACCESS_KEY_ID',
+                    `Account with access_key not found`,
+                );
+            }
+            if (error.rpc_code === 'NO_SUCH_USER') {
+                throw new RpcError(
+                    'UNAUTHORIZED',
+                    `Distinguished name associated with access_key not found`,
+                );
+            }
             throw error;
         }
     }
@@ -240,25 +299,40 @@ class ObjectSDK {
         const token = this.get_auth_token();
         // If the request is signed (authenticated)
         if (token) {
-            signature_utils.authorize_request_account_by_token(token, this.requesting_account);
+            signature_utils.authorize_request_account_by_token(
+                token,
+                this.requesting_account,
+            );
         }
         // check for a specific bucket
         if (bucket && req.op_name !== 'put_bucket') {
             // ANONYMOUS: cannot work without bucket.
             // Return if the acount is anonymous
-            if (this._get_bucketspace().is_nsfs_non_containerized_user_anonymous(token)) return;
+            if (
+                this._get_bucketspace().is_nsfs_non_containerized_user_anonymous(
+                    token,
+                )
+            ) {
+                return;
+            }
             const ns = await this.read_bucket_sdk_namespace_info(bucket);
             if (!token) {
                 // TODO: Anonymous access to namespace buckets not supported for containerized Noobaa
                 if (ns) {
-                    throw new RpcError('UNAUTHORIZED', `Anonymous access to namespace buckets not supported`);
+                    throw new RpcError(
+                        'UNAUTHORIZED',
+                        `Anonymous access to namespace buckets not supported`,
+                    );
                 } else {
                     // TODO: Handle bucketspace operations / RPC auth (i.e system, account, anonymous) and anonymous access
                     return;
                 }
             }
             if (!this.has_non_nsfs_bucket_access(this.requesting_account, ns)) {
-                throw new RpcError('UNAUTHORIZED', `No permission to access bucket`);
+                throw new RpcError(
+                    'UNAUTHORIZED',
+                    `No permission to access bucket`,
+                );
             }
         }
     }
@@ -268,26 +342,41 @@ class ObjectSDK {
         return Boolean(fs_root_path || fs_root_path === '');
     }
 
-    // validates requests for non nsfs buckets from accounts which are nsfs_only 
+    // validates requests for non nsfs buckets from accounts which are nsfs_only
     has_non_nsfs_bucket_access(account, ns) {
-        dbg.log1('validate_non_nsfs_bucket: ', account, ns?.write_resource?.resource);
+        dbg.log1(
+            'validate_non_nsfs_bucket: ',
+            account,
+            ns?.write_resource?.resource,
+        );
         if (!account) return false;
-        if (this.is_nsfs_bucket(ns) ||
-            !account.nsfs_account_config || !account.nsfs_account_config.nsfs_only) return true;
+        if (
+            this.is_nsfs_bucket(ns) ||
+            !account.nsfs_account_config ||
+            !account.nsfs_account_config.nsfs_only
+        ) {
+            return true;
+        }
         // nsfs only = true, allow nsfs buckets only
         return false;
     }
 
     async _load_bucket_namespace(params) {
         // params.bucket might be added by _validate_bucket_namespace
-        const bucket = params.bucket || await this._get_bucketspace().read_bucket_sdk_info({ name: params.name });
+        const bucket =
+            params.bucket ||
+            (await this._get_bucketspace().read_bucket_sdk_info({
+                name: params.name,
+            }));
         return this._setup_bucket_namespace(bucket);
     }
 
     async _validate_bucket_namespace(data, params) {
         const time = Date.now();
         if (time <= data.valid_until) return true;
-        const bucket = await this._get_bucketspace().read_bucket_sdk_info({ name: params.name });
+        const bucket = await this._get_bucketspace().read_bucket_sdk_info({
+            name: params.name,
+        });
         if (_.isEqual(bucket, data.bucket)) {
             // namespace unchanged - extend validity for another period
             data.valid_until = time + config.OBJECT_SDK_BUCKET_CACHE_EXPIRY_MS;
@@ -312,10 +401,11 @@ class ObjectSDK {
         dbg.log1('_load_bucket_namespace', bucket);
         try {
             if (bucket.namespace) {
-
                 if (bucket.namespace.caching) {
                     const namespace_nb = new NamespaceNB();
-                    const namespace_hub = this._setup_single_namespace(bucket.namespace.read_resources[0]);
+                    const namespace_hub = this._setup_single_namespace(
+                        bucket.namespace.read_resources[0],
+                    );
                     const namespace_cache = new NamespaceCache({
                         namespace_hub,
                         namespace_nb,
@@ -326,7 +416,8 @@ class ObjectSDK {
                     return {
                         ns: namespace_cache,
                         bucket,
-                        valid_until: time + config.OBJECT_SDK_BUCKET_CACHE_EXPIRY_MS,
+                        valid_until:
+                            time + config.OBJECT_SDK_BUCKET_CACHE_EXPIRY_MS,
                     };
                 }
                 if (this._is_single_namespace(bucket.namespace)) {
@@ -335,29 +426,38 @@ class ObjectSDK {
                             bucket.namespace.read_resources[0],
                             bucket._id,
                             {
-                                versioning: bucket.bucket_info && bucket.bucket_info.versioning,
-                                force_md5_etag: bucket.force_md5_etag
+                                versioning:
+                                    bucket.bucket_info &&
+                                    bucket.bucket_info.versioning,
+                                force_md5_etag: bucket.force_md5_etag,
                             },
                         ),
                         bucket,
-                        valid_until: time + config.OBJECT_SDK_BUCKET_CACHE_EXPIRY_MS,
+                        valid_until:
+                            time + config.OBJECT_SDK_BUCKET_CACHE_EXPIRY_MS,
                     };
                 }
                 // MERGE NAMESPACE
                 return {
                     ns: this._setup_merge_namespace(bucket),
                     bucket,
-                    valid_until: time + config.OBJECT_SDK_BUCKET_CACHE_EXPIRY_MS,
+                    valid_until:
+                        time + config.OBJECT_SDK_BUCKET_CACHE_EXPIRY_MS,
                 };
             }
-
         } catch (err) {
-            dbg.error('Failed to setup bucket namespace (fallback to no namespace)', err);
+            dbg.error(
+                'Failed to setup bucket namespace (fallback to no namespace)',
+                err,
+            );
         }
 
         // non-namespace buckets
         const namespace_nb = new NamespaceNB();
-        namespace_nb.set_triggers_for_bucket(bucket.name.unwrap(), bucket.active_triggers);
+        namespace_nb.set_triggers_for_bucket(
+            bucket.name.unwrap(),
+            bucket.active_triggers,
+        );
         return {
             ns: namespace_nb,
             bucket,
@@ -372,30 +472,39 @@ class ObjectSDK {
         const rr = _.cloneDeep(bucket.namespace.read_resources);
 
         /** @type {nb.Namespace} */
-        let wr = bucket.namespace.write_resource && this._setup_single_namespace(bucket.namespace.write_resource);
+        let wr =
+            bucket.namespace.write_resource &&
+            this._setup_single_namespace(bucket.namespace.write_resource);
 
-        if (MULTIPART_NAMESPACES.includes(bucket.namespace.write_resource?.resource.endpoint_type)) {
-            const wr_index = rr.findIndex(r => _.isEqual(r, bucket.namespace.write_resource.resource));
+        if (
+            MULTIPART_NAMESPACES.includes(
+                bucket.namespace.write_resource?.resource.endpoint_type,
+            )
+        ) {
+            const wr_index = rr.findIndex(r =>
+                _.isEqual(r, bucket.namespace.write_resource.resource),
+            );
             // @ts-ignore
             wr = new NamespaceMultipart(
                 this._setup_single_namespace(bucket.namespace.write_resource),
-                new NamespaceNB());
+                new NamespaceNB(),
+            );
             rr.splice(wr_index, 1, {
                 endpoint_type: 'MULTIPART',
-                ns: wr
+                ns: wr,
             });
         }
 
         return new NamespaceMerge({
             namespaces: {
                 write_resource: wr,
-                read_resources: _.map(rr, it => (
+                read_resources: _.map(rr, it =>
                     it.resource.endpoint_type === 'MULTIPART' ?
-                        it.ns :
-                        this._setup_single_namespace(it)
-                ))
+                        it.ns
+                    :   this._setup_single_namespace(it),
+                ),
             },
-            active_triggers: bucket.active_triggers
+            active_triggers: bucket.active_triggers,
         });
     }
 
@@ -403,7 +512,6 @@ class ObjectSDK {
      * @returns {nb.Namespace}
      */
     _setup_single_namespace({ resource: r, path: p }, bucket_id, options) {
-
         if (r.endpoint_type === 'NOOBAA') {
             if (r.target_bucket) {
                 return new NamespaceNB(r.target_bucket);
@@ -411,15 +519,17 @@ class ObjectSDK {
                 return new NamespaceNB();
             }
         }
-        if (r.endpoint_type === 'AWSSTS' ||
+        if (
+            r.endpoint_type === 'AWSSTS' ||
             r.endpoint_type === 'AWS' ||
             r.endpoint_type === 'S3_COMPATIBLE' ||
             r.endpoint_type === 'FLASHBLADE' ||
-            r.endpoint_type === 'IBM_COS') {
-
-            const agent = r.endpoint_type === 'AWS' ?
-                http_utils.get_default_agent(r.endpoint) :
-                http_utils.get_unsecured_agent(r.endpoint);
+            r.endpoint_type === 'IBM_COS'
+        ) {
+            const agent =
+                r.endpoint_type === 'AWS' ?
+                    http_utils.get_default_agent(r.endpoint)
+                :   http_utils.get_unsecured_agent(r.endpoint);
 
             return new NamespaceS3({
                 namespace_resource_id: r.id,
@@ -430,11 +540,14 @@ class ObjectSDK {
                     accessKeyId: r.access_key.unwrap(),
                     secretAccessKey: r.secret_key.unwrap(),
                     // region: 'us-east-1', // TODO needed?
-                    signatureVersion: cloud_utils.get_s3_endpoint_signature_ver(r.endpoint, r.auth_method),
+                    signatureVersion: cloud_utils.get_s3_endpoint_signature_ver(
+                        r.endpoint,
+                        r.auth_method,
+                    ),
                     s3ForcePathStyle: true,
                     // computeChecksums: false, // disabled by default for performance
                     httpOptions: { agent },
-                    access_mode: r.access_mode
+                    access_mode: r.access_mode,
                 },
                 stats: this.stats,
             });
@@ -443,7 +556,8 @@ class ObjectSDK {
             return new NamespaceBlob({
                 namespace_resource_id: r.id,
                 container: r.target_bucket,
-                connection_string: cloud_utils.get_azure_new_connection_string(r),
+                connection_string:
+                    cloud_utils.get_azure_new_connection_string(r),
                 // Azure storage account name is stored as the access key.
                 account_name: r.access_key.unwrap(),
                 account_key: r.secret_key.unwrap(),
@@ -452,7 +566,9 @@ class ObjectSDK {
             });
         }
         if (r.endpoint_type === 'GOOGLE') {
-            const { project_id, private_key, client_email } = JSON.parse(r.secret_key.unwrap());
+            const { project_id, private_key, client_email } = JSON.parse(
+                r.secret_key.unwrap(),
+            );
             return new NamespaceGCP({
                 namespace_resource_id: r.id,
                 target_bucket: r.target_bucket,
@@ -490,10 +606,12 @@ class ObjectSDK {
                 cpCode: r.target_bucket,
                 // Just used that in order to not handle certificate mess
                 // TODO: Should I use SSL with HTTPS instead of HTTP?
-                ssl: false
+                ssl: false,
             });
         }
-        throw new Error('Unrecognized namespace endpoint type ' + r.endpoint_type);
+        throw new Error(
+            'Unrecognized namespace endpoint type ' + r.endpoint_type,
+        );
     }
 
     set_auth_token(auth_token) {
@@ -515,7 +633,10 @@ class ObjectSDK {
         if (!ns_info.write_resource && ns_info.read_resources.length() === 1) {
             return true;
         }
-        if (ns_info.write_resource && _.isEqual(ns_info.read_resources, [ns_info.write_resource])) {
+        if (
+            ns_info.write_resource &&
+            _.isEqual(ns_info.read_resources, [ns_info.write_resource])
+        ) {
             return true;
         }
         return false;
@@ -524,7 +645,7 @@ class ObjectSDK {
     /**
      * Calls the op and report time and error to stats collector.
      * on_success can be added to update read/write stats (but on_success shouln't throw)
-     * 
+     *
      * @template T
      * @param {{
      *      op_name: string;
@@ -533,7 +654,11 @@ class ObjectSDK {
      * }} params
      * @returns {Promise<T>}
      */
-    async _call_op_and_update_stats({ op_name, op_func, on_success = undefined }) {
+    async _call_op_and_update_stats({
+        op_name,
+        op_func,
+        on_success = undefined,
+    }) {
         const start_time = Date.now();
         let error = 0;
         try {
@@ -604,7 +729,7 @@ class ObjectSDK {
                 this.stats?.update_bucket_read_counters({
                     bucket_name: params.bucket,
                     key: params.key,
-                    content_type: params.content_type
+                    content_type: params.content_type,
                 });
             },
         });
@@ -614,17 +739,25 @@ class ObjectSDK {
     // OBJECT UPLOAD //
     ///////////////////
 
-
     // if upload is using a copy source fix the params according to source and target real location
     async fix_copy_source_params(params, target_ns) {
         const { bucket, key, version_id, encryption } = params.copy_source;
-        const source_params = { bucket, key, version_id, md_conditions: params.source_md_conditions, encryption };
+        const source_params = {
+            bucket,
+            key,
+            version_id,
+            md_conditions: params.source_md_conditions,
+            encryption,
+        };
 
         // get the namespace for source bucket
         const source_ns = await this._get_bucket_namespace(bucket);
         const source_md = await source_ns.read_object_md(source_params, this);
         const ranges = http_utils.normalize_http_ranges(
-            params.copy_source.ranges, source_md.size, true);
+            params.copy_source.ranges,
+            source_md.size,
+            true,
+        );
         // For ranged copy we don't have the specific range hashes
         // For non-ranged copy we can verify the content hash on the target object/multipart
         if (ranges) {
@@ -636,15 +769,26 @@ class ObjectSDK {
             params.md5_b64 = source_md.md5_b64;
             params.sha256_b64 = source_md.sha256_b64;
         }
-        if (!params.content_type && source_md.content_type) params.content_type = source_md.content_type;
+        if (!params.content_type && source_md.content_type) {
+            params.content_type = source_md.content_type;
+        }
         if (params.xattr_copy) {
             params.xattr = source_md.xattr;
             params.content_type = source_md.content_type;
         }
         try {
-            if (params.xattr) params.xattr = _.omitBy(params.xattr, (val, name) => name.startsWith('noobaa-namespace'));
+            if (params.xattr) {
+                params.xattr = _.omitBy(params.xattr, (val, name) =>
+                    name.startsWith('noobaa-namespace'),
+                );
+            }
         } catch (e) {
-            dbg.log3("Got an error while trying to omitBy param.xattr:", params.xattr, "error:", e);
+            dbg.log3(
+                'Got an error while trying to omitBy param.xattr:',
+                params.xattr,
+                'error:',
+                e,
+            );
         }
         if (params.tagging_copy) params.tagging = source_md.tagging;
 
@@ -653,14 +797,24 @@ class ObjectSDK {
         const actual_source_ns = source_md.ns || source_ns;
         const actual_target_ns = target_ns.get_write_resource();
 
-        if (actual_target_ns.is_server_side_copy(actual_source_ns, source_md, params)) {
+        if (
+            actual_target_ns.is_server_side_copy(
+                actual_source_ns,
+                source_md,
+                params,
+            )
+        ) {
             // fix copy_source in params to point to the correct cloud bucket
             params.copy_source.bucket = actual_source_ns.get_bucket(bucket);
             params.copy_source.obj_id = source_md.obj_id;
             params.copy_source.version_id = source_md.version_id;
             if (source_ns instanceof NamespaceFS) {
                 params.copy_source.nsfs_copy_fallback = () => {
-                    this._populate_nsfs_copy_fallback({ source_params, source_ns, params });
+                    this._populate_nsfs_copy_fallback({
+                        source_params,
+                        source_ns,
+                        params,
+                    });
                     params.copy_source = null;
                 };
             }
@@ -675,7 +829,11 @@ class ObjectSDK {
             params.size = source_md.size;
 
             if (ranges) {
-                if (ranges.length !== 1) throw new Error('fix_copy_source_params: multiple ranges not supported');
+                if (ranges.length !== 1) {
+                    throw new Error(
+                        'fix_copy_source_params: multiple ranges not supported',
+                    );
+                }
                 source_params.start = ranges[0].start;
                 source_params.end = ranges[0].end;
                 // Update the param size with the ranges to be written
@@ -684,16 +842,27 @@ class ObjectSDK {
 
             // if the source namespace is NSFS then we need to pass the read_object_stream the read_stream
             if (source_ns instanceof NamespaceFS) {
-                this._populate_nsfs_copy_fallback({ source_params, source_ns, params });
+                this._populate_nsfs_copy_fallback({
+                    source_params,
+                    source_ns,
+                    params,
+                });
             } else {
-                params.source_stream = await source_ns.read_object_stream(source_params, this);
+                params.source_stream = await source_ns.read_object_stream(
+                    source_params,
+                    this,
+                );
             }
-            if (params.size > (100 * size_utils.MEGABYTE)) {
+            if (params.size > 100 * size_utils.MEGABYTE) {
                 dbg.warn(`upload_object with copy_sources - copying by reading source first (not server side)
                 so it can take some time and cause client timeouts`);
             }
             if (params.tagging_copy) {
-                await this._populate_source_object_tagging({ source_params, source_ns, source_md });
+                await this._populate_source_object_tagging({
+                    source_params,
+                    source_ns,
+                    source_md,
+                });
                 params.tagging = source_md.tagging;
             }
             // reset the copy_source param
@@ -701,23 +870,31 @@ class ObjectSDK {
         }
     }
 
-    // nsfs copy_object & server side copy consisted of link and a fallback to 
+    // nsfs copy_object & server side copy consisted of link and a fallback to
     // read stream and then upload stream
-    // nsfs copy object when can't server side copy - fallback directly 
+    // nsfs copy object when can't server side copy - fallback directly
     _populate_nsfs_copy_fallback({ source_ns, params, source_params }) {
         const read_stream = new stream.PassThrough();
-        source_ns.read_object_stream(source_params, this, read_stream)
+        source_ns
+            .read_object_stream(source_params, this, read_stream)
             .catch(err => read_stream.emit('error', err));
         params.source_stream = read_stream;
     }
 
-    async _populate_source_object_tagging({ source_ns, source_md, source_params }) {
+    async _populate_source_object_tagging({
+        source_ns,
+        source_md,
+        source_params,
+    }) {
         // This is a quick way of knowing if we should load any tags
         if (!source_md.tag_count && !source_params.tag_count) return;
         // In NooBaa namespace we already populate the tags
         if (source_md.tagging) return;
         // In case of other namespace we need to read the tags
-        const object_tagging = await source_ns.get_object_tagging(source_params, this);
+        const object_tagging = await source_ns.get_object_tagging(
+            source_params,
+            this,
+        );
         source_md.tagging = object_tagging.tagging;
     }
 
@@ -727,14 +904,16 @@ class ObjectSDK {
             op_func: async () => {
                 const ns = await this._get_bucket_namespace(params.bucket);
                 this._check_is_readonly_namespace(ns);
-                if (params.copy_source) await this.fix_copy_source_params(params, ns);
+                if (params.copy_source) {
+                    await this.fix_copy_source_params(params, ns);
+                }
                 return ns.upload_object(params, this);
             },
             on_success: () => {
                 this.stats?.update_bucket_write_counters({
                     bucket_name: params.bucket,
                     key: params.key,
-                    content_type: params.content_type
+                    content_type: params.content_type,
                 });
             },
         });
@@ -756,7 +935,7 @@ class ObjectSDK {
                 this.stats?.update_bucket_write_counters({
                     bucket_name: params.bucket,
                     key: params.key,
-                    content_type: params.content_type
+                    content_type: params.content_type,
                 });
             },
         });
@@ -768,7 +947,9 @@ class ObjectSDK {
             op_func: async () => {
                 const ns = await this._get_bucket_namespace(params.bucket);
                 this._check_is_readonly_namespace(ns);
-                if (params.copy_source) await this.fix_copy_source_params(params, ns);
+                if (params.copy_source) {
+                    await this.fix_copy_source_params(params, ns);
+                }
                 return ns.upload_multipart(params, this);
             },
         });
@@ -795,7 +976,6 @@ class ObjectSDK {
         this._check_is_readonly_namespace(ns);
         return ns.abort_object_upload(params, this);
     }
-
 
     ////////////////////////
     // BLOCK BLOB UPLOADS //
@@ -1042,14 +1222,22 @@ class ObjectSDK {
             if (event_name !== operation) return false;
             // When we do not provide the object we just check if we shall load the objects
             // This is a case in order to avoid read_object_mds flow to happen always
-            if (obj && object_prefix && !obj.key.startsWith(object_prefix)) return false;
-            if (obj && object_suffix && !obj.key.endsWith(object_suffix)) return false;
+            if (obj && object_prefix && !obj.key.startsWith(object_prefix)) {
+                return false;
+            }
+            if (obj && object_suffix && !obj.key.endsWith(object_suffix)) {
+                return false;
+            }
             return true;
         });
     }
 
     async dispatch_triggers({ active_triggers, obj, operation, bucket }) {
-        const dispatch = this.should_run_triggers({ active_triggers, obj, operation });
+        const dispatch = this.should_run_triggers({
+            active_triggers,
+            obj,
+            operation,
+        });
         if (dispatch) {
             const dispatch_obj = _.pick(obj, required_obj_properties);
             // Dummy obj_id (not all flows return with obj_id and we need it for the API schema)
@@ -1057,7 +1245,7 @@ class ObjectSDK {
             await this.internal_rpc_client.object.dispatch_triggers({
                 bucket,
                 event_name: operation,
-                obj: dispatch_obj
+                obj: dispatch_obj,
             });
         }
     }

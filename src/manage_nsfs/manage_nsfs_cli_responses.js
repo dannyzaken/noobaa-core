@@ -1,22 +1,22 @@
 /* Copyright (C) 2016 NooBaa */
 'use strict';
 
-const NoobaaEvent = require('../manage_nsfs/manage_nsfs_events_utils').NoobaaEvent;
+const NoobaaEvent =
+    require('../manage_nsfs/manage_nsfs_events_utils').NoobaaEvent;
 
 // TODO : define list & status types
 /**
  * @typedef {{
- *      code?: string, 
+ *      code?: string,
  *      http_code: number,
  *      list?: object,
- *      status?: object,  
+ *      status?: object,
  * }} ManageCLIResponseSpec
  */
 
 class ManageCLIResponse {
-
     /**
-     * @param {ManageCLIResponseSpec} response_spec 
+     * @param {ManageCLIResponseSpec} response_spec
      */
     constructor({ code, status, list }) {
         this.code = code;
@@ -29,9 +29,12 @@ class ManageCLIResponse {
         const json = {
             response: {
                 code: this.code,
-            }
+            },
         };
-        if (this.list || this.status) json.response.reply = typeof detail === 'string' ? JSON.parse(detail) : detail;
+        if (this.list || this.status) {
+            json.response.reply =
+                typeof detail === 'string' ? JSON.parse(detail) : detail;
+        }
         return JSON.stringify(json, null, 2);
     }
 }
@@ -44,12 +47,12 @@ class ManageCLIResponse {
 
 ManageCLIResponse.HealthStatus = Object.freeze({
     code: 'HealthStatus',
-    status: {}
+    status: {},
 });
 
 ManageCLIResponse.MetricsStatus = Object.freeze({
     code: 'MetricsStatus',
-    status: {}
+    status: {},
 });
 
 ///////////////////////////////
@@ -57,7 +60,7 @@ ManageCLIResponse.MetricsStatus = Object.freeze({
 ///////////////////////////////
 ManageCLIResponse.WhiteListIPUpdated = Object.freeze({
     code: 'WhiteListIPUpdated',
-    status: {}
+    status: {},
 });
 
 ////////////////////////
@@ -66,7 +69,7 @@ ManageCLIResponse.WhiteListIPUpdated = Object.freeze({
 
 ManageCLIResponse.AccountCreated = Object.freeze({
     code: 'AccountCreated',
-    status: {}
+    status: {},
 });
 
 ManageCLIResponse.AccountDeleted = Object.freeze({
@@ -75,17 +78,17 @@ ManageCLIResponse.AccountDeleted = Object.freeze({
 
 ManageCLIResponse.AccountUpdated = Object.freeze({
     code: 'AccountUpdated',
-    status: {}
+    status: {},
 });
 
 ManageCLIResponse.AccountStatus = Object.freeze({
     code: 'AccountStatus',
-    status: {}
+    status: {},
 });
 
 ManageCLIResponse.AccountList = Object.freeze({
     code: 'AccountList',
-    list: {}
+    list: {},
 });
 
 ////////////////////////
@@ -94,7 +97,7 @@ ManageCLIResponse.AccountList = Object.freeze({
 
 ManageCLIResponse.BucketCreated = Object.freeze({
     code: 'BucketCreated',
-    status: {}
+    status: {},
 });
 
 ManageCLIResponse.BucketDeleted = Object.freeze({
@@ -103,17 +106,17 @@ ManageCLIResponse.BucketDeleted = Object.freeze({
 
 ManageCLIResponse.BucketUpdated = Object.freeze({
     code: 'BucketUpdated',
-    status: {}
+    status: {},
 });
 
 ManageCLIResponse.BucketStatus = Object.freeze({
     code: 'BucketStatus',
-    status: {}
+    status: {},
 });
 
 ManageCLIResponse.BucketList = Object.freeze({
     code: 'BucketList',
-    list: {}
+    list: {},
 });
 
 ///////////////////////////////
@@ -122,7 +125,7 @@ ManageCLIResponse.BucketList = Object.freeze({
 
 ManageCLIResponse.LoggingExported = Object.freeze({
     code: 'LoggingExported',
-    status: {}
+    status: {},
 });
 
 ///////////////////////////////
@@ -131,17 +134,17 @@ ManageCLIResponse.LoggingExported = Object.freeze({
 
 ManageCLIResponse.UpgradeSuccessful = Object.freeze({
     code: 'UpgradeSuccessful',
-    status: {}
+    status: {},
 });
 
 ManageCLIResponse.UpgradeStatus = Object.freeze({
     code: 'UpgradeStatus',
-    status: {}
+    status: {},
 });
 
 ManageCLIResponse.UpgradeHistory = Object.freeze({
     code: 'UpgradeHistory',
-    status: {}
+    status: {},
 });
 
 ///////////////////////////////

@@ -4,51 +4,49 @@
 const SensitiveString = require('../../../util/sensitive_string');
 
 const bigint = {
-    oneOf: [{
-        type: 'integer'
-    }, {
-        type: 'object',
-        properties: {
-            n: {
-                type: 'integer',
+    oneOf: [
+        {
+            type: 'integer',
+        },
+        {
+            type: 'object',
+            properties: {
+                n: {
+                    type: 'integer',
+                },
+                // to support bigger integers we can specify a peta field
+                // which is considered to be based from 2^50
+                peta: {
+                    type: 'integer',
+                },
             },
-            // to support bigger integers we can specify a peta field
-            // which is considered to be based from 2^50
-            peta: {
-                type: 'integer',
-            }
-        }
-    }]
+        },
+    ],
 };
 
 module.exports = {
     $id: 'bucket_schema',
     type: 'object',
-    required: [
-        '_id',
-        'system',
-        'name',
-        'versioning'
-    ],
+    required: ['_id', 'system', 'name', 'versioning'],
     properties: {
         _id: {
-            objectid: true
+            objectid: true,
         },
         master_key_id: { objectid: true },
         deleted: {
-            date: true
+            date: true,
         },
         deleting: {
-            date: true
+            date: true,
         },
         system: {
-            objectid: true
+            objectid: true,
         },
         name: {
             wrapper: SensitiveString,
         },
         owner_account: {
-            objectid: true
+            objectid: true,
         },
         object_lock_configuration: {
             type: 'object',
@@ -58,15 +56,16 @@ module.exports = {
                     type: 'object',
                     properties: {
                         default_retention: {
-                            oneOf: [{
+                            oneOf: [
+                                {
                                     type: 'object',
                                     properties: {
                                         years: { type: 'integer' },
                                         mode: {
                                             type: 'string',
-                                            enum: ['GOVERNANCE', 'COMPLIANCE']
-                                        }
-                                    }
+                                            enum: ['GOVERNANCE', 'COMPLIANCE'],
+                                        },
+                                    },
                                 },
                                 {
                                     type: 'object',
@@ -74,21 +73,19 @@ module.exports = {
                                         days: { type: 'integer' },
                                         mode: {
                                             type: 'string',
-                                            enum: ['GOVERNANCE', 'COMPLIANCE']
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
+                                            enum: ['GOVERNANCE', 'COMPLIANCE'],
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                },
+            },
         },
         namespace: {
             type: 'object',
-            required: [
-                'read_resources',
-            ],
+            required: ['read_resources'],
             properties: {
                 read_resources: {
                     type: 'array',
@@ -97,54 +94,61 @@ module.exports = {
                         required: ['resource'],
                         properties: {
                             resource: {
-                                objectid: true // namespace resource id
+                                objectid: true, // namespace resource id
                             },
                             path: { type: 'string' },
-                        }
-                    }
+                        },
+                    },
                 },
                 write_resource: {
                     type: 'object',
                     required: ['resource'],
                     properties: {
                         resource: {
-                            objectid: true // namespace resource id
+                            objectid: true, // namespace resource id
                         },
                         path: { type: 'string' },
-                    }
+                    },
                 },
                 should_create_underlying_storage: { type: 'boolean' }, // should create underlying storage
                 caching: {
-                    $ref: 'common_api#/definitions/bucket_cache_config'
+                    $ref: 'common_api#/definitions/bucket_cache_config',
                 },
-            }
+            },
         },
 
         force_md5_etag: {
-            type: 'boolean' // enable md5 calculation per bucket
+            type: 'boolean', // enable md5 calculation per bucket
         },
 
         tiering: {
-            objectid: true // tiering policy id
+            objectid: true, // tiering policy id
         },
 
         replication_policy_id: {
-            objectid: true // replication policy id
+            objectid: true, // replication policy id
         },
 
         quota: {
-            $ref: 'common_api#/definitions/quota_config'
+            $ref: 'common_api#/definitions/quota_config',
         },
         versioning: {
             type: 'string',
-            enum: ['DISABLED', 'SUSPENDED', 'ENABLED']
+            enum: ['DISABLED', 'SUSPENDED', 'ENABLED'],
         },
         tag: {
             type: 'string',
         },
         storage_stats: {
             type: 'object',
-            required: ['chunks_capacity', 'pools', 'blocks_size', 'objects_size', 'objects_count', 'last_update'],
+            required: [
+                'chunks_capacity',
+                'pools',
+                'blocks_size',
+                'objects_size',
+                'objects_count',
+                'last_update',
+            ],
             properties: {
                 chunks_capacity: bigint,
                 blocks_size: bigint,
@@ -156,17 +160,17 @@ module.exports = {
                         required: ['size', 'count'],
                         properties: {
                             content_type: {
-                                type: 'string'
+                                type: 'string',
                             },
                             size: bigint,
                             count: {
-                                type: 'integer'
+                                type: 'integer',
                             },
-                        }
-                    }
+                        },
+                    },
                 },
                 objects_count: {
-                    type: 'integer'
+                    type: 'integer',
                 },
                 pools: {
                     type: 'object',
@@ -177,7 +181,7 @@ module.exports = {
                             properties: {
                                 blocks_size: bigint,
                             },
-                        }
+                        },
                     },
                 },
                 objects_hist: {
@@ -188,20 +192,20 @@ module.exports = {
                             aggregated_sum: bigint,
                             count: bigint,
                             label: {
-                                type: 'string'
-                            }
-                        }
-                    }
+                                type: 'string',
+                            },
+                        },
+                    },
                 },
                 last_update: {
-                    idate: true
-                }
-            }
+                    idate: true,
+                },
+            },
         },
 
         //lifecycle rules if exist
         lifecycle_configuration_rules: {
-            $ref: 'common_api#/definitions/bucket_lifecycle_configuration'
+            $ref: 'common_api#/definitions/bucket_lifecycle_configuration',
         },
         tagging: {
             $ref: 'common_api#/definitions/tagging',
@@ -217,7 +221,7 @@ module.exports = {
                 namespace: {
                     type: 'string',
                 },
-            }
+            },
         },
         encryption: {
             $ref: 'common_api#/definitions/bucket_encryption',
@@ -232,48 +236,58 @@ module.exports = {
             type: 'array',
             items: {
                 type: 'object',
-                required: ['_id', 'event_name', 'func_name', 'func_version', 'enabled'],
+                required: [
+                    '_id',
+                    'event_name',
+                    'func_name',
+                    'func_version',
+                    'enabled',
+                ],
                 properties: {
                     _id: {
-                        objectid: true
+                        objectid: true,
                     },
                     event_name: {
-                        enum: ['ObjectCreated', 'ObjectRemoved', 'ObjectRead' /* 'ObjectCreated:Put', 'ObjectCreated:CompleteMultipartUpload', ... */ ],
-                        type: 'string'
+                        enum: [
+                            'ObjectCreated',
+                            'ObjectRemoved',
+                            'ObjectRead' /* 'ObjectCreated:Put', 'ObjectCreated:CompleteMultipartUpload', ... */,
+                        ],
+                        type: 'string',
                     },
                     func_name: {
-                        type: 'string'
+                        type: 'string',
                     },
                     func_version: {
-                        type: 'string'
+                        type: 'string',
                     },
                     enabled: {
                         type: 'boolean',
                     },
                     last_run: {
-                        idate: true
+                        idate: true,
                     },
                     object_prefix: {
-                        type: 'string'
+                        type: 'string',
                     },
                     object_suffix: {
-                        type: 'string'
+                        type: 'string',
                     },
                     attempts: {
-                        type: 'integer'
+                        type: 'integer',
                     },
-                }
-            }
+                },
+            },
         },
         stats: {
             type: 'object',
             properties: {
                 reads: { type: 'integer' },
                 writes: { type: 'integer' },
-            }
+            },
         },
         logging: {
             $ref: 'common_api#/definitions/bucket_logging',
         },
-    }
+    },
 };

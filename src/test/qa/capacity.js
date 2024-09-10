@@ -38,7 +38,7 @@ const s3 = new AWS.S3({
     s3DisableBodySigning: !argv.signing || true, // disabled by default for performance
     region: argv.region || 'us-east-1',
     params: {
-        Bucket: argv.bucket
+        Bucket: argv.bucket,
     },
 });
 
@@ -50,15 +50,19 @@ if (s3.endpoint.protocol === 'https:') {
             agent: new https.Agent({
                 keepAlive: true,
                 rejectUnauthorized: !argv.selfsigned,
-            })
-        }
+            }),
+        },
     });
     if (!argv.selfsigned) {
         AWS.events.on('error', err => {
             if (err.message === 'self signed certificate') {
-                setTimeout(() => console.log(
-                    '\n*** You can accept self signed certificates with: --selfsigned\n'
-                ), 10);
+                setTimeout(
+                    () =>
+                        console.log(
+                            '\n*** You can accept self signed certificates with: --selfsigned\n',
+                        ),
+                    10,
+                );
             }
         });
     }
@@ -74,14 +78,15 @@ function upload_file() {
             highWaterMark: argv.part_size,
         }),
         ContentType: 'application/octet-stream',
-        ContentLength: argv.file_size
+        ContentLength: argv.file_size,
     };
-    const upload = argv.multipart ?
-        s3.upload(upload_params, {
-            partSize: argv.part_size,
-            queueSize: argv.concur
-        }) :
-        s3.putObject(upload_params);
+    const upload =
+        argv.multipart ?
+            s3.upload(upload_params, {
+                partSize: argv.part_size,
+                queueSize: argv.concur,
+            })
+        :   s3.putObject(upload_params);
     upload.on('httpUploadProgress', progress => {
         speedometer.update(progress.loaded - last_progress);
         last_progress = progress.loaded;
@@ -95,12 +100,13 @@ function upload_file() {
 }
 
 function main() {
-    P.all(_.times(argv.workers, function worker() {
+    P.all(
+        _.times(argv.workers, function worker() {
             if (argv.count <= 0) return;
             argv.count -= 1;
             return upload_file().then(worker);
-        }))
-        .then(() => speedometer.report());
+        }),
+    ).then(() => speedometer.report());
 }
 
 function ts() {

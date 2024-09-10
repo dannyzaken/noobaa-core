@@ -3,9 +3,7 @@
 
 const Semaphore = require('./semaphore');
 
-
 class KeysSemaphore {
-
     constructor(initial, params) {
         this._initial = initial;
         this._params = params;
@@ -14,8 +12,8 @@ class KeysSemaphore {
 
     /**
      * @template T
-     * @param {string} key 
-     * @param {() => Promise<T>} func 
+     * @param {string} key
+     * @param {() => Promise<T>} func
      * @returns {Promise<T>}
      */
     async surround_key(key, func) {
@@ -38,7 +36,5 @@ class KeysSemaphore {
         return Boolean(this._keys_map.get(key));
     }
 }
-
-
 
 module.exports = KeysSemaphore;

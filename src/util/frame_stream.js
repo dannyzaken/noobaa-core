@@ -4,7 +4,7 @@
 const _ = require('lodash');
 const buffer_utils = require('./buffer_utils');
 
-const DEFAULT_MSG_MAGIC = "FramStrm";
+const DEFAULT_MSG_MAGIC = 'FramStrm';
 const DEFAULT_MAX_MSG_LEN = 64 * 1024 * 1024;
 const MAX_SEQ = 256 * 256; // 16 bit
 
@@ -18,12 +18,13 @@ const MAX_SEQ = 256 * 256; // 16 bit
  * - 32bit length for messages (to support messages larger than 64KB)
  */
 class FrameStream {
-
     constructor(stream, msg_handler, config) {
         this.stream = stream;
-        this.msg_handler = msg_handler || function(msg, msg_type) {
-            stream.emit('message', msg, msg_type);
-        };
+        this.msg_handler =
+            msg_handler ||
+            function (msg, msg_type) {
+                stream.emit('message', msg, msg_type);
+            };
         this._magic = (config && config.magic) || DEFAULT_MSG_MAGIC;
         this._magic_len = this._magic.length;
         this._max_len = (config && config.max_len) || DEFAULT_MAX_MSG_LEN;
@@ -59,7 +60,10 @@ class FrameStream {
         const msg_header = Buffer.allocUnsafe(this._header_len);
         msg_header.write(this._magic, 0, this._magic_len, 'ascii');
         msg_header.writeUInt16BE(this._send_seq, this._magic_len);
-        msg_header.writeUInt16BE(message_type_code_16bit || 0, this._magic_len + 2);
+        msg_header.writeUInt16BE(
+            message_type_code_16bit || 0,
+            this._magic_len + 2,
+        );
         msg_header.writeUInt32BE(msg_len, this._magic_len + 4);
         this._send_seq += 1;
         if (this._send_seq >= MAX_SEQ) {
@@ -89,7 +93,6 @@ class FrameStream {
         while (run) {
             // read the message header if not already read
             if (!this._msg_header) {
-
                 // check if we have enough bytes to extract the header
                 if (this._buffers_length < this._header_len) {
                     run = false;
@@ -97,14 +100,26 @@ class FrameStream {
                 }
 
                 this._buffers_length -= this._header_len;
-                this._msg_header = buffer_utils.extract_join(this._buffers, this._header_len);
-                const magic = this._msg_header.slice(0, this._magic_len).toString();
+                this._msg_header = buffer_utils.extract_join(
+                    this._buffers,
+                    this._header_len,
+                );
+                const magic = this._msg_header
+                    .slice(0, this._magic_len)
+                    .toString();
                 const seq = this._msg_header.readUInt16BE(this._magic_len);
 
                 // verify the magic
                 if (magic !== this._magic) {
-                    this.stream.emit('error', new Error('received magic mismatch ' +
-                        magic + ' expected ' + this._magic));
+                    this.stream.emit(
+                        'error',
+                        new Error(
+                            'received magic mismatch ' +
+                                magic +
+                                ' expected ' +
+                                this._magic,
+                        ),
+                    );
                     run = false;
                     return;
                 }
@@ -120,8 +135,15 @@ class FrameStream {
                     if (recv_seq === seq) {
                         this._recv_seq = seq;
                     } else {
-                        this.stream.emit('error', new Error('received seq mismatch ' +
-                            seq + ' expected ' + (this._recv_seq + 1)));
+                        this.stream.emit(
+                            'error',
+                            new Error(
+                                'received seq mismatch ' +
+                                    seq +
+                                    ' expected ' +
+                                    (this._recv_seq + 1),
+                            ),
+                        );
                         run = false;
                         return;
                     }
@@ -134,8 +156,15 @@ class FrameStream {
             // verify it doesn't exceed the maximum to avoid errors
             // that will cost in lots of memory
             if (msg_len > this._max_len) {
-                this.stream.emit('error', new Error('received message too big ' +
-                    msg_len + ' expected up to ' + this._max_len));
+                this.stream.emit(
+                    'error',
+                    new Error(
+                        'received message too big ' +
+                            msg_len +
+                            ' expected up to ' +
+                            this._max_len,
+                    ),
+                );
                 run = false;
                 return;
             }

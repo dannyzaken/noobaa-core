@@ -92,7 +92,7 @@ const nb_native = argv.mode === 'nsfs' && require('../util/nb_native');
 const is_master = cluster.isMaster;
 const speedometer = new Speedometer(is_master ? 'Total Speed' : 'FS Speed');
 const start_time = Date.now();
-const end_time = start_time + (argv.time * 1000);
+const end_time = start_time + argv.time * 1000;
 
 if (argv.forks > 1 && is_master) {
     speedometer.fork(argv.forks);
@@ -140,9 +140,10 @@ async function worker(id) {
 }
 
 async function work_with_dd(file_path) {
-    const cmd = argv.read ?
-        `dd if=${file_path} of=/dev/null bs=${block_size} count=${block_count}` :
-        `dd if=${argv.device} of=${file_path} bs=${block_size} count=${block_count}`;
+    const cmd =
+        argv.read ?
+            `dd if=${file_path} of=/dev/null bs=${block_size} count=${block_count}`
+        :   `dd if=${argv.device} of=${file_path} bs=${block_size} count=${block_count}`;
     // console.log(cmd);
     await execAsync(cmd);
     if (argv.fsync) await execAsync(`sync ${file_path}`);
@@ -160,7 +161,12 @@ async function work_with_nsfs(file_path) {
         backend: 'GPFS',
         warn_threshold_ms: 1000,
     };
-    const file = await nb_native().fs.open(fs_context, file_path, argv.read ? 'r' : 'w', 0x660);
+    const file = await nb_native().fs.open(
+        fs_context,
+        file_path,
+        argv.read ? 'r' : 'w',
+        0x660,
+    );
     for (let pos = 0; pos < file_size_aligned; pos += block_size) {
         const buf_start_time = Date.now();
         if (buf_start_time >= end_time) break;
@@ -187,7 +193,11 @@ async function work_with_nodejs(file_path) {
         highWaterMark: 2 * block_size,
         generator: argv.read ? 'noinit' : argv.generator,
     });
-    const file = await fs.promises.open(file_path, argv.read ? 'r' : 'w', 0x660);
+    const file = await fs.promises.open(
+        file_path,
+        argv.read ? 'r' : 'w',
+        0x660,
+    );
     for (let pos = 0; pos < file_size_aligned; pos += block_size) {
         const buf_start_time = Date.now();
         if (buf_start_time >= end_time) break;

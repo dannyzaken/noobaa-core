@@ -6,7 +6,7 @@
  */
 async function delete_bucket_encryption(req) {
     return req.object_sdk.delete_bucket_encryption({
-        name: req.params.bucket
+        name: req.params.bucket,
     });
 }
 

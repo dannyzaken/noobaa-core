@@ -14,11 +14,7 @@ const P = require('../../util/promise');
 const test_schema = {
     $id: 'test_postgres_client_schema',
     type: 'object',
-    required: [
-        '_id',
-        'system',
-        'name',
-    ],
+    required: ['_id', 'system', 'name'],
     properties: {
         _id: { objectid: true },
         objectid_field: { objectid: true },
@@ -32,18 +28,17 @@ const test_schema = {
         noschema_field: {
             type: 'object',
             additionalProperties: true,
-            properties: {}
-        }
-    }
+            properties: {},
+        },
+    },
 };
-
 
 const POSTGRES_PARAMS = {
     host: 'localhost',
     port: 5432,
     user: 'postgres',
     password: 'noobaa',
-    database: 'test_postgres_client'
+    database: 'test_postgres_client',
 };
 
 let postgres_client;
@@ -54,8 +49,6 @@ const test_date = new Date();
 const test_idate = Date.now();
 const test_binary = Buffer.from('this is a test buffer');
 const additional_properties = { a: 1, b: '2', c: 3.14 };
-
-
 
 async function get_postgres_client(params) {
     const pgc = new PostgresClient(params);
@@ -68,16 +61,11 @@ async function get_postgres_client(params) {
     return pgc;
 }
 
-
-
-
-
-mocha.describe('postgres_client', function() {
-
+mocha.describe('postgres_client', function () {
     // eslint-disable-next-line no-invalid-this
     this.timeout(10000);
 
-    mocha.before('postgres-client-test-before-all', async function() {
+    mocha.before('postgres-client-test-before-all', async function () {
         postgres_client = await get_postgres_client(POSTGRES_PARAMS);
         test_table = postgres_client.define_collection({
             name: test_table_name,
@@ -87,16 +75,20 @@ mocha.describe('postgres_client', function() {
         await test_table.init_promise;
     });
 
-    mocha.after('postgres-client-test-after-all', async function() {
+    mocha.after('postgres-client-test-after-all', async function () {
         postgres_client.disconnect();
         let tries_left = 3;
         setInterval(function check_dangling_handles() {
             tries_left -= 1;
-            console.info(`Waiting for dangling handles to release, re-sample in 30s (tries left: ${tries_left})`);
+            console.info(
+                `Waiting for dangling handles to release, re-sample in 30s (tries left: ${tries_left})`,
+            );
             wtf.dump();
 
             if (tries_left === 0) {
-                console.error('Tests cannot complete successfully, running tests resulted in dangling handles');
+                console.error(
+                    'Tests cannot complete successfully, running tests resulted in dangling handles',
+                );
 
                 // Force the test suite to fail (ignoring the exist handle that mocha sets up in order to return a fail
                 // exit code)
@@ -104,10 +96,9 @@ mocha.describe('postgres_client', function() {
                 process.exit(1);
             }
         }, 30000).unref();
-
     });
 
-    mocha.it('should insert_one data without errors', async function() {
+    mocha.it('should insert_one data without errors', async function () {
         const data = {
             _id: postgres_client.generate_id(),
             objectid_field: postgres_client.generate_id(),
@@ -118,12 +109,12 @@ mocha.describe('postgres_client', function() {
             bin_field: test_binary,
             idate_field: test_idate,
             sensitive_string: new SensitiveString('sensitive data'),
-            other: additional_properties
+            other: additional_properties,
         };
         await test_table.insertOne(data);
     });
 
-    mocha.it('should find existing id in the table', async function() {
+    mocha.it('should find existing id in the table', async function () {
         const data = {
             _id: postgres_client.generate_id(),
             objectid_field: postgres_client.generate_id(),
@@ -134,14 +125,18 @@ mocha.describe('postgres_client', function() {
             bin_field: test_binary,
             idate_field: test_idate,
             sensitive_string: new SensitiveString('sensitive data'),
-            other: additional_properties
+            other: additional_properties,
         };
         await test_table.insertOne(data);
         const find_res = await test_table.find({ _id: String(data._id) });
-        assert.deepStrictEqual(find_res[0], data, 'the returned data should match the inserted data');
+        assert.deepStrictEqual(
+            find_res[0],
+            data,
+            'the returned data should match the inserted data',
+        );
     });
 
-    mocha.it('should update one', async function() {
+    mocha.it('should update one', async function () {
         const data = {
             _id: postgres_client.generate_id(),
             objectid_field: postgres_client.generate_id(),
@@ -152,15 +147,18 @@ mocha.describe('postgres_client', function() {
             bin_field: test_binary,
             idate_field: test_idate,
             sensitive_string: new SensitiveString('sensitive data'),
-            other: additional_properties
+            other: additional_properties,
         };
         await test_table.insertOne(data);
         const now = new Date();
-        await test_table.updateOne({ _id: data._id }, {
-            $set: { date_field: now },
-            $unset: { string_field: true },
-            $inc: { int_field: 3 }
-        });
+        await test_table.updateOne(
+            { _id: data._id },
+            {
+                $set: { date_field: now },
+                $unset: { string_field: true },
+                $inc: { int_field: 3 },
+            },
+        );
         const find_res = await test_table.find({ _id: data._id });
         // const actual = {
         //     _id: db_client.instance().parse_object_id(find_res[0]._id),
@@ -169,31 +167,45 @@ mocha.describe('postgres_client', function() {
         //     deleted: find_res[0].deleted,
         //     version: find_res[0].version
         // };
-        const expected = _.omit({ ...data, date_field: now, int_field: 4 }, 'string_field');
+        const expected = _.omit(
+            { ...data, date_field: now, int_field: 4 },
+            'string_field',
+        );
 
-        assert.deepStrictEqual(find_res[0], expected, 'the returned data should match the inserted data');
+        assert.deepStrictEqual(
+            find_res[0],
+            expected,
+            'the returned data should match the inserted data',
+        );
     });
 
+    mocha.it(
+        'should insert a single doc on multiple parallel upserts',
+        async function () {
+            const upsert_table = postgres_client.define_collection({
+                name: `upsert_${test_table_name}`,
+                schema: test_schema,
+                // db_indexes: test_indexes,
+            });
+            await upsert_table.init_promise;
+            const query = {};
+            const update = { $inc: { int_field: 1 } };
+            const options = { upsert: true, returnOriginal: false };
 
-
-    mocha.it('should insert a single doc on multiple parallel upserts', async function() {
-        const upsert_table = postgres_client.define_collection({
-            name: `upsert_${test_table_name}`,
-            schema: test_schema,
-            // db_indexes: test_indexes,
-        });
-        await upsert_table.init_promise;
-        const query = {};
-        const update = { $inc: { int_field: 1 } };
-        const options = { upsert: true, returnOriginal: false };
-
-        // perform parallel upserts
-        const num_upserts = 40;
-        await P.map(_.times(num_upserts), async i => upsert_table.findOneAndUpdate(query, update, options));
-        // check that there is only one doc and the int_field is as num_upserts
-        const find_res = await upsert_table.find({});
-        assert.strictEqual(find_res.length, 1, 'number of inserted documents must be 1');
-    });
+            // perform parallel upserts
+            const num_upserts = 40;
+            await P.map(_.times(num_upserts), async i =>
+                upsert_table.findOneAndUpdate(query, update, options),
+            );
+            // check that there is only one doc and the int_field is as num_upserts
+            const find_res = await upsert_table.find({});
+            assert.strictEqual(
+                find_res.length,
+                1,
+                'number of inserted documents must be 1',
+            );
+        },
+    );
 
     // mocha.it('should find by sort order', async function() {
     //     const data1 = {
@@ -286,6 +298,4 @@ mocha.describe('postgres_client', function() {
     //     const find_res = await test_table.find({ name: 'test_projection' }, { projection: { name: 1, version: 1 } });
     //     assert.deepStrictEqual(find_res, [_.pick(data1, ['_id', 'name', 'version'])], 'the returned data should contain only id, name and version');
     // });
-
-
 });

@@ -8,7 +8,6 @@ const stream = require('stream');
  * params is also used for stream.Readable options: highWaterMark, decodeStrings, objectMode, etc.
  */
 class SliceReader extends stream.Readable {
-
     constructor(source, params) {
         params = params || {};
         super(params);
@@ -34,7 +33,6 @@ class SliceReader extends stream.Readable {
             this.emit('error', err);
         }
     }
-
 }
 
 module.exports = SliceReader;

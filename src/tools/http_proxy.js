@@ -36,14 +36,22 @@ function main() {
 
 function proxy_port(port, address) {
     const addr_url = url.parse(address);
-    const server = addr_url.protocol === 'https:' ?
-        https.createServer(ssl_utils.generate_ssl_certificate()) :
-        http.createServer();
-    server.on('request', (req, res) => {
+    const server =
+        addr_url.protocol === 'https:' ?
+            https.createServer(ssl_utils.generate_ssl_certificate())
+        :   http.createServer();
+    server
+        .on('request', (req, res) => {
             proxy_request(addr_url, req, res);
         })
         .on('error', err => {
-            console.error('HTTP PROXY: server error', port, '->', address, err.stack || err);
+            console.error(
+                'HTTP PROXY: server error',
+                port,
+                '->',
+                address,
+                err.stack || err,
+            );
         })
         .listen(port, () => {
             console.log('HTTP PROXY: listening', port, '->', address, '...');
@@ -68,7 +76,7 @@ function redirect_request(addr_url, req, res) {
     const location = url.resolve(addr_url.href, req.url);
     console.log(req.method, req.url, '->', REDIRECT_STATUS_CODE, location);
     res.writeHead(REDIRECT_STATUS_CODE, {
-        Location: location
+        Location: location,
     });
     res.end();
 }
@@ -94,7 +102,12 @@ function forward_request(addr_url, req, res) {
             res2 = res2_arg;
             res2.on('error', err => on_error(err));
             if (res2.statusCode >= 400) {
-                console.warn(req.method, req.url, res2.statusCode, '(HTTP PROXY)');
+                console.warn(
+                    req.method,
+                    req.url,
+                    res2.statusCode,
+                    '(HTTP PROXY)',
+                );
             }
             res.writeHead(res2.statusCode, res2.headers);
             res2.pipe(res);
@@ -107,7 +120,10 @@ function forward_request(addr_url, req, res) {
         if (req2) req2.close();
         if (res2) res2.close();
         if (res.headersSent) {
-            console.error('HTTP PROXY ERROR: headers already sent, so just closing', err);
+            console.error(
+                'HTTP PROXY ERROR: headers already sent, so just closing',
+                err,
+            );
             res.close();
             // TODO can we handle better?
         } else {
@@ -121,12 +137,16 @@ function options_request(addr_url, req, res) {
     // TODO this implementation is not generic, need to ask options from the target server
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Methods',
+    res.setHeader(
+        'Access-Control-Allow-Methods',
         req.headers['access-control-request-method'] ||
-        'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers',
+            'GET, POST, PUT, DELETE, OPTIONS',
+    );
+    res.setHeader(
+        'Access-Control-Allow-Headers',
         req.headers['access-control-request-headers'] ||
-        'Content-Type,Content-MD5,Authorization,ETag,X-Amz-User-Agent,X-Amz-Date,X-Amz-Content-Sha256');
+            'Content-Type,Content-MD5,Authorization,ETag,X-Amz-User-Agent,X-Amz-Date,X-Amz-Content-Sha256',
+    );
     // must answer 200 to options requests
     console.log(req.method, req.url, '->', 200);
     res.writeHead(200);

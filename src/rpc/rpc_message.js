@@ -63,7 +63,7 @@ class RpcMessage {
         const { body, buffers } = this;
         return new RpcMessage(
             _.cloneDeepWith(body, clone_customizer),
-            buffers.map(Buffer.from)
+            buffers.map(Buffer.from),
         );
     }
 
@@ -76,11 +76,7 @@ class RpcMessage {
         const body_buffer = Buffer.from(JSON.stringify(body));
         meta_buffer.writeUInt32BE(RPC_VERSION_NUMBER, 0);
         meta_buffer.writeUInt32BE(body_buffer.length, 4);
-        const msg_buffers = [
-            meta_buffer,
-            body_buffer,
-            ...buffers
-        ];
+        const msg_buffers = [meta_buffer, body_buffer, ...buffers];
         return msg_buffers;
     }
 
@@ -96,14 +92,24 @@ class RpcMessage {
             const major = meta_buffer.readUInt8(1);
             const minor = meta_buffer.readUInt8(2);
             const flags = meta_buffer.readUInt8(3);
-            if (magic !== RPC_VERSION_MAGIC) throw new Error('RPC VERSION MAGIC MISMATCH');
-            if (major !== RPC_VERSION_MAJOR) throw new Error('RPC VERSION MAJOR MISMATCH');
-            if (minor !== RPC_VERSION_MINOR) throw new Error('RPC VERSION MINOR MISMATCH');
-            if (flags !== RPC_VERSION_FLAGS) throw new Error('RPC VERSION FLAGS MISMATCH');
+            if (magic !== RPC_VERSION_MAGIC) {
+                throw new Error('RPC VERSION MAGIC MISMATCH');
+            }
+            if (major !== RPC_VERSION_MAJOR) {
+                throw new Error('RPC VERSION MAJOR MISMATCH');
+            }
+            if (minor !== RPC_VERSION_MINOR) {
+                throw new Error('RPC VERSION MINOR MISMATCH');
+            }
+            if (flags !== RPC_VERSION_FLAGS) {
+                throw new Error('RPC VERSION FLAGS MISMATCH');
+            }
             throw new Error('RPC VERSION MISMATCH');
         }
         const body_length = meta_buffer.readUInt32BE(4);
-        const body = JSON.parse(buffer_utils.extract_join(msg_buffers, body_length).toString());
+        const body = JSON.parse(
+            buffer_utils.extract_join(msg_buffers, body_length).toString(),
+        );
 
         return new RpcMessage(body, msg_buffers);
     }

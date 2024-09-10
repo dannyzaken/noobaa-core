@@ -10,16 +10,19 @@ const http_utils = require('../../../util/http_utils');
  * http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html
  */
 async function get_object(req, res) {
-
     req.object_sdk.setup_abort_controller(req, res);
     const agent_header = req.headers['user-agent'];
-    const noobaa_trigger_agent = agent_header && agent_header.includes('exec-env/NOOBAA_FUNCTION');
+    const noobaa_trigger_agent =
+        agent_header && agent_header.includes('exec-env/NOOBAA_FUNCTION');
     const encryption = s3_utils.parse_encryption(req);
     const version_id = s3_utils.parse_version_id(req.query.versionId);
     let part_number;
     // If set, part_number should be positive integer from 1 to 10000
     if (req.query.partNumber) {
-        part_number = s3_utils.parse_part_number(req.query.partNumber, S3Error.InvalidArgument);
+        part_number = s3_utils.parse_part_number(
+            req.query.partNumber,
+            S3Error.InvalidArgument,
+        );
     }
     const md_conditions = http_utils.get_md_conditions(req);
 
@@ -42,9 +45,16 @@ async function get_object(req, res) {
     s3_utils.set_response_object_md(res, object_md);
     s3_utils.set_encryption_response_headers(req, res, object_md.encryption);
     if (object_md.storage_class === s3_utils.STORAGE_CLASS_GLACIER) {
-        if (object_md.restore_status?.ongoing || !object_md.restore_status?.expiry_time) {
+        if (
+            object_md.restore_status?.ongoing ||
+            !object_md.restore_status?.expiry_time
+        ) {
             // Don't try to read the object if it's not restored yet
-            dbg.warn('Object is not restored yet', req.path, object_md.restore_status);
+            dbg.warn(
+                'Object is not restored yet',
+                req.path,
+                object_md.restore_status,
+            );
             throw new S3Error(S3Error.InvalidObjectState);
         }
     }
@@ -71,7 +81,7 @@ async function get_object(req, res) {
     try {
         const ranges = http_utils.normalize_http_ranges(
             http_utils.parse_http_ranges(req.headers.range),
-            obj_size
+            obj_size,
         );
         if (ranges) {
             // reply with HTTP 206 Partial Content
@@ -89,7 +99,12 @@ async function get_object(req, res) {
     } catch (err) {
         if (err.ranges_code === 400) {
             // return http 400 Bad Request
-            dbg.log1('bad range request', req.headers.range, req.path, obj_size);
+            dbg.log1(
+                'bad range request',
+                req.headers.range,
+                req.path,
+                obj_size,
+            );
             throw new S3Error(S3Error.InvalidArgument);
         }
         if (err.ranges_code === 416) {
@@ -105,9 +120,15 @@ async function get_object(req, res) {
     // if the object's size or the end of range is smaller than 4K return it, else get the whole object
     if (params.object_md.first_range_data) {
         const start = Number(params.start) || 0;
-        const end = params.end === undefined ? params.object_md.size : Math.min(params.end, params.object_md.size);
+        const end =
+            params.end === undefined ?
+                params.object_md.size
+            :   Math.min(params.end, params.object_md.size);
         if (params.object_md.first_range_data.length >= end) {
-            const sliced_data = params.object_md.first_range_data.slice(start, end);
+            const sliced_data = params.object_md.first_range_data.slice(
+                start,
+                end,
+            );
             res.end(sliced_data);
             return;
         }
@@ -126,9 +147,7 @@ async function get_object(req, res) {
         });
         read_stream.pipe(res);
     }
-
 }
-
 
 function get_bucket_usage(req, res) {
     return {

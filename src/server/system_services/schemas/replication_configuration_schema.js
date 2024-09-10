@@ -4,12 +4,8 @@
 module.exports = {
     $id: 'replication_configuration_schema',
     type: 'object',
-    required: [
-        '_id',
-        'rules',
-    ],
+    required: ['_id', 'rules'],
     properties: {
-
         _id: { objectid: true },
         rules: {
             type: 'array',
@@ -19,26 +15,31 @@ module.exports = {
                 properties: {
                     rule_id: { type: 'string' },
                     destination_bucket: {
-                        objectid: true // bucket id
+                        objectid: true, // bucket id
                     },
                     filter: {
                         type: 'object',
                         properties: {
                             prefix: { type: 'string' },
-                            // s3 support also tag or and operator of 2 tags/ tag and prefix 
-                        }
+                            // s3 support also tag or and operator of 2 tags/ tag and prefix
+                        },
                     },
                     sync_deletions: { type: 'boolean' },
                     sync_versions: { type: 'boolean' },
                     rule_status: {
                         type: 'object',
-                        required: ['src_cont_token', 'dst_cont_token', 'last_cycle_start', 'last_cycle_end'],
+                        required: [
+                            'src_cont_token',
+                            'dst_cont_token',
+                            'last_cycle_start',
+                            'last_cycle_end',
+                        ],
                         properties: {
                             src_cont_token: { type: 'string' },
                             dst_cont_token: { type: 'string' },
                             last_cycle_start: { idate: true },
                             last_cycle_end: { idate: true },
-                        }
+                        },
                     },
                     rule_log_status: {
                         type: 'object',
@@ -48,12 +49,12 @@ module.exports = {
                                 type: 'object',
                                 required: ['continuation_token'],
                                 properties: {
-                                    continuation_token: { type: 'string' }
-                                }
-                            }
-                        }
+                                    continuation_token: { type: 'string' },
+                                },
+                            },
+                        },
                     },
-                }
+                },
             },
         },
         log_replication_info: {
@@ -63,8 +64,8 @@ module.exports = {
                     type: 'object',
                     required: ['last_cycle_end'],
                     properties: {
-                        last_cycle_end: { idate: true }
-                    }
+                        last_cycle_end: { idate: true },
+                    },
                 },
                 aws_log_replication_info: {
                     type: 'object',
@@ -75,18 +76,18 @@ module.exports = {
                             required: ['logs_bucket'],
                             properties: {
                                 logs_bucket: { type: 'string' },
-                                prefix: { type: 'string' }
-                            }
+                                prefix: { type: 'string' },
+                            },
                         },
-                    }
+                    },
                 },
                 azure_log_replication_info: {
                     type: 'object',
                     properties: {
-                        prefix: { type: 'string' }
-                    }
+                        prefix: { type: 'string' },
+                    },
                 },
             },
         },
-    }
+    },
 };

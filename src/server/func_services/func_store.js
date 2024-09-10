@@ -9,7 +9,6 @@ const func_schema = require('./func_schema');
 const func_indexes = require('./func_indexes');
 
 class FuncStore {
-
     constructor() {
         this._funcs = db_client.instance().define_collection({
             name: 'funcs',
@@ -38,21 +37,27 @@ class FuncStore {
     }
 
     async delete_func(func_id) {
-        await this._funcs.updateOne({
-            _id: func_id,
-        }, {
-            $set: {
-                deleted: new Date()
-            }
-        });
+        await this._funcs.updateOne(
+            {
+                _id: func_id,
+            },
+            {
+                $set: {
+                    deleted: new Date(),
+                },
+            },
+        );
     }
 
     async update_func(func_id, set_updates) {
-        await this._funcs.updateOne({
-            _id: func_id,
-        }, {
-            $set: set_updates
-        });
+        await this._funcs.updateOne(
+            {
+                _id: func_id,
+            },
+            {
+                $set: set_updates,
+            },
+        );
     }
 
     async read_func(system, name, version) {
@@ -98,7 +103,6 @@ class FuncStore {
     code_filename(system, name, version) {
         return system + '/' + name + '/' + version;
     }
-
 }
 
 FuncStore._instance = undefined;

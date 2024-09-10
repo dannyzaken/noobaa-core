@@ -22,7 +22,6 @@ const XATTR_RENAME_KEY_PREFIX = 'rename_key_';
  * @implements {nb.Namespace}
  */
 class NamespaceBlob {
-
     /**
      * @param {{
      *      namespace_resource_id: string,
@@ -46,10 +45,16 @@ class NamespaceBlob {
         this.namespace_resource_id = namespace_resource_id;
         this.connection_string = connection_string;
         this.container = container;
-        this.blob = azure_storage.BlobServiceClient.fromConnectionString(connection_string);
+        this.blob =
+            azure_storage.BlobServiceClient.fromConnectionString(
+                connection_string,
+            );
         this.account_name = account_name;
         this.account_key = account_key;
-        this.container_client = azure_storage.get_container_client(this.blob, this.container);
+        this.container_client = azure_storage.get_container_client(
+            this.blob,
+            this.container,
+        );
         this.access_mode = access_mode;
         this.stats = stats;
     }
@@ -64,7 +69,10 @@ class NamespaceBlob {
     }
 
     is_server_side_copy(other, other_md, params) {
-        return other instanceof NamespaceBlob && this.connection_string === other.connection_string;
+        return (
+            other instanceof NamespaceBlob &&
+            this.connection_string === other.connection_string
+        );
     }
 
     get_bucket() {
@@ -83,7 +91,7 @@ class NamespaceBlob {
      * _get_object_owner in the future we will return object owner
      * currently not implemented because ACLs are not implemented as well
      */
-     _get_object_owner() {
+    _get_object_owner() {
         return undefined;
     }
 
@@ -94,38 +102,65 @@ class NamespaceBlob {
     async list_objects(param, object_sdk) {
         const params = { ...param };
         const regex = '^\\d{1,9}!\\d{1,9}!';
-        if (!(_.isUndefined(params.key_marker)) && params.key_marker.match(regex) === null) {
-            dbg.log0(`Got an invalid marker: ${params.key_marker}, changing the marker into null`);
+        if (
+            !_.isUndefined(params.key_marker) &&
+            params.key_marker.match(regex) === null
+        ) {
+            dbg.log0(
+                `Got an invalid marker: ${params.key_marker}, changing the marker into null`,
+            );
             params.key_marker = undefined;
         }
-        dbg.log0('NamespaceBlob.list_objects:',
+        dbg.log0(
+            'NamespaceBlob.list_objects:',
             this.container,
-            inspect(params)
+            inspect(params),
         );
         const max_keys = params.limit || 1000;
         let iterator;
         if (params.delimiter) {
-            iterator = await this.container_client.listBlobsByHierarchy(
-                params.delimiter, { prefix: params.prefix }).byPage({ continuationToken: params.key_marker, maxPageSize: max_keys });
+            iterator = await this.container_client
+                .listBlobsByHierarchy(params.delimiter, {
+                    prefix: params.prefix,
+                })
+                .byPage({
+                    continuationToken: params.key_marker,
+                    maxPageSize: max_keys,
+                });
         } else {
-            iterator = await this.container_client.listBlobsFlat({ prefix: params.prefix })
-                .byPage({ continuationToken: params.key_marker, maxPageSize: max_keys });
+            iterator = await this.container_client
+                .listBlobsFlat({ prefix: params.prefix })
+                .byPage({
+                    continuationToken: params.key_marker,
+                    maxPageSize: max_keys,
+                });
         }
         const response = (await iterator.next()).value;
-        dbg.log0('list_objects: ', response.continuationToken, response.segment.blobItems, response.segment.blobPrefixes);
+        dbg.log0(
+            'list_objects: ',
+            response.continuationToken,
+            response.segment.blobItems,
+            response.segment.blobPrefixes,
+        );
 
         return {
-            objects: _.map(response.segment.blobItems, obj => this._get_blob_object_info(obj, params.bucket)),
-            common_prefixes: _.map(response.segment.blobPrefixes, prefix => prefix.name),
+            objects: _.map(response.segment.blobItems, obj =>
+                this._get_blob_object_info(obj, params.bucket),
+            ),
+            common_prefixes: _.map(
+                response.segment.blobPrefixes,
+                prefix => prefix.name,
+            ),
             is_truncated: Boolean(response.continuationToken),
             next_marker: response.continuationToken,
         };
     }
 
     async list_uploads(params, object_sdk) {
-        dbg.log0('NamespaceBlob.list_uploads:',
+        dbg.log0(
+            'NamespaceBlob.list_uploads:',
             this.container,
-            inspect(params)
+            inspect(params),
         );
         // TODO list uploads
         return {
@@ -136,9 +171,10 @@ class NamespaceBlob {
     }
 
     async list_object_versions(params, object_sdk) {
-        dbg.log0('NamespaceBlob.list_object_versions:',
+        dbg.log0(
+            'NamespaceBlob.list_object_versions:',
             this.container,
-            inspect(params)
+            inspect(params),
         );
         // TODO list object versions
         return {
@@ -154,25 +190,33 @@ class NamespaceBlob {
 
     async read_object_md(params, object_sdk) {
         try {
-            dbg.log0('NamespaceBlob.read_object_md:',
+            dbg.log0(
+                'NamespaceBlob.read_object_md:',
                 this.container,
-                inspect(params)
+                inspect(params),
             );
             const blob_client = this._get_blob_client(params.key);
             const obj = await blob_client.getProperties();
-            dbg.log0('NamespaceBlob.read_object_md:',
+            dbg.log0(
+                'NamespaceBlob.read_object_md:',
                 this.container,
                 inspect(params),
-                'obj', inspect(obj)
+                'obj',
+                inspect(obj),
             );
-            return this._get_blob_object_info({ ...obj, key: params.key }, params.bucket);
-
+            return this._get_blob_object_info(
+                { ...obj, key: params.key },
+                params.bucket,
+            );
         } catch (err) {
             this._translate_error_code(err);
             dbg.warn('NamespaceBlob.read_object_md:', inspect(err));
             object_sdk.rpc_client.pool.update_issues_report({
                 namespace_resource_id: this.namespace_resource_id,
-                error_code: err.code || (err.details && err.details.errorCode) || 'InternalError',
+                error_code:
+                    err.code ||
+                    (err.details && err.details.errorCode) ||
+                    'InternalError',
                 time: Date.now(),
             });
             throw err;
@@ -180,9 +224,10 @@ class NamespaceBlob {
     }
 
     read_object_stream(params, object_sdk) {
-        dbg.log0('NamespaceBlob.read_object_stream:',
+        dbg.log0(
+            'NamespaceBlob.read_object_stream:',
             this.container,
-            inspect(_.omit(params, 'object_md.ns'))
+            inspect(_.omit(params, 'object_md.ns')),
         );
         return new Promise((resolve, reject) => {
             let count = 1;
@@ -190,7 +235,7 @@ class NamespaceBlob {
                 this.stats?.update_namespace_read_stats({
                     namespace_resource_id: this.namespace_resource_id,
                     size: data.length,
-                    count
+                    count,
                 });
                 // clear count for next updates
                 count = 0;
@@ -200,42 +245,53 @@ class NamespaceBlob {
             // will be returned as promise rejection instead of stream error.
             // once data is ready this is our trigger for resolving the promise and starting to stream
             count_stream.on('error', err => {
-                dbg.warn('NamespaceBlob.read_object_stream:',
+                dbg.warn(
+                    'NamespaceBlob.read_object_stream:',
                     this.container,
                     inspect(_.omit(params, 'object_md.ns')),
-                    'read_stream error', err
+                    'read_stream error',
+                    err,
                 );
                 reject(err);
             });
             const on_readable = () => {
                 count_stream.removeListener('readable', on_readable);
-                dbg.log0('NamespaceBlob.read_object_stream:',
+                dbg.log0(
+                    'NamespaceBlob.read_object_stream:',
                     this.container,
                     inspect(_.omit(params, 'object_md.ns')),
-                    'read_stream is readable'
+                    'read_stream is readable',
                 );
                 resolve(count_stream);
             };
             count_stream.on('readable', on_readable);
             const blob_client = this._get_blob_client(params.key);
 
-            blob_client.download(
-                params.start,
-                params.end - params.start,
-            ).then(res => {
-                dbg.log0('NamespaceBlob.read_object_stream:',
-                    this.container,
-                    inspect(_.omit(params, 'object_md.ns')),
-                    'callback res', inspect(res)
-                );
-                if (!res.readableStreamBody) throw new Error('NamespaceBlob.read_object_stream: download response is invalid');
-                return resolve(res.readableStreamBody.pipe(count_stream));
-            }).catch(err => {
-                    this._translate_error_code(err);
-                    dbg.warn('NamespaceBlob.read_object_stream:',
+            blob_client
+                .download(params.start, params.end - params.start)
+                .then(res => {
+                    dbg.log0(
+                        'NamespaceBlob.read_object_stream:',
                         this.container,
                         inspect(_.omit(params, 'object_md.ns')),
-                        'callback err', inspect(err)
+                        'callback res',
+                        inspect(res),
+                    );
+                    if (!res.readableStreamBody) {
+                        throw new Error(
+                            'NamespaceBlob.read_object_stream: download response is invalid',
+                        );
+                    }
+                    return resolve(res.readableStreamBody.pipe(count_stream));
+                })
+                .catch(err => {
+                    this._translate_error_code(err);
+                    dbg.warn(
+                        'NamespaceBlob.read_object_stream:',
+                        this.container,
+                        inspect(_.omit(params, 'object_md.ns')),
+                        'callback err',
+                        inspect(err),
                     );
                     try {
                         count_stream.emit('error', err);
@@ -243,44 +299,55 @@ class NamespaceBlob {
                         // ignore, only needed if there is no error listeners
                     }
                     return reject(err);
-                }
-
-            );
+                });
         });
     }
-
 
     ///////////////////
     // OBJECT UPLOAD //
     ///////////////////
 
     async upload_object(params, object_sdk) {
-        dbg.log0('NamespaceBlob.upload_object:',
+        dbg.log0(
+            'NamespaceBlob.upload_object:',
             this.container,
-            inspect(_.omit(params, 'source_stream'))
+            inspect(_.omit(params, 'source_stream')),
         );
         let obj;
         const blob_client = this._get_blob_client(params.key);
-        const tagging = params.tagging && Object.fromEntries(params.tagging.map(tag => ([tag.key, tag.value])));
+        const tagging =
+            params.tagging &&
+            Object.fromEntries(params.tagging.map(tag => [tag.key, tag.value]));
         if (params.copy_source) {
             if (params.copy_source.ranges) {
-                throw new Error('NamespaceBlob.upload_object: copy source range not supported');
+                throw new Error(
+                    'NamespaceBlob.upload_object: copy source range not supported',
+                );
             }
-            const tag_permision = params.tagging_copy || params.tagging ? 't' : ''; //tag permission
-            const sasToken = await this._get_sas_token(params.copy_source.bucket, params.copy_source.key, 'r' + tag_permision); // read permission + tag permission(if needed)
-            const url = this._generate_blob_url(params.copy_source.bucket, params.copy_source.key, sasToken);
+            const tag_permision =
+                params.tagging_copy || params.tagging ? 't' : ''; //tag permission
+            const sasToken = await this._get_sas_token(
+                params.copy_source.bucket,
+                params.copy_source.key,
+                'r' + tag_permision,
+            ); // read permission + tag permission(if needed)
+            const url = this._generate_blob_url(
+                params.copy_source.bucket,
+                params.copy_source.key,
+                sasToken,
+            );
             obj = await blob_client.syncUploadFromURL(url, {
                 ...(params.tagging_copy ?
-                    {copySourceTags: 'COPY'} :
-                    {tags: tagging}
-            )});
+                    { copySourceTags: 'COPY' }
+                :   { tags: tagging }),
+            });
         } else {
             let count = 1;
             const count_stream = stream_utils.get_tap_stream(data => {
                 this.stats?.update_namespace_write_stats({
                     namespace_resource_id: this.namespace_resource_id,
                     size: data.length,
-                    count
+                    count,
                 });
                 // clear count for next updates
                 count = 0;
@@ -289,57 +356,66 @@ class NamespaceBlob {
             this._check_valid_xattr(params);
             if (params.tagging) this._check_valid_tagging(params);
             try {
-                const { new_stream, md5_buf } = azure_storage.calc_body_md5(params.source_stream);
+                const { new_stream, md5_buf } = azure_storage.calc_body_md5(
+                    params.source_stream,
+                );
                 const headers = {
                     blobContentType: params.content_type,
                 };
-                Object.defineProperty(headers, "blobContentMD5", {
-                    get: () => md5_buf()
+                Object.defineProperty(headers, 'blobContentMD5', {
+                    get: () => md5_buf(),
                 });
 
                 obj = await blob_client.uploadStream(
                     new_stream.pipe(count_stream),
                     params.size,
-                    undefined, {
+                    undefined,
+                    {
                         metadata: params.xattr,
                         blobHTTPHeaders: headers,
-                        tags: tagging
-                    }
+                        tags: tagging,
+                    },
                 );
                 obj.contentMD5 = md5_buf();
-
             } catch (err) {
                 this._translate_error_code(err);
                 dbg.warn('NamespaceBlob.upload_object:', inspect(err));
                 object_sdk.rpc_client.pool.update_issues_report({
                     namespace_resource_id: this.namespace_resource_id,
-                    error_code: err.code || (err.details && err.details.errorCode) || 'InternalError',
+                    error_code:
+                        err.code ||
+                        (err.details && err.details.errorCode) ||
+                        'InternalError',
                     time: Date.now(),
                 });
                 throw err;
             }
         }
 
-        dbg.log0('NamespaceBlob.upload_object:',
+        dbg.log0(
+            'NamespaceBlob.upload_object:',
             this.container,
             inspect(_.omit(params, 'source_stream')),
-            'obj', inspect(obj)
+            'obj',
+            inspect(obj),
         );
         return this._get_blob_object_info(obj, params.bucket);
     }
-
 
     ////////////////////////
     // BLOCK BLOB UPLOADS //
     ////////////////////////
 
     async upload_blob_block(params, object_sdk) {
-        dbg.log0('NamespaceBlob.upload_blob_block:',
+        dbg.log0(
+            'NamespaceBlob.upload_blob_block:',
             this.container,
-            inspect(_.omit(params, 'source_stream'))
+            inspect(_.omit(params, 'source_stream')),
         );
         if (params.copy_source) {
-            throw new Error('NamespaceBlob.upload_blob_block: copy source not yet supported');
+            throw new Error(
+                'NamespaceBlob.upload_blob_block: copy source not yet supported',
+            );
         }
 
         let count = 1;
@@ -347,7 +423,7 @@ class NamespaceBlob {
             this.stats?.update_namespace_write_stats({
                 namespace_resource_id: this.namespace_resource_id,
                 size: data.length,
-                count
+                count,
             });
             // clear count for next updates
             count = 0;
@@ -356,7 +432,7 @@ class NamespaceBlob {
         await blob_client.stageBlock(
             params.block_id,
             () => params.source_stream.pipe(count_stream),
-            params.size // streamLength really required ???
+            params.size, // streamLength really required ???
         );
     }
 
@@ -374,7 +450,10 @@ class NamespaceBlob {
 
     async get_blob_block_lists(params) {
         let list_type;
-        if (params.requested_lists.committed && params.requested_lists.uncommitted) {
+        if (
+            params.requested_lists.committed &&
+            params.requested_lists.uncommitted
+        ) {
             list_type = 'ALL';
         } else if (params.requested_lists.uncommitted) {
             list_type = 'uncommitted';
@@ -387,10 +466,15 @@ class NamespaceBlob {
         const list_blocks_res = await blob_client.getBlockList(list_type);
         const response = {};
         if (list_blocks_res.CommittedBlocks) {
-            response.committed = list_blocks_res.CommittedBlocks.map(block => ({ block_id: block.Name, size: block.Size }));
+            response.committed = list_blocks_res.CommittedBlocks.map(block => ({
+                block_id: block.Name,
+                size: block.Size,
+            }));
         }
         if (list_blocks_res.UncommittedBlocks) {
-            response.uncommitted = list_blocks_res.CommittedBlocks.map(block => ({ block_id: block.Name, size: block.Size }));
+            response.uncommitted = list_blocks_res.CommittedBlocks.map(
+                block => ({ block_id: block.Name, size: block.Size }),
+            );
         }
         return response;
     }
@@ -406,22 +490,37 @@ class NamespaceBlob {
         if (params.xattr && Object.keys(params.xattr).length > 0) {
             try {
                 this._check_valid_xattr(params);
-                upload = await object_sdk.rpc_client.object.create_object_upload(params);
-                dbg.log0('NamespaceBlob: creating multipart upload object md', inspect(params), upload.obj_id);
+                upload =
+                    await object_sdk.rpc_client.object.create_object_upload(
+                        params,
+                    );
+                dbg.log0(
+                    'NamespaceBlob: creating multipart upload object md',
+                    inspect(params),
+                    upload.obj_id,
+                );
             } catch (err) {
                 this._translate_error_code(err);
-                dbg.error('NamespaceBlob: error in creating multipart upload object md', err);
+                dbg.error(
+                    'NamespaceBlob: error in creating multipart upload object md',
+                    err,
+                );
                 throw err;
             }
         }
         // obj_id contains the upload obj_id that is stored in db OR  obj_id contains a random string of bytes
-        // using the first option when need to store xattr and set it after complete multipart upload phase  
-        const obj_id = upload ? Buffer.from(upload.obj_id).toString('base64') : crypto.randomBytes(24).toString('base64');
+        // using the first option when need to store xattr and set it after complete multipart upload phase
+        const obj_id =
+            upload ?
+                Buffer.from(upload.obj_id).toString('base64')
+            :   crypto.randomBytes(24).toString('base64');
 
-        dbg.log0('NamespaceBlob.create_object_upload:',
+        dbg.log0(
+            'NamespaceBlob.create_object_upload:',
             this.container,
             inspect(params),
-            'obj_id', obj_id
+            'obj_id',
+            obj_id,
         );
         return { obj_id };
     }
@@ -435,7 +534,7 @@ class NamespaceBlob {
     }
 
     _exclude_invalid_md_key(xattr, md_key) {
-            delete xattr[md_key];
+        delete xattr[md_key];
     }
 
     _check_valid_xattr(params) {
@@ -448,36 +547,54 @@ class NamespaceBlob {
                         this._exclude_invalid_md_key(modified_xattr, md_key);
                         break;
                     case 'FailIfInvalid':
-                        throw new Error('Object metadata key ' + md_key + ' is invalid in Azure and the FailIfInvalid header value was provided, thus the upload has failed');
+                        throw new Error(
+                            'Object metadata key ' +
+                                md_key +
+                                ' is invalid in Azure and the FailIfInvalid header value was provided, thus the upload has failed',
+                        );
                     case 'RenameIfInvalid':
                         this._rename_invalid_md_key(modified_xattr, md_key);
                         break;
                     default:
                         this._rename_invalid_md_key(modified_xattr, md_key);
-                    }
                 }
             }
+        }
         params.xattr = modified_xattr;
     }
 
-    // This tagging validation check is a part of namespace blob because Azure Blob 
+    // This tagging validation check is a part of namespace blob because Azure Blob
     // has limitations that s3 does not have.
     _check_valid_tagging(params) {
         for (const tag of params.tagging) {
-            if (tag.key === "" || tag.key.length > 128 || tag.value.length > 256) {
-                const err = new Error('InvalidTags: tag keys must be between 1 and 128 characters, and tag values must be between 0 and 256 characters');
+            if (
+                tag.key === '' ||
+                tag.key.length > 128 ||
+                tag.value.length > 256
+            ) {
+                const err = new Error(
+                    'InvalidTags: tag keys must be between 1 and 128 characters, and tag values must be between 0 and 256 characters',
+                );
                 err.rpc_code = 'INVALID_REQUEST';
                 throw err;
             }
             invalid_azure_tag_regex.lastIndex = 0;
             if (invalid_azure_tag_regex.test(tag.key)) {
-                const err = new Error('InvalidTags: tag key ' + tag.key + ' has invalid charecters');
+                const err = new Error(
+                    'InvalidTags: tag key ' +
+                        tag.key +
+                        ' has invalid charecters',
+                );
                 err.rpc_code = 'INVALID_REQUEST';
                 throw err;
             }
             invalid_azure_tag_regex.lastIndex = 0;
             if (invalid_azure_tag_regex.test(tag.value)) {
-                const err = new Error('InvalidTags: tag value ' + tag.value + ' has invalid charecters');
+                const err = new Error(
+                    'InvalidTags: tag value ' +
+                        tag.value +
+                        ' has invalid charecters',
+                );
                 err.rpc_code = 'INVALID_REQUEST';
                 throw err;
             }
@@ -490,37 +607,56 @@ class NamespaceBlob {
         const block_id = azure_storage.get_block_id(params.obj_id, params.num);
         const block_id_base64 = Buffer.from(block_id).toString('base64');
         let res;
-        dbg.log0('NamespaceBlob.upload_multipart:',
+        dbg.log0(
+            'NamespaceBlob.upload_multipart:',
             this.container,
             inspect(_.omit(params, 'source_stream')),
-            'block_id', block_id,
-            'block_id_base64', block_id_base64
+            'block_id',
+            block_id,
+            'block_id_base64',
+            block_id_base64,
         );
         const blob_client = this._get_blob_client(params.key);
         if (params.copy_source) {
-
-            const start = params.copy_source.ranges ? params.copy_source.ranges[0].start : 0;
-            const end = params.copy_source.ranges ? params.copy_source.ranges[0].end : params.size;
+            const start =
+                params.copy_source.ranges ?
+                    params.copy_source.ranges[0].start
+                :   0;
+            const end =
+                params.copy_source.ranges ?
+                    params.copy_source.ranges[0].end
+                :   params.size;
 
             const maxCopySource = 100 * 1024 * 1024;
             if (end - start > maxCopySource) {
-                throw new Error('The specified copy source is larger than the maximum allowable size for a copy source (100mb).');
+                throw new Error(
+                    'The specified copy source is larger than the maximum allowable size for a copy source (100mb).',
+                );
             }
-            const sasToken = await this._get_sas_token(params.copy_source.bucket, params.copy_source.key, 'r'); // read permission
-            const url = this._generate_blob_url(params.copy_source.bucket, params.copy_source.key, sasToken);
+            const sasToken = await this._get_sas_token(
+                params.copy_source.bucket,
+                params.copy_source.key,
+                'r',
+            ); // read permission
+            const url = this._generate_blob_url(
+                params.copy_source.bucket,
+                params.copy_source.key,
+                sasToken,
+            );
 
             res = await blob_client.stageBlockFromURL(
                 block_id_base64,
                 url,
                 start,
-                end - start); // TODO: check that end is ok when ranges provided
+                end - start,
+            ); // TODO: check that end is ok when ranges provided
         } else {
             let count = 1;
             const count_stream = stream_utils.get_tap_stream(data => {
                 this.stats?.update_namespace_write_stats({
                     namespace_resource_id: this.namespace_resource_id,
                     size: data.length,
-                    count
+                    count,
                 });
                 // clear count for next updates
                 count = 0;
@@ -529,23 +665,30 @@ class NamespaceBlob {
                 res = await blob_client.stageBlock(
                     block_id_base64,
                     () => params.source_stream.pipe(count_stream),
-                    params.size // streamLength really required ???
+                    params.size, // streamLength really required ???
                 );
             } catch (err) {
                 object_sdk.rpc_client.pool.update_issues_report({
                     namespace_resource_id: this.namespace_resource_id,
-                    error_code: err.code || (err.details && err.details.errorCode) || 'InternalError',
+                    error_code:
+                        err.code ||
+                        (err.details && err.details.errorCode) ||
+                        'InternalError',
                     time: Date.now(),
                 });
                 throw err;
             }
         }
-        dbg.log0('NamespaceBlob.upload_multipart:',
+        dbg.log0(
+            'NamespaceBlob.upload_multipart:',
             this.container,
             inspect(_.omit(params, 'source_stream')),
-            'block_id', block_id,
-            'block_id_base64', block_id_base64,
-            'res', inspect(res)
+            'block_id',
+            block_id,
+            'block_id_base64',
+            block_id_base64,
+            'res',
+            inspect(res),
         );
         const hex_etag = Buffer.from(block_id_base64, 'base64').toString('hex');
         dbg.log0('ETAg: ', hex_etag);
@@ -555,53 +698,65 @@ class NamespaceBlob {
     }
 
     async _get_sas_token(container, block_key, permission) {
-
         const start_date = new Date();
         const expiry_date = new Date(start_date);
         expiry_date.setMinutes(start_date.getMinutes() + 10);
         start_date.setMinutes(start_date.getMinutes() - 10);
-        const ssk = new azure_storage.StorageSharedKeyCredential(this.account_name, this.account_key);
+        const ssk = new azure_storage.StorageSharedKeyCredential(
+            this.account_name,
+            this.account_key,
+        );
 
-        return azure_storage.generateBlobSASQueryParameters({
-            containerName: container,
-            blobName: block_key,
-            permissions: azure_storage.ContainerSASPermissions.parse(permission),
-            expiresOn: expiry_date,
-            startsOn: start_date
-        }, ssk).toString();
+        return azure_storage
+            .generateBlobSASQueryParameters(
+                {
+                    containerName: container,
+                    blobName: block_key,
+                    permissions:
+                        azure_storage.ContainerSASPermissions.parse(permission),
+                    expiresOn: expiry_date,
+                    startsOn: start_date,
+                },
+                ssk,
+            )
+            .toString();
     }
 
     async list_multiparts(params, object_sdk) {
-        dbg.log0('NamespaceBlob.list_multiparts:',
+        dbg.log0(
+            'NamespaceBlob.list_multiparts:',
             this.container,
-            inspect(params)
+            inspect(params),
         );
         const blob_client = this._get_blob_client(params.key);
         const res = await blob_client.getBlockList('uncommitted');
 
-        dbg.log0('NamespaceBlob.list_multiparts:',
+        dbg.log0(
+            'NamespaceBlob.list_multiparts:',
             this.container,
             inspect(params),
-            'res', inspect(res)
+            'res',
+            inspect(res),
         );
         return {
             is_truncated: false,
             multiparts: _.map(res.uncommittedBlocks, block => {
                 const buf = Buffer.from(block.name, 'base64');
-                return ({
+                return {
                     num: parseInt(buf.toString().split('-')[1], 10),
                     size: block.size,
                     etag: buf.toString('hex'),
                     last_modified: new Date(),
-                });
-            })
+                };
+            }),
         };
     }
 
     async complete_object_upload(params, object_sdk) {
-        dbg.log0('NamespaceBlob.complete_object_upload:',
+        dbg.log0(
+            'NamespaceBlob.complete_object_upload:',
             this.container,
-            inspect(params)
+            inspect(params),
         );
         const num_parts = params.multiparts.length;
         const part_by_num = _.keyBy(params.multiparts, 'num');
@@ -616,16 +771,18 @@ class NamespaceBlob {
 
         const options = {
             blobHTTPHeaders: {
-                blobContentMD5: Buffer.from(md5_hex, 'hex') // TODO: check that before & after the change the MD5 was uploaded 
-            }
+                blobContentMD5: Buffer.from(md5_hex, 'hex'), // TODO: check that before & after the change the MD5 was uploaded
+            },
         };
         const blob_client = this._get_blob_client(params.key);
         const obj = await blob_client.commitBlockList(block_list, options);
 
-        dbg.log0('NamespaceBlob.complete_object_upload:',
+        dbg.log0(
+            'NamespaceBlob.complete_object_upload:',
             this.container,
             inspect(params),
-            'obj', inspect(obj)
+            'obj',
+            inspect(obj),
         );
 
         const obj_id = Buffer.from(params.obj_id, 'base64').toString();
@@ -633,12 +790,14 @@ class NamespaceBlob {
             const obj_md = await object_sdk.rpc_client.object.read_object_md({
                 obj_id,
                 bucket: params.bucket,
-                key: params.key
+                key: params.key,
             });
-            dbg.log0('NamespaceBlob.complete_object_upload:',
+            dbg.log0(
+                'NamespaceBlob.complete_object_upload:',
                 this.container,
                 inspect(params),
-                'obj_md', inspect(obj_md)
+                'obj_md',
+                inspect(obj_md),
             );
             if (obj_md && obj_md.xattr) {
                 await blob_client.setMetadata(obj_md.xattr);
@@ -646,7 +805,7 @@ class NamespaceBlob {
                 await object_sdk.rpc_client.object.abort_object_upload({
                     key: params.key,
                     bucket: params.bucket,
-                    obj_id
+                    obj_id,
                 });
             }
         }
@@ -660,10 +819,11 @@ class NamespaceBlob {
         // azure blob does not have abort upload operation
         // instead it will garbage collect blocks after 7 days
         // so we simply ignore the abort operation
-        dbg.log0('NamespaceBlob.abort_object_upload:',
+        dbg.log0(
+            'NamespaceBlob.abort_object_upload:',
             this.container,
             inspect(params),
-            'noop'
+            'noop',
         );
     }
 
@@ -672,7 +832,11 @@ class NamespaceBlob {
     ///////////////////
 
     async delete_object(params, object_sdk) {
-        dbg.log0('NamespaceBlob.delete_object:', this.container, inspect(params));
+        dbg.log0(
+            'NamespaceBlob.delete_object:',
+            this.container,
+            inspect(params),
+        );
         let res;
         try {
             res = await this.container_client.deleteBlob(params.key);
@@ -680,31 +844,44 @@ class NamespaceBlob {
             this._translate_error_code(err);
             if (err.rpc_code !== 'NO_SUCH_OBJECT') throw err;
         }
-        dbg.log0('NamespaceBlob.delete_object:',
+        dbg.log0(
+            'NamespaceBlob.delete_object:',
             this.container,
             inspect(params),
-            'res', inspect(res)
+            'res',
+            inspect(res),
         );
 
         return {};
     }
 
     async delete_multiple_objects(params, object_sdk) {
-        dbg.log0('NamespaceBlob.delete_multiple_objects:', this.container, inspect(params));
-
-        const res = await P.map_with_concurrency(10, params.objects, obj =>
-            this.container_client.deleteBlob(obj.key)
-            .then(() => ({}))
-            .catch(err => {
-                this._translate_error_code(err);
-                if (err.rpc_code === 'NO_SUCH_OBJECT') return {};
-                return { err_code: err.rpc_code || 'InternalError', err_message: err.message || 'InternalError' };
-            }));
-
-        dbg.log0('NamespaceBlob.delete_multiple_objects:',
+        dbg.log0(
+            'NamespaceBlob.delete_multiple_objects:',
             this.container,
             inspect(params),
-            'res', inspect(res)
+        );
+
+        const res = await P.map_with_concurrency(10, params.objects, obj =>
+            this.container_client
+                .deleteBlob(obj.key)
+                .then(() => ({}))
+                .catch(err => {
+                    this._translate_error_code(err);
+                    if (err.rpc_code === 'NO_SUCH_OBJECT') return {};
+                    return {
+                        err_code: err.rpc_code || 'InternalError',
+                        err_message: err.message || 'InternalError',
+                    };
+                }),
+        );
+
+        dbg.log0(
+            'NamespaceBlob.delete_multiple_objects:',
+            this.container,
+            inspect(params),
+            'res',
+            inspect(res),
         );
 
         return res;
@@ -733,7 +910,8 @@ class NamespaceBlob {
             if (md_key.startsWith(XATTR_RENAME_KEY_PREFIX)) {
                 const restored_key = md_key.substring(11);
                 if (_.has(modified_xattr, XATTR_RENAME_PREFIX + restored_key)) {
-                    modified_xattr[modified_xattr[md_key]] = modified_xattr[XATTR_RENAME_PREFIX + restored_key];
+                    modified_xattr[modified_xattr[md_key]] =
+                        modified_xattr[XATTR_RENAME_PREFIX + restored_key];
                     delete modified_xattr[md_key];
                     delete modified_xattr[XATTR_RENAME_PREFIX + restored_key];
                 }
@@ -751,13 +929,23 @@ class NamespaceBlob {
             content_type: flat_obj.contentType,
             xattr: modified_xattr,
             tag_count: tag_count,
-            object_owner
+            object_owner,
         };
     }
 
     _translate_error_code(err) {
-        if ((err.code || (err.details && err.details.errorCode)) === 'BlobNotFound') err.rpc_code = 'NO_SUCH_OBJECT';
-        if ((err.code || (err.details && err.details.errorCode)) === 'InvalidMetadata') err.rpc_code = 'INVALID_REQUEST';
+        if (
+            (err.code || (err.details && err.details.errorCode)) ===
+            'BlobNotFound'
+        ) {
+            err.rpc_code = 'NO_SUCH_OBJECT';
+        }
+        if (
+            (err.code || (err.details && err.details.errorCode)) ===
+            'InvalidMetadata'
+        ) {
+            err.rpc_code = 'INVALID_REQUEST';
+        }
     }
 
     //////////
@@ -801,43 +989,75 @@ class NamespaceBlob {
     ///////////////////
 
     async get_object_tagging(params, object_sdk) {
-        dbg.log0('NamespaceBlob.get_object_tagging:', this.container, inspect(params));
+        dbg.log0(
+            'NamespaceBlob.get_object_tagging:',
+            this.container,
+            inspect(params),
+        );
 
         const blob_client = this._get_blob_client(params.key);
         const res = await blob_client.getTags();
 
-        dbg.log0('NamespaceBlob.get_object_tagging:', this.container, inspect(params), 'res', inspect(res));
+        dbg.log0(
+            'NamespaceBlob.get_object_tagging:',
+            this.container,
+            inspect(params),
+            'res',
+            inspect(res),
+        );
 
         const TagSet = Object.keys(res.tags).map(key => ({
             key: key,
-            value: res.tags[key]
+            value: res.tags[key],
         }));
 
         return {
-            tagging: TagSet
+            tagging: TagSet,
         };
     }
     async delete_object_tagging(params, object_sdk) {
-        dbg.log0('NamespaceBlob.delete_object_tagging:', this.container, inspect(params));
+        dbg.log0(
+            'NamespaceBlob.delete_object_tagging:',
+            this.container,
+            inspect(params),
+        );
         const blob_client = this._get_blob_client(params.key);
 
         //set tags with empty set removes all current tags from the blob
         const res = await blob_client.setTags({});
 
-        dbg.log0('NamespaceBlob.delete_object_tagging:', this.container, inspect(params), 'res', inspect(res));
+        dbg.log0(
+            'NamespaceBlob.delete_object_tagging:',
+            this.container,
+            inspect(params),
+            'res',
+            inspect(res),
+        );
 
         return {};
     }
     async put_object_tagging(params, object_sdk) {
-        dbg.log0('NamespaceBlob.put_object_tagging:', this.container, inspect(params));
+        dbg.log0(
+            'NamespaceBlob.put_object_tagging:',
+            this.container,
+            inspect(params),
+        );
         const blob_client = this._get_blob_client(params.key);
 
         this._check_valid_tagging(params);
-        const tagging = Object.fromEntries(params.tagging.map(tag => ([tag.key, tag.value])));
+        const tagging = Object.fromEntries(
+            params.tagging.map(tag => [tag.key, tag.value]),
+        );
 
         const res = await blob_client.setTags(tagging);
 
-        dbg.log0('NamespaceBlob.put_object_tagging:', this.container, inspect(params), 'res', inspect(res));
+        dbg.log0(
+            'NamespaceBlob.put_object_tagging:',
+            this.container,
+            inspect(params),
+            'res',
+            inspect(res),
+        );
 
         return {};
     }
@@ -860,7 +1080,6 @@ class NamespaceBlob {
     async delete_uls() {
         throw new Error('TODO');
     }
-
 }
 
 function inspect(x) {

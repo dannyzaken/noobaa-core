@@ -17,10 +17,10 @@ s3net(argv);
 
 /**
  * s3net() performs S3 request using raw network socket.
- * 
+ *
  * The reason we need such a tool is to check issues with content-length
  * that are otherwise rejected immediately by the nodejs http parser.
- * 
+ *
  * Request Flags:
  * --host 10.11.12.13
  * --port 9999
@@ -33,7 +33,6 @@ s3net(argv);
  * --headers.Range 'bytes=123-456' for ranged read.
  */
 async function s3net(req) {
-
     // authorize the request by setting defaults and calculating authorization header
     signature_utils.authorize_client_request(req);
 
@@ -69,11 +68,9 @@ async function s3net(req) {
         res.output = fs.createWriteStream(req.output);
     }
 
-    conn.on('data', data => (
-        res.reading_headers ?
-        read_headers(res, data) :
-        read_body(res, data)
-    ));
+    conn.on('data', data =>
+        res.reading_headers ? read_headers(res, data) : read_body(res, data),
+    );
 
     // write request
     console.log('\n*** REQUEST', '*'.repeat(60));
@@ -101,7 +98,12 @@ async function s3net(req) {
         console.error('');
         console.error('$'.repeat(60));
         console.error('$'.repeat(60));
-        console.error('$ ERROR: BAD BODY LENGTH. expected', expected, 'got', res.body_length);
+        console.error(
+            '$ ERROR: BAD BODY LENGTH. expected',
+            expected,
+            'got',
+            res.body_length,
+        );
         console.error('$'.repeat(60));
         console.error('$'.repeat(60));
         console.error('');
@@ -111,7 +113,6 @@ async function s3net(req) {
 }
 
 function read_headers(res, data) {
-
     // append to headers_text and lookup end of headers (CRLFx2)
     const headers_end_from_pos = Math.max(0, res.headers_text.length - 4);
     res.headers_text += data.toString();
@@ -136,7 +137,9 @@ function read_headers(res, data) {
     console.log('\n*** RESPONSE', '*'.repeat(60));
     console.log(headers_text);
     console.log('');
-    if (!res.output) console.log('[[ Body output suppressed, use --output to print ]]');
+    if (!res.output) {
+        console.log('[[ Body output suppressed, use --output to print ]]');
+    }
     read_body(res, body_buf);
 }
 

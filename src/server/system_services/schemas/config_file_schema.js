@@ -4,24 +4,20 @@
 module.exports = {
     $id: 'certificate_schema',
     type: 'object',
-    required: [
-        '_id',
-        'filename',
-        'data'
-    ],
+    required: ['_id', 'filename', 'data'],
     properties: {
         _id: {
-            objectid: true
+            objectid: true,
         },
         encoding: {
             type: 'string',
-            enum: ['ascii', 'utf8', 'base64', 'hex']
+            enum: ['ascii', 'utf8', 'base64', 'hex'],
         },
         filename: {
-            type: 'string'
+            type: 'string',
         },
         data: {
-            type: 'string'
-        }
-    }
+            type: 'string',
+        },
+    },
 };

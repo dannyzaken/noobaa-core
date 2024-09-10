@@ -11,7 +11,6 @@ const server_rpc = require('../server_rpc');
 const system_store = require('../system_services/system_store').get_instance();
 const db_client = require('../../util/db_client');
 
-
 const dotenv = require('../../util/dotenv');
 
 let monitoring_status = {};
@@ -23,10 +22,10 @@ if (!process.env.PLATFORM) {
 async function run() {
     dbg.log0('SERVER_MONITOR: BEGIN');
     monitoring_status = {
-        dns_status: "OPERATIONAL",
+        dns_status: 'OPERATIONAL',
         ph_status: {
-            status: "OPERATIONAL",
-            test_time: moment().unix()
+            status: 'OPERATIONAL',
+            test_time: moment().unix(),
         },
     };
     if (!system_store.is_finished_initial_load) {
@@ -43,7 +42,7 @@ async function run() {
 
     dbg.log0('SERVER_MONITOR: END. status:', monitoring_status);
     return {
-        services: monitoring_status
+        services: monitoring_status,
     };
 }
 
@@ -57,36 +56,43 @@ async function run_monitors() {
 }
 
 function _check_dns_and_phonehome() {
-    monitoring_status.dns_status = "OPERATIONAL";
+    monitoring_status.dns_status = 'OPERATIONAL';
     monitoring_status.ph_status = {
-        status: "OPERATIONAL",
-        test_time: moment().unix()
+        status: 'OPERATIONAL',
+        test_time: moment().unix(),
     };
 }
 
 function _check_internal_ips() {
     dbg.log2('_check_internal_ips');
-    return server_rpc.client.cluster_server.check_cluster_status()
+    return server_rpc.client.cluster_server
+        .check_cluster_status()
         .then(cluster_status => {
             if (cluster_status && cluster_status.length > 0) {
                 monitoring_status.cluster_status = cluster_status;
             }
         })
         .catch(err => {
-            monitoring_status.cluster_status = "UNKNOWN";
-            dbg.warn(`Error when trying to check cluster servers' status.`, err.stack || err);
+            monitoring_status.cluster_status = 'UNKNOWN';
+            dbg.warn(
+                `Error when trying to check cluster servers' status.`,
+                err.stack || err,
+            );
         });
 }
 
 async function _check_db_disk_usage() {
     dbg.log2('_check_db_disk_usage');
-    const { fsUsedSize, fsTotalSize } = await db_client.instance().get_db_stats();
-    if (fsTotalSize - fsUsedSize < 10 * (1024 ** 3)) { // Free is lower than 10GB
+    const { fsUsedSize, fsTotalSize } = await db_client
+        .instance()
+        .get_db_stats();
+    if (fsTotalSize - fsUsedSize < 10 * 1024 ** 3) {
+        // Free is lower than 10GB
         Dispatcher.instance().alert(
             'MAJOR',
             system_store.data.systems[0]._id,
             `NooBaa DB is running low on disk space, it is recommended to increase the disk size of the persistent volume (PV) backing the database`,
-            Dispatcher.rules.once_weekly
+            Dispatcher.rules.once_weekly,
         );
     }
 }
@@ -95,18 +101,22 @@ async function _check_address_changes(container_platform) {
     dbg.log2('_check_address_changes');
     try {
         const [system] = system_store.data.systems;
-        const system_address = container_platform === 'KUBERNETES' ?
-            await os_utils.discover_k8s_services() : [];
+        const system_address =
+            container_platform === 'KUBERNETES' ?
+                await os_utils.discover_k8s_services()
+            :   [];
 
         // This works because the lists are always sorted, see discover_k8s_services().
         if (!_.isEqual(system.system_address, system_address)) {
             await system_store.make_changes({
                 update: {
-                    systems: [{
-                        _id: system.id,
-                        $set: { system_address }
-                    }]
-                }
+                    systems: [
+                        {
+                            _id: system.id,
+                            $set: { system_address },
+                        },
+                    ],
+                },
             });
         }
     } catch (err) {

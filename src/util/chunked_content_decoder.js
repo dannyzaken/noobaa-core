@@ -22,7 +22,6 @@ const NL_CODE = '\n'.charCodeAt(0);
  *
  */
 class ChunkedContentDecoder extends stream.Transform {
-
     constructor(params) {
         super(params);
         this.state = STATE_READ_CHUNK_HEADER;
@@ -55,19 +54,25 @@ class ChunkedContentDecoder extends stream.Transform {
                         if (!(this.chunk_size >= 0)) return this.error_state();
                         this.last_chunk = this.chunk_size === 0;
                         const header1 = header_items[1].split('=');
-                        this.chunk_signature = header1[0] === 'chunk-signature' ? header1[1] : '';
+                        this.chunk_signature =
+                            header1[0] === 'chunk-signature' ? header1[1] : '';
                         this.chunk_header_str = '';
                         this.state = STATE_WAIT_NL_HEADER;
                         break;
                     } else {
-                        this.chunk_header_str += String.fromCharCode(buf[index]);
+                        this.chunk_header_str += String.fromCharCode(
+                            buf[index],
+                        );
                     }
                 }
             } else if (this.state === STATE_WAIT_NL_HEADER) {
                 if (buf[index] !== NL_CODE) return this.error_state();
                 this.state = STATE_SEND_DATA;
             } else if (this.state === STATE_SEND_DATA) {
-                const content = (index === 0 && buf.length <= this.chunk_size) ? buf : buf.slice(index, index + this.chunk_size);
+                const content =
+                    index === 0 && buf.length <= this.chunk_size ?
+                        buf
+                    :   buf.slice(index, index + this.chunk_size);
                 this.chunk_size -= content.length;
                 index += content.length - 1;
                 if (content.length) this.push(content);

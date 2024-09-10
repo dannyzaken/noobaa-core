@@ -10,7 +10,6 @@ const S3Error = require('../s3_errors').S3Error;
 function post_object(req) {
     // TODO S3 post_object not implemented
     throw new S3Error(S3Error.NotImplemented);
-
 }
 
 module.exports = {

@@ -18,7 +18,7 @@ if (argv.forks > 1 && cluster.isMaster) {
 
 function main() {
     const speedometer = new Speedometer('Rand Speed');
-    const len = (argv.len * 1024 * 1024) || Infinity;
+    const len = argv.len * 1024 * 1024 || Infinity;
     const input = new RandStream(len, {
         highWaterMark: 1024 * 1024,
         generator: argv.generator,
@@ -37,8 +37,10 @@ function main() {
         });
         input.pipe(gzip);
         setInterval(() => {
-            console.log('GZIP Compressed-vs-Data ratio:',
-                (100 * compressed_size / plain_size).toFixed(0) + '%');
+            console.log(
+                'GZIP Compressed-vs-Data ratio:',
+                ((100 * compressed_size) / plain_size).toFixed(0) + '%',
+            );
         }, 3000).unref();
     }
 }

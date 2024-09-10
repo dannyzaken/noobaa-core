@@ -12,9 +12,10 @@ const CHUNK_SIZE = undefined; // Default value is: 256 * 1024;
 const GRID_FS_CHUNK_COLLECTION_OPTIONS = {
     storageEngine: {
         wiredTiger: {
-            configString: "memory_page_max=512,os_cache_dirty_max=1,os_cache_max=1"
-        }
-    }
+            configString:
+                'memory_page_max=512,os_cache_dirty_max=1,os_cache_max=1',
+        },
+    },
 };
 
 // gridfs_stress's whole purpose is to check capabilities and limits of GridFS
@@ -22,7 +23,6 @@ const GRID_FS_CHUNK_COLLECTION_OPTIONS = {
 // this is done in order to find benchmarks that we could compare with our server's implementation
 function write_gridfs_file(bucket) {
     return new Promise((resolve, reject) => {
-
         const fname = `gridfs_stress_${Date.now()}_${global_id}`;
         global_id += 1;
 
@@ -31,9 +31,7 @@ function write_gridfs_file(bucket) {
         console.log('writing', fname, 'size', data.length);
 
         const stream = bucket.openUploadStream(fname);
-        stream.once('error', reject)
-            .once('finish', resolve)
-            .end(data);
+        stream.once('error', reject).once('finish', resolve).end(data);
     });
 }
 
@@ -54,7 +52,7 @@ async function gridfs_stress(db) {
     await db.createCollection(FILES_COLL);
 
     await Promise.all(
-        new Array(35).fill(1).map(() => write_gridfs_files(bucket))
+        new Array(35).fill(1).map(() => write_gridfs_files(bucket)),
     );
 }
 

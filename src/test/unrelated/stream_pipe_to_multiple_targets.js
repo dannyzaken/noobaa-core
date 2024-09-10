@@ -16,7 +16,6 @@ const CHUNK_SIZE = 16 * 1024;
  * until it is explicitly requested to stop()
  */
 class ReadSource extends stream.Readable {
-
     constructor(name) {
         // highWaterMark is the read buffer size (bytes)
         // when buffer is FULL => stop reading from "socket"
@@ -27,7 +26,7 @@ class ReadSource extends stream.Readable {
 
     /**
      * @override
-     * @param {Number} size 
+     * @param {Number} size
      */
     _read(size) {
         if (this.stopped) {
@@ -35,8 +34,8 @@ class ReadSource extends stream.Readable {
             this.push(null);
         } else {
             console.log(`  - read ${this.name}`);
-            crypto.randomBytes(CHUNK_SIZE,
-                (err, buf) => (err ? this.emit('error', err) : this.push(buf))
+            crypto.randomBytes(CHUNK_SIZE, (err, buf) =>
+                err ? this.emit('error', err) : this.push(buf),
             );
         }
     }
@@ -50,7 +49,6 @@ class ReadSource extends stream.Readable {
  * WriteTarget simulates a target that receives the data and computes its hash.
  */
 class WriteTarget extends stream.Writable {
-
     constructor(name, latency) {
         super({ highWaterMark: 4 * CHUNK_SIZE });
         this.name = name;
@@ -98,11 +96,16 @@ async function main() {
 
         // Set timer to check if thee cache is slow and disable it
         setInterval(() => {
-            const hub_fill_rate = hub.writableLength / hub.writableHighWaterMark;
-            const cache_fill_rate = cache.writableLength / cache.writableHighWaterMark;
-            console.log('main: checking buffers -',
-                'hub', (hub_fill_rate * 100).toFixed(0) + '%',
-                'cache', (cache_fill_rate * 100).toFixed(0) + '%',
+            const hub_fill_rate =
+                hub.writableLength / hub.writableHighWaterMark;
+            const cache_fill_rate =
+                cache.writableLength / cache.writableHighWaterMark;
+            console.log(
+                'main: checking buffers -',
+                'hub',
+                (hub_fill_rate * 100).toFixed(0) + '%',
+                'cache',
+                (cache_fill_rate * 100).toFixed(0) + '%',
             );
             if (hub_fill_rate === 0 && cache_fill_rate >= 1) {
                 console.log('main: stop cache - too slow');
@@ -112,23 +115,24 @@ async function main() {
 
         // Set timer to stop the source stream
         setTimeout(() => {
-            console.log('main: stop source - will take a couple of seconds to finish ...');
+            console.log(
+                'main: stop source - will take a couple of seconds to finish ...',
+            );
             source.stop();
         }, 40 * TICK);
 
-
         if (argv.for_await) {
-
             // for-await can iterate streams
             for await (const chunk of source) {
                 await Promise.all([
                     hub.write(chunk) ? undefined : events.once(hub, 'drain'),
-                    cache.write(chunk) ? undefined : events.once(cache, 'drain'),
+                    cache.write(chunk) ? undefined : (
+                        events.once(cache, 'drain')
+                    ),
                 ]);
             }
             hub.end();
             cache.end();
-
         } else {
             const inter1 = new stream.PassThrough();
             const inter2 = new stream.PassThrough();
@@ -144,10 +148,7 @@ async function main() {
             }, 1100);
         }
 
-        await Promise.allSettled([
-            wait_finished(hub),
-            wait_finished(cache),
-        ]);
+        await Promise.allSettled([wait_finished(hub), wait_finished(cache)]);
 
         if (cache.destroyed) {
             console.log('main: skipping cache check since it was canceled ...');
@@ -160,7 +161,6 @@ async function main() {
         }
 
         console.log('main: done.');
-
     } catch (err) {
         console.error('main: ERROR', err.stack);
         process.exit(1);

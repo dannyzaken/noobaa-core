@@ -25,7 +25,6 @@ function read_activity_log(req) {
  *
  */
 function export_activity_log(req) {
-
     //limit to 100000 lines just in case (probably ~10MB of text)
 
     // generate csv file name:
@@ -33,30 +32,43 @@ function export_activity_log(req) {
     const out_path = `/public/${file_name}`;
     const inner_path = `/log/${file_name}`;
     req.rpc_params.limit = req.rpc_params.limit || 100000;
-    return Dispatcher.instance().read_activity_log(req)
+    return Dispatcher.instance()
+        .read_activity_log(req)
         .then(logs => {
             const out_lines = logs.logs.reduce(
                 (lines, entry) => {
-                    const time = (new Date(entry.time)).toISOString();
+                    const time = new Date(entry.time).toISOString();
                     const entity_type = entry.event.split('.')[0];
                     const account = entry.actor ? entry.actor.email : '';
                     const entity = entry[entity_type];
                     const description = entry.desc ? entry.desc.join(' ') : '';
                     let entity_name = '';
                     if (entity) {
-                        entity_name = entity_type === 'obj' ? entity.key : entity.name;
+                        entity_name =
+                            entity_type === 'obj' ? entity.key : entity.name;
                     }
 
-                    lines.push(`"${time}",${entry.level},${account},${entry.event},${entity_name},"${description}"`);
+                    lines.push(
+                        `"${time}",${entry.level},${account},${entry.event},${entity_name},"${description}"`,
+                    );
                     return lines;
-                }, ['time,level,account,event,entity,description']
+                },
+                ['time,level,account,event,entity,description'],
             );
 
-            return fs.promises.writeFile(inner_path, out_lines.join('\n'), 'utf8');
+            return fs.promises.writeFile(
+                inner_path,
+                out_lines.join('\n'),
+                'utf8',
+            );
         })
-        .then(() => ({out_path}))
+        .then(() => ({ out_path }))
         .catch(err => {
-            dbg.error('received error when writing to audit csv file:', inner_path, err);
+            dbg.error(
+                'received error when writing to audit csv file:',
+                inner_path,
+                err,
+            );
             throw err;
         });
 }
@@ -77,7 +89,6 @@ function update_alerts_state(req) {
 function read_alerts(req) {
     return Dispatcher.instance().read_alerts(req);
 }
-
 
 // EXPORTS
 exports.read_activity_log = read_activity_log;

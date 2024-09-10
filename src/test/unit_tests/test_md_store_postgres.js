@@ -116,7 +116,6 @@
 
 //     });
 
-
 //     //     mocha.describe('multiparts', function() {
 
 //     //         const multipart = {
@@ -137,7 +136,6 @@
 //     //         });
 
 //     //     });
-
 
 //     //     mocha.describe('parts', function() {
 
@@ -197,7 +195,6 @@
 
 //     //     });
 
-
 //     //     mocha.describe('chunks', function() {
 
 //     //         const chunks = [{
@@ -239,7 +236,6 @@
 
 //     //     });
 
-
 //     //     mocha.describe('blocks', function() {
 
 //     //         const blocks = [{
@@ -259,7 +255,6 @@
 //     //             return md_store.delete_blocks_by_ids(blocks.map(block => block._id));
 //     //         });
 
-
 //     //     });
 
 //     //     mocha.describe('dedup-index', function() {
@@ -277,7 +272,6 @@
 //     //     });
 
 // });
-
 
 // function assert_equal(a, b) {
 //     assert.deepEqual(a, b, 'should be equal');

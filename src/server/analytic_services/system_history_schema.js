@@ -7,22 +7,23 @@ module.exports = {
     required: ['_id', 'time_stamp', 'history_type'],
     properties: {
         _id: {
-            objectid: true
+            objectid: true,
         },
         time_stamp: {
-            date: true
+            date: true,
         },
-        system_snapshot: { // Future proofing system snapshots. Old snapshots not conforming to upgrades is expected and fine so the data here is not validated
+        system_snapshot: {
+            // Future proofing system snapshots. Old snapshots not conforming to upgrades is expected and fine so the data here is not validated
             type: 'object',
             additionalProperties: true,
-            properties: {}
+            properties: {},
         },
         version_snapshot: {
-            type: 'string'
+            type: 'string',
         },
         history_type: {
             type: 'string',
-            enum: ['VERSION', 'SYSTEM']
-        }
-    }
+            enum: ['VERSION', 'SYSTEM'],
+        },
+    },
 };

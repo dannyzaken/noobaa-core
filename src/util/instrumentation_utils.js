@@ -8,19 +8,19 @@ const { performance } = require('perf_hooks');
 const {
     MU_CONCURENT_MEASUREMENTS = 100,
     MU_SAMPLES_PER_MEASUREMENT = 2500,
-    MU_CONCURENT_ACTIVE_SAMPLES = 5000
+    MU_CONCURENT_ACTIVE_SAMPLES = 5000,
 } = process.env;
 
 const measurements = new Map();
 const measurement_pool = new ObjectPool(MU_CONCURENT_MEASUREMENTS, {
     allocator: () => _init_measurement({}),
     initializer: _init_measurement,
-    resize_policy: ObjectPool.resize_policy.NO_RESIZE
+    resize_policy: ObjectPool.resize_policy.NO_RESIZE,
 });
 const handle_pool = new ObjectPool(MU_CONCURENT_ACTIVE_SAMPLES, {
     allocator: i => i,
     empty_value: -1,
-    resize_policy: ObjectPool.resize_policy.NO_RESIZE
+    resize_policy: ObjectPool.resize_policy.NO_RESIZE,
 });
 const timestamps = make_array(MU_CONCURENT_ACTIVE_SAMPLES, () => ({
     tag: '',
@@ -28,7 +28,7 @@ const timestamps = make_array(MU_CONCURENT_ACTIVE_SAMPLES, () => ({
 }));
 
 const report_columns = {
-    'line': {
+    line: {
         title: '#',
         width: 4,
         value: (record, line_num) => line_num + 1,
@@ -46,48 +46,48 @@ const report_columns = {
     max: {
         title: 'Max',
         width: 10,
-        value: record => record.max.toFixed(3)
+        value: record => record.max.toFixed(3),
     },
     min: {
         title: 'Min',
         width: 10,
-        value: record => record.min.toFixed(3)
+        value: record => record.min.toFixed(3),
     },
     aggr: {
         title: 'Aggr',
         width: 10,
-        value: record => record.aggr.toFixed(3)
+        value: record => record.aggr.toFixed(3),
     },
     mean: {
         title: 'Mean',
         width: 10,
-        value: record => record.mean.toFixed(3)
+        value: record => record.mean.toFixed(3),
     },
     var: {
         title: 'Var',
         width: 10,
-        value: record => record.var.toFixed(3)
+        value: record => record.var.toFixed(3),
     },
     percentile_50: {
         title: '50th_%',
         width: 10,
-        value: record => record.percentile_50.toFixed(3)
+        value: record => record.percentile_50.toFixed(3),
     },
     percentile_75: {
         title: '75th_%',
         width: 10,
-        value: record => record.percentile_75.toFixed(3)
+        value: record => record.percentile_75.toFixed(3),
     },
     percentile_90: {
         title: '90th_%',
         width: 10,
-        value: record => record.percentile_90.toFixed(3)
+        value: record => record.percentile_90.toFixed(3),
     },
     percentile_99: {
         title: '99th_%',
         width: 10,
-        value: record => record.percentile_99.toFixed(3)
-    }
+        value: record => record.percentile_99.toFixed(3),
+    },
 };
 
 function _init_measurement(m) {
@@ -103,7 +103,7 @@ function _init_measurement(m) {
     } else {
         m.samples = make_array(MU_SAMPLES_PER_MEASUREMENT, () => ({
             start: -1,
-            end: -1
+            end: -1,
         }));
     }
 
@@ -219,7 +219,7 @@ function wrap_promise(tag, promise) {
         err => {
             discard_measurement(h);
             throw err;
-        }
+        },
     );
 }
 
@@ -238,7 +238,7 @@ function calc_metrics() {
             percentile_50: 0,
             percentile_75: 0,
             percentile_90: 0,
-            percentile_99: 0
+            percentile_99: 0,
         };
 
         const sorted = samples
@@ -254,7 +254,7 @@ function calc_metrics() {
 
         row.mean = row.aggr / row.count;
         for (const took of sorted) {
-            row.var += ((took - row.mean) ** 2) / (row.count - 1);
+            row.var += (took - row.mean) ** 2 / (row.count - 1);
         }
 
         row.percentile_50 = sorted[Math.floor(sorted.length * (50 / 100))];
@@ -289,21 +289,15 @@ function produce_report(columns = Object.keys(report_columns)) {
         return (r, i) => String(value(r, i)).padEnd(width).slice(0, width);
     });
 
-    const line_factory = (record, line_num) => cell_factories
-        .map(f => f(record, line_num))
-        .filter(Boolean)
-        .join(' ');
+    const line_factory = (record, line_num) =>
+        cell_factories
+            .map(f => f(record, line_num))
+            .filter(Boolean)
+            .join(' ');
 
-    const lines = records
-        .map(line_factory)
-        .join('\n');
+    const lines = records.map(line_factory).join('\n');
 
-    return [
-        `${'Date:'.padEnd(14)}${Date()}`,
-        headers,
-        lines,
-        ''
-    ].join('\n');
+    return [`${'Date:'.padEnd(14)}${Date()}`, headers, lines, ''].join('\n');
 }
 
 exports.start_measurement = start_measurement;

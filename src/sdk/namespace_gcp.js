@@ -15,18 +15,17 @@ const GoogleCloudStorage = require('../util/google_storage_wrap');
  * @implements {nb.Namespace}
  */
 class NamespaceGCP {
-
     /**
      * @param {{
-    *      namespace_resource_id: string,
-    *      project_id: string,
-    *      target_bucket: string,
-    *      client_email: string,
-    *      private_key: string,
-    *      access_mode: string,
-    *      stats: import('./endpoint_stats_collector').EndpointStatsCollector,
-    * }} params
-    */
+     *      namespace_resource_id: string,
+     *      project_id: string,
+     *      target_bucket: string,
+     *      client_email: string,
+     *      private_key: string,
+     *      access_mode: string,
+     *      stats: import('./endpoint_stats_collector').EndpointStatsCollector,
+     * }} params
+     */
     constructor({
         namespace_resource_id,
         project_id,
@@ -45,7 +44,7 @@ class NamespaceGCP {
             credentials: {
                 client_email: this.client_email,
                 private_key: this.private_key,
-            }
+            },
         });
         this.bucket = target_bucket;
         this.access_mode = access_mode;
@@ -57,10 +56,12 @@ class NamespaceGCP {
     }
 
     is_server_side_copy(other, other_md, params) {
-        //TODO: what is the case here, what determine server side copy? 
-        return other instanceof NamespaceGCP &&
+        //TODO: what is the case here, what determine server side copy?
+        return (
+            other instanceof NamespaceGCP &&
             this.private_key === other.private_key &&
-            this.client_email === other.client_email;
+            this.client_email === other.client_email
+        );
     }
 
     get_bucket() {
@@ -70,7 +71,6 @@ class NamespaceGCP {
     is_readonly_namespace() {
         return this.access_mode === 'READ_ONLY';
     }
-
 
     /////////////////
     // OBJECT LIST //
@@ -96,19 +96,28 @@ class NamespaceGCP {
         };
 
         // https://googleapis.dev/nodejs/storage/latest/Bucket.html#getFiles
-        const [files, next_token, additional_info] = await bucket.getFiles(options);
+        const [files, next_token, additional_info] =
+            await bucket.getFiles(options);
 
         // When there is no next page, and we got all the object the next_token will be null.
         const is_truncated = next_token !== null;
         const next_marker = is_truncated ? next_token.pageToken : null;
 
-        dbg.log4('NamespaceGCP.list_objects:', this.bucket,
-            'files:', inspect(files),
-            'next_token:', inspect(next_token),
-            'additional_info:', inspect(additional_info));
+        dbg.log4(
+            'NamespaceGCP.list_objects:',
+            this.bucket,
+            'files:',
+            inspect(files),
+            'next_token:',
+            inspect(next_token),
+            'additional_info:',
+            inspect(additional_info),
+        );
 
         return {
-            objects: _.map(files, obj => this._get_gcp_object_info(obj.metadata)),
+            objects: _.map(files, obj =>
+                this._get_gcp_object_info(obj.metadata),
+            ),
             common_prefixes: additional_info.prefixes || [],
             is_truncated,
             next_marker,
@@ -124,10 +133,7 @@ class NamespaceGCP {
     }
 
     async list_uploads(params, object_sdk) {
-        dbg.log0('NamespaceGCP.list_uploads:',
-            this.bucket,
-            inspect(params)
-        );
+        dbg.log0('NamespaceGCP.list_uploads:', this.bucket, inspect(params));
         // TODO list uploads
         return {
             objects: [],
@@ -137,9 +143,10 @@ class NamespaceGCP {
     }
 
     async list_object_versions(params, object_sdk) {
-        dbg.log0('NamespaceGCP.list_object_versions:',
+        dbg.log0(
+            'NamespaceGCP.list_object_versions:',
             this.bucket,
-            inspect(params)
+            inspect(params),
         );
         // TODO list object versions
         return {
@@ -148,7 +155,6 @@ class NamespaceGCP {
             is_truncated: false,
         };
     }
-
 
     /////////////////
     // OBJECT READ //
@@ -173,11 +179,15 @@ class NamespaceGCP {
     }
 
     async read_object_stream(params, object_sdk) {
-        dbg.log0('NamespaceGCP.read_object_stream:', this.bucket, inspect(_.omit(params, 'object_md.ns')));
+        dbg.log0(
+            'NamespaceGCP.read_object_stream:',
+            this.bucket,
+            inspect(_.omit(params, 'object_md.ns')),
+        );
         return new Promise((resolve, reject) => {
             const file = this.gcs.bucket(this.bucket).file(params.key);
             // https://googleapis.dev/nodejs/storage/latest/File.html#createReadStream
-            // for the options of createReadStream: 
+            // for the options of createReadStream:
             // https://googleapis.dev/nodejs/storage/latest/global.html#CreateReadStreamOptions
             const options = {
                 start: params.start,
@@ -195,7 +205,7 @@ class NamespaceGCP {
                         namespace_resource_id: this.namespace_resource_id,
                         bucket_name: params.bucket,
                         size: data.length,
-                        count
+                        count,
                     });
                     // clear count for next updates
                     count = 0;
@@ -205,7 +215,6 @@ class NamespaceGCP {
             });
         });
     }
-
 
     ///////////////////
     // OBJECT UPLOAD //
@@ -217,12 +226,14 @@ class NamespaceGCP {
         let metadata;
         if (params.copy_source) {
             if (params.copy_source.ranges) {
-                throw new Error('NamespaceGCP.upload_object: copy source range not supported');
+                throw new Error(
+                    'NamespaceGCP.upload_object: copy source range not supported',
+                );
             }
             const src_bucket = this.gcs.bucket(params.copy_source.bucket);
             const src_file = src_bucket.file(params.copy_source.key);
-            // Currently not copying between 2 gcp buckets, 
-            // for copying between 2 we need to have the gcp bucket as a namespace and reachable, 
+            // Currently not copying between 2 gcp buckets,
+            // for copying between 2 we need to have the gcp bucket as a namespace and reachable,
             // and to verify that it is another instance of NamespaceGCP
             // const dest_bucket = this.gcs.bucket(params.copy_source.bucket);
             // const dest_file = dest_bucket.file(params.key);
@@ -247,23 +258,26 @@ class NamespaceGCP {
                         namespace_resource_id: this.namespace_resource_id,
                         bucket_name: params.bucket,
                         size: data.length,
-                        count
+                        count,
                     });
                     // clear count for next updates
                     count = 0;
                 });
                 const file = this.gcs.bucket(this.bucket).file(params.key);
                 // https://googleapis.dev/nodejs/storage/latest/File.html#createWriteStream
-                // for the options of createWriteStream: 
+                // for the options of createWriteStream:
                 // https://googleapis.dev/nodejs/storage/latest/global.html#CreateWriteStreamOptions
                 const options = {
                     metadata: {
                         contentType: params.content_type,
                         md5Hash: params.md5_b64,
-                    }
+                    },
                 };
                 const writeStream = file.createWriteStream(options);
-                stream_utils.pipeline([params.source_stream, count_stream, writeStream], true);
+                stream_utils.pipeline(
+                    [params.source_stream, count_stream, writeStream],
+                    true,
+                );
 
                 await new Promise((resolve, reject) => {
                     // upon error reject the promise
@@ -272,17 +286,24 @@ class NamespaceGCP {
                     writeStream.on('finish', resolve);
                     // upon response get the metadata
                     writeStream.on('response', resp => {
-                        dbg.log1(`NamespaceGCP.upload_object: response event ${inspect(resp)}.`);
+                        dbg.log1(
+                            `NamespaceGCP.upload_object: response event ${inspect(resp)}.`,
+                        );
                         metadata = resp.data;
                     });
                 });
-                dbg.log1(`NamespaceGCP.upload_object: ${params.key} uploaded to ${this.bucket}.`);
+                dbg.log1(
+                    `NamespaceGCP.upload_object: ${params.key} uploaded to ${this.bucket}.`,
+                );
             } catch (err) {
                 this._translate_error_code(err);
                 dbg.warn('NamespaceGCP.upload_object:', inspect(err));
                 object_sdk.rpc_client.pool.update_issues_report({
                     namespace_resource_id: this.namespace_resource_id,
-                    error_code: err.code || (err.errors[0] && err.errors[0].reason) || 'InternalError',
+                    error_code:
+                        err.code ||
+                        (err.errors[0] && err.errors[0].reason) ||
+                        'InternalError',
                     time: Date.now(),
                 });
                 throw err;
@@ -296,12 +317,20 @@ class NamespaceGCP {
     /////////////////////////////
 
     async create_object_upload(params, object_sdk) {
-        dbg.log0('NamespaceGCP.create_object_upload:', this.bucket, inspect(params));
+        dbg.log0(
+            'NamespaceGCP.create_object_upload:',
+            this.bucket,
+            inspect(params),
+        );
         throw new S3Error(S3Error.NotImplemented);
     }
 
     async upload_multipart(params, object_sdk) {
-        dbg.log0('NamespaceGCP.upload_multipart:', this.bucket, inspect(params));
+        dbg.log0(
+            'NamespaceGCP.upload_multipart:',
+            this.bucket,
+            inspect(params),
+        );
         throw new S3Error(S3Error.NotImplemented);
     }
 
@@ -311,12 +340,20 @@ class NamespaceGCP {
     }
 
     async complete_object_upload(params, object_sdk) {
-        dbg.log0('NamespaceGCP.complete_object_upload:', this.bucket, inspect(params));
+        dbg.log0(
+            'NamespaceGCP.complete_object_upload:',
+            this.bucket,
+            inspect(params),
+        );
         throw new S3Error(S3Error.NotImplemented);
     }
 
     async abort_object_upload(params, object_sdk) {
-        dbg.log0('NamespaceGCP.abort_object_upload:', this.bucket, inspect(params));
+        dbg.log0(
+            'NamespaceGCP.abort_object_upload:',
+            this.bucket,
+            inspect(params),
+        );
         throw new S3Error(S3Error.NotImplemented);
     }
 
@@ -348,8 +385,17 @@ class NamespaceGCP {
         // https://googleapis.dev/nodejs/storage/latest/File.html#delete
         dbg.log0('NamespaceGCP.delete_object:', this.bucket, inspect(params));
         try {
-            const res = await this.gcs.bucket(this.bucket).file(params.key).delete();
-            dbg.log1('NamespaceGCP.delete_object:', this.bucket, inspect(params), 'res', inspect(res));
+            const res = await this.gcs
+                .bucket(this.bucket)
+                .file(params.key)
+                .delete();
+            dbg.log1(
+                'NamespaceGCP.delete_object:',
+                this.bucket,
+                inspect(params),
+                'res',
+                inspect(res),
+            );
             return {};
         } catch (err) {
             this._translate_error_code(err);
@@ -359,19 +405,34 @@ class NamespaceGCP {
 
     async delete_multiple_objects(params, object_sdk) {
         // https://googleapis.dev/nodejs/storage/latest/File.html#delete
-        dbg.log0('NamespaceGCP.delete_multiple_objects:', this.bucket, inspect(params));
+        dbg.log0(
+            'NamespaceGCP.delete_multiple_objects:',
+            this.bucket,
+            inspect(params),
+        );
 
         const res = await P.map_with_concurrency(10, params.objects, obj =>
-            this.gcs.bucket(this.bucket).file(obj.key).delete()
-            .then(() => ({}))
-            .catch(err => ({ err_code: err.code, err_message: err.errors[0].reason || 'InternalError' })));
+            this.gcs
+                .bucket(this.bucket)
+                .file(obj.key)
+                .delete()
+                .then(() => ({}))
+                .catch(err => ({
+                    err_code: err.code,
+                    err_message: err.errors[0].reason || 'InternalError',
+                })),
+        );
 
-        dbg.log1('NamespaceGCP.delete_multiple_objects:', this.bucket, inspect(params), 'res', inspect(res));
+        dbg.log1(
+            'NamespaceGCP.delete_multiple_objects:',
+            this.bucket,
+            inspect(params),
+            'res',
+            inspect(res),
+        );
 
         return res;
-
     }
-
 
     ////////////////////
     // OBJECT TAGGING //
@@ -443,7 +504,6 @@ class NamespaceGCP {
 
     //TODO: add here the internal functions
 
-
     /**
      * @returns {nb.ObjectInfo}
      */
@@ -474,7 +534,7 @@ class NamespaceGCP {
             lock_settings: undefined,
             encryption: undefined,
             stats: undefined,
-            object_owner
+            object_owner,
         };
     }
 

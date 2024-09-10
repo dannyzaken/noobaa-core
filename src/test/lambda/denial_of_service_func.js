@@ -3,7 +3,7 @@
 
 const AWS = require('aws-sdk');
 
-exports.handler = function(event, context, callback) {
+exports.handler = function (event, context, callback) {
     const start = Date.now();
     const end = start + event.time;
     let num_calls = 0;
@@ -25,16 +25,19 @@ exports.handler = function(event, context, callback) {
             });
         }
         num_calls += 1;
-        lambda.invoke({
-            FunctionName: event.func_name,
-            Payload: JSON.stringify(event.func_event),
-        }, function(err, res) {
-            if (err) {
-                num_errors += 1;
-            } else {
-                took += Date.now() - now;
-            }
-            setImmediate(worker);
-        });
+        lambda.invoke(
+            {
+                FunctionName: event.func_name,
+                Payload: JSON.stringify(event.func_event),
+            },
+            function (err, res) {
+                if (err) {
+                    num_errors += 1;
+                } else {
+                    took += Date.now() - now;
+                }
+                setImmediate(worker);
+            },
+        );
     }
 };

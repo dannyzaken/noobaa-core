@@ -13,7 +13,8 @@ const os_utils = require('../../util/os_utils');
 const nb_native = require('../../util/nb_native');
 const string_utils = require('../../util/string_utils');
 const BlockStoreBase = require('./block_store_base').BlockStoreBase;
-const get_block_internal_dir = require('./block_store_base').get_block_internal_dir;
+const get_block_internal_dir =
+    require('./block_store_base').get_block_internal_dir;
 const { RpcError } = require('../../rpc');
 const {
     STORAGE_CLASS_STANDARD,
@@ -26,7 +27,6 @@ const TMFS_STATE_PREMIGRATED = 'PREMIGRATED';
 const TMFS_STATE_RESIDENT = 'RESIDENT';
 
 class BlockStoreFs extends BlockStoreBase {
-
     constructor(options) {
         super(options);
         this.root_path = options.root_path;
@@ -43,7 +43,7 @@ class BlockStoreFs extends BlockStoreBase {
         this.xattr_enabled = true;
 
         this.fs_context = {
-            do_ctime_check: !config.BLOCK_STORE_FS_TMFS_ENABLED
+            do_ctime_check: !config.BLOCK_STORE_FS_TMFS_ENABLED,
         };
     }
 
@@ -55,24 +55,35 @@ class BlockStoreFs extends BlockStoreBase {
         const num_dirs = 16 ** num_digits;
         const dir_list = [];
         for (let i = 0; i < num_dirs; ++i) {
-            const dir_str = string_utils.left_pad_zeros(i.toString(16), num_digits) + '.blocks';
+            const dir_str =
+                string_utils.left_pad_zeros(i.toString(16), num_digits) +
+                '.blocks';
             dir_list.push(path.join(this.blocks_path_root, dir_str));
         }
         dir_list.push(path.join(this.blocks_path_root, 'other.blocks'));
 
-        return P.map_with_concurrency(10, dir_list, dir => fs_utils.create_path(dir))
-            .then(() => fs.promises.stat(this.usage_path)
-                .catch(ignore_not_found)
+        return P.map_with_concurrency(10, dir_list, dir =>
+            fs_utils.create_path(dir),
+        )
+            .then(() =>
+                fs.promises.stat(this.usage_path).catch(ignore_not_found),
             )
             .then(stat => {
                 if (stat) {
-                    return fs.promises.readFile(this.usage_path, 'utf8')
+                    return fs.promises
+                        .readFile(this.usage_path, 'utf8')
                         .then(data => {
                             this._usage = JSON.parse(data);
-                            dbg.log0('found usage file. recovered usage =', this._usage);
+                            dbg.log0(
+                                'found usage file. recovered usage =',
+                                this._usage,
+                            );
                         })
                         .catch(err => {
-                            console.error('error while reading usage file:', err);
+                            console.error(
+                                'error while reading usage file:',
+                                err,
+                            );
                             this._usage = null;
                         });
                 }
@@ -89,8 +100,14 @@ class BlockStoreFs extends BlockStoreBase {
             this.cached_df_data = { ...drive.storage, timestamp: now };
             const storage = drive.storage;
             storage.used = usage.size;
-            const total_unreserved = Math.max(storage.total - config.NODES_FREE_SPACE_RESERVE, 0);
-            this.usage_limit = Math.min(total_unreserved, this.storage_limit || Infinity);
+            const total_unreserved = Math.max(
+                storage.total - config.NODES_FREE_SPACE_RESERVE,
+                0,
+            );
+            this.usage_limit = Math.min(
+                total_unreserved,
+                this.storage_limit || Infinity,
+            );
             return storage;
         } catch (err) {
             this._test_root_path_exists(err);
@@ -100,28 +117,36 @@ class BlockStoreFs extends BlockStoreBase {
     /**
      * _check_write_space throws if there is not enough space to write the data, it
      * uses cache df data to avoid calling df too often.
-     * 
+     *
      * See `config.BLOCK_STORE_FS_CACHED_*` to configure the df caching behavior.
-     * 
+     *
      * NOTE: overrides the base class implementation to use the cached df data
-     * @param {*} data_length 
+     * @param {*} data_length
      */
     async _check_write_space(data_length) {
         const now = Date.now();
-        if (!this.cached_df_data ||
-            (now - this.cached_df_data.timestamp >= config.BLOCK_STORE_FS_CACHED_DF_MAX_TIME) ||
-            (now - this.cached_df_data.timestamp >= config.BLOCK_STORE_FS_CACHED_DF_MIN_TIME &&
-                this.cached_df_data.free <= config.BLOCK_STORE_FS_CACHED_DF_MIN_SPACE)
+        if (
+            !this.cached_df_data ||
+            now - this.cached_df_data.timestamp >=
+                config.BLOCK_STORE_FS_CACHED_DF_MAX_TIME ||
+            (now - this.cached_df_data.timestamp >=
+                config.BLOCK_STORE_FS_CACHED_DF_MIN_TIME &&
+                this.cached_df_data.free <=
+                    config.BLOCK_STORE_FS_CACHED_DF_MIN_SPACE)
         ) {
             const drive = await os_utils.get_drive_of_path(this.root_path);
             this.cached_df_data = { ...drive.storage, timestamp: now };
         }
 
-        const required_space = data_length + (1024 * 1024); // require some spare space
+        const required_space = data_length + 1024 * 1024; // require some spare space
         const free_space = this.cached_df_data.free;
         if (free_space < required_space) {
-            throw new RpcError('NO_BLOCK_STORE_SPACE', 'used space exceeded the total capacity of ' +
-                this.usage_limit + ' bytes');
+            throw new RpcError(
+                'NO_BLOCK_STORE_SPACE',
+                'used space exceeded the total capacity of ' +
+                    this.usage_limit +
+                    ' bytes',
+            );
         }
     }
 
@@ -139,18 +164,20 @@ class BlockStoreFs extends BlockStoreBase {
         try {
             if (config.BLOCK_STORE_FS_TMFS_ENABLED) {
                 block_file = await nb_native().fs.open(fs_context, block_path);
-                const stat = await block_file.stat(
-                    fs_context,
-                    { xattr_get_keys: [config.BLOCK_STORE_FS_XATTR_QUERY_MIGSTAT] }
-                );
+                const stat = await block_file.stat(fs_context, {
+                    xattr_get_keys: [config.BLOCK_STORE_FS_XATTR_QUERY_MIGSTAT],
+                });
 
-                const migstat = JSON.parse(stat.xattr[config.BLOCK_STORE_FS_XATTR_QUERY_MIGSTAT] || '{}');
+                const migstat = JSON.parse(
+                    stat.xattr[config.BLOCK_STORE_FS_XATTR_QUERY_MIGSTAT] ||
+                        '{}',
+                );
 
                 if (migstat.State === TMFS_STATE_MIGRATED) {
                     // if not yet trying to premigrate, try now.
                     if (migstat.TargetState !== TMFS_STATE_PREMIGRATED) {
                         await block_file.replacexattr(fs_context, {
-                            [config.BLOCK_STORE_FS_XATTR_TRIGGER_RECALL]: 'now'
+                            [config.BLOCK_STORE_FS_XATTR_TRIGGER_RECALL]: 'now',
                         });
                     }
 
@@ -169,21 +196,35 @@ class BlockStoreFs extends BlockStoreBase {
                     nb_native().fs.readFile(fs_context, meta_path),
                 ]);
 
-                const block_md_from_fs = try_parse_block_md(meta.data.toString());
+                const block_md_from_fs = try_parse_block_md(
+                    meta.data.toString(),
+                );
 
-                return { block_md: block_md_from_fs || block_md, data: block.data };
+                return {
+                    block_md: block_md_from_fs || block_md,
+                    data: block.data,
+                };
             }
 
-            const { data, stat } = await nb_native().fs.readFile(fs_context, block_path, { read_xattr: true });
+            const { data, stat } = await nb_native().fs.readFile(
+                fs_context,
+                block_path,
+                { read_xattr: true },
+            );
 
             // read md from xattr
-            let block_md_from_fs = try_parse_block_md(stat.xattr[config.BLOCK_STORE_FS_XATTR_BLOCK_MD]);
+            let block_md_from_fs = try_parse_block_md(
+                stat.xattr[config.BLOCK_STORE_FS_XATTR_BLOCK_MD],
+            );
 
             // if not able to parse md from xattr, fallback to reading .meta file content which was the old model.
             if (!block_md_from_fs) {
                 try {
                     const meta_path = this._get_block_meta_path(block_md.id);
-                    const { data: meta_data } = await nb_native().fs.readFile(fs_context, meta_path);
+                    const { data: meta_data } = await nb_native().fs.readFile(
+                        fs_context,
+                        meta_path,
+                    );
                     block_md_from_fs = try_parse_block_md(meta_data);
                 } catch (err) {
                     // noop
@@ -195,7 +236,9 @@ class BlockStoreFs extends BlockStoreBase {
             if (err.rpc_code === 'MIGRATED') throw err; // Don't want to catch this error
             if (err.code === 'ENOTSUP' && this.xattr_enabled) {
                 // Retry operation with xattr_fallback set to true
-                dbg.warn('detected ENOTSUP - turning off xattr_enabled and retrying');
+                dbg.warn(
+                    'detected ENOTSUP - turning off xattr_enabled and retrying',
+                );
                 this.xattr_enabled = false;
 
                 return this._read_block(block_md);
@@ -224,7 +267,13 @@ class BlockStoreFs extends BlockStoreBase {
         };
 
         // set the block md xattr
-        const block_md_to_store = _.pick(block_md, 'id', 'digest_type', 'digest_b64', 'mapping_info');
+        const block_md_to_store = _.pick(
+            block_md,
+            'id',
+            'digest_type',
+            'digest_b64',
+            'mapping_info',
+        );
         const block_md_data = JSON.stringify(block_md_to_store);
         const meta_path = this._get_block_meta_path(block_md.id);
 
@@ -238,21 +287,29 @@ class BlockStoreFs extends BlockStoreBase {
         if (!is_test_block) {
             // set xattr to trigger migration of file to underlying tier
             if (config.BLOCK_STORE_FS_TMFS_ENABLED) {
-                xattr_try = { [config.BLOCK_STORE_FS_XATTR_TRIGGER_MIGRATE]: 'now' };
+                xattr_try = {
+                    [config.BLOCK_STORE_FS_XATTR_TRIGGER_MIGRATE]: 'now',
+                };
                 xattr_need_fsync = true;
             }
 
             // check for existing file and get its size
-            const overwrite_stat = await nb_native().fs.stat(fs_context, block_path).catch(ignore_not_found);
+            const overwrite_stat = await nb_native()
+                .fs.stat(fs_context, block_path)
+                .catch(ignore_not_found);
             if (overwrite_stat) {
                 usage.size -= overwrite_stat.size;
                 usage.count -= 1;
 
                 // also make sure we do not leave old .meta files on overwrite
-                const overwrite_meta_stat = await nb_native().fs.stat(fs_context, meta_path).catch(ignore_not_found);
+                const overwrite_meta_stat = await nb_native()
+                    .fs.stat(fs_context, meta_path)
+                    .catch(ignore_not_found);
                 if (overwrite_meta_stat) {
                     usage.size -= overwrite_meta_stat.size;
-                    await nb_native().fs.unlink(fs_context, meta_path).catch(ignore_not_found);
+                    await nb_native()
+                        .fs.unlink(fs_context, meta_path)
+                        .catch(ignore_not_found);
                 }
             }
         }
@@ -260,14 +317,20 @@ class BlockStoreFs extends BlockStoreBase {
         try {
             if (this.xattr_enabled) {
                 await nb_native().fs.writeFile(fs_context, block_path, data, {
-                    xattr: { [config.BLOCK_STORE_FS_XATTR_BLOCK_MD]: block_md_data },
+                    xattr: {
+                        [config.BLOCK_STORE_FS_XATTR_BLOCK_MD]: block_md_data,
+                    },
                     xattr_try,
                     xattr_need_fsync,
                 });
             } else {
                 await Promise.all([
                     nb_native().fs.writeFile(fs_context, block_path, data),
-                    nb_native().fs.writeFile(fs_context, meta_path, Buffer.from(block_md_data, 'utf8')),
+                    nb_native().fs.writeFile(
+                        fs_context,
+                        meta_path,
+                        Buffer.from(block_md_data, 'utf8'),
+                    ),
                 ]);
 
                 // MD file gets deleted above so add the md size back again to usage
@@ -276,7 +339,9 @@ class BlockStoreFs extends BlockStoreBase {
         } catch (err) {
             if (err.code === 'ENOTSUP' && this.xattr_enabled) {
                 // Retry operation with xattr_fallback set to true
-                dbg.warn('detected ENOTSUP - turning off xattr_enabled and retrying');
+                dbg.warn(
+                    'detected ENOTSUP - turning off xattr_enabled and retrying',
+                );
                 this.xattr_enabled = false;
 
                 return this._write_block(block_md, data, options);
@@ -298,7 +363,7 @@ class BlockStoreFs extends BlockStoreBase {
                 await this._delete_block(block_id);
                 succeeded_block_ids.push(block_id);
             } catch (err) {
-                // treat ENOENT as success - 
+                // treat ENOENT as success -
                 // this check is already performed inside _delete_block by calling ignore_not_found
                 // but just in case something changes we perform it once again here explicitly
                 if (err.code === 'ENOENT') {
@@ -316,7 +381,7 @@ class BlockStoreFs extends BlockStoreBase {
         const fs_context = this.fs_context;
         const block_path = this._get_block_data_path(block_id);
         const meta_path = this._get_block_meta_path(block_id);
-        dbg.log1("delete block", block_id);
+        dbg.log1('delete block', block_id);
 
         const [block_stat, meta_stat] = await Promise.all([
             nb_native().fs.stat(fs_context, block_path).catch(ignore_not_found),
@@ -324,19 +389,27 @@ class BlockStoreFs extends BlockStoreBase {
         ]);
 
         await Promise.all([
-            block_stat && nb_native().fs.unlink(fs_context, block_path).catch(ignore_not_found),
-            meta_stat && nb_native().fs.unlink(fs_context, meta_path).catch(ignore_not_found),
+            block_stat &&
+                nb_native()
+                    .fs.unlink(fs_context, block_path)
+                    .catch(ignore_not_found),
+            meta_stat &&
+                nb_native()
+                    .fs.unlink(fs_context, meta_path)
+                    .catch(ignore_not_found),
         ]);
 
         if (this._usage && block_stat) {
             const usage = {
-                size: -(block_stat.size + ((meta_stat && meta_stat.size) ? meta_stat.size : 0)),
-                count: -1
+                size: -(
+                    block_stat.size +
+                    (meta_stat && meta_stat.size ? meta_stat.size : 0)
+                ),
+                count: -1,
             };
             this._update_usage(usage);
         }
     }
-
 
     /**
      * @param {string[]} block_ids
@@ -344,8 +417,10 @@ class BlockStoreFs extends BlockStoreBase {
      * @returns {Promise<{ moved_block_ids: string[] }>}
      */
     async _move_blocks_to_storage_class(block_ids, storage_class) {
-        if (storage_class === STORAGE_CLASS_GLACIER ||
-            storage_class === STORAGE_CLASS_GLACIER_IR) {
+        if (
+            storage_class === STORAGE_CLASS_GLACIER ||
+            storage_class === STORAGE_CLASS_GLACIER_IR
+        ) {
             if (config.BLOCK_STORE_FS_TMFS_ENABLED) {
                 return this._move_blocks_to_tmfs(block_ids);
             }
@@ -367,9 +442,14 @@ class BlockStoreFs extends BlockStoreBase {
 
         await P.map_with_concurrency(10, block_ids, async block_id => {
             try {
-                if (await this._move_block_to_tmfs(block_id)) moved_block_ids.push(block_id);
+                if (await this._move_block_to_tmfs(block_id)) {
+                    moved_block_ids.push(block_id);
+                }
             } catch (err) {
-                dbg.warn(`_move_block_to_tmfs block ${block_id} failed due to`, err);
+                dbg.warn(
+                    `_move_block_to_tmfs block ${block_id} failed due to`,
+                    err,
+                );
             }
         });
 
@@ -384,17 +464,25 @@ class BlockStoreFs extends BlockStoreBase {
 
         try {
             file = await nb_native().fs.open(fs_context, block_path);
-            const stat = await file.stat(fs_context, { xattr_get_keys: [config.BLOCK_STORE_FS_XATTR_QUERY_MIGSTAT] });
-            const migstat = JSON.parse(stat?.xattr?.[config.BLOCK_STORE_FS_XATTR_QUERY_MIGSTAT] || '{}');
+            const stat = await file.stat(fs_context, {
+                xattr_get_keys: [config.BLOCK_STORE_FS_XATTR_QUERY_MIGSTAT],
+            });
+            const migstat = JSON.parse(
+                stat?.xattr?.[config.BLOCK_STORE_FS_XATTR_QUERY_MIGSTAT] ||
+                    '{}',
+            );
 
             // If the block is in PREMIGRATED state or is in RESIDENT state, we need to MIGRATE it back to the
             // tape storage (eviction).
-            if (migstat.State === TMFS_STATE_PREMIGRATED || migstat.State === TMFS_STATE_RESIDENT) {
+            if (
+                migstat.State === TMFS_STATE_PREMIGRATED ||
+                migstat.State === TMFS_STATE_RESIDENT
+            ) {
                 // it is possible that we requested this in the previous run
                 // as well so we need to make sure we do not trigger it again
                 if (migstat.TargetState !== TMFS_STATE_MIGRATED) {
                     await file.replacexattr(fs_context, {
-                        [config.BLOCK_STORE_FS_XATTR_TRIGGER_MIGRATE]: 'now'
+                        [config.BLOCK_STORE_FS_XATTR_TRIGGER_MIGRATE]: 'now',
                     });
 
                     evicting = true;
@@ -422,27 +510,29 @@ class BlockStoreFs extends BlockStoreBase {
     }
 
     _write_usage_internal() {
-        return fs_utils.replace_file(this.usage_path, JSON.stringify(this._usage));
+        return fs_utils.replace_file(
+            this.usage_path,
+            JSON.stringify(this._usage),
+        );
     }
 
     _read_config() {
-        return fs.promises.readFile(this.config_path, 'utf8')
+        return fs.promises
+            .readFile(this.config_path, 'utf8')
             .then(data => JSON.parse(data))
             .catch(ignore_not_found);
     }
 
     _get_alloc() {
-        return this._read_config()
-            .then(conf => (conf && conf.alloc) || 0);
+        return this._read_config().then(conf => (conf && conf.alloc) || 0);
     }
 
     _set_alloc(size) {
-        return this._read_config()
-            .then(conf => {
-                conf = conf || {};
-                conf.alloc = size;
-                return this._write_config(conf);
-            });
+        return this._read_config().then(conf => {
+            conf = conf || {};
+            conf.alloc = size;
+            return this._write_config(conf);
+        });
     }
 
     _write_config(conf) {
@@ -469,12 +559,14 @@ class BlockStoreFs extends BlockStoreBase {
         if (err.code === 'ENOENT') {
             dbg.error('got ENOENT, checking if root_path exists', err.message);
             if (!fs.existsSync(this.root_path)) {
-                throw new RpcError('STORAGE_NOT_EXIST', `could not find the root path ${this.root_path}`);
+                throw new RpcError(
+                    'STORAGE_NOT_EXIST',
+                    `could not find the root path ${this.root_path}`,
+                );
             }
         }
         throw err;
     }
-
 }
 
 function ignore_not_found(err) {

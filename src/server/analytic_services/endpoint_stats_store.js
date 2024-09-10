@@ -46,7 +46,7 @@ class EndpointStatsStore {
         await Promise.all([
             this._update_s3_ops_counters(system, report),
             this._update_bandwidth_reports(system, report),
-            this._update_endpoint_group_reports(system, report)
+            this._update_endpoint_group_reports(system, report),
         ]);
     }
 
@@ -80,8 +80,8 @@ class EndpointStatsStore {
             // initialize the counters if the fields are missing
             upsert_fields: {
                 s3_usage_info: usage,
-                s3_errors_info: errors
-            }
+                s3_errors_info: errors,
+            },
         };
 
         const update = {
@@ -90,11 +90,14 @@ class EndpointStatsStore {
             },
             $inc: {
                 ..._.mapKeys(usage, (unused, key) => `s3_usage_info.${key}`),
-                ..._.mapKeys(errors, (unused, key) => `s3_errors_info.${key}`)
-            }
+                ..._.mapKeys(errors, (unused, key) => `s3_errors_info.${key}`),
+            },
         };
-        const res = await this._s3_ops_counters
-            .findOneAndUpdate(selector, update, options);
+        const res = await this._s3_ops_counters.findOneAndUpdate(
+            selector,
+            update,
+            options,
+        );
 
         this._s3_ops_counters.validate(res.value, 'warn');
     }
@@ -106,8 +109,7 @@ class EndpointStatsStore {
     async get_bandwidth_reports(params) {
         dbg.log1('get_bandwidth_reports', params);
         const query = this._format_bandwidth_report_query(params);
-        return this._bandwidth_reports
-            .find(query);
+        return this._bandwidth_reports.find(query);
     }
 
     async clean_bandwidth_reports(params) {
@@ -119,7 +121,13 @@ class EndpointStatsStore {
     _format_bandwidth_report_query(params) {
         const { endpoint_groups, buckets, accounts, since, till } = params;
         const query = {};
-        if (endpoint_groups) _.set(query, ['endpoint_group', '$in'], _.castArray(endpoint_groups));
+        if (endpoint_groups) {
+            _.set(
+                query,
+                ['endpoint_group', '$in'],
+                _.castArray(endpoint_groups),
+            );
+        }
         if (buckets) _.set(query, ['bucket', '$in'], _.castArray(buckets));
         if (accounts) _.set(query, ['account', '$in'], _.castArray(accounts));
         if (since) _.set(query, ['start_time', '$gte'], since);
@@ -128,7 +136,9 @@ class EndpointStatsStore {
     }
 
     async _update_bandwidth_reports(system, report) {
-        const start_time = Math.floor(report.timestamp / ENDPOINT_MONITOR_INTERVAL) * ENDPOINT_MONITOR_INTERVAL;
+        const start_time =
+            Math.floor(report.timestamp / ENDPOINT_MONITOR_INTERVAL) *
+            ENDPOINT_MONITOR_INTERVAL;
         const end_time = start_time + ENDPOINT_MONITOR_INTERVAL - 1;
 
         await P.map_with_concurrency(10, report.bandwidth, async record => {
@@ -138,7 +148,7 @@ class EndpointStatsStore {
                 system: system._id,
                 endpoint_group: report.endpoint_group,
                 bucket: record.bucket,
-                account: record.account
+                account: record.account,
             };
             const update = {
                 $set: selector,
@@ -146,16 +156,19 @@ class EndpointStatsStore {
                     'read_bytes',
                     'write_bytes',
                     'read_count',
-                    'write_count'
-                ])
+                    'write_count',
+                ]),
             };
             const options = {
                 upsert: true,
-                returnOriginal: false
+                returnOriginal: false,
             };
 
-            const res = await this._bandwidth_reports
-                .findOneAndUpdate(selector, update, options);
+            const res = await this._bandwidth_reports.findOneAndUpdate(
+                selector,
+                update,
+                options,
+            );
 
             this._bandwidth_reports.validate(res.value, 'warn');
         });
@@ -187,7 +200,9 @@ class EndpointStatsStore {
     }
 
     async _update_endpoint_group_reports(system, report) {
-        const start_time = Math.floor(report.timestamp / ENDPOINT_MONITOR_INTERVAL) * ENDPOINT_MONITOR_INTERVAL;
+        const start_time =
+            Math.floor(report.timestamp / ENDPOINT_MONITOR_INTERVAL) *
+            ENDPOINT_MONITOR_INTERVAL;
         const end_time = start_time + ENDPOINT_MONITOR_INTERVAL - 1;
         const selector = {
             start_time,
@@ -197,20 +212,19 @@ class EndpointStatsStore {
         };
         const update = {
             $push: {
-                endpoints: _.pick(report, [
-                    'hostname',
-                    'cpu',
-                    'memory'
-                ])
-            }
+                endpoints: _.pick(report, ['hostname', 'cpu', 'memory']),
+            },
         };
         const options = {
             upsert: true,
-            returnOriginal: false
+            returnOriginal: false,
         };
 
-        const res = await this._endpoint_group_reports
-            .findOneAndUpdate(selector, update, options);
+        const res = await this._endpoint_group_reports.findOneAndUpdate(
+            selector,
+            update,
+            options,
+        );
 
         this._endpoint_group_reports.validate(res.value, 'warn');
     }

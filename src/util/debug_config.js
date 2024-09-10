@@ -5,7 +5,7 @@ const nsfs = {
     level: 5,
     core: [
         'core.server.system_services.bucket_server',
-        'core.server.system_services.pool_server'
+        'core.server.system_services.pool_server',
     ],
     endpoint: [
         'core.endpoint.s3',
@@ -15,7 +15,7 @@ const nsfs = {
         'core.util.buffer_utils',
         'core.sdk.object_sdk',
         'core.sdk.namespace_fs',
-        'core.sdk.bucketspace_nb'
+        'core.sdk.bucketspace_nb',
     ],
 };
 

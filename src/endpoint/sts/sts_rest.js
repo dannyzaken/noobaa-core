@@ -7,12 +7,13 @@ const StsError = require('./sts_errors').StsError;
 const js_utils = require('../../util/js_utils');
 const http_utils = require('../../util/http_utils');
 const signature_utils = require('../../util/signature_utils');
-const system_store = require('../../server/system_services/system_store').get_instance();
+const system_store =
+    require('../../server/system_services/system_store').get_instance();
 
 const STS_MAX_BODY_LEN = 4 * 1024 * 1024;
 
 const STS_XML_ROOT_ATTRS = Object.freeze({
-    xmlns: 'http://sts.amazonaws.com/doc/2011-06-15/'
+    xmlns: 'http://sts.amazonaws.com/doc/2011-06-15/',
 });
 
 const RPC_ERRORS_TO_STS = Object.freeze({
@@ -21,11 +22,11 @@ const RPC_ERRORS_TO_STS = Object.freeze({
     INVALID_ACCESS_KEY_ID: StsError.AccessDeniedException,
     DEACTIVATED_ACCESS_KEY_ID: StsError.AccessDeniedException,
     NO_SUCH_ACCOUNT: StsError.AccessDeniedException,
-    NO_SUCH_ROLE: StsError.AccessDeniedException
+    NO_SUCH_ROLE: StsError.AccessDeniedException,
 });
 
 const ACTIONS = Object.freeze({
-    'AssumeRole': 'assume_role'
+    AssumeRole: 'assume_role',
 });
 
 const OP_NAME_TO_ACTION = Object.freeze({
@@ -45,7 +46,6 @@ async function sts_rest(req, res) {
 }
 
 async function handle_request(req, res) {
-
     http_utils.set_amz_headers(req, res);
     http_utils.set_cors_headers_sts(req, res);
 
@@ -66,7 +66,7 @@ async function handle_request(req, res) {
         error_missing_content_length: StsError.InternalFailure,
         error_invalid_token: StsError.InvalidClientTokenId,
         error_token_expired: StsError.ExpiredToken,
-        auth_token: () => signature_utils.make_auth_token_from_request(req)
+        auth_token: () => signature_utils.make_auth_token_from_request(req),
     };
     http_utils.check_headers(req, headers_options);
 
@@ -94,13 +94,22 @@ async function handle_request(req, res) {
     authenticate_request(req);
     await authorize_request(req);
 
-    dbg.log1('STS REQUEST', req.method, req.originalUrl, 'op', op_name, 'request_id', req.request_id, req.headers);
+    dbg.log1(
+        'STS REQUEST',
+        req.method,
+        req.originalUrl,
+        'op',
+        op_name,
+        'request_id',
+        req.request_id,
+        req.headers,
+    );
 
     const reply = await op.handler(req, res);
     http_utils.send_reply(req, res, reply, {
         ...options,
         body: op.body,
-        reply: op.reply
+        reply: op.reply,
     });
 }
 
@@ -118,7 +127,7 @@ function authenticate_request(req) {
 }
 
 // authorize_request_account authorizes the account of the requeser
-// authorize_request_policy checks that the requester is allowed to assume a role 
+// authorize_request_policy checks that the requester is allowed to assume a role
 // by the role's assume role policy permissions
 async function authorize_request(req) {
     await req.sts_sdk.load_requesting_account(req);
@@ -129,14 +138,26 @@ async function authorize_request(req) {
 async function authorize_request_policy(req) {
     if (req.op_name !== 'post_assume_role') return;
     const account_info = await req.sts_sdk.get_assumed_role(req);
-    const assume_role_policy = account_info.role_config && account_info.role_config.assume_role_policy;
+    const assume_role_policy =
+        account_info.role_config && account_info.role_config.assume_role_policy;
     if (!assume_role_policy) throw new StsError(StsError.AccessDeniedException);
     const method = _get_method_from_req(req);
-    const cur_account_email = req.sts_sdk.requesting_account && req.sts_sdk.requesting_account.email.unwrap();
+    const cur_account_email =
+        req.sts_sdk.requesting_account &&
+        req.sts_sdk.requesting_account.email.unwrap();
     // system owner by design can always assume role policy of any account
-    if ((cur_account_email === _get_system_owner().unwrap()) && req.op_name.endsWith('assume_role')) return;
+    if (
+        cur_account_email === _get_system_owner().unwrap() &&
+        req.op_name.endsWith('assume_role')
+    ) {
+        return;
+    }
 
-    const permission = has_assume_role_permission(assume_role_policy, method, cur_account_email);
+    const permission = has_assume_role_permission(
+        assume_role_policy,
+        method,
+        cur_account_email,
+    );
     dbg.log0('sts_rest.authorize_request_policy permission is: ', permission);
     if (permission === 'DENY' || permission === 'IMPLICIT_DENY') {
         throw new StsError(StsError.AccessDeniedException);
@@ -152,7 +173,9 @@ function _get_system_owner() {
 function _get_method_from_req(req) {
     const sts_op = OP_NAME_TO_ACTION[req.op_name];
     if (!sts_op) {
-        dbg.error(`Got a not supported STS op ${req.op_name} - doesn't suppose to happen`);
+        dbg.error(
+            `Got a not supported STS op ${req.op_name} - doesn't suppose to happen`,
+        );
         throw new StsError(StsError.InternalFailure);
     }
     return sts_op;
@@ -168,14 +191,20 @@ function parse_op_name(req, action) {
 
 function handle_error(req, res, err) {
     const stserr =
-        ((err instanceof StsError) && err) ||
-        new StsError(RPC_ERRORS_TO_STS[err.rpc_code] || StsError.InternalFailure);
+        (err instanceof StsError && err) ||
+        new StsError(
+            RPC_ERRORS_TO_STS[err.rpc_code] || StsError.InternalFailure,
+        );
 
     const reply = stserr.reply(req.originalUrl, req.request_id);
-    dbg.error('STS ERROR', reply,
-        req.method, req.originalUrl,
+    dbg.error(
+        'STS ERROR',
+        reply,
+        req.method,
+        req.originalUrl,
         JSON.stringify(req.headers),
-        err.stack || err);
+        err.stack || err,
+    );
     if (res.headersSent) {
         dbg.log0('Sending error xml in body, but too late for headers...');
     } else {
@@ -187,13 +216,20 @@ function handle_error(req, res, err) {
 }
 
 function has_assume_role_permission(policy, method, cur_account_email) {
-    const [allow_statements, deny_statements] = _.partition(policy.statement, statement => statement.effect === 'allow');
+    const [allow_statements, deny_statements] = _.partition(
+        policy.statement,
+        statement => statement.effect === 'allow',
+    );
 
     // look for explicit denies
-    if (_is_statements_fit(deny_statements, method, cur_account_email)) return 'DENY';
+    if (_is_statements_fit(deny_statements, method, cur_account_email)) {
+        return 'DENY';
+    }
 
     // look for explicit allows
-    if (_is_statements_fit(allow_statements, method, cur_account_email)) return 'ALLOW';
+    if (_is_statements_fit(allow_statements, method, cur_account_email)) {
+        return 'ALLOW';
+    }
 
     // implicit deny
     return 'IMPLICIT_DENY';
@@ -208,18 +244,29 @@ function _is_statements_fit(statements, method, cur_account_email) {
         // what action can be done
         for (const action of statement.action) {
             dbg.log0('assume_role_policy: action fit?', action, method);
-            if ((action === '*') || (action === 'sts:*') || (action === method)) {
+            if (action === '*' || action === 'sts:*' || action === method) {
                 action_fit = true;
             }
         }
         // who can do that action
         for (const principal of statement.principal) {
-            dbg.log0('assume_role_policy: principal fit?', principal.unwrap().toString(), cur_account_email);
-            if ((principal.unwrap() === cur_account_email) || (principal.unwrap() === '*')) {
+            dbg.log0(
+                'assume_role_policy: principal fit?',
+                principal.unwrap().toString(),
+                cur_account_email,
+            );
+            if (
+                principal.unwrap() === cur_account_email ||
+                principal.unwrap() === '*'
+            ) {
                 principal_fit = true;
             }
         }
-        dbg.log0('assume_role_policy: is_statements_fit', action_fit, principal_fit);
+        dbg.log0(
+            'assume_role_policy: is_statements_fit',
+            action_fit,
+            principal_fit,
+        );
         if (action_fit && principal_fit) return true;
     }
     return false;

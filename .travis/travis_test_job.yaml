@@ -7,28 +7,27 @@ spec:
     spec:
       serviceAccount: noobaa-tests-account
       containers:
-      - name: noobaa-test
-        image: TESTER_IMAGE_PLACEHOLDER
-        imagePullPolicy: Never
-        # workingDir: /root/node_modules/noobaa-core/
-        args:
-          # - /bin/bash
-          #  - -c
-          #  - "while true; do sleep 10 ; done"
+        - name: noobaa-test
+          image: TESTER_IMAGE_PLACEHOLDER
+          imagePullPolicy: Never
+          # workingDir: /root/node_modules/noobaa-core/
+          args:
+            # - /bin/bash
+            #  - -c
+            #  - "while true; do sleep 10 ; done"
 
-          - node
-          - ./src/test/framework/test_env_builder_kubernetes.js
-          - --image
-          - "NOOBAA_IMAGE_PLACEHOLDER"
-          - --namespace_prefix
-          - "NAMESPACE_PREFIX_PLACEHOLDER"
-          - --tests_list
-          - "TESTS_LIST_PLACEHOLDER"
-        env:
-          - name: CONTAINER_PLATFORM
-            value: KUBERNETES
-          - name: SUPPRESS_LOGS
-            value: "TRUE"
+            - node
+            - ./src/test/framework/test_env_builder_kubernetes.js
+            - --image
+            - 'NOOBAA_IMAGE_PLACEHOLDER'
+            - --namespace_prefix
+            - 'NAMESPACE_PREFIX_PLACEHOLDER'
+            - --tests_list
+            - 'TESTS_LIST_PLACEHOLDER'
+          env:
+            - name: CONTAINER_PLATFORM
+              value: KUBERNETES
+            - name: SUPPRESS_LOGS
+              value: 'TRUE'
       restartPolicy: Never
   backoffLimit: 0
-

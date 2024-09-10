@@ -3,14 +3,12 @@
 
 const LinkedList = require('../util/linked_list');
 
-
 /**
  * Prefetch loads and keeps items in memory.
  * once items are fetched it will prefetch more.
  * @template T
  */
 class Prefetch {
-
     /**
      * @param {{
      *  low_length?: number, // length under which we prefetch more
@@ -49,7 +47,6 @@ class Prefetch {
         return items.length > 1 ? items : items[0];
     }
 
-
     /**
      * _fetch adds items to the provided array, and waits for prefetch if needed.
      * @param {T[]} items array to fill
@@ -63,7 +60,6 @@ class Prefetch {
             this._pop_items(items, max_count);
         }
     }
-
 
     /**
      * _pop_items
@@ -123,7 +119,9 @@ class Prefetch {
                 const group = { items: items.slice().reverse() };
                 if (this.expiry_ms) {
                     group.timeout = setTimeout(
-                        this._remove_group.bind(this, group), this.expiry_ms);
+                        this._remove_group.bind(this, group),
+                        this.expiry_ms,
+                    );
                 }
                 this._length += items.length;
                 this._groups.push_back(group);
@@ -140,7 +138,6 @@ class Prefetch {
         })();
         return this._prefetch_promise;
     }
-
 }
 
 module.exports = Prefetch;

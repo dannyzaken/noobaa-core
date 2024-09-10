@@ -64,8 +64,14 @@ Recording HTTP:
         const target_ssl = target.endsWith('s');
         const source_port = Number(source.replace(/s$/, ''));
         const target_port = Number(target.replace(/s$/, ''));
-        if (!Number.isInteger(source_port) || source_port <= 0 || source_port >= 64 * 1024 ||
-            !Number.isInteger(target_port) || target_port <= 0 || target_port >= 64 * 1024) {
+        if (
+            !Number.isInteger(source_port) ||
+            source_port <= 0 ||
+            source_port >= 64 * 1024 ||
+            !Number.isInteger(target_port) ||
+            target_port <= 0 ||
+            target_port >= 64 * 1024
+        ) {
             console.error('Invalid port numbers');
             console.error('source_port:', source_port, 'parsed from:', source);
             console.error('target_port:', target_port, 'parsed from:', target);
@@ -92,12 +98,15 @@ function tunnel_port({
     target_port,
     hostname,
     name,
-    record_http
+    record_http,
 }) {
-    const server = source_ssl ? tls.createServer({
-        key: ssl_key(),
-        cert: ssl_cert(),
-    }) : net.createServer();
+    const server =
+        source_ssl ?
+            tls.createServer({
+                key: ssl_key(),
+                cert: ssl_cert(),
+            })
+        :   net.createServer();
     return server
         .on(source_ssl ? 'secureConnection' : 'connection', conn =>
             tunnel_connection({
@@ -107,9 +116,18 @@ function tunnel_port({
                 hostname,
                 name,
                 record_http,
-            }))
-        .on('error', err => console.error(name, 'server error', err.stack || err))
-        .on('listening', () => console.log(name, 'listening ...', record_http ? '(Recording HTTP)' : ''))
+            }),
+        )
+        .on('error', err =>
+            console.error(name, 'server error', err.stack || err),
+        )
+        .on('listening', () =>
+            console.log(
+                name,
+                'listening ...',
+                record_http ? '(Recording HTTP)' : '',
+            ),
+        )
         .listen(source_port);
 }
 
@@ -119,16 +137,17 @@ function tunnel_connection({
     target_port,
     hostname,
     name,
-    record_http
+    record_http,
 }) {
     const conn_name = human_addr(conn.remoteAddress + ':' + conn.remotePort);
-    const target_conn = target_ssl ?
-        tls.connect({
-            port: target_port,
-            host: hostname,
-            rejectUnauthorized: false,
-        }) :
-        net.connect(target_port, hostname);
+    const target_conn =
+        target_ssl ?
+            tls.connect({
+                port: target_port,
+                host: hostname,
+                rejectUnauthorized: false,
+            })
+        :   net.connect(target_port, hostname);
     conn.on('close', () => on_error('source closed'));
     target_conn.on('close', () => on_error('target closed'));
     conn.on('error', err => on_error('source error', err));
@@ -138,17 +157,21 @@ function tunnel_connection({
         conn.pipe(target_conn);
         target_conn.pipe(conn);
         if (record_http) {
-            conn.pipe(new HTTPRecorder(msg => {
-                const prefix =
-                    (msg.headers['x-amz-user-agent'] ||
+            conn.pipe(
+                new HTTPRecorder(msg => {
+                    const prefix = (
+                        msg.headers['x-amz-user-agent'] ||
                         msg.headers['user-agent'] ||
-                        'http_recorder')
-                    .split('/', 1)[0]
-                    .replace(/-/g, '')
-                    .toLowerCase();
-                const extension = typeof(record_http) === 'string' ? record_http : 'sreq';
-                return `${prefix}_${msg.method}_${Date.now().toString(36)}.${extension}`;
-            }));
+                        'http_recorder'
+                    )
+                        .split('/', 1)[0]
+                        .replace(/-/g, '')
+                        .toLowerCase();
+                    const extension =
+                        typeof record_http === 'string' ? record_http : 'sreq';
+                    return `${prefix}_${msg.method}_${Date.now().toString(36)}.${extension}`;
+                }),
+            );
         }
     });
 
@@ -158,7 +181,14 @@ function tunnel_connection({
         const nread = conn.bytesRead - last_bytes_read;
         const nwrite = conn.bytesWritten - last_bytes_written;
         if (nread || nwrite) {
-            console.log(name, conn_name, 'report: read', nread, 'write', nwrite);
+            console.log(
+                name,
+                conn_name,
+                'report: read',
+                nread,
+                'write',
+                nwrite,
+            );
             last_bytes_read = conn.bytesRead;
             last_bytes_written = conn.bytesWritten;
         }
@@ -182,8 +212,9 @@ function human_addr(addr) {
 }
 
 function ssl_key() {
-    return `-----BEGIN RSA PRIVATE KEY-----\n` + // gitleaks:allow
-`MIIEpAIBAAKCAQEAx1dRbX6F9q7V56EmMGlhuksnqXPcQM4cL/FfwQG/15CPG8Mp
+    return (
+        `-----BEGIN RSA PRIVATE KEY-----\n` + // gitleaks:allow
+        `MIIEpAIBAAKCAQEAx1dRbX6F9q7V56EmMGlhuksnqXPcQM4cL/FfwQG/15CPG8Mp
 3bEPIOSGvbhaDiTgisAJ5sKhIfI7Ac5BQpps8Y9YJQDhIr4hXkFFjZ7nu2t/KxbC
 g4S/9+p+USySt9zsr+ER0W3k69G7pHcngLbiuUkJMz9ku4Zq2iDBmZLvO+H98Wwk
 u5udx0yuAq0rvM24JE4dBRTk57bOmBp9L6R6AhZKh9q8YigXwtoB2JKy5pCxu8Jj
@@ -209,7 +240,8 @@ fvkEANECgYAlh8o3iPTNXRieiwDiHMxJL2zY876ExZGyxBcTA5q1dQNGGJfWH0+L
 ZXuxpKQV/SgP8FrUali23z7cZ4jPTU+Ziav6O8gd5u3limwVA99QcXax2pTYXycS
 gn1SstfEENVozLwgTsYdBhk7H6cK7tZHHF0mKTenpz1SaMbK5E8DLw==
 -----END RSA PRIVATE KEY-----
-`;
+`
+    );
 }
 
 function ssl_cert() {

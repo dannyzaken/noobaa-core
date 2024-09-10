@@ -4,53 +4,44 @@
 const P = require('../../util/promise');
 
 class CloudFunction {
-
     constructor(client) {
         this._client = client;
     }
 
     getAWSConnection() {
-        const {
-            AWS_ACCESS_KEY_ID,
-            AWS_SECRET_ACCESS_KEY,
-        } = process.env;
+        const { AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY } = process.env;
         const AWSConnections = {
             name: 'AWSConnection',
-            endpoint: "https://s3.amazonaws.com",
-            endpoint_type: "AWS",
+            endpoint: 'https://s3.amazonaws.com',
+            endpoint_type: 'AWS',
             identity: AWS_ACCESS_KEY_ID,
-            secret: AWS_SECRET_ACCESS_KEY
+            secret: AWS_SECRET_ACCESS_KEY,
         };
         return AWSConnections;
     }
 
     getCOSConnection() {
-        const {
-            COS_ACCESS_KEY_ID,
-            COS_SECRET_ACCESS_KEY,
-        } = process.env;
+        const { COS_ACCESS_KEY_ID, COS_SECRET_ACCESS_KEY } = process.env;
         const COSConnections = {
             name: 'COSConnection',
-            endpoint: "https://s3.us-east.cloud-object-storage.appdomain.cloud",
-            endpoint_type: "IBM_COS",
+            endpoint: 'https://s3.us-east.cloud-object-storage.appdomain.cloud',
+            endpoint_type: 'IBM_COS',
             identity: COS_ACCESS_KEY_ID,
-            secret: COS_SECRET_ACCESS_KEY
+            secret: COS_SECRET_ACCESS_KEY,
         };
         return COSConnections;
     }
 
     getAzureConnection() {
-        const {
-            AZURE_STORAGE_ACCOUNT_NAME,
-            AZURE_STORAGE_ACCOUNT_KEY,
-        } = process.env;
+        const { AZURE_STORAGE_ACCOUNT_NAME, AZURE_STORAGE_ACCOUNT_KEY } =
+            process.env;
 
         const AzureConnection = {
             name: 'AZUREConnection',
             endpoint: 'https://blob.core.windows.net',
-            endpoint_type: "AZURE",
+            endpoint_type: 'AZURE',
             identity: AZURE_STORAGE_ACCOUNT_NAME,
-            secret: AZURE_STORAGE_ACCOUNT_KEY
+            secret: AZURE_STORAGE_ACCOUNT_KEY,
         };
         return AzureConnection;
     }
@@ -61,7 +52,7 @@ class CloudFunction {
             await this._client.pool.create_cloud_pool({
                 connection,
                 name,
-                target_bucket
+                target_bucket,
             });
         } catch (e) {
             console.error('Failed to create cloud pool', e);
@@ -73,7 +64,7 @@ class CloudFunction {
         console.log('Deleting cloud pool ' + pool);
         try {
             await this._client.pool.delete_pool({
-                name: pool
+                name: pool,
             });
         } catch (e) {
             console.error('Failed to delete cloud pool error', e);
@@ -88,14 +79,24 @@ class CloudFunction {
                 if (retries === 0) {
                     throw new Error('Failed to get healthy status');
                 } else {
-                    const system_info = await this._client.system.read_system({});
-                    const poolIndex = system_info.pools.findIndex(pool => pool.name === 'cloud-resource-aws');
+                    const system_info = await this._client.system.read_system(
+                        {},
+                    );
+                    const poolIndex = system_info.pools.findIndex(
+                        pool => pool.name === 'cloud-resource-aws',
+                    );
                     const status = system_info.pools[poolIndex].mode;
                     if (system_info.pools[poolIndex].mode === 'OPTIMAL') {
                         console.log('Pool ' + poolName + ' is healthy');
                         break;
                     } else {
-                        console.log('Pool ' + poolName + ' has status ' + status + ' waiting for OPTIMAL extra 5 seconds');
+                        console.log(
+                            'Pool ' +
+                                poolName +
+                                ' has status ' +
+                                status +
+                                ' waiting for OPTIMAL extra 5 seconds',
+                        );
                         await P.delay(5 * 1000);
                     }
                 }
@@ -114,7 +115,7 @@ class CloudFunction {
         console.log('Deleting connection ' + connection_name);
         try {
             await this._client.account.delete_external_connection({
-                connection_name
+                connection_name,
             });
         } catch (e) {
             console.error('Failed to delete connection', e);
@@ -125,8 +126,11 @@ class CloudFunction {
     async getConnection(endpoint_url) {
         console.log('Getting connection ' + endpoint_url);
         try {
-            const { external_connections } = await this._client.account.read_account({});
-            const conn = external_connections.connections.find(c => c.endpoint === endpoint_url);
+            const { external_connections } =
+                await this._client.account.read_account({});
+            const conn = external_connections.connections.find(
+                c => c.endpoint === endpoint_url,
+            );
             return conn ? conn.name : undefined;
         } catch (e) {
             console.error('Failed to get connection', e);
@@ -135,12 +139,14 @@ class CloudFunction {
     }
 
     async createNamespaceResource(connection, name, target_bucket) {
-        console.log('Creating namespace resource with connection ' + connection);
+        console.log(
+            'Creating namespace resource with connection ' + connection,
+        );
         try {
             await this._client.pool.create_namespace_resource({
                 connection,
                 name,
-                target_bucket
+                target_bucket,
             });
         } catch (e) {
             console.error('Failed to create namespace resource', e);
@@ -152,7 +158,7 @@ class CloudFunction {
         console.log('Deleting cloud pool ' + namespace);
         try {
             await this._client.pool.delete_namespace_resource({
-                name: namespace
+                name: namespace,
             });
         } catch (e) {
             console.error('Failed to delete cloud pool error', e);

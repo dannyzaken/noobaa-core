@@ -7,22 +7,22 @@ module.exports = {
     required: ['system', 's3_usage_info', 's3_errors_info'],
     properties: {
         _id: {
-            objectid: true
+            objectid: true,
         },
         system: {
-            objectid: true
+            objectid: true,
         },
         s3_usage_info: {
             type: 'object',
             additionalProperties: {
-                type: 'integer'
-            }
+                type: 'integer',
+            },
         },
         s3_errors_info: {
             type: 'object',
             additionalProperties: {
-                type: 'integer'
-            }
-        }
-    }
+                type: 'integer',
+            },
+        },
+    },
 };

@@ -4,40 +4,34 @@
 module.exports = {
     $id: 'test_report_schema',
     type: 'object',
-    required: [
-        'date',
-        'suit_name',
-        'conf',
-        'env',
-        'results'
-    ],
+    required: ['date', 'suit_name', 'conf', 'env', 'results'],
     properties: {
         date: {
-            type: 'date'
+            type: 'date',
         },
         suite_name: {
-            type: 'string'
+            type: 'string',
         },
         conf: {
             type: 'object',
             properties: {},
-            additionalProperties: true
+            additionalProperties: true,
         },
         env: {
             type: 'object',
             properties: {},
-            additionalProperties: true
+            additionalProperties: true,
         },
         results: {
             type: 'object',
             properties: {
                 passed_cases: {
-                    type: 'number'
+                    type: 'number',
                 },
                 failed_cases: {
-                    type: 'number'
+                    type: 'number',
                 },
             },
-        }
-    }
+        },
+    },
 };

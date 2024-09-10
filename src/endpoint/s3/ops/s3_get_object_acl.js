@@ -17,20 +17,20 @@ async function get_object_acl(req) {
     return {
         AccessControlPolicy: {
             Owner: reply.owner,
-            AccessControlList:
-                _.map(reply.access_control_list, acl => ({
-                    Grant: {
-                        Grantee: {
-                            _attr: {
-                                'xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
-                                'xsi:type': acl.Grantee.Type,
-                            },
-                            _content: _.omit(acl.Grantee, 'Type')
+            AccessControlList: _.map(reply.access_control_list, acl => ({
+                Grant: {
+                    Grantee: {
+                        _attr: {
+                            'xmlns:xsi':
+                                'http://www.w3.org/2001/XMLSchema-instance',
+                            'xsi:type': acl.Grantee.Type,
                         },
-                        Permission: acl.Permission
-                    }
-                }))
-        }
+                        _content: _.omit(acl.Grantee, 'Type'),
+                    },
+                    Permission: acl.Permission,
+                },
+            })),
+        },
     };
 }
 

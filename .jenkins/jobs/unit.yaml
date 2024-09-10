@@ -19,7 +19,7 @@
         - git:
             name: origin
             url: https://github.com/noobaa/noobaa-core
-            refspec: "+refs/pull/${ghprbPullId}/head:refs/remotes/origin/pr/${ghprbPullId}/head"
+            refspec: '+refs/pull/${ghprbPullId}/head:refs/remotes/origin/pr/${ghprbPullId}/head'
             branches:
               - origin/pr/${ghprbPullId}/head
       script-path: .jenkins/unit.groovy
@@ -27,7 +27,7 @@
     triggers:
       - github-pull-request:
           status-context: ci/centos/unit
-          trigger-phrase: "/(re)?test ((all)|(ci/centos/unit))"
+          trigger-phrase: '/(re)?test ((all)|(ci/centos/unit))'
           only-trigger-phrase: true
           status-url: $RUN_DISPLAY_URL
           permit-all: true

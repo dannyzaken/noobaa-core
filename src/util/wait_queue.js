@@ -6,7 +6,6 @@ const P = require('../util/promise');
 const LinkedList = require('./linked_list');
 
 class WaitQueue {
-
     constructor(name) {
         name = name || '';
         this._name = '_wq_' + name;
@@ -66,7 +65,6 @@ class WaitQueue {
     enum_items() {
         return this._q.enum_items();
     }
-
 }
 
 module.exports = WaitQueue;

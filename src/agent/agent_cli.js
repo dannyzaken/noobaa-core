@@ -25,9 +25,10 @@ const json_utils = require('../util/json_utils');
 const addr_utils = require('../util/addr_utils');
 const debug_config = require('../util/debug_config');
 
-
 if (process.env.NOOBAA_LOG_LEVEL) {
-    const dbg_conf = debug_config.get_debug_config(process.env.NOOBAA_LOG_LEVEL);
+    const dbg_conf = debug_config.get_debug_config(
+        process.env.NOOBAA_LOG_LEVEL,
+    );
     dbg_conf.core.map(module => dbg.set_module_level(dbg_conf.level, module));
 }
 
@@ -55,22 +56,39 @@ class AgentCLI {
         this.s3 = new S3Auth();
         this.agents = {};
         this.params.hostname = this.params.test_hostname || os.hostname();
-        const agent_conf_name = this.params.test_hostname ? 'agent_conf_' + this.params.test_hostname + '.json' : 'agent_conf.json';
-        this.agent_conf = new json_utils.JsonFileWrapper(os_utils.get_agent_platform_path().concat(agent_conf_name));
+        const agent_conf_name =
+            this.params.test_hostname ?
+                'agent_conf_' + this.params.test_hostname + '.json'
+            :   'agent_conf.json';
+        this.agent_conf = new json_utils.JsonFileWrapper(
+            os_utils.get_agent_platform_path().concat(agent_conf_name),
+        );
     }
 
     async monitor_stats() {
         setInterval(() => {
             const cpu_usage = process.cpuUsage(this.cpu_usage); //usage since init
             const mem_usage = process.memoryUsage();
-            dbg.log0(`agent_stats_titles - process: cpu_usage_user, cpu_usage_sys, mem_usage_rss`);
-            dbg.log0(`agent_stats_values - process: ${cpu_usage.user}, ${cpu_usage.system}, ${mem_usage.rss}`);
+            dbg.log0(
+                `agent_stats_titles - process: cpu_usage_user, cpu_usage_sys, mem_usage_rss`,
+            );
+            dbg.log0(
+                `agent_stats_values - process: ${cpu_usage.user}, ${cpu_usage.system}, ${mem_usage.rss}`,
+            );
             for (const agent of Object.keys(this.agents)) {
                 const agent_stats = this.agents[agent].sample_stats();
                 if (agent_stats) {
                     const agent_stats_keys = Object.keys(agent_stats);
-                    dbg.log0(`agent_stats_titles - ${agent}: ` + agent_stats_keys.join(', '));
-                    dbg.log0(`agent_stats_values - ${agent}: ` + agent_stats_keys.map(key => agent_stats[key]).join(', '));
+                    dbg.log0(
+                        `agent_stats_titles - ${agent}: ` +
+                            agent_stats_keys.join(', '),
+                    );
+                    dbg.log0(
+                        `agent_stats_values - ${agent}: ` +
+                            agent_stats_keys
+                                .map(key => agent_stats[key])
+                                .join(', '),
+                    );
                 }
             }
         }, 60000).unref();
@@ -93,22 +111,26 @@ class AgentCLI {
         }
         self.cpu_usage = process.cpuUsage();
         self.monitor_stats();
-        return self.agent_conf.read()
-            .then(function(agent_conf) {
+        return self.agent_conf
+            .read()
+            .then(function (agent_conf) {
                 dbg.log0('using agent_conf.json', util.inspect(agent_conf));
                 _.defaults(self.params, agent_conf);
             })
-            .then(null, function(err) {
-                dbg.log0('cannot find configuration file. Using defaults.', err);
+            .then(null, function (err) {
+                dbg.log0(
+                    'cannot find configuration file. Using defaults.',
+                    err,
+                );
             })
-            .then(function() {
+            .then(function () {
                 _.defaults(self.params, {
                     root_path: './noobaa_storage/',
                     access_key: '123',
                     secret_key: 'abc',
                     system: 'demo',
                     bucket: 'first.bucket',
-                    routing_hint: 'EXTERNAL'
+                    routing_hint: 'EXTERNAL',
                 });
                 if (self.params.address) {
                     self.client.options.address = self.params.address;
@@ -116,7 +138,7 @@ class AgentCLI {
                 if (!self.params.host_id) {
                     self.params.host_id = uuid();
                     return self.agent_conf.update({
-                        host_id: self.params.host_id
+                        host_id: self.params.host_id,
                     });
                 }
             })
@@ -129,9 +151,10 @@ class AgentCLI {
                 self.rename_agent_storage(mount_points);
                 return mount_points;
             })
-            .then(function(mount_points) {
+            .then(function (mount_points) {
                 if (self.params.test_hostname) {
-                    self.params.root_path = './noobaa_storage_' + self.params.test_hostname;
+                    self.params.root_path =
+                        './noobaa_storage_' + self.params.test_hostname;
                     mount_points[0].mount = self.params.root_path;
                 } else {
                     self.params.root_path = mount_points[0].mount;
@@ -139,78 +162,139 @@ class AgentCLI {
                 dbg.log0('root path:', self.params.root_path);
                 self.params.all_storage_paths = mount_points;
                 if (self.params.cleanup) {
-                    return P.all(_.map(self.params.all_storage_paths, storage_path_info => {
-                        const storage_path = storage_path_info.mount;
-                        const path_modification = storage_path.replace('/noobaa_storage/', '')
-                            .replace('/', '')
-                            .replace('.', '');
-                        return fs_utils.folder_delete(path_modification);
-                    }));
+                    return P.all(
+                        _.map(
+                            self.params.all_storage_paths,
+                            storage_path_info => {
+                                const storage_path = storage_path_info.mount;
+                                const path_modification = storage_path
+                                    .replace('/noobaa_storage/', '')
+                                    .replace('/', '')
+                                    .replace('.', '');
+                                return fs_utils.folder_delete(
+                                    path_modification,
+                                );
+                            },
+                        ),
+                    );
                 } else if (self.params.duplicate || self.params.notfound) {
-                    const reason = self.params.duplicate ? 'duplicate' : 'notfound';
-                    const target_noobaa_storage = reason + '_noobaa_storage_' + Date.now();
-                    dbg.log0(`got ${reason} flag - renaming noobaa_storage to ${target_noobaa_storage}`);
-                    return P.all(_.map(self.params.all_storage_paths, storage_path_info => {
-                            // move noobaa_storage in all drives to an alternate location
-                            const storage_path = storage_path_info.mount;
-                            const target_path = storage_path.replace('noobaa_storage', target_noobaa_storage);
-                            dbg.log0('moving', storage_path, 'to', target_path);
-                            return fs.promises.rename(storage_path, target_path);
-                        }))
-                        // remove host_id from agent_conf
-                        .then(() => self.agent_conf.update({
-                            host_id: undefined
-                        }))
-                        .then(() => {
-                            dbg.log0('exit agent_cli. will restart with new noobaa_storage');
-                            process.exit(0);
-                        })
-                        .catch(err => {
-                            dbg.error('got error while handling duplication!!', err);
-                            process.exit(1);
-                        });
+                    const reason =
+                        self.params.duplicate ? 'duplicate' : 'notfound';
+                    const target_noobaa_storage =
+                        reason + '_noobaa_storage_' + Date.now();
+                    dbg.log0(
+                        `got ${reason} flag - renaming noobaa_storage to ${target_noobaa_storage}`,
+                    );
+                    return (
+                        P.all(
+                            _.map(
+                                self.params.all_storage_paths,
+                                storage_path_info => {
+                                    // move noobaa_storage in all drives to an alternate location
+                                    const storage_path =
+                                        storage_path_info.mount;
+                                    const target_path = storage_path.replace(
+                                        'noobaa_storage',
+                                        target_noobaa_storage,
+                                    );
+                                    dbg.log0(
+                                        'moving',
+                                        storage_path,
+                                        'to',
+                                        target_path,
+                                    );
+                                    return fs.promises.rename(
+                                        storage_path,
+                                        target_path,
+                                    );
+                                },
+                            ),
+                        )
+                            // remove host_id from agent_conf
+                            .then(() =>
+                                self.agent_conf.update({
+                                    host_id: undefined,
+                                }),
+                            )
+                            .then(() => {
+                                dbg.log0(
+                                    'exit agent_cli. will restart with new noobaa_storage',
+                                );
+                                process.exit(0);
+                            })
+                            .catch(err => {
+                                dbg.error(
+                                    'got error while handling duplication!!',
+                                    err,
+                                );
+                                process.exit(1);
+                            })
+                    );
                 } else {
-                    return self.load()
-                        .then(function() {
-                            dbg.log0('COMPLETED: load');
-                        });
+                    return self.load().then(function () {
+                        dbg.log0('COMPLETED: load');
+                    });
                 }
             })
-            .then(function() {
-                return self.detect_new_drives();
-            }, function(err) {
-                dbg.error('ERROR: load', self.params, err.stack);
-                throw new Error(err);
-            });
+            .then(
+                function () {
+                    return self.detect_new_drives();
+                },
+                function (err) {
+                    dbg.error('ERROR: load', self.params, err.stack);
+                    throw new Error(err);
+                },
+            );
     }
 
     detect_new_drives() {
         const self = this;
         const retry = () => {
-            setTimeout(() => self.detect_new_drives(), DETECT_NEW_DRIVES_INTERVAL);
+            setTimeout(
+                () => self.detect_new_drives(),
+                DETECT_NEW_DRIVES_INTERVAL,
+            );
         };
-        return os_utils.get_disk_mount_points()
+        return os_utils
+            .get_disk_mount_points()
             .then(added_mount_points => {
-                let added_paths = _.differenceWith(added_mount_points, self.params.all_storage_paths,
-                    (a, b) => String(a.drive_id) === String(b.drive_id));
+                let added_paths = _.differenceWith(
+                    added_mount_points,
+                    self.params.all_storage_paths,
+                    (a, b) => String(a.drive_id) === String(b.drive_id),
+                );
                 if (_.isEmpty(added_paths)) return P.resolve();
-                added_paths = _.filter(added_paths, added_path => !_.includes(self.params.ignore_drives || [], added_path.drive_id));
+                added_paths = _.filter(
+                    added_paths,
+                    added_path =>
+                        !_.includes(
+                            self.params.ignore_drives || [],
+                            added_path.drive_id,
+                        ),
+                );
                 if (_.isEmpty(added_paths)) return P.resolve();
                 dbg.log0('identified new drives:', added_paths);
-                return self.load(added_paths)
-                    .then(function() {
-                        dbg.log0('Drives added:', added_paths);
-                        self.params.all_storage_paths = _.concat(self.params.all_storage_paths, added_paths);
-                    });
+                return self.load(added_paths).then(function () {
+                    dbg.log0('Drives added:', added_paths);
+                    self.params.all_storage_paths = _.concat(
+                        self.params.all_storage_paths,
+                        added_paths,
+                    );
+                });
             })
             .finally(() => retry());
     }
 
     rename_agent_storage(mount_points) {
         if (os_utils.IS_MAC) return; // skip rename in mac os
-        dbg.log0(`looking for agent_storage folder and renaming to noobaa_storage`);
+        dbg.log0(
+            `looking for agent_storage folder and renaming to noobaa_storage`,
+        );
         return P.map(mount_points, mount_point => {
-            let old_path = mount_point.mount.replace('noobaa_storage', 'agent_storage');
+            let old_path = mount_point.mount.replace(
+                'noobaa_storage',
+                'agent_storage',
+            );
             // for root mount or c:\ the old agent_storage location was under installation dir
             // fix for windows or linux
             if (old_path === '/agent_storage/') {
@@ -218,16 +302,30 @@ class AgentCLI {
             } else if (old_path.toLowerCase() === 'c:\\agent_storage\\') {
                 old_path = '.\\agent_storage\\';
             }
-            return fs_utils.file_must_exist(old_path)
+            return fs_utils
+                .file_must_exist(old_path)
                 .then(() => fs_utils.file_must_not_exist(mount_point.mount))
-                .then(() => {
-                    dbg.log0(`renaming ${old_path} to ${mount_point.mount}`);
-                    return fs.promises.rename(old_path, mount_point.mount)
-                        .catch(err => {
-                            dbg.error(`failed renaming ${old_path} to ${mount_points.mount}. got error:`, err);
-                            throw err;
-                        });
-                }, err => dbg.log0(`skipping rename for mount ${mount_point.mount}`, err.message));
+                .then(
+                    () => {
+                        dbg.log0(
+                            `renaming ${old_path} to ${mount_point.mount}`,
+                        );
+                        return fs.promises
+                            .rename(old_path, mount_point.mount)
+                            .catch(err => {
+                                dbg.error(
+                                    `failed renaming ${old_path} to ${mount_points.mount}. got error:`,
+                                    err,
+                                );
+                                throw err;
+                            });
+                    },
+                    err =>
+                        dbg.log0(
+                            `skipping rename for mount ${mount_point.mount}`,
+                            err.message,
+                        ),
+                );
         });
     }
 
@@ -236,13 +334,28 @@ class AgentCLI {
         this.params.ignore_drives = this.params.ignore_drives || [];
         return P.map(mount_points, mount_point => {
             if (mount_point.temporary_drive) {
-                if (!_.find(this.params.ignore_drives, drive => drive === mount_point.drive_id)) {
-                    dbg.log0(`found new drive to ignore ${mount_point.drive_id}`);
+                if (
+                    !_.find(
+                        this.params.ignore_drives,
+                        drive => drive === mount_point.drive_id,
+                    )
+                ) {
+                    dbg.log0(
+                        `found new drive to ignore ${mount_point.drive_id}`,
+                    );
                     this.params.ignore_drives.push(mount_point.drive_id);
-                    this.agent_conf.update({ ignore_drives: this.params.ignore_drives });
+                    this.agent_conf.update({
+                        ignore_drives: this.params.ignore_drives,
+                    });
                 }
             }
-        }).then(() => _.filter(mount_points, mount_point => !this.params.ignore_drives.includes(mount_point.drive_id)));
+        }).then(() =>
+            _.filter(
+                mount_points,
+                mount_point =>
+                    !this.params.ignore_drives.includes(mount_point.drive_id),
+            ),
+        );
     }
 
     /**
@@ -254,40 +367,67 @@ class AgentCLI {
      */
     load(added_storage_paths) {
         const self = this;
-        const paths_to_work_on = added_storage_paths || self.params.all_storage_paths;
+        const paths_to_work_on =
+            added_storage_paths || self.params.all_storage_paths;
         const internal_agent_prefix = 'noobaa-internal-agent-';
         // TODO: This has to work on partitial relevant paths only
         // handle regular agents
         dbg.log0('Loading agents', paths_to_work_on);
-        return P.all(_.map(paths_to_work_on, function(storage_path_info) {
+        return P.all(
+            _.map(paths_to_work_on, function (storage_path_info) {
                 const storage_path = storage_path_info.mount;
                 dbg.log0('root_path', storage_path);
                 return P.resolve()
-                    .then(() => fs_utils.create_path(storage_path, fs_utils.PRIVATE_DIR_PERMISSIONS))
-                    .then(() => P.resolve(self.hide_storage_folder(storage_path))
-                        .catch(err => {
-                            dbg.error('Windows - failed to hide', err.stack || err);
-                            // TODO really continue on error?
-                        }))
+                    .then(() =>
+                        fs_utils.create_path(
+                            storage_path,
+                            fs_utils.PRIVATE_DIR_PERMISSIONS,
+                        ),
+                    )
+                    .then(() =>
+                        P.resolve(self.hide_storage_folder(storage_path)).catch(
+                            err => {
+                                dbg.error(
+                                    'Windows - failed to hide',
+                                    err.stack || err,
+                                );
+                                // TODO really continue on error?
+                            },
+                        ),
+                    )
                     .then(() => fs.promises.readdir(storage_path))
                     .then(nodes_names => {
                         const ignore_names = ['agent_conf.json', 'lost+found'];
                         // filter out cloud and mongo agents:
-                        const regular_node_names = _.reject(nodes_names, name =>
-                            (name.startsWith('.') || name.startsWith(internal_agent_prefix) || ignore_names.includes(name)));
+                        const regular_node_names = _.reject(
+                            nodes_names,
+                            name =>
+                                name.startsWith('.') ||
+                                name.startsWith(internal_agent_prefix) ||
+                                ignore_names.includes(name),
+                        );
                         dbg.log0('nodes_names:', regular_node_names);
                         return P.map(regular_node_names, node_name => {
-                            dbg.log0('node_name', node_name, 'storage_path', storage_path);
-                            const node_path = path.join(storage_path, node_name);
+                            dbg.log0(
+                                'node_name',
+                                node_name,
+                                'storage_path',
+                                storage_path,
+                            );
+                            const node_path = path.join(
+                                storage_path,
+                                node_name,
+                            );
                             return self.start(node_name, node_path);
                         });
                     });
-            }))
+            }),
+        )
             .then(storage_path_nodes => {
                 const nodes_scale = 0;
                 let number_of_new_paths = 0;
                 let existing_nodes_count = 0;
-                _.each(storage_path_nodes, function(nodes) {
+                _.each(storage_path_nodes, function (nodes) {
                     // assumes same amount of nodes per each HD. we will take the last one.
                     if (nodes.length) {
                         existing_nodes_count = nodes.length;
@@ -304,12 +444,17 @@ class AgentCLI {
                 dbg.log0('AGENTS SCALE TO', nodes_scale);
                 dbg.log0('AGENTS EXISTING', existing_nodes_count);
                 dbg.log0('AGENTS NEW PATHS', number_of_new_paths);
-                if (number_of_new_paths > 0 &&
-                    paths_to_work_on.length > number_of_new_paths) {
-                    dbg.log0('Introducing new HD, while other exist. Adding only one node for these new drives');
+                if (
+                    number_of_new_paths > 0 &&
+                    paths_to_work_on.length > number_of_new_paths
+                ) {
+                    dbg.log0(
+                        'Introducing new HD, while other exist. Adding only one node for these new drives',
+                    );
                     nodes_to_add = 0; //special case, the create_some will add only to new HD
                 } else {
-                    nodes_to_add = Math.max(nodes_scale, 1) - existing_nodes_count;
+                    nodes_to_add =
+                        Math.max(nodes_scale, 1) - existing_nodes_count;
                 }
                 if (nodes_to_add < 0) {
                     dbg.warn('NODES SCALE DOWN IS NOT YET SUPPORTED ...');
@@ -331,27 +476,37 @@ class AgentCLI {
             current_path = current_path.substring(0, current_path.length - 1);
             current_path = current_path.replace('./', '');
             //hiding storage folder
-            return os_utils.exec('attrib +H ' + current_path)
-                .then(() => Promise.all([
-                    os_utils.is_folder_permissions_set(current_path),
-                    fs.promises.readdir(current_path)
-                ]))
+            return os_utils
+                .exec('attrib +H ' + current_path)
+                .then(() =>
+                    Promise.all([
+                        os_utils.is_folder_permissions_set(current_path),
+                        fs.promises.readdir(current_path),
+                    ]),
+                )
                 .then(([permissions_set, noobaa_storage_initialization]) => {
                     if (!permissions_set) {
                         if (_.isEmpty(noobaa_storage_initialization)) {
                             dbg.log0('First time icacls configuration');
                             //Setting system full permissions and remove builtin users permissions.
                             //TODO: remove other users
-                            os_utils.exec('icacls ' + current_path +
-                                    ' /grant:r administrators:(oi)(ci)F' +
-                                    ' /grant:r system:F' +
-                                    ' /remove:g BUILTIN\\Users' +
-                                    ' /inheritance:r')
+                            os_utils
+                                .exec(
+                                    'icacls ' +
+                                        current_path +
+                                        ' /grant:r administrators:(oi)(ci)F' +
+                                        ' /grant:r system:F' +
+                                        ' /remove:g BUILTIN\\Users' +
+                                        ' /inheritance:r',
+                                )
                                 .then(() => {
                                     dbg.log0('Icacls configuration success');
                                 })
-                                .catch(function(err) {
-                                    dbg.error('Icacls configuration failed with:', err);
+                                .catch(function (err) {
+                                    dbg.error(
+                                        'Icacls configuration failed with:',
+                                        err,
+                                    );
                                 });
                         } else {
                             dbg.log0('Icacls configurations were touched');
@@ -364,36 +519,75 @@ class AgentCLI {
 
     create_node_helper(current_node_path_info) {
         const self = this;
-        return P.fcall(function() {
-            dbg.log0('create_node_helper called with self.params', _.omit(self.params, ['access_key', 'secret_key']));
+        return P.fcall(function () {
+            dbg.log0(
+                'create_node_helper called with self.params',
+                _.omit(self.params, ['access_key', 'secret_key']),
+            );
             const current_node_path = current_node_path_info.mount;
             let node_name = self.params.hostname;
-            const noobaa_storage_dir_name = self.params.test_hostname ? 'noobaa_storage_' + self.params.test_hostname : 'noobaa_storage';
-            let path_modification = current_node_path.replace('/' + noobaa_storage_dir_name + '/', '').replace(/\//g, '')
+            const noobaa_storage_dir_name =
+                self.params.test_hostname ?
+                    'noobaa_storage_' + self.params.test_hostname
+                :   'noobaa_storage';
+            let path_modification = current_node_path
+                .replace('/' + noobaa_storage_dir_name + '/', '')
+                .replace(/\//g, '')
                 .replace('.', '');
             //windows
-            path_modification = path_modification.replace('\\' + noobaa_storage_dir_name + '\\', '');
-            dbg.log0('create_node_helper with path_modification', path_modification, 'node:', node_name, 'current_node_path', current_node_path, 'exists');
+            path_modification = path_modification.replace(
+                '\\' + noobaa_storage_dir_name + '\\',
+                '',
+            );
+            dbg.log0(
+                'create_node_helper with path_modification',
+                path_modification,
+                'node:',
+                node_name,
+                'current_node_path',
+                current_node_path,
+                'exists',
+            );
             if (os.type().indexOf('Windows') >= 0) {
-                node_name = node_name + '-' + current_node_path_info.drive_id.replace(':', '');
+                node_name =
+                    node_name +
+                    '-' +
+                    current_node_path_info.drive_id.replace(':', '');
             } else if (!_.isEmpty(path_modification)) {
-                node_name = node_name + '-' + path_modification.replace('/', '');
+                node_name =
+                    node_name + '-' + path_modification.replace('/', '');
             }
             node_name += '-' + self.params.host_id.split('-')[0];
             const node_path = path.join(current_node_path, node_name);
             const token_path = path.join(node_path, 'token');
-            dbg.log0('create new node for node name', node_name, ' path:', node_path, ' token path:', token_path);
-            return fs_utils.file_must_not_exist(token_path)
-                .then(function() {
+            dbg.log0(
+                'create new node for node name',
+                node_name,
+                ' path:',
+                node_path,
+                ' token path:',
+                token_path,
+            );
+            return fs_utils
+                .file_must_not_exist(token_path)
+                .then(function () {
                     if (self.params.create_node_token) return;
                     // authenticate and create a token for new nodes
-                    const basic_auth_params = _.pick(self.params, 'system', 'role');
+                    const basic_auth_params = _.pick(
+                        self.params,
+                        'system',
+                        'role',
+                    );
                     if (_.isEmpty(basic_auth_params)) {
-                        throw new Error("No credentials");
+                        throw new Error('No credentials');
                     } else {
                         const secret_key = self.params.secret_key;
-                        const auth_params_str = JSON.stringify(basic_auth_params);
-                        const signature = self.s3.sign(secret_key, auth_params_str);
+                        const auth_params_str =
+                            JSON.stringify(basic_auth_params);
+                        const signature = self.s3.sign(
+                            secret_key,
+                            auth_params_str,
+                        );
                         const auth_params = {
                             access_key: self.params.access_key,
                             string_to_sign: auth_params_str,
@@ -403,34 +597,52 @@ class AgentCLI {
                         return self.create_auth_token(auth_params);
                     }
                 })
-                .then(function(res) {
+                .then(function (res) {
                     if (res) {
-                        dbg.log0('result create:', res, 'node path:', node_path);
+                        dbg.log0(
+                            'result create:',
+                            res,
+                            'node path:',
+                            node_path,
+                        );
                         self.params.create_node_token = res.token;
                         // replace access_key\secret_key with create_node_token in agent_conf
                         return self.agent_conf.update({
                             access_key: undefined,
                             secret_key: undefined,
-                            create_node_token: self.params.create_node_token
+                            create_node_token: self.params.create_node_token,
                         });
                     } else {
                         dbg.log0('has token', self.params.create_node_token);
                     }
                 })
-                .then(() => fs_utils.create_path(node_path, fs_utils.PRIVATE_DIR_PERMISSIONS))
-                .then(function() {
+                .then(() =>
+                    fs_utils.create_path(
+                        node_path,
+                        fs_utils.PRIVATE_DIR_PERMISSIONS,
+                    ),
+                )
+                .then(function () {
                     dbg.log0('writing token', token_path);
-                    return fs_utils.replace_file(token_path, self.params.create_node_token);
+                    return fs_utils.replace_file(
+                        token_path,
+                        self.params.create_node_token,
+                    );
                 })
-                .then(function() {
-                    dbg.log0('about to start node', node_path, 'with node name:', node_name);
+                .then(function () {
+                    dbg.log0(
+                        'about to start node',
+                        node_path,
+                        'with node name:',
+                        node_name,
+                    );
                     return self.start(node_name, node_path);
                 })
-                .then(function(res) {
+                .then(function (res) {
                     dbg.log0('created', node_name);
                     return res;
                 })
-                .then(null, function(err) {
+                .then(null, function (err) {
                     dbg.log0('create failed', node_name, err, err.stack);
                     throw err;
                 });
@@ -446,28 +658,40 @@ class AgentCLI {
      */
     create(number_of_nodes, paths_to_work_on) {
         const self = this;
-        const storage_paths_to_add = paths_to_work_on || self.params.all_storage_paths;
+        const storage_paths_to_add =
+            paths_to_work_on || self.params.all_storage_paths;
         //create root path last. First, create all other.
         // for internal_agents only use root path
-        return P.all(_.map(_.drop(storage_paths_to_add, 1), function(current_storage_path) {
-                return fs.promises.readdir(current_storage_path.mount)
-                    .then(function(files) {
-                        if (files.length > 0 && number_of_nodes === 0) {
-                            //if new HD introduced,  skip existing HD.
-                        } else {
-                            return self.create_node_helper(current_storage_path);
-                        }
-                    });
-            }))
-            .then(function() {
-                //create root folder
-                if (storage_paths_to_add.length > 1) {
-                    return fs.promises.readdir(storage_paths_to_add[0].mount)
-                        .then(function(files) {
+        return P.all(
+            _.map(
+                _.drop(storage_paths_to_add, 1),
+                function (current_storage_path) {
+                    return fs.promises
+                        .readdir(current_storage_path.mount)
+                        .then(function (files) {
                             if (files.length > 0 && number_of_nodes === 0) {
                                 //if new HD introduced,  skip existing HD.
                             } else {
-                                return self.create_node_helper(storage_paths_to_add[0]);
+                                return self.create_node_helper(
+                                    current_storage_path,
+                                );
+                            }
+                        });
+                },
+            ),
+        )
+            .then(function () {
+                //create root folder
+                if (storage_paths_to_add.length > 1) {
+                    return fs.promises
+                        .readdir(storage_paths_to_add[0].mount)
+                        .then(function (files) {
+                            if (files.length > 0 && number_of_nodes === 0) {
+                                //if new HD introduced,  skip existing HD.
+                            } else {
+                                return self.create_node_helper(
+                                    storage_paths_to_add[0],
+                                );
                             }
                         });
                 } else if (number_of_nodes === 0) {
@@ -476,7 +700,7 @@ class AgentCLI {
                     return self.create_node_helper(storage_paths_to_add[0]);
                 }
             })
-            .then(null, function(err) {
+            .then(null, function (err) {
                 dbg.error('error while creating node:', err, err.stack);
             });
     }
@@ -495,11 +719,13 @@ class AgentCLI {
             return self.create(0, paths_to_work_on);
         } else {
             const sem = new Semaphore(5);
-            return P.all(_.times(n, function() {
-                return sem.surround(function() {
-                    return self.create(n, paths_to_work_on);
-                });
-            }));
+            return P.all(
+                _.times(n, function () {
+                    return sem.surround(function () {
+                        return self.create(n, paths_to_work_on);
+                    });
+                }),
+            );
         }
     }
 
@@ -527,11 +753,14 @@ class AgentCLI {
                 write: token => fs_utils.replace_file(token_path, token),
             };
             const create_node_token_wrapper = {
-                read: () => this.agent_conf.read()
-                    .then(agent_conf => agent_conf.create_node_token),
-                write: new_token => this.agent_conf.update({
-                    create_node_token: new_token
-                })
+                read: () =>
+                    this.agent_conf
+                        .read()
+                        .then(agent_conf => agent_conf.create_node_token),
+                write: new_token =>
+                    this.agent_conf.update({
+                        create_node_token: new_token,
+                    }),
             };
             agent = new Agent({
                 address: self.params.address,
@@ -553,14 +782,21 @@ class AgentCLI {
                 create_node_token_wrapper: create_node_token_wrapper,
             });
             self.agents[node_name] = agent;
-            dbg.log0('agent inited', node_name, self.params.address, self.params.port, self.params.secure_port, node_path);
+            dbg.log0(
+                'agent inited',
+                node_name,
+                self.params.address,
+                self.params.port,
+                self.params.secure_port,
+                node_path,
+            );
         }
 
         try {
             const res = await P.retry({
                 attempts: 100,
                 delay_ms: 1000,
-                func: agent.start.bind(agent)
+                func: agent.start.bind(agent),
             });
             dbg.log0('agent started', node_name, 'res', res);
             return node_name;
@@ -600,7 +836,9 @@ class AgentCLI {
     }
 
     start_all() {
-        return P.all(_.map(this.agents, (agent, node_name) => this.start(node_name)));
+        return P.all(
+            _.map(this.agents, (agent, node_name) => this.start(node_name)),
+        );
     }
 
     /**
@@ -614,7 +852,7 @@ class AgentCLI {
         const func = this[func_name];
         const helper = func && func.helper;
         // in the common case the helper is a function - so call it
-        if (typeof(helper) === 'function') {
+        if (typeof helper === 'function') {
             return helper.call(this);
         }
         // if helper is string or something else we just print it
@@ -628,8 +866,9 @@ class AgentCLI {
     async create_auth_token(auth_params) {
         for (;;) {
             try {
-                const res = await P.timeout(CREATE_TOKEN_RESPONSE_TIMEOUT,
-                    this.client.create_access_key_auth(auth_params)
+                const res = await P.timeout(
+                    CREATE_TOKEN_RESPONSE_TIMEOUT,
+                    this.client.create_access_key_auth(auth_params),
                 );
                 return res;
             } catch (err) {
@@ -640,16 +879,18 @@ class AgentCLI {
     }
 
     list_agents() {
-        return _.map(this.agents, (agent, name) => ({ name, address: agent.rpc_address }));
+        return _.map(this.agents, (agent, name) => ({
+            name,
+            address: agent.rpc_address,
+        }));
     }
 }
-
 
 function agent_cli_repl() {
     // start a Read-Eval-Print-Loop
     const repl_srv = repl.start({
         prompt: 'agent-cli > ',
-        useGlobal: false
+        useGlobal: false,
     });
     repl_srv.context.list_agents = list_agents;
     repl_srv.context.list_hosts = list_hosts;
@@ -659,20 +900,31 @@ function agent_cli_repl() {
     repl_srv.context.stop_agent = stop_agent;
 }
 
-
 function list_agents() {
     _.each(hosts, (host, host_name) => {
         const agents = host.host.list_agents();
         agents.forEach(agent => {
-            console.log(host.running ? '<RUNNING>' : '<STOPPED>', 'host', host_name, 'agent', agent.name,
-                'address', agent.address);
+            console.log(
+                host.running ? '<RUNNING>' : '<STOPPED>',
+                'host',
+                host_name,
+                'agent',
+                agent.name,
+                'address',
+                agent.address,
+            );
         });
     });
-
 }
 
 function list_hosts() {
-    _.each(hosts, (host, host_name) => console.log(host.running ? '<RUNNING>' : '<STOPPED>', 'host', host_name));
+    _.each(hosts, (host, host_name) =>
+        console.log(
+            host.running ? '<RUNNING>' : '<STOPPED>',
+            'host',
+            host_name,
+        ),
+    );
 }
 
 function stop_host(host_name) {
@@ -696,7 +948,6 @@ function start_host(host_name) {
     host.running = true;
     host.host.start_all();
 }
-
 
 function stop_agent(host_name, agent_name) {
     const host = hosts[host_name];
@@ -730,17 +981,19 @@ function main() {
 
     if (argv.scale) {
         return P.map(_.range(0, argv.scale), i => {
-                const params = _.clone(argv);
-                params.test_hostname = `${os.hostname()}-${i}`;
-                const test_agent_cli = new AgentCLI(params);
-                hosts[params.test_hostname] = { params, host: test_agent_cli, running: true };
-                return test_agent_cli.init();
-            })
-            .then(() => argv.repl && agent_cli_repl());
+            const params = _.clone(argv);
+            params.test_hostname = `${os.hostname()}-${i}`;
+            const test_agent_cli = new AgentCLI(params);
+            hosts[params.test_hostname] = {
+                params,
+                host: test_agent_cli,
+                running: true,
+            };
+            return test_agent_cli.init();
+        }).then(() => argv.repl && agent_cli_repl());
     } else {
         const cli = new AgentCLI(argv);
-        return cli.init()
-            .then(() => argv.repl && agent_cli_repl());
+        return cli.init().then(() => argv.repl && agent_cli_repl());
     }
 }
 

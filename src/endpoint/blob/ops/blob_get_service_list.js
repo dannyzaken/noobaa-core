@@ -14,20 +14,22 @@ async function get_service_list(req, res) {
             Prefix: prefix,
             Marker: marker,
             MaxResults: maxresults,
-            Containers: _.map(reply.buckets, bucket => (
-                bucket.name.includes('.') ? [] : {
-                    Container: {
-                        Name: bucket.name,
-                        Properties: {
-                            LeaseStatus: 'unlocked',
-                            LeaseState: 'available',
-                            Etag: '"1"',
-                            'Last-Modified': (new Date()).toUTCString(),
-                        }
-                    }
-                }
-            ))
-        }
+            Containers: _.map(reply.buckets, bucket =>
+                bucket.name.includes('.') ?
+                    []
+                :   {
+                        Container: {
+                            Name: bucket.name,
+                            Properties: {
+                                LeaseStatus: 'unlocked',
+                                LeaseState: 'available',
+                                Etag: '"1"',
+                                'Last-Modified': new Date().toUTCString(),
+                            },
+                        },
+                    },
+            ),
+        },
     };
 }
 

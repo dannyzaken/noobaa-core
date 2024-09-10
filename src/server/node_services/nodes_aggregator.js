@@ -7,7 +7,10 @@ const mapper = require('../object_services/mapper');
 const size_utils = require('../../util/size_utils');
 const server_rpc = require('../server_rpc');
 const system_store = require('../system_services/system_store').get_instance();
-const { STORAGE_CLASS_GLACIER, STORAGE_CLASS_GLACIER_IR } = require('../../endpoint/s3/s3_utils');
+const {
+    STORAGE_CLASS_GLACIER,
+    STORAGE_CLASS_GLACIER_IR,
+} = require('../../endpoint/s3/s3_utils');
 
 const { BigInteger } = size_utils;
 
@@ -29,26 +32,34 @@ async function aggregate_data_free_by_tier(req) {
         }
     }
 
-    const { nodes } = await server_rpc.client.node.list_nodes({
-        query: {
-            pools: [...pool_set],
+    const { nodes } = await server_rpc.client.node.list_nodes(
+        {
+            query: {
+                pools: [...pool_set],
+            },
         },
-    }, {
-        auth_token: req.auth_token
-    });
+        {
+            auth_token: req.auth_token,
+        },
+    );
 
     const nodes_by_pool = _.groupBy(nodes, node => node.pool);
     return Promise.all(
         tiers.map(async tier => {
             const tier_id = String(tier._id);
             try {
-                const mirrors_storage = await _aggregate_data_free_for_tier(tier, nodes_by_pool);
+                const mirrors_storage = await _aggregate_data_free_for_tier(
+                    tier,
+                    nodes_by_pool,
+                );
                 return { tier_id, mirrors_storage };
-
             } catch (err) {
-                console.error(`Error getting available to upload of tier: ${tier_id}`, err);
+                console.error(
+                    `Error getting available to upload of tier: ${tier_id}`,
+                    err,
+                );
             }
-        })
+        }),
     );
 }
 
@@ -56,8 +67,10 @@ function _aggregate_data_free_for_tier(tier, nodes_by_pool) {
     const num_blocks_per_chunk = mapper.get_num_blocks_per_chunk(tier);
     return tier.mirrors.map(({ spread_pools }) => {
         // If the tier is glacier, we don't want to calculate the free space - Assume it's 1PB
-        if (tier.storage_class === STORAGE_CLASS_GLACIER ||
-            tier.storage_class === STORAGE_CLASS_GLACIER_IR) {
+        if (
+            tier.storage_class === STORAGE_CLASS_GLACIER ||
+            tier.storage_class === STORAGE_CLASS_GLACIER_IR
+        ) {
             return {
                 free: size_utils.bigint_to_json(BigInteger.PETABYTE),
                 redundant_free: size_utils.bigint_to_json(BigInteger.zero),
@@ -65,7 +78,10 @@ function _aggregate_data_free_for_tier(tier, nodes_by_pool) {
             };
         }
 
-        const nodes = _.flatMap(spread_pools, pool => nodes_by_pool[pool.name] || []);
+        const nodes = _.flatMap(
+            spread_pools,
+            pool => nodes_by_pool[pool.name] || [],
+        );
         let redundant_free = BigInteger.zero;
         const spread_free = [];
         for (const node of nodes) {
@@ -77,7 +93,10 @@ function _aggregate_data_free_for_tier(tier, nodes_by_pool) {
                 spread_free.push(node_free);
             }
         }
-        const regular_free = _calculate_spread_free(spread_free, num_blocks_per_chunk);
+        const regular_free = _calculate_spread_free(
+            spread_free,
+            num_blocks_per_chunk,
+        );
         const free = regular_free.plus(redundant_free);
 
         return {
@@ -88,11 +107,9 @@ function _aggregate_data_free_for_tier(tier, nodes_by_pool) {
     });
 }
 
-
 function compare_bigint(bigint_a, bigint_b) {
     return bigint_a.compare(bigint_b);
 }
-
 
 /**
  * @param {BigInteger[]} free_list Array of free storage per node
@@ -110,6 +127,5 @@ function _calculate_spread_free(free_list, num_blocks_per_chunk) {
     }
     return total;
 }
-
 
 exports.aggregate_data_free_by_tier = aggregate_data_free_by_tier;

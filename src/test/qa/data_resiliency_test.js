@@ -10,15 +10,13 @@ const test_utils = require('../system_tests/test_utils');
 dbg.set_process_name('data_availability');
 
 let failures_in_test = false;
-const POOL_NAME = "first-pool";
+const POOL_NAME = 'first-pool';
 const errors = [];
 const files = [];
 let current_size = 0;
 
 //defining the required parameters
-let {
-    agents_number = 4,
-} = argv;
+let { agents_number = 4 } = argv;
 
 const {
     mgmt_ip,
@@ -66,7 +64,10 @@ if (help) {
     process.exit(1);
 }
 
-const rpc = api.new_rpc_from_base_address(`wss://${mgmt_ip}:${mgmt_port_https}`, 'EXTERNAL');
+const rpc = api.new_rpc_from_base_address(
+    `wss://${mgmt_ip}:${mgmt_port_https}`,
+    'EXTERNAL',
+);
 const client = rpc.new_client({});
 const bucket_functions = new BucketFunctions(client);
 
@@ -74,16 +75,16 @@ const baseUnit = 1024;
 const unit_mapping = {
     KB: {
         data_multiplier: baseUnit ** 1,
-        dataset_multiplier: baseUnit ** 2
+        dataset_multiplier: baseUnit ** 2,
     },
     MB: {
         data_multiplier: baseUnit ** 2,
-        dataset_multiplier: baseUnit ** 1
+        dataset_multiplier: baseUnit ** 1,
     },
     GB: {
         data_multiplier: baseUnit ** 3,
-        dataset_multiplier: baseUnit ** 0
-    }
+        dataset_multiplier: baseUnit ** 0,
+    },
 };
 
 function saveErrorAndResume(message) {
@@ -94,21 +95,22 @@ function saveErrorAndResume(message) {
 // console.log(`${YELLOW}resource: ${resource}, storage: ${storage}, vnet: ${vnet}${NC}`);
 // const azf = new AzureFunctions(clientId, domain, secret, subscriptionId, resource, location);
 
-
 // Checking whether number of agents is enough to use erasure coding
-if ((data_frags > 0) && ((data_frags + parity_frags) > agents_number)) {
+if (data_frags > 0 && data_frags + parity_frags > agents_number) {
     console.log('Number of agents is not enough to use erasure coding');
     agents_number = data_frags + parity_frags;
     console.log('Increasing to minimal value: ' + agents_number);
 }
-if ((replicas > 0) && (replicas > agents_number)) {
+if (replicas > 0 && replicas > agents_number) {
     console.log('Number of agents is not enough to use replicas');
     agents_number = replicas;
     console.log('Increasing to minimal value: ' + agents_number);
 }
 
 function set_fileSize() {
-    let rand_size = Math.floor((Math.random() * (max_size - min_size)) + min_size);
+    let rand_size = Math.floor(
+        Math.random() * (max_size - min_size) + min_size,
+    );
     if (dataset_size - current_size === 0) {
         rand_size = 1;
         //if we choose file size grater then the remaining space for the dataset,
@@ -121,19 +123,36 @@ function set_fileSize() {
 
 async function _uploadAndVerifyFiles() {
     const { data_multiplier } = unit_mapping.MB;
-    console.log('Writing and deleting data till size amount to grow ' + dataset_size + ' MB');
+    console.log(
+        'Writing and deleting data till size amount to grow ' +
+            dataset_size +
+            ' MB',
+    );
     while (current_size < dataset_size) {
         try {
-            console.log('Uploading files till data size grow to ' + dataset_size + ', current size is ' + current_size);
+            console.log(
+                'Uploading files till data size grow to ' +
+                    dataset_size +
+                    ', current size is ' +
+                    current_size,
+            );
             const file_size = set_fileSize();
-            const file_name = 'file_part_' + file_size + (Math.floor(Date.now() / 1000));
+            const file_name =
+                'file_part_' + file_size + Math.floor(Date.now() / 1000);
             files.push(file_name);
             current_size += file_size;
             console.log('Uploading file with size ' + file_size + ' MB');
-            await s3ops.put_file_with_md5(bucket, file_name, file_size, data_multiplier);
+            await s3ops.put_file_with_md5(
+                bucket,
+                file_name,
+                file_size,
+                data_multiplier,
+            );
             await s3ops.get_file_check_md5(bucket, file_name);
         } catch (err) {
-            saveErrorAndResume(`${mgmt_ip} FAILED verification uploading and reading ${err}`);
+            saveErrorAndResume(
+                `${mgmt_ip} FAILED verification uploading and reading ${err}`,
+            );
             failures_in_test = true;
             throw err;
         }
@@ -169,7 +188,12 @@ async function _stopAgentsAndCheckFiles() {
 }
 
 async function main() {
-    await bucket_functions.changeTierSetting(bucket, data_frags, parity_frags, replicas);
+    await bucket_functions.changeTierSetting(
+        bucket,
+        data_frags,
+        parity_frags,
+        replicas,
+    );
     await test_utils.create_hosts_pool(client, POOL_NAME, 3);
 
     await clean_up_dataset();
@@ -184,11 +208,15 @@ async function main() {
         failures_in_test = true;
     }
     if (failures_in_test) {
-        console.error(':( :( Errors during data available test (replicas) ): ):' + errors);
+        console.error(
+            ':( :( Errors during data available test (replicas) ): ):' + errors,
+        );
         process.exit(1);
     } else {
         await clean_up_dataset();
-        console.log(':) :) :) data available test (replicas files) were successful! (: (: (:');
+        console.log(
+            ':) :) :) data available test (replicas files) were successful! (: (: (:',
+        );
         process.exit(0);
     }
 }

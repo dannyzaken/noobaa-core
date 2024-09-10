@@ -4,36 +4,32 @@
 module.exports = {
     $id: 'agent_config_schema',
     type: 'object',
-    required: [
-        '_id',
-        'system',
-        'name'
-    ],
+    required: ['_id', 'system', 'name'],
     properties: {
         _id: {
-            objectid: true
+            objectid: true,
         },
         system: {
-            objectid: true
+            objectid: true,
         },
         name: {
-            type: 'string'
+            type: 'string',
         },
         pool: {
-            objectid: true
+            objectid: true,
         },
         exclude_drives: {
             type: 'array',
             items: {
-                type: 'string'
-            }
+                type: 'string',
+            },
         },
         use_storage: {
-            type: 'boolean'
+            type: 'boolean',
         },
         routing_hint: {
             type: 'string',
-            enum: ['INTERNAL', 'EXTERNAL']
-        }
-    }
+            enum: ['INTERNAL', 'EXTERNAL'],
+        },
+    },
 };

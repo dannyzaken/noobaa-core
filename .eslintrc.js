@@ -4,7 +4,6 @@
 const CURRENT_YEAR = new Date().getFullYear();
 
 module.exports = {
-
     // prevent from looking up other config files in containing folders
     root: true,
 
@@ -20,12 +19,9 @@ module.exports = {
         ecmaVersion: 13, // es2022
     },
 
-
     plugins: [
-        // stylistic validates style related rules: https://eslint.style/
-        '@stylistic/js',
         // eslint-plugin-header validates copyright header
-        'header'
+        'header',
     ],
 
     // RULES METHODOLOGY:
@@ -34,13 +30,9 @@ module.exports = {
     // we selectively override the rules we want to remove or change.
     // See http://eslint.org/docs/user-guide/configuring#using-eslintall
 
-    extends: [
-        'eslint:all',
-        'plugin:@stylistic/js/all-extends',
-    ],
+    extends: ['eslint:all', 'prettier'],
 
     rules: {
-
         //////////////////////////////////////////////////////////////////////
         //                                                                  //
         // TODO FIX                                                         //
@@ -59,34 +51,27 @@ module.exports = {
         //                                                                  //
         //////////////////////////////////////////////////////////////////////
 
-
         // verify every file contains our copyright header
-        'header/header': ['error', 'block', [{
-            template: ` Copyright (C) ${CURRENT_YEAR} NooBaa `,
-            pattern: " Copyright \\(C\\) 20\\d{2} NooBaa ",
-        }]],
-
-        // arrow function styling is not a real error but should be consistent
-        '@stylistic/js/arrow-parens': ['error', 'as-needed'],
-
-        // See: https://eslint.org/docs/latest/rules/brace-style
-        '@stylistic/js/brace-style': ['error', '1tbs', { allowSingleLine: true }],
+        'header/header': [
+            'error',
+            'block',
+            [
+                {
+                    template: ` Copyright (C) ${CURRENT_YEAR} NooBaa `,
+                    pattern: ' Copyright \\(C\\) 20\\d{2} NooBaa ',
+                },
+            ],
+        ],
 
         // maximum number of code paths in a function
         // TODO eslint complexity should be reduced to ~10 instead of 35
-        'complexity': ['error', 35],
+        complexity: ['off', 35],
 
         // must use self=this and not any other alternatives
         'consistent-this': ['error', 'self'],
 
         // allow missing curly braces only for one liners such as if (cond) return;
-        'curly': ['error', 'multi-line'],
-
-        // when splitting "obj.property" to 2 lines the dot should stick to the property
-        '@stylistic/js/dot-location': ['error', 'property'],
-
-        // match generator-star-spacing to the beautifier preference
-        '@stylistic/js/generator-star-spacing': 'off',
+        curly: ['error', 'multi-line'],
 
         // max depth of blocks in a function
         // TODO eslint max-depth of blocks should be reduced to ~3 instead of 5
@@ -96,28 +81,21 @@ module.exports = {
         'max-classes-per-file': 'off',
 
         // max file length is 300 by default, we accept longer files
-        'max-lines': ['error', 2000],
+        'max-lines': ['off'],
 
         // max lines per function, default is 50
-        'max-lines-per-function': ['error', 400],
+        'max-lines-per-function': ['off', 400],
 
         // prefer small number of params to functions, otherwise send object
         // TODO eslint max-params per function should be reduced to ~4 instead of 7
-        'max-params': ['error', 7],
+        'max-params': ['off', 7],
 
         // max statements in function
         // TODO eslint max-statements per function should be reduced to ~40 instead of 60
-        'max-statements': ['error', 60],
-
-        '@stylistic/js/newline-per-chained-call': ['error', { ignoreChainWithDepth: 4 }],
+        'max-statements': ['off', 60],
 
         // don't assign inside a condition, separate the lines for clarity
         'no-cond-assign': ['error', 'always'],
-
-        '@stylistic/js/no-confusing-arrow': ['error', { allowParens: true }],
-
-        // empty lines are mostly harmless
-        '@stylistic/js/no-multiple-empty-lines': ['error', { max: 20 }],
 
         // don't allow the code to leave unused variables, this prevents typos in many cases
         'no-unused-vars': ['error', { vars: 'all', args: 'none' }],
@@ -125,45 +103,12 @@ module.exports = {
         // don't use assignments inside return statements, use separate statements.
         'no-return-assign': ['error', 'always'],
 
-        '@stylistic/js/no-trailing-spaces': ['error', { ignoreComments: true }],
-
         // do not allow code using variables before they are defined and initialized,
         // but ok for functions since function decelerations are loaded before the code runs
         'no-use-before-define': ['error', 'nofunc'],
 
-        // break lines after operators, not before
-        '@stylistic/js/operator-linebreak': ['error', 'after'],
-
         // we prefer single var statement per variable
         'one-var': ['error', 'never'],
-
-        '@stylistic/js/space-before-function-paren': ['error', {
-            'anonymous': 'never',
-            'named': 'never',
-            'asyncArrow': 'always'
-        }],
-
-        '@stylistic/js/function-call-argument-newline': 'off',
-
-        '@stylistic/js/space-unary-ops': ['error', {
-            words: true,
-            nonwords: false,
-            overrides: {
-                typeof: false,
-            },
-        }],
-
-        // max line length is 80 by default, allow some slack
-        // TODO eslint max-len for code lines should be error and reduced to ~100 instead of 140
-        '@stylistic/js/max-len': ['error', {
-            code: 140,
-            tabWidth: 4,
-            ignoreComments: true,
-            ignoreUrls: true,
-            ignoreStrings: true,
-            ignoreRegExpLiterals: true,
-            ignoreTemplateLiterals: true,
-        }],
 
         // warn on using ++ operator, should replace with +=1
         // to avoid shenanigans of the value returned before/after the action
@@ -175,10 +120,13 @@ module.exports = {
         // instead of expression (foo = function() {})
         'func-style': ['error', 'declaration', { allowArrowFunctions: true }],
 
-        "prefer-const": ["error", {
-            "destructuring": "all",
-            "ignoreReadBeforeAssign": false
-        }],
+        'prefer-const': [
+            'error',
+            {
+                destructuring: 'all',
+                ignoreReadBeforeAssign: false,
+            },
+        ],
 
         //////////////////////////////////////////////////////////////////////
         //                                                                  //
@@ -199,14 +147,8 @@ module.exports = {
         //                                                                  //
         //////////////////////////////////////////////////////////////////////
 
-
-        // not forcing how arrays should have new-line breaks
-        '@stylistic/js/array-element-newline': 'off',
-        '@stylistic/js/array-bracket-newline': 'off',
-        '@stylistic/js/array-bracket-spacing': 'off',
-
         // camelcase is a religion. we were born differently.
-        'camelcase': 'off',
+        camelcase: 'off',
 
         // Example: /=$/ is not like /\=$/ which the eslint expects
         // This is not a relevant rule, we added it after the signature_utils query parsing errors
@@ -220,9 +162,6 @@ module.exports = {
         // not enforcing all class methods to use 'this'
         'class-methods-use-this': 'off',
 
-        // dangling commas are great for arrays and object properties
-        '@stylistic/js/comma-dangle': 'off',
-
         // consistent return does not allow to write promises code very easily
         // because in many cases there are conditions to running a promise,
         // and otherwise the expected behavior is to simply continue.
@@ -231,32 +170,17 @@ module.exports = {
         // allowing anonymous functions, used a lot for promises
         'func-names': 'off',
 
-        // not forcing a consistent policy on line breaks inside func parentheses
-        '@stylistic/js/function-paren-newline': 'off',
-
         // allow short variable names like '_' or 'P' etc. use with care.
         'id-length': 'off',
-
-        '@stylistic/js/implicit-arrow-linebreak': ['off', 'beside'],
-
-        // indent of 4 spaces would be good to enforce, but it doesn't work well for promise chains
-        // so hope no-mixed-spaces-and-tabs will be good enough
-        '@stylistic/js/indent': ['off', 4],
 
         // not forcing initialization of variables
         'init-declarations': 'off',
 
         // directive means 'use strict', we don't enforce lines around
         'lines-around-directive': 'off',
-        '@stylistic/js/lines-around-comment': 'off',
-        '@stylistic/js/lines-between-class-members': 'off',
 
         // we don't enforce comments to above/after the line, both work ok
         'line-comment-position': 'off',
-
-        // ternary operator is better split to 3 lines for readability
-        // TODO eslint multiline-ternary should be error
-        '@stylistic/js/multiline-ternary': 'off',
 
         // use any comment style, just write comments
         'multiline-comment-style': 'off',
@@ -275,8 +199,6 @@ module.exports = {
 
         // avoid redundant 'else' when using return statements in all cases
         'no-else-return': 'off',
-
-        '@stylistic/js/no-extra-parens': ['off', 'all', { nestedBinaryExpressions: false }],
 
         // short comments in-line are not great but sometimes make a lot of sense
         'no-inline-comments': 'off',
@@ -306,17 +228,8 @@ module.exports = {
         // turn off todo/fixme comments - will grep it to a different report
         'no-warning-comments': 'off',
 
-        // the rule object-property-newline is better than object-curly-newline
-        '@stylistic/js/object-property-newline': 'off',
-        '@stylistic/js/object-curly-newline': 'off',
-
-        '@stylistic/js/object-curly-spacing': 'off',
-
         // prefer using x={a,b} over x={a:a, b:b} but too much to fix
         'object-shorthand': 'off',
-
-        // ignore stylish padding code blocks with newlines
-        '@stylistic/js/padded-blocks': 'off',
 
         // prefer using arrow functions for callbacks, but too much to fix
         'prefer-arrow-callback': 'off',
@@ -334,12 +247,7 @@ module.exports = {
         // prefer using string template over string concatenation, but too much to fix
         'prefer-template': 'off',
 
-        // prefer using single quotes, but too much to fix
-        '@stylistic/js/quotes': ['off', 'single'],
-
-        '@stylistic/js/quote-props': 'off',
         'require-jsdoc': 'off',
-        '@stylistic/js/spaced-comment': 'off',
         'sort-keys': 'off',
 
         // don't verify the structure of jsdoc comments. let them be for now.
@@ -356,10 +264,7 @@ module.exports = {
 
         'no-promise-executor-return': 'off',
 
-        //Allow spacing between template tags and their literals
-        '@stylistic/js/template-tag-spacing': 'off',
-
         // we prefer not to adopt the logical assignment operators from ES2020
-        'logical-assignment-operators': 'off'
-    }
+        'logical-assignment-operators': 'off',
+    },
 };

@@ -60,12 +60,16 @@ class ManagedStatefulSetPoolController extends PoolController {
             pool_name: this.pool_name,
             agent_count,
             agent_install_conf,
-            ...agent_profile
+            ...agent_profile,
         });
 
-        dbg.log0(`ManagedStatefulSetPoolController::create: Creating k8s resources for pool ${this.pool_name}`);
-        dbg.log2(`ManagedStatefulSetPoolController::create: Pool ${this.pool_name} k8s configuration is`,
-            JSON.stringify(pool_k8s_conf, null, 2));
+        dbg.log0(
+            `ManagedStatefulSetPoolController::create: Creating k8s resources for pool ${this.pool_name}`,
+        );
+        dbg.log2(
+            `ManagedStatefulSetPoolController::create: Pool ${this.pool_name} k8s configuration is`,
+            JSON.stringify(pool_k8s_conf, null, 2),
+        );
 
         await KubeStore.instance.create_secret(secret_k8s_conf);
         await KubeStore.instance.create_backingstore(pool_k8s_conf);
@@ -81,18 +85,18 @@ class ManagedStatefulSetPoolController extends PoolController {
         if (delta === 0) return;
 
         // scale the stateful set
-        dbg.log0(`ManagedStatefulSetPoolController::scale: scaling ${
-            delta > 0 ? 'up' : 'down'
-        } backing store set  ${
-            this.pool_name
-        } from ${
-            current_host_count
-        } replicas to ${
-            host_count
-        } replicas`);
+        dbg.log0(
+            `ManagedStatefulSetPoolController::scale: scaling ${
+                delta > 0 ? 'up' : 'down'
+            } backing store set  ${this.pool_name} from ${
+                current_host_count
+            } replicas to ${host_count} replicas`,
+        );
 
         if (host_count > 0) {
-            await KubeStore.instance.patch_backingstore(this.pool_name, { spec: { pvPool: { numVolumes: host_count } } });
+            await KubeStore.instance.patch_backingstore(this.pool_name, {
+                spec: { pvPool: { numVolumes: host_count } },
+            });
         } else {
             await KubeStore.instance.delete_backingstore(this.pool_name);
         }
@@ -107,7 +111,9 @@ class ManagedStatefulSetPoolController extends PoolController {
     }
 
     async get_current_volume_number() {
-        const backingstore = await KubeStore.instance.read_backingstore(this.pool_name);
+        const backingstore = await KubeStore.instance.read_backingstore(
+            this.pool_name,
+        );
         return backingstore.spec.pvPool.numVolumes;
     }
 }
@@ -128,7 +134,7 @@ class UnmanagedStatefulSetPoolController extends PoolController {
         const pool_k8s_conf = await _get_k8s_conf({
             pool_name: this.pool_name,
             agent_count,
-            ...agent_profile
+            ...agent_profile,
         });
         const secret_yaml = yaml.stringify(secret_k8s_conf, { indent: 2 });
         const backstore_yaml = yaml.stringify(pool_k8s_conf, { indent: 2 });
@@ -159,11 +165,13 @@ const pools_context = new Map();
 
 class InProcessAgentsPoolController extends PoolController {
     async create(agent_count, agent_install_conf, agent_profile) {
-        const { address, create_node_token } = JSON.parse(Buffer.from(agent_install_conf, 'base64').toString());
+        const { address, create_node_token } = JSON.parse(
+            Buffer.from(agent_install_conf, 'base64').toString(),
+        );
         pools_context.set(this.pool_name, {
             address,
             create_node_token,
-            agents: []
+            agents: [],
         });
 
         await this.scale(agent_count);
@@ -171,18 +179,29 @@ class InProcessAgentsPoolController extends PoolController {
     }
 
     async scale(host_count) {
-        const { agents, address, create_node_token } = pools_context.get(this.pool_name);
+        const { agents, address, create_node_token } = pools_context.get(
+            this.pool_name,
+        );
         const diff = host_count - agents.length;
         if (diff > 0) {
-            dbg.log0(`InProcessAgentsPoolController::scale: starting ${diff} in process agents for pool ${this.pool_name}`);
-            const new_agents = await Promise.all(js_utils.make_array(diff, i =>
-                this._create_and_start_agent(`${this.pool_name}-${agents.length + i}`, address, create_node_token)
-            ));
+            dbg.log0(
+                `InProcessAgentsPoolController::scale: starting ${diff} in process agents for pool ${this.pool_name}`,
+            );
+            const new_agents = await Promise.all(
+                js_utils.make_array(diff, i =>
+                    this._create_and_start_agent(
+                        `${this.pool_name}-${agents.length + i}`,
+                        address,
+                        create_node_token,
+                    ),
+                ),
+            );
 
             agents.push(...new_agents);
-
         } else if (diff < 0) {
-            dbg.log0(`InProcessAgentsPoolController::scale: stopping ${agents.length - host_count} agents for deleted hosts of pool ${this.pool_name}`);
+            dbg.log0(
+                `InProcessAgentsPoolController::scale: stopping ${agents.length - host_count} agents for deleted hosts of pool ${this.pool_name}`,
+            );
             const agents_to_stop = agents.splice(diff);
             for (const agent of agents_to_stop) {
                 agent.stop('force_close_n2n');
@@ -204,7 +223,9 @@ class InProcessAgentsPoolController extends PoolController {
     }
 
     async _create_and_start_agent(hostname, base_address, token_template) {
-        dbg.log0(`InProcessAgentsPoolController::_create_agent creating agent with hostname: ${hostname}`);
+        dbg.log0(
+            `InProcessAgentsPoolController::_create_agent creating agent with hostname: ${hostname}`,
+        );
         let create_node_token = _.cloneDeep(token_template);
         let token = _.cloneDeep(token_template);
         const agent = new Agent({
@@ -214,14 +235,18 @@ class InProcessAgentsPoolController extends PoolController {
             token: token,
             token_wrapper: {
                 read: () => _.cloneDeep(token),
-                write: new_token => { token = _.cloneDeep(new_token); }
+                write: new_token => {
+                    token = _.cloneDeep(new_token);
+                },
             },
             create_node_token_wrapper: {
                 read: () => _.cloneDeep(create_node_token),
-                write: new_token => { create_node_token = _.cloneDeep(new_token); }
+                write: new_token => {
+                    create_node_token = _.cloneDeep(new_token);
+                },
             },
             host_id: uuid(),
-            test_hostname: hostname
+            test_hostname: hostname,
         });
         await agent.start();
         if (process.env.SUPPRESS_LOGS) {
@@ -232,7 +257,10 @@ class InProcessAgentsPoolController extends PoolController {
 }
 
 async function _get_k8s_conf(params) {
-    const yaml_path = path.resolve(__dirname, '../../deploy/NVA_build/noobaa_pool.yaml');
+    const yaml_path = path.resolve(
+        __dirname,
+        '../../deploy/NVA_build/noobaa_pool.yaml',
+    );
     const yaml_file = (await fs.promises.readFile(yaml_path)).toString();
     const backingstore = yaml.parse(yaml_file);
 
@@ -244,7 +272,8 @@ async function _get_k8s_conf(params) {
     const { use_persistent_storage = true } = params;
     if (use_persistent_storage) {
         if (!_.isUndefined(params.volume_size)) {
-            backingstore.spec.pvPool.resources.requests.storage = translate_volume_size(params.volume_size);
+            backingstore.spec.pvPool.resources.requests.storage =
+                translate_volume_size(params.volume_size);
         }
 
         if (!_.isUndefined(params.storage_class)) {
@@ -256,13 +285,18 @@ async function _get_k8s_conf(params) {
 }
 
 async function _get_k8s_secret(params) {
-    const yaml_path = path.resolve(__dirname, '../../deploy/NVA_build/noobaa_pool_secret.yaml');
+    const yaml_path = path.resolve(
+        __dirname,
+        '../../deploy/NVA_build/noobaa_pool_secret.yaml',
+    );
     const yaml_file = (await fs.promises.readFile(yaml_path)).toString();
     const secret = yaml.parse(yaml_file);
 
     // Update the template the given configuration.
     secret.metadata.name = `backing-store-pv-pool-${params.pool_name}`;
-    secret.data.AGENT_CONFIG = Buffer.from(params.agent_install_conf).toString('base64');
+    secret.data.AGENT_CONFIG = Buffer.from(params.agent_install_conf).toString(
+        'base64',
+    );
 
     return secret;
 }

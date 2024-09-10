@@ -6,7 +6,6 @@ const P = require('../../util/promise.js');
 const diag = require('../utils/server_diagnostics');
 // const util = require('util');
 
-
 // const pkg = require('../../../package.json');
 // const dbg = require('../../util/debug_module')(__filename);
 // const config = require('../../../config');
@@ -15,20 +14,21 @@ const nodes_server = require('./node_server');
 // const nodes_aggregator = require('./nodes_aggregator');
 // const dbg = require('../../util/debug_module')(__filename);
 
-
 function read_host(req) {
     return nodes_server.get_local_monitor().read_host(req.rpc_params.name);
 }
 
 function list_hosts(req) {
     const query = _prepare_hosts_query(req);
-    const options = _.pick(req.rpc_params,
+    const options = _.pick(
+        req.rpc_params,
         'skip',
         'limit',
         'sort',
         'order',
         'recommended_hint',
-        'adminfo');
+        'adminfo',
+    );
     return nodes_server.get_local_monitor().list_hosts(query, options);
 }
 
@@ -45,15 +45,17 @@ function hide_host(req) {
 }
 
 function get_test_hosts(req) {
-    const list_res = nodes_server.get_local_monitor().list_hosts({
-        system: String(req.system._id),
-        mode: 'OPTIMAL'
-    }, {
-        limit: req.rpc_params.count,
-        sort: 'shuffle'
-    });
-    return _.map(list_res.hosts,
-        host => _.pick(host, 'name', 'rpc_address'));
+    const list_res = nodes_server.get_local_monitor().list_hosts(
+        {
+            system: String(req.system._id),
+            mode: 'OPTIMAL',
+        },
+        {
+            limit: req.rpc_params.count,
+            sort: 'shuffle',
+        },
+    );
+    return _.map(list_res.hosts, host => _.pick(host, 'name', 'rpc_address'));
 }
 
 function test_host_network() {
@@ -84,12 +86,9 @@ function diagnose_host(req) {
     // TODO: Add activity event for this method.
 }
 
-
 /**
  * internal functions
  */
-
-
 
 function _prepare_hosts_query(req) {
     const query = req.rpc_params.query || {};
@@ -102,14 +101,15 @@ function _prepare_hosts_query(req) {
         query.hosts = query.hosts.map(host => host.split('#')[1]);
     }
     if (query.pools) {
-        query.pools = new Set(_.map(query.pools, pool_name => {
-            const pool = req.system.pools_by_name[pool_name];
-            return String(pool._id);
-        }));
+        query.pools = new Set(
+            _.map(query.pools, pool_name => {
+                const pool = req.system.pools_by_name[pool_name];
+                return String(pool._id);
+            }),
+        );
     }
     return query;
 }
-
 
 exports.read_host = read_host;
 exports.retrust_host = retrust_host;

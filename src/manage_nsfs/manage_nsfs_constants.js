@@ -8,7 +8,7 @@ const TYPES = Object.freeze({
     GLACIER: 'glacier',
     LOGGING: 'logging',
     DIAGNOSE: 'diagnose',
-    UPGRADE: 'upgrade'
+    UPGRADE: 'upgrade',
 });
 
 const ACTIONS = Object.freeze({
@@ -16,7 +16,7 @@ const ACTIONS = Object.freeze({
     UPDATE: 'update',
     DELETE: 'delete',
     LIST: 'list',
-    STATUS: 'status'
+    STATUS: 'status',
 });
 
 const GLACIER_ACTIONS = Object.freeze({
@@ -28,55 +28,125 @@ const GLACIER_ACTIONS = Object.freeze({
 const DIAGNOSE_ACTIONS = Object.freeze({
     HEALTH: 'health',
     GATHER_LOGS: 'gather-logs',
-    METRICS: 'metrics'
+    METRICS: 'metrics',
 });
 
 const UPGRADE_ACTIONS = Object.freeze({
     START: 'start',
     STATUS: 'status',
-    HISTORY: 'history'
+    HISTORY: 'history',
 });
 
 const CONFIG_ROOT_FLAG = 'config_root';
-const CLI_MUTUAL_OPTIONS = new Set([CONFIG_ROOT_FLAG, 'config_root_backend', 'debug']);
+const CLI_MUTUAL_OPTIONS = new Set([
+    CONFIG_ROOT_FLAG,
+    'config_root_backend',
+    'debug',
+]);
 const FROM_FILE = 'from_file';
 const ANONYMOUS = 'anonymous';
 
 const VALID_OPTIONS_ACCOUNT = {
-    'add': new Set(['name', 'uid', 'gid', 'new_buckets_path', 'user', 'access_key', 'secret_key', 'fs_backend', 'allow_bucket_creation', 'force_md5_etag', 'iam_operate_on_root_account', FROM_FILE, ...CLI_MUTUAL_OPTIONS]),
-    'update': new Set(['name', 'uid', 'gid', 'new_buckets_path', 'user', 'access_key', 'secret_key', 'fs_backend', 'allow_bucket_creation', 'force_md5_etag', 'iam_operate_on_root_account', 'new_name', 'regenerate', ...CLI_MUTUAL_OPTIONS]),
-    'delete': new Set(['name', ...CLI_MUTUAL_OPTIONS]),
-    'list': new Set(['wide', 'show_secrets', 'gid', 'uid', 'user', 'name', 'access_key', ...CLI_MUTUAL_OPTIONS]),
-    'status': new Set(['name', 'access_key', 'show_secrets', ...CLI_MUTUAL_OPTIONS]),
+    add: new Set([
+        'name',
+        'uid',
+        'gid',
+        'new_buckets_path',
+        'user',
+        'access_key',
+        'secret_key',
+        'fs_backend',
+        'allow_bucket_creation',
+        'force_md5_etag',
+        'iam_operate_on_root_account',
+        FROM_FILE,
+        ...CLI_MUTUAL_OPTIONS,
+    ]),
+    update: new Set([
+        'name',
+        'uid',
+        'gid',
+        'new_buckets_path',
+        'user',
+        'access_key',
+        'secret_key',
+        'fs_backend',
+        'allow_bucket_creation',
+        'force_md5_etag',
+        'iam_operate_on_root_account',
+        'new_name',
+        'regenerate',
+        ...CLI_MUTUAL_OPTIONS,
+    ]),
+    delete: new Set(['name', ...CLI_MUTUAL_OPTIONS]),
+    list: new Set([
+        'wide',
+        'show_secrets',
+        'gid',
+        'uid',
+        'user',
+        'name',
+        'access_key',
+        ...CLI_MUTUAL_OPTIONS,
+    ]),
+    status: new Set([
+        'name',
+        'access_key',
+        'show_secrets',
+        ...CLI_MUTUAL_OPTIONS,
+    ]),
 };
 
 const VALID_OPTIONS_ANONYMOUS_ACCOUNT = {
-    'add': new Set(['uid', 'gid', 'user', 'anonymous', CONFIG_ROOT_FLAG]),
-    'update': new Set(['uid', 'gid', 'user', 'anonymous', CONFIG_ROOT_FLAG]),
-    'delete': new Set(['anonymous', CONFIG_ROOT_FLAG]),
-    'status': new Set(['anonymous', CONFIG_ROOT_FLAG]),
+    add: new Set(['uid', 'gid', 'user', 'anonymous', CONFIG_ROOT_FLAG]),
+    update: new Set(['uid', 'gid', 'user', 'anonymous', CONFIG_ROOT_FLAG]),
+    delete: new Set(['anonymous', CONFIG_ROOT_FLAG]),
+    status: new Set(['anonymous', CONFIG_ROOT_FLAG]),
 };
 
 const VALID_OPTIONS_BUCKET = {
-    'add': new Set(['name', 'owner', 'path', 'bucket_policy', 'fs_backend', 'force_md5_etag', FROM_FILE, ...CLI_MUTUAL_OPTIONS]),
-    'update': new Set(['name', 'owner', 'path', 'bucket_policy', 'fs_backend', 'new_name', 'force_md5_etag', ...CLI_MUTUAL_OPTIONS]),
-    'delete': new Set(['name', 'force', ...CLI_MUTUAL_OPTIONS]),
-    'list': new Set(['wide', 'name', ...CLI_MUTUAL_OPTIONS]),
-    'status': new Set(['name', ...CLI_MUTUAL_OPTIONS]),
+    add: new Set([
+        'name',
+        'owner',
+        'path',
+        'bucket_policy',
+        'fs_backend',
+        'force_md5_etag',
+        FROM_FILE,
+        ...CLI_MUTUAL_OPTIONS,
+    ]),
+    update: new Set([
+        'name',
+        'owner',
+        'path',
+        'bucket_policy',
+        'fs_backend',
+        'new_name',
+        'force_md5_etag',
+        ...CLI_MUTUAL_OPTIONS,
+    ]),
+    delete: new Set(['name', 'force', ...CLI_MUTUAL_OPTIONS]),
+    list: new Set(['wide', 'name', ...CLI_MUTUAL_OPTIONS]),
+    status: new Set(['name', ...CLI_MUTUAL_OPTIONS]),
 };
 
 const VALID_OPTIONS_GLACIER = {
-    'migrate': new Set([ CONFIG_ROOT_FLAG]),
-    'restore': new Set([ CONFIG_ROOT_FLAG]),
-    'expiry': new Set([ CONFIG_ROOT_FLAG]),
+    migrate: new Set([CONFIG_ROOT_FLAG]),
+    restore: new Set([CONFIG_ROOT_FLAG]),
+    expiry: new Set([CONFIG_ROOT_FLAG]),
 };
 
 const VALID_OPTIONS_DIAGNOSE = {
-    'health': new Set([ 'https_port', 'deployment_type', 'all_account_details', 'all_bucket_details', ...CLI_MUTUAL_OPTIONS]),
-    'gather-logs': new Set([ CONFIG_ROOT_FLAG]),
-    'metrics': new Set([CONFIG_ROOT_FLAG])
+    health: new Set([
+        'https_port',
+        'deployment_type',
+        'all_account_details',
+        'all_bucket_details',
+        ...CLI_MUTUAL_OPTIONS,
+    ]),
+    'gather-logs': new Set([CONFIG_ROOT_FLAG]),
+    metrics: new Set([CONFIG_ROOT_FLAG]),
 };
-
 
 const VALID_OPTIONS_WHITELIST = new Set(['ips', ...CLI_MUTUAL_OPTIONS]);
 
@@ -89,7 +159,7 @@ const VALID_OPTIONS = {
     whitelist_options: VALID_OPTIONS_WHITELIST,
     from_file_options: VALID_OPTIONS_FROM_FILE,
     anonymous_account_options: VALID_OPTIONS_ANONYMOUS_ACCOUNT,
-    diagnose_options: VALID_OPTIONS_DIAGNOSE
+    diagnose_options: VALID_OPTIONS_DIAGNOSE,
 };
 
 const OPTION_TYPE = {
@@ -126,8 +196,18 @@ const OPTION_TYPE = {
 };
 
 const BOOLEAN_STRING_VALUES = ['true', 'false'];
-const BOOLEAN_STRING_OPTIONS = new Set(['allow_bucket_creation', 'regenerate', 'wide', 'show_secrets', 'force',
-    'force_md5_etag', 'iam_operate_on_root_account', 'all_account_details', 'all_bucket_details', 'anonymous']);
+const BOOLEAN_STRING_OPTIONS = new Set([
+    'allow_bucket_creation',
+    'regenerate',
+    'wide',
+    'show_secrets',
+    'force',
+    'force_md5_etag',
+    'iam_operate_on_root_account',
+    'all_account_details',
+    'all_bucket_details',
+    'anonymous',
+]);
 
 //options that can be unset using ''
 const LIST_UNSETABLE_OPTIONS = ['fs_backend', 's3_policy', 'force_md5_etag'];

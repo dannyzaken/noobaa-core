@@ -4,64 +4,56 @@
 module.exports = {
     $id: 'multipart_schema',
     type: 'object',
-    required: [
-        '_id',
-        'system',
-        'bucket',
-        'obj',
-        'num',
-    ],
+    required: ['_id', 'system', 'bucket', 'obj', 'num'],
     properties: {
-
         _id: {
-            objectid: true
+            objectid: true,
         },
 
         deleted: {
-            date: true
+            date: true,
         },
 
         system: {
-            objectid: true
+            objectid: true,
         },
 
         bucket: {
-            objectid: true
+            objectid: true,
         },
 
         obj: {
-            objectid: true
+            objectid: true,
         },
 
         // the multipart number in range 1 - 10000
         num: {
-            type: 'integer'
+            type: 'integer',
         },
 
         // size in bytes
         size: {
-            type: 'integer'
+            type: 'integer',
         },
 
         // hashes are saved when provided during upload
         // md5 is used for multipart etag
         md5_b64: {
-            type: 'string'
+            type: 'string',
         },
         sha256_b64: {
-            type: 'string'
+            type: 'string',
         },
 
         create_time: {
-            date: true
+            date: true,
         },
 
         num_parts: { type: 'integer' },
 
-        // the uncommitted property is set on creation, 
+        // the uncommitted property is set on creation,
         // and unset only once the multipart is chosen to be part of the object.
         // see complete_object_upload()
         uncommitted: { type: 'boolean' },
-
-    }
+    },
 };

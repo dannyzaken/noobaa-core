@@ -24,12 +24,16 @@ class TieringTTFWorker {
 
     _can_run() {
         if (!system_store.is_finished_initial_load) {
-            dbg.log0('TieringTTFWorker: system_store did not finish initial load');
+            dbg.log0(
+                'TieringTTFWorker: system_store did not finish initial load',
+            );
             return false;
         }
 
         const system = system_store.data.systems[0];
-        if (!system || system_utils.system_in_maintenance(system._id)) return false;
+        if (!system || system_utils.system_in_maintenance(system._id)) {
+            return false;
+        }
 
         return true;
     }
@@ -51,13 +55,14 @@ class TieringTTFWorker {
     }
 
     _get_candidate_buckets() {
-        return system_store.data.buckets.filter(bucket =>
-            !bucket.deleting && (
+        return system_store.data.buckets.filter(
+            bucket =>
+                !bucket.deleting &&
                 // including buckets that have 2 or more tiers
-                (bucket.tiering && bucket.tiering.tiers.length > 1) ||
-                // including cache buckets to handle chunk eviction
-                (bucket.namespace && bucket.namespace.caching)
-            ));
+                ((bucket.tiering && bucket.tiering.tiers.length > 1) ||
+                    // including cache buckets to handle chunk eviction
+                    (bucket.namespace && bucket.namespace.caching)),
+        );
     }
 
     async _rebuild_need_to_move_chunks(buckets) {
@@ -70,27 +75,61 @@ class TieringTTFWorker {
 
         const now = Date.now();
         for (const bucket of buckets) {
-            await node_allocator.refresh_tiering_alloc(bucket.tiering, this.last_run);
-            const tiering_status = node_allocator.get_tiering_status(bucket.tiering);
-            const selected_tier = mapper.select_tier_for_write(bucket.tiering, tiering_status);
-            const tier_storage_free = size_utils.json_to_bigint(size_utils.reduce_minimum(
-                'free', tiering_status[String(selected_tier._id)].mirrors_storage.map(storage => (storage.free || 0))
-            ));
-            const valid = _.values(tiering_status[String(selected_tier._id)].pools).every(pool => pool.valid_for_allocation);
+            await node_allocator.refresh_tiering_alloc(
+                bucket.tiering,
+                this.last_run,
+            );
+            const tiering_status = node_allocator.get_tiering_status(
+                bucket.tiering,
+            );
+            const selected_tier = mapper.select_tier_for_write(
+                bucket.tiering,
+                tiering_status,
+            );
+            const tier_storage_free = size_utils.json_to_bigint(
+                size_utils.reduce_minimum(
+                    'free',
+                    tiering_status[
+                        String(selected_tier._id)
+                    ].mirrors_storage.map(storage => storage.free || 0),
+                ),
+            );
+            const valid = _.values(
+                tiering_status[String(selected_tier._id)].pools,
+            ).every(pool => pool.valid_for_allocation);
             const reports = await usage_aggregator.get_bandwidth_report({
                 bucket: bucket._id,
-                since: now - (1000 * 60 * 60),
+                since: now - 1000 * 60 * 60,
                 till: now,
-                time_range: 'hour'
+                time_range: 'hour',
             });
             const report = reports[0];
-            const time = valid && report ? Math.floor((now - report.timestamp) / 1000 / 60) : 60;
-            bucket.TTF = valid && report && report.write_bytes ? tier_storage_free
-                .divide(size_utils.json_to_bigint(report.write_bytes).divide(time)) : // how much time in minutes will it take to fill (avg by last report)
-                MAX_TTF; // time to fill in minutes
-            dbg.log1('TTF bucket', bucket.name, 'storage_free', tier_storage_free, 'report', report, 'TTF:', bucket.TTF);
+            const time =
+                valid && report ?
+                    Math.floor((now - report.timestamp) / 1000 / 60)
+                :   60;
+            bucket.TTF =
+                valid && report && report.write_bytes ?
+                    tier_storage_free.divide(
+                        size_utils
+                            .json_to_bigint(report.write_bytes)
+                            .divide(time),
+                    ) // how much time in minutes will it take to fill (avg by last report)
+                :   MAX_TTF; // time to fill in minutes
+            dbg.log1(
+                'TTF bucket',
+                bucket.name,
+                'storage_free',
+                tier_storage_free,
+                'report',
+                report,
+                'TTF:',
+                bucket.TTF,
+            );
         }
-        const sorted_buckets = buckets.filter(bucket => bucket.TTF.lesser(TOO_BIG_TTF)).sort(compare_buckets_by_TTF);
+        const sorted_buckets = buckets
+            .filter(bucket => bucket.TTF.lesser(TOO_BIG_TTF))
+            .sort(compare_buckets_by_TTF);
         let chunks_to_rebuild = 0;
         if (_.isEmpty(sorted_buckets)) {
             this.last_run = 'force';
@@ -126,10 +165,20 @@ class TieringTTFWorker {
                 default:
                     chunks_to_rebuild = 1;
             }
-            const tiering_status = node_allocator.get_tiering_status(bucket.tiering);
-            const previous_tier = mapper.select_tier_for_write(bucket.tiering, tiering_status);
-            const next_tier_order = this.find_tier_order_in_tiering(bucket, previous_tier) + 1;
-            const next_tier = mapper.select_tier_for_write(bucket.tiering, tiering_status, next_tier_order);
+            const tiering_status = node_allocator.get_tiering_status(
+                bucket.tiering,
+            );
+            const previous_tier = mapper.select_tier_for_write(
+                bucket.tiering,
+                tiering_status,
+            );
+            const next_tier_order =
+                this.find_tier_order_in_tiering(bucket, previous_tier) + 1;
+            const next_tier = mapper.select_tier_for_write(
+                bucket.tiering,
+                tiering_status,
+                next_tier_order,
+            );
 
             // for cache buckets when we are on the last tier, we evict the chunks
             const cache_evict = bucket.namespace.caching && !next_tier;
@@ -139,17 +188,24 @@ class TieringTTFWorker {
 
             const next_tier_id = next_tier ? next_tier._id : undefined;
 
-            const chunk_ids = await MDStore.instance().find_oldest_tier_chunk_ids({
-                tier: previous_tier._id,
-                limit: chunks_to_rebuild,
-                sort_direction: 1
-            });
+            const chunk_ids =
+                await MDStore.instance().find_oldest_tier_chunk_ids({
+                    tier: previous_tier._id,
+                    limit: chunks_to_rebuild,
+                    sort_direction: 1,
+                });
             if (!chunk_ids.length) continue;
 
             if (cache_evict) {
-                console.log(`TieringTTFWorker: Evicting following ${chunks_to_rebuild} from ${previous_tier._id} `, chunk_ids);
+                console.log(
+                    `TieringTTFWorker: Evicting following ${chunks_to_rebuild} from ${previous_tier._id} `,
+                    chunk_ids,
+                );
             } else {
-                console.log(`TieringTTFWorker: Moving the following ${chunks_to_rebuild} from ${previous_tier._id} to chunks to next tier ${next_tier_id}`, chunk_ids);
+                console.log(
+                    `TieringTTFWorker: Moving the following ${chunks_to_rebuild} from ${previous_tier._id} to chunks to next tier ${next_tier_id}`,
+                    chunk_ids,
+                );
             }
 
             await this._build_chunks(
@@ -164,24 +220,27 @@ class TieringTTFWorker {
     }
 
     find_tier_order_in_tiering(bucket, tier) {
-        return bucket.tiering.tiers.find(t => String(t.tier._id) === String(tier._id)).order;
+        return bucket.tiering.tiers.find(
+            t => String(t.tier._id) === String(tier._id),
+        ).order;
     }
 
     async _build_chunks(chunk_ids, next_tier, cache_evict, current_tiers) {
-        return this.client.scrubber.build_chunks({
-            chunk_ids,
-            tier: next_tier,
-            evict: cache_evict,
-            current_tiers,
-        }, {
-            auth_token: auth_server.make_auth_token({
-                system_id: system_store.data.systems[0]._id,
-                role: 'admin'
-            })
-        });
+        return this.client.scrubber.build_chunks(
+            {
+                chunk_ids,
+                tier: next_tier,
+                evict: cache_evict,
+                current_tiers,
+            },
+            {
+                auth_token: auth_server.make_auth_token({
+                    system_id: system_store.data.systems[0]._id,
+                    role: 'admin',
+                }),
+            },
+        );
     }
 }
-
-
 
 exports.TieringTTFWorker = TieringTTFWorker;

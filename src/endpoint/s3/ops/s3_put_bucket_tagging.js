@@ -10,7 +10,7 @@ async function put_bucket_tagging(req) {
     const tag_set = s3_utils.parse_body_tagging_xml(req);
     return req.object_sdk.put_bucket_tagging({
         name: req.params.bucket,
-        tagging: tag_set
+        tagging: tag_set,
     });
 }
 

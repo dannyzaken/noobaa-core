@@ -17,17 +17,19 @@ const schema_utils = require('./schema_utils');
 const schema_keywords = require('./schema_keywords');
 const { RpcError } = require('../rpc');
 
-mongodb.Binary.prototype[util.inspect.custom] = function custom_inspect_binary() {
-    return `<mongodb.Binary ${this.buffer.toString('base64')} >`;
-};
+mongodb.Binary.prototype[util.inspect.custom] =
+    function custom_inspect_binary() {
+        return `<mongodb.Binary ${this.buffer.toString('base64')} >`;
+    };
 
 class MongoCollection {
-
     /**
      * @param {MongoCollection} col
      * @returns {nb.DBCollection}
      */
-    static implements_interface(col) { return col; }
+    static implements_interface(col) {
+        return col;
+    }
 
     constructor(col, mongo_client) {
         MongoCollection.implements_interface(this);
@@ -35,7 +37,6 @@ class MongoCollection {
         this.name = col.name;
         this.db_indexes = col.db_indexes;
         this.mongo_client = mongo_client;
-
     }
 
     /**
@@ -46,9 +47,9 @@ class MongoCollection {
     }
 
     /**
-     * 
-     * @param {object} doc 
-     * @param {'warn'} [warn] 
+     *
+     * @param {object} doc
+     * @param {'warn'} [warn]
      */
     validate(doc, warn) {
         if (this.schema) {
@@ -56,24 +57,62 @@ class MongoCollection {
         }
     }
 
-    async find(query, options = {}) { return this._get_mongo_col().find(query, options).toArray(); }
-    async findOne(query, options = {}) { return this._get_mongo_col().findOne(query, options); }
-    async findOneAndUpdate(query, update, options = {}) { return this._get_mongo_col().findOneAndUpdate(query, update, options); }
-    async deleteOne(query, options = {}) { return this._get_mongo_col().deleteOne(query, options); }
-    async deleteMany(query, options = {}) { return this._get_mongo_col().deleteMany(query, options); }
-    async insertOne(doc, options = {}) { return this._get_mongo_col().insertOne(doc, options); }
-    async insertManyUnordered(docs) { return this._get_mongo_col().insertMany(docs, { ordered: false }); }
-    async updateOne(query, update, options = {}) { return this._get_mongo_col().updateOne(query, update, options); }
-    async updateMany(query, update, options = {}) { return this._get_mongo_col().updateMany(query, update, options); }
-    async mapReduce(map, reduce, options = {}) { return this._get_mongo_col().mapReduce(map, reduce, options); }
-    async groupBy(match, group) { return this._get_mongo_col().aggregate([{ $match: match }, { $group: group }]).toArray(); }
-    async distinct(key, query, options = {}) { return this._get_mongo_col().distinct(key, query, options); }
-    initializeUnorderedBulkOp() { return this._get_mongo_col().initializeUnorderedBulkOp(); }
-    initializeOrderedBulkOp() { return this._get_mongo_col().initializeOrderedBulkOp(); }
-    async countDocuments(query, options = {}) { return this._get_mongo_col().countDocuments(query, options); }
-    async estimatedDocumentCount(options = {}) { return this._get_mongo_col().estimatedDocumentCount(options); }
-    async estimatedQueryCount(query) { return this._get_mongo_col().countDocuments(query); }
-    async stats() { return this._get_mongo_col().stats(); }
+    async find(query, options = {}) {
+        return this._get_mongo_col().find(query, options).toArray();
+    }
+    async findOne(query, options = {}) {
+        return this._get_mongo_col().findOne(query, options);
+    }
+    async findOneAndUpdate(query, update, options = {}) {
+        return this._get_mongo_col().findOneAndUpdate(query, update, options);
+    }
+    async deleteOne(query, options = {}) {
+        return this._get_mongo_col().deleteOne(query, options);
+    }
+    async deleteMany(query, options = {}) {
+        return this._get_mongo_col().deleteMany(query, options);
+    }
+    async insertOne(doc, options = {}) {
+        return this._get_mongo_col().insertOne(doc, options);
+    }
+    async insertManyUnordered(docs) {
+        return this._get_mongo_col().insertMany(docs, { ordered: false });
+    }
+    async updateOne(query, update, options = {}) {
+        return this._get_mongo_col().updateOne(query, update, options);
+    }
+    async updateMany(query, update, options = {}) {
+        return this._get_mongo_col().updateMany(query, update, options);
+    }
+    async mapReduce(map, reduce, options = {}) {
+        return this._get_mongo_col().mapReduce(map, reduce, options);
+    }
+    async groupBy(match, group) {
+        return this._get_mongo_col()
+            .aggregate([{ $match: match }, { $group: group }])
+            .toArray();
+    }
+    async distinct(key, query, options = {}) {
+        return this._get_mongo_col().distinct(key, query, options);
+    }
+    initializeUnorderedBulkOp() {
+        return this._get_mongo_col().initializeUnorderedBulkOp();
+    }
+    initializeOrderedBulkOp() {
+        return this._get_mongo_col().initializeOrderedBulkOp();
+    }
+    async countDocuments(query, options = {}) {
+        return this._get_mongo_col().countDocuments(query, options);
+    }
+    async estimatedDocumentCount(options = {}) {
+        return this._get_mongo_col().estimatedDocumentCount(options);
+    }
+    async estimatedQueryCount(query) {
+        return this._get_mongo_col().countDocuments(query);
+    }
+    async stats() {
+        return this._get_mongo_col().stats();
+    }
 }
 
 class MongoSequence {
@@ -86,18 +125,23 @@ class MongoSequence {
         const query = {};
         const update = { $inc: { object_version_seq: 1 } };
         const options = { upsert: true, returnOriginal: false };
-        const res = await this._collection.findOneAndUpdate(query, update, options);
+        const res = await this._collection.findOneAndUpdate(
+            query,
+            update,
+            options,
+        );
         return res.value.object_version_seq;
     }
 }
 
 class MongoClient extends EventEmitter {
-
     /**
      * @param {MongoClient} client
      * @returns {nb.DBClient}
      */
-    static implements_interface(client) { return client; }
+    static implements_interface(client) {
+        return client;
+    }
 
     constructor() {
         super();
@@ -115,7 +159,9 @@ class MongoClient extends EventEmitter {
             process.env.MONGOLAB_URI ||
             'mongodb://localhost/nbcore';
         this.cfg_url =
-            'mongodb://localhost:' + config.MONGO_DEFAULTS.CFG_PORT + '/config0';
+            'mongodb://localhost:' +
+            config.MONGO_DEFAULTS.CFG_PORT +
+            '/config0';
         this.config = {
             // promoteBuffers makes the driver directly expose node.js Buffer's for bson binary fields
             // instead of mongodb.Binary, which is just a skinny buffer wrapper class.
@@ -184,7 +230,7 @@ class MongoClient extends EventEmitter {
             '$sort',
             '$position',
             '$bit',
-            '$isolated'
+            '$isolated',
         ]);
     }
 
@@ -234,7 +280,10 @@ class MongoClient extends EventEmitter {
         const docs_list = _.isArray(docs) ? docs : [docs];
         const ids = this.uniq_ids(docs_list, doc_path);
         if (!ids.length) return docs;
-        const items = await collection.find({ _id: { $in: ids } }, { projection: fields });
+        const items = await collection.find(
+            { _id: { $in: ids } },
+            { projection: fields },
+        );
         const idmap = _.keyBy(items, '_id');
         _.each(docs_list, doc => {
             const id = _.get(doc, doc_path);
@@ -245,7 +294,6 @@ class MongoClient extends EventEmitter {
         });
         return docs;
     }
-
 
     resolve_object_ids_recursive(idmap, item) {
         _.each(item, (val, key) => {
@@ -271,13 +319,25 @@ class MongoClient extends EventEmitter {
                 if (obj) {
                     _.set(item, path, obj);
                 } else if (!allow_missing) {
-                    throw new Error('resolve_object_ids_paths missing ref to ' +
-                        path + ' - ' + ref + ' from item ' + util.inspect(item));
+                    throw new Error(
+                        'resolve_object_ids_paths missing ref to ' +
+                            path +
+                            ' - ' +
+                            ref +
+                            ' from item ' +
+                            util.inspect(item),
+                    );
                 }
             } else if (!allow_missing) {
                 if (!ref || !this.is_object_id(ref._id)) {
-                    throw new Error('resolve_object_ids_paths missing ref id to ' +
-                        path + ' - ' + ref + ' from item ' + util.inspect(item));
+                    throw new Error(
+                        'resolve_object_ids_paths missing ref id to ' +
+                            path +
+                            ' - ' +
+                            ref +
+                            ' from item ' +
+                            util.inspect(item),
+                    );
                 }
             }
         });
@@ -296,7 +356,9 @@ class MongoClient extends EventEmitter {
      * @returns {nb.ID}
      */
     parse_object_id(id_str) {
-        if (!id_str) throw new TypeError('parse_object_id: arg required ' + id_str);
+        if (!id_str) {
+            throw new TypeError('parse_object_id: arg required ' + id_str);
+        }
         return new mongodb.ObjectId(String(id_str));
     }
 
@@ -310,7 +372,7 @@ class MongoClient extends EventEmitter {
     }
 
     is_object_id(id) {
-        return (id instanceof mongodb.ObjectId);
+        return id instanceof mongodb.ObjectId;
     }
 
     is_err_duplicate_key(err) {
@@ -352,11 +414,16 @@ class MongoClient extends EventEmitter {
     }
 
     make_object_diff(current, prev) {
-        const set_map = _.pickBy(current, (value, key) => !_.isEqual(value, prev[key]));
+        const set_map = _.pickBy(
+            current,
+            (value, key) => !_.isEqual(value, prev[key]),
+        );
         const unset_map = _.pickBy(prev, (value, key) => !(key in current));
         const diff = {};
         if (!_.isEmpty(set_map)) diff.$set = set_map;
-        if (!_.isEmpty(unset_map)) diff.$unset = _.mapValues(unset_map, () => 1);
+        if (!_.isEmpty(unset_map)) {
+            diff.$unset = _.mapValues(unset_map, () => 1);
+        }
         return diff;
     }
 
@@ -382,9 +449,13 @@ class MongoClient extends EventEmitter {
 
     set_url(url) {
         if (this.mongo_client || this.promise) {
-            throw new Error('trying to set url after already connected...' +
-                ' late for the party? ' + url +
-                ' existing url ' + this.url);
+            throw new Error(
+                'trying to set url after already connected...' +
+                    ' late for the party? ' +
+                    url +
+                    ' existing url ' +
+                    this.url,
+            );
         }
         this.url = url;
     }
@@ -418,9 +489,14 @@ class MongoClient extends EventEmitter {
             this.mongo_client = client;
             this.gridfs_instances = {};
             // for now just print the topologyDescriptionChanged. we'll see if it's worth using later
-            this.mongo_client.db().topology.on('topologyDescriptionChanged', function(event) {
-                console.log('received topologyDescriptionChanged', util.inspect(event));
-            });
+            this.mongo_client
+                .db()
+                .topology.on('topologyDescriptionChanged', function (event) {
+                    console.log(
+                        'received topologyDescriptionChanged',
+                        util.inspect(event),
+                    );
+                });
             this.mongo_client.db().on('reconnect', () => {
                 dbg.log('got reconnect', this.url);
                 this.emit('reconnect');
@@ -437,7 +513,10 @@ class MongoClient extends EventEmitter {
         } catch (err) {
             // autoReconnect only works once initial connection is created,
             // so we need to handle retry in initial connect.
-            dbg.error('_connect: initial connect failed, will retry', err.stack);
+            dbg.error(
+                '_connect: initial connect failed, will retry',
+                err.stack,
+            );
             if (client) {
                 client.close();
                 client = null;
@@ -450,11 +529,21 @@ class MongoClient extends EventEmitter {
 
     async _init_collections(db) {
         try {
-            await Promise.all(Object.values(this.collections).map(async col => this._init_collection(db, col)));
-            await Promise.all(Object.values(this.collections).map(async col => {
-                const res = await db.collection(col.name).indexes();
-                dbg.log0('_init_collections: indexes of', col.name, _.map(res, 'name'));
-            }));
+            await Promise.all(
+                Object.values(this.collections).map(async col =>
+                    this._init_collection(db, col),
+                ),
+            );
+            await Promise.all(
+                Object.values(this.collections).map(async col => {
+                    const res = await db.collection(col.name).indexes();
+                    dbg.log0(
+                        '_init_collections: indexes of',
+                        col.name,
+                        _.map(res, 'name'),
+                    );
+                }),
+            );
             dbg.log0('_init_collections: done');
         } catch (err) {
             dbg.warn('_init_collections: FAILED', err);
@@ -471,19 +560,49 @@ class MongoClient extends EventEmitter {
         dbg.log0('_init_collection: created collection', col.name);
         if (col.db_indexes) {
             try {
-                await Promise.all(col.db_indexes.map(async index => {
-                    // skip postgres indexes
-                    if (index.postgres) return;
-                    try {
-                        const res = await db.collection(col.name).createIndex(index.fields, _.extend({ background: true }, index.options));
-                        dbg.log0('_init_collection: created index', col.name, res);
-                    } catch (err) {
-                        if (err.codeName !== 'IndexOptionsConflict') throw err;
-                        await db.collection(col.name).dropIndex(index.fields);
-                        const res = await db.collection(col.name).createIndex(index.fields, _.extend({ background: true }, index.options));
-                        dbg.log0('_init_collection: re-created index with new options', col.name, res);
-                    }
-                }));
+                await Promise.all(
+                    col.db_indexes.map(async index => {
+                        // skip postgres indexes
+                        if (index.postgres) return;
+                        try {
+                            const res = await db
+                                .collection(col.name)
+                                .createIndex(
+                                    index.fields,
+                                    _.extend(
+                                        { background: true },
+                                        index.options,
+                                    ),
+                                );
+                            dbg.log0(
+                                '_init_collection: created index',
+                                col.name,
+                                res,
+                            );
+                        } catch (err) {
+                            if (err.codeName !== 'IndexOptionsConflict') {
+                                throw err;
+                            }
+                            await db
+                                .collection(col.name)
+                                .dropIndex(index.fields);
+                            const res = await db
+                                .collection(col.name)
+                                .createIndex(
+                                    index.fields,
+                                    _.extend(
+                                        { background: true },
+                                        index.options,
+                                    ),
+                                );
+                            dbg.log0(
+                                '_init_collection: re-created index with new options',
+                                col.name,
+                                res,
+                            );
+                        }
+                    }),
+                );
             } catch (err) {
                 dbg.error('_init_collection: FAILED', col.name, err);
                 throw err;
@@ -492,10 +611,12 @@ class MongoClient extends EventEmitter {
     }
 
     async is_collection_indexes_ready(name, indexes) {
-
         // This checks if the needed indexes exist on the collection
         // Note: we only check for the existence of named indexes
-        const existing_indexes = _.keyBy(await this.db().collection(name).indexes(), 'name');
+        const existing_indexes = _.keyBy(
+            await this.db().collection(name).indexes(),
+            'name',
+        );
         for (const index of indexes) {
             if (index.name && !existing_indexes[index.name]) return false;
         }
@@ -503,9 +624,11 @@ class MongoClient extends EventEmitter {
         // Checks if there is a current background operation that creates indexes on collection name
         const current_op = await this.db().admin().command({ currentOp: 1 });
         for (const op of current_op.inprog) {
-            if (op.command &&
+            if (
+                op.command &&
                 op.command.createIndexes === name &&
-                op.command.indexes.length) {
+                op.command.indexes.length
+            ) {
                 return false;
             }
         }
@@ -538,7 +661,9 @@ class MongoClient extends EventEmitter {
     }
 
     set_db_name(name) {
-        if (this.is_connected()) throw new Error('Cannot set DB name to connected DB');
+        if (this.is_connected()) {
+            throw new Error('Cannot set DB name to connected DB');
+        }
         const u = new URL(this.url);
         u.pathname = '/' + name;
         this.url = u.href;
@@ -553,16 +678,18 @@ class MongoClient extends EventEmitter {
     }
 
     /**
-     * 
+     *
      * @returns {nb.DBCollection}
      */
     define_collection(col) {
         if (this.collections[col.name]) {
-            throw new Error('define_collection: collection already defined ' + col.name);
+            throw new Error(
+                'define_collection: collection already defined ' + col.name,
+            );
         }
         if (col.schema) {
             schema_utils.strictify(col.schema, {
-                additionalProperties: false
+                additionalProperties: false,
             });
             this._ajv.addSchema(col.schema, col.name);
         }
@@ -570,7 +697,10 @@ class MongoClient extends EventEmitter {
         const mongo_collection = new MongoCollection(col, this);
         this.collections[col.name] = mongo_collection;
         if (this.mongo_client) {
-            this._init_collection(this.mongo_client.db(), mongo_collection).catch(_.noop); // TODO what is best to do when init_collection fails here?
+            this._init_collection(
+                this.mongo_client.db(),
+                mongo_collection,
+            ).catch(_.noop); // TODO what is best to do when init_collection fails here?
         }
         return mongo_collection;
     }
@@ -585,25 +715,38 @@ class MongoClient extends EventEmitter {
     }
 
     /**
-     * 
+     *
      * @returns {nb.DBCollection}
      */
     collection(col_name) {
-        if (!this.mongo_client) throw new Error(`mongo_client not connected (collection ${col_name})`);
+        if (!this.mongo_client) {
+            throw new Error(
+                `mongo_client not connected (collection ${col_name})`,
+            );
+        }
         return this.collections[col_name];
     }
 
     define_gridfs(bucket) {
         if (_.find(this.gridfs_buckets, b => b.name === bucket.name)) {
-            throw new Error('define_gridfs: gridfs bucket already defined ' + bucket.name);
+            throw new Error(
+                'define_gridfs: gridfs bucket already defined ' + bucket.name,
+            );
         }
         bucket.gridfs = () => {
-            if (!this.mongo_client) throw new Error(`mongo_client not connected (gridfs name ${bucket.name})`);
+            if (!this.mongo_client) {
+                throw new Error(
+                    `mongo_client not connected (gridfs name ${bucket.name})`,
+                );
+            }
             if (!this.gridfs_instances[bucket.name]) {
-                this.gridfs_instances[bucket.name] = new mongodb.GridFSBucket(this.mongo_client.db(), {
-                    bucketName: bucket.name,
-                    chunkSizeBytes: bucket.chunk_size
-                });
+                this.gridfs_instances[bucket.name] = new mongodb.GridFSBucket(
+                    this.mongo_client.db(),
+                    {
+                        bucketName: bucket.name,
+                        chunkSizeBytes: bucket.chunk_size,
+                    },
+                );
             }
             return this.gridfs_instances[bucket.name];
         };
@@ -618,13 +761,21 @@ class MongoClient extends EventEmitter {
         if (!validator(doc)) {
             const msg = `INVALID_SCHEMA_DB ${col_name}`;
             if (warn === 'warn') {
-                dbg.warn(msg,
-                    'ERRORS', util.inspect(validator.errors, true, null, true),
-                    'DOC', util.inspect(doc, true, null, true));
+                dbg.warn(
+                    msg,
+                    'ERRORS',
+                    util.inspect(validator.errors, true, null, true),
+                    'DOC',
+                    util.inspect(doc, true, null, true),
+                );
             } else {
-                dbg.error(msg,
-                    'ERRORS', util.inspect(validator.errors, true, null, true),
-                    'DOC', util.inspect(doc, true, null, true));
+                dbg.error(
+                    msg,
+                    'ERRORS',
+                    util.inspect(validator.errors, true, null, true),
+                    'DOC',
+                    util.inspect(doc, true, null, true),
+                );
                 throw new Error(msg);
             }
         }
@@ -632,45 +783,81 @@ class MongoClient extends EventEmitter {
     }
 
     initiate_replica_set(set, members, is_config_set) {
-        const port = is_config_set ? config.MONGO_DEFAULTS.CFG_PORT : config.MONGO_DEFAULTS.SHARD_SRV_PORT;
-        const rep_config = this._build_replica_config(set, members, port, is_config_set);
+        const port =
+            is_config_set ?
+                config.MONGO_DEFAULTS.CFG_PORT
+            :   config.MONGO_DEFAULTS.SHARD_SRV_PORT;
+        const rep_config = this._build_replica_config(
+            set,
+            members,
+            port,
+            is_config_set,
+        );
         const command = {
-            replSetInitiate: rep_config
+            replSetInitiate: rep_config,
         };
-        dbg.log0('Calling initiate_replica_set', util.inspect(command, false, null));
-        if (!is_config_set) { //connect the mongod server
-            return P.resolve(this.mongo_client.db().admin().command(command))
-                .catch(err => {
-                    dbg.error('Failed initiate_replica_set', set, members, 'with', err.message);
-                    throw err;
-                });
+        dbg.log0(
+            'Calling initiate_replica_set',
+            util.inspect(command, false, null),
+        );
+        if (!is_config_set) {
+            //connect the mongod server
+            return P.resolve(
+                this.mongo_client.db().admin().command(command),
+            ).catch(err => {
+                dbg.error(
+                    'Failed initiate_replica_set',
+                    set,
+                    members,
+                    'with',
+                    err.message,
+                );
+                throw err;
+            });
         }
     }
 
     replica_update_members(set, members, is_config_set) {
-        const port = is_config_set ? config.MONGO_DEFAULTS.CFG_PORT : config.MONGO_DEFAULTS.SHARD_SRV_PORT;
-        const rep_config = this._build_replica_config(set, members, port, is_config_set);
+        const port =
+            is_config_set ?
+                config.MONGO_DEFAULTS.CFG_PORT
+            :   config.MONGO_DEFAULTS.SHARD_SRV_PORT;
+        const rep_config = this._build_replica_config(
+            set,
+            members,
+            port,
+            is_config_set,
+        );
 
         const command = {
-            replSetReconfig: rep_config
+            replSetReconfig: rep_config,
         };
-        return P.resolve(this.get_rs_version(is_config_set))
-            .then(ver => {
-                ver += 1;
-                rep_config.version = ver;
-                dbg.log0('Calling replica_update_members', util.inspect(command, false, null));
-                if (is_config_set) {
-                    //connect the server running the config replica set
-                    return P.resolve(this._send_command_config_rs(command));
-                } else {
-                    //connect the mongod server
-                    return P.resolve(this.mongo_client.db().admin().command(command))
-                        .catch(err => {
-                            dbg.error('Failed replica_update_members', set, members, 'with', err.message);
-                            throw err;
-                        });
-                }
-            });
+        return P.resolve(this.get_rs_version(is_config_set)).then(ver => {
+            ver += 1;
+            rep_config.version = ver;
+            dbg.log0(
+                'Calling replica_update_members',
+                util.inspect(command, false, null),
+            );
+            if (is_config_set) {
+                //connect the server running the config replica set
+                return P.resolve(this._send_command_config_rs(command));
+            } else {
+                //connect the mongod server
+                return P.resolve(
+                    this.mongo_client.db().admin().command(command),
+                ).catch(err => {
+                    dbg.error(
+                        'Failed replica_update_members',
+                        set,
+                        members,
+                        'with',
+                        err.message,
+                    );
+                    throw err;
+                });
+            }
+        });
     }
 
     add_shard(host, port, shardname) {
@@ -680,13 +867,24 @@ class MongoClient extends EventEmitter {
         return P.resolve(this.connect())
             .then(() => {
                 dbg.log0('add_shard connected, calling db.admin addShard{}');
-                return P.resolve(this.mongo_client.db().admin().command({
-                    addShard: host + ':' + port,
-                    name: shardname
-                }));
+                return P.resolve(
+                    this.mongo_client
+                        .db()
+                        .admin()
+                        .command({
+                            addShard: host + ':' + port,
+                            name: shardname,
+                        }),
+                );
             })
             .catch(err => {
-                dbg.error('Failed add_shard', host + ':' + port, shardname, 'with', err.message);
+                dbg.error(
+                    'Failed add_shard',
+                    host + ':' + port,
+                    shardname,
+                    'with',
+                    err.message,
+                );
                 throw err;
             });
     }
@@ -697,7 +895,12 @@ class MongoClient extends EventEmitter {
         // dbg.log0('got update_connection_string. rs =', rs, 'this.replica_set =', this.replica_set);
         // dbg.log0('setting connection to new url. conection this. replica_set =', this.replica_set);
         // this.replica_set = rs;
-        dbg.log0('got update_connection_string. updating url from', this.url, 'to', process.env.MONGO_RS_URL);
+        dbg.log0(
+            'got update_connection_string. updating url from',
+            this.url,
+            'to',
+            process.env.MONGO_RS_URL,
+        );
         this.url = process.env.MONGO_RS_URL;
         this._update_config_for_replset();
     }
@@ -712,36 +915,39 @@ class MongoClient extends EventEmitter {
         const COMMAND_TIMEOUT = options.timeout || 5000;
 
         const command = {
-            replSetGetStatus: 1
+            replSetGetStatus: 1,
         };
 
-        return P.timeout(COMMAND_TIMEOUT, (async () => {
+        return P.timeout(
+            COMMAND_TIMEOUT,
+            (async () => {
                 if (is_config_set) {
                     return this._send_command_config_rs(command);
                 } else {
                     return this.mongo_client.db().admin().command(command);
                 }
-            })())
-            .catch(err => {
-                if (err instanceof P.TimeoutError) {
-                    dbg.error(`running replSetGetStatus command got TimeoutError`);
-                    return this.reconnect()
-                        .then(() => {
-                            throw err;
-                        });
-                }
-                throw err;
-            });
+            })(),
+        ).catch(err => {
+            if (err instanceof P.TimeoutError) {
+                dbg.error(`running replSetGetStatus command got TimeoutError`);
+                return this.reconnect().then(() => {
+                    throw err;
+                });
+            }
+            throw err;
+        });
     }
 
     async get_rs_version(is_config_set) {
         const command = {
-            replSetGetConfig: 1
+            replSetGetConfig: 1,
         };
         let res;
-        if (is_config_set) { //connect the server running the config replica set
+        if (is_config_set) {
+            //connect the server running the config replica set
             res = await this._send_command_config_rs(command);
-        } else { //connect the mongod server
+        } else {
+            //connect the mongod server
             try {
                 res = await this.mongo_client.db().admin().command(command);
             } catch (err) {
@@ -749,7 +955,12 @@ class MongoClient extends EventEmitter {
                 throw err;
             }
         }
-        dbg.log0('Recieved replSetConfig', res, 'Returning RS version', res.config.version);
+        dbg.log0(
+            'Recieved replSetConfig',
+            res,
+            'Returning RS version',
+            res.config.version,
+        );
         return res.config.version;
     }
 
@@ -761,56 +972,72 @@ class MongoClient extends EventEmitter {
     async set_debug_level(level) {
         const command = {
             setParameter: 1,
-            logLevel: level
+            logLevel: level,
         };
 
         const res = await this.mongo_client.db().admin().command(command);
-        dbg.log0(`Recieved ${res} from setParameter/logLevel command (${level})`);
+        dbg.log0(
+            `Recieved ${res} from setParameter/logLevel command (${level})`,
+        );
     }
 
     async wait_for_all_members(timeout) {
         timeout = timeout || 2 * 60000; // default timeout 2 minutes
         let waiting_exhausted = false;
         try {
-            await P.timeout(timeout, (async () => {
-                // wait until all replica set members are operational
-                if (process.env.MONGO_RS_URL) {
-                    let all_members_up = false;
-                    // eslint-disable-next-line no-unmodified-loop-condition
-                    while (!all_members_up && !waiting_exhausted) {
-                        let rs_status;
-                        try {
-                            rs_status = await this.get_mongo_rs_status();
-                            all_members_up = rs_status.members.every(member =>
-                                (member.stateStr === 'PRIMARY' || member.stateStr === 'SECONDARY'));
-                            if (!all_members_up) throw new Error('not all members are up');
-                            // wait 5 seconds before retesting
-                        } catch (err) {
-                            dbg.warn('waiting for all members to be operational. current status =', util.inspect(rs_status));
-                            await P.delay(5000);
+            await P.timeout(
+                timeout,
+                (async () => {
+                    // wait until all replica set members are operational
+                    if (process.env.MONGO_RS_URL) {
+                        let all_members_up = false;
+                        // eslint-disable-next-line no-unmodified-loop-condition
+                        while (!all_members_up && !waiting_exhausted) {
+                            let rs_status;
+                            try {
+                                rs_status = await this.get_mongo_rs_status();
+                                all_members_up = rs_status.members.every(
+                                    member =>
+                                        member.stateStr === 'PRIMARY' ||
+                                        member.stateStr === 'SECONDARY',
+                                );
+                                if (!all_members_up) {
+                                    throw new Error('not all members are up');
+                                }
+                                // wait 5 seconds before retesting
+                            } catch (err) {
+                                dbg.warn(
+                                    'waiting for all members to be operational. current status =',
+                                    util.inspect(rs_status),
+                                );
+                                await P.delay(5000);
+                            }
                         }
                     }
-                }
-                // after connected, make sure we can access the db by calling db.stats
-                let db_is_down = true;
-                // eslint-disable-next-line no-unmodified-loop-condition
-                while (db_is_down && !waiting_exhausted) {
-                    try {
-                        const stats = this.mongo_client && await this.mongo_client.db().stats();
-                        db_is_down = _.get(stats, 'ok') !== 1;
-                    } catch (err) {
-                        dbg.error('db is still down. got error on db.stats():', err.message);
-
+                    // after connected, make sure we can access the db by calling db.stats
+                    let db_is_down = true;
+                    // eslint-disable-next-line no-unmodified-loop-condition
+                    while (db_is_down && !waiting_exhausted) {
+                        try {
+                            const stats =
+                                this.mongo_client &&
+                                (await this.mongo_client.db().stats());
+                            db_is_down = _.get(stats, 'ok') !== 1;
+                        } catch (err) {
+                            dbg.error(
+                                'db is still down. got error on db.stats():',
+                                err.message,
+                            );
+                        }
+                        if (db_is_down) await P.delay(2000);
                     }
-                    if (db_is_down) await P.delay(2000);
-                }
-            })());
+                })(),
+            );
         } catch (err) {
             waiting_exhausted = true;
             dbg.error('failed waiting for members:', err);
             throw err;
         }
-
     }
 
     async step_down_master({ force, duration }) {
@@ -820,7 +1047,7 @@ class MongoClient extends EventEmitter {
         }
         await this.mongo_client.db().admin().command({
             replSetStepDown: duration,
-            force
+            force,
         });
     }
 
@@ -830,16 +1057,25 @@ class MongoClient extends EventEmitter {
         while (retries < MAX_RETRIES) {
             // operation is idempotent. retry on failure
             try {
-                await this.mongo_client.db().admin().command({ setFeatureCompatibilityVersion: version });
+                await this.mongo_client
+                    .db()
+                    .admin()
+                    .command({ setFeatureCompatibilityVersion: version });
                 return;
             } catch (err) {
                 retries += 1;
                 if (retries === MAX_RETRIES) {
-                    dbg.error(`failed to set feature compatability version to ${version}. aborting after ${MAX_RETRIES} retries`, err);
+                    dbg.error(
+                        `failed to set feature compatability version to ${version}. aborting after ${MAX_RETRIES} retries`,
+                        err,
+                    );
                     throw err;
                 }
                 const DELAY = 10 * 1000;
-                dbg.error(`failed to set feature compatability version to ${version}. retrying in ${DELAY / 1000} seconds`, err);
+                dbg.error(
+                    `failed to set feature compatability version to ${version}. retrying in ${DELAY / 1000} seconds`,
+                    err,
+                );
                 await P.delay(10000);
             }
         }
@@ -849,7 +1085,6 @@ class MongoClient extends EventEmitter {
         const command = {
             fsync: 1,
             async: false,
-
         };
 
         const res = await this.mongo_client.db().admin().command(command);
@@ -876,17 +1111,16 @@ class MongoClient extends EventEmitter {
 
         // set mojority write concern
         this.config.w = 'majority';
-
     }
 
     _build_replica_config(set, members, port, is_config_set) {
         const rep_config = {
             _id: set,
-            configsvr: (_.isUndefined(is_config_set)) ? false : is_config_set,
-            members: []
+            configsvr: _.isUndefined(is_config_set) ? false : is_config_set,
+            members: [],
         };
         let id = 0;
-        _.each(members, function(m) {
+        _.each(members, function (m) {
             rep_config.members.push({
                 _id: id,
                 host: m + ':' + port,
@@ -909,11 +1143,18 @@ class MongoClient extends EventEmitter {
             })
             .then(() => cfg_client.db().admin().command(command))
             .then(res => {
-                dbg.log0('successfully sent command to config rs', util.inspect(command));
+                dbg.log0(
+                    'successfully sent command to config rs',
+                    util.inspect(command),
+                );
                 return res;
             })
             .catch(err => {
-                dbg.error('sending command config rs failed', util.inspect(command), err);
+                dbg.error(
+                    'sending command config rs failed',
+                    util.inspect(command),
+                    err,
+                );
                 throw err;
             })
             .finally(() => {
@@ -927,8 +1168,11 @@ class MongoClient extends EventEmitter {
     _set_connect_timeout() {
         if (!this.connect_timeout && !this.should_ignore_connect_timeout) {
             this.connect_timeout = setTimeout(() => {
-                dbg.error('Connection closed for more ', config.MONGO_DEFAULTS.CONNECT_MAX_WAIT,
-                    ', quitting');
+                dbg.error(
+                    'Connection closed for more ',
+                    config.MONGO_DEFAULTS.CONNECT_MAX_WAIT,
+                    ', quitting',
+                );
                 process.exit(1);
             }, config.MONGO_DEFAULTS.CONNECT_MAX_WAIT);
             this.connect_timeout.unref();
@@ -944,7 +1188,6 @@ class MongoClient extends EventEmitter {
         clearTimeout(this.connect_timeout);
         this.connect_timeout = null;
     }
-
 }
 
 MongoClient._instance = undefined;

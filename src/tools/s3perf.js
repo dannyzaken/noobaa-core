@@ -14,7 +14,7 @@ const { cluster } = require('../util/fork_utils');
 const size_units_mult = {
     KB: 1024,
     MB: 1024 * 1024,
-    GB: 1024 * 1024 * 1024
+    GB: 1024 * 1024 * 1024,
 };
 
 const argv = minimist(process.argv.slice(2), {
@@ -107,16 +107,20 @@ if (s3.endpoint.protocol === 'https:') {
             agent: new https.Agent({
                 keepAlive: true,
                 rejectUnauthorized: !argv.selfsigned,
-            })
-        }
+            }),
+        },
     });
     if (!argv.selfsigned) {
         // @ts-ignore
         AWS.events.on('error', err => {
             if (err.message === 'self signed certificate') {
-                setTimeout(() => console.log(
-                    '\n*** You can accept self signed certificates with: --selfsigned\n'
-                ), 10);
+                setTimeout(
+                    () =>
+                        console.log(
+                            '\n*** You can accept self signed certificates with: --selfsigned\n',
+                        ),
+                    10,
+                );
             }
         });
     }
@@ -148,29 +152,27 @@ async function run_master() {
 }
 
 function run_reporter() {
-
     const now = Date.now();
     const time = now - last_reported;
     const time_total = now - start_time;
     const ops = op_count - last_op_count;
     const size = total_size - last_total_size;
     const lat = op_lat_sum - last_op_lat_sum;
-    const tx = size / time * 1000;
-    const tx_total = total_size / time_total * 1000;
+    const tx = (size / time) * 1000;
+    const tx_total = (total_size / time_total) * 1000;
 
-    console.log(`TOTAL: Throughput ${
-        size_utils.human_size(tx_total)
-        }/sec Latency ${
-        op_count ? (op_lat_sum / op_count).toFixed(3) : 0
-        }ms IOPS ${
-        (op_count / time_total * 1000).toFixed(3)
-        }/sec OPS ${op_count} | CURRENT: Throughput ${
-        size_utils.human_size(tx)
-        }/sec Latency ${
-        ops ? (lat / ops).toFixed(3) : 0
-        }ms IOPS ${
-        (ops / time * 1000).toFixed(3)
-        }/sec OPS ${ops}`);
+    console.log(
+        `TOTAL: Throughput ${size_utils.human_size(tx_total)}/sec Latency ${
+            op_count ? (op_lat_sum / op_count).toFixed(3) : 0
+        }ms IOPS ${((op_count / time_total) * 1000).toFixed(
+            3,
+        )}/sec OPS ${op_count} | CURRENT: Throughput ${size_utils.human_size(
+            tx,
+        )}/sec Latency ${ops ? (lat / ops).toFixed(3) : 0}ms IOPS ${(
+            (ops / time) *
+            1000
+        ).toFixed(3)}/sec OPS ${ops}`,
+    );
 
     last_reported = now;
     last_op_count = op_count;
@@ -194,7 +196,7 @@ function exit_all() {
  *  size: number;
  *  took_ms: number;
  * }} Msg
- * @param {Msg|'exit'} msg 
+ * @param {Msg|'exit'} msg
  */
 function handle_message(msg) {
     if (msg === 'exit') {
@@ -227,7 +229,7 @@ async function run_worker_loop() {
             const hrtime = process.hrtime();
             const size = await op_func();
             const hrtook = process.hrtime(hrtime);
-            const took_ms = (hrtook[0] * 1e-3) + (hrtook[1] * 1e-6);
+            const took_ms = hrtook[0] * 1e-3 + hrtook[1] * 1e-6;
             send_message({ ops: 1, size, took_ms });
         }
     } catch (err) {
@@ -246,7 +248,7 @@ let _list_objects_promise = null;
  * It will list objects and keep the list in memory, returning the objects in list order,
  * while fetching the next list pages on demand.
  * If prefix is provided it will be used to filter objects keys.
- * 
+ *
  * @param {string} [prefix]
  * @returns {Promise<AWS.S3.Object>}
  */
@@ -256,18 +258,28 @@ async function get_next_object(prefix) {
             // console.log('get_next_object: wait for promise');
             await _list_objects_promise;
         } else {
-            const marker = _list_objects.IsTruncated ?
-                (_list_objects.NextMarker || _list_objects.Contents[_list_objects.Contents.length - 1]?.Key) :
-                undefined;
-            _list_objects_promise = s3.listObjects({
-                Bucket: argv.bucket,
-                Prefix: prefix,
-                Marker: marker,
-            }).promise();
+            const marker =
+                _list_objects.IsTruncated ?
+                    _list_objects.NextMarker ||
+                    _list_objects.Contents[_list_objects.Contents.length - 1]
+                        ?.Key
+                :   undefined;
+            _list_objects_promise = s3
+                .listObjects({
+                    Bucket: argv.bucket,
+                    Prefix: prefix,
+                    Marker: marker,
+                })
+                .promise();
             _list_objects = await _list_objects_promise;
             _list_objects_promise = null;
             _list_objects_next = 0;
-            console.log('get_next_object: got', _list_objects.Contents.length, 'objects from marker', marker);
+            console.log(
+                'get_next_object: got',
+                _list_objects.Contents.length,
+                'objects from marker',
+                marker,
+            );
         }
     }
 
@@ -286,9 +298,9 @@ async function get_object() {
     const obj = await get_next_object(argv.get);
     await new Promise((resolve, reject) => {
         s3.getObject({
-                Bucket: argv.bucket,
-                Key: obj.Key,
-            })
+            Bucket: argv.bucket,
+            Key: obj.Key,
+        })
             .createReadStream()
             .on('finish', resolve)
             .on('error', reject)
@@ -301,22 +313,25 @@ async function get_object() {
 
 async function delete_object() {
     const obj = await get_next_object(argv.delete);
-    await s3.deleteObject({
-        Bucket: argv.bucket,
-        Key: obj.Key
-    }).promise();
+    await s3
+        .deleteObject({
+            Bucket: argv.bucket,
+            Key: obj.Key,
+        })
+        .promise();
     return 0;
 }
 
 async function put_object() {
     const upload_key = argv.put + '-' + Date.now().toString(36);
-    await s3.putObject({
+    await s3
+        .putObject({
             Bucket: argv.bucket,
             Key: upload_key,
             ContentLength: data_size,
             Body: new RandStream(data_size, {
                 highWaterMark: 1024 * 1024,
-            })
+            }),
         })
         .on('httpUploadProgress', progress => {
             send_message({ ops: 0, size: progress.loaded, took_ms: 0 });
@@ -327,17 +342,21 @@ async function put_object() {
 
 async function upload_object() {
     const upload_key = argv.upload + '-' + Date.now().toString(36);
-    await s3.upload({
-            Bucket: argv.bucket,
-            Key: upload_key,
-            ContentLength: data_size,
-            Body: new RandStream(data_size, {
-                highWaterMark: 1024 * 1024,
-            })
-        }, {
-            partSize: argv.part_size * 1024 * 1024,
-            queueSize: argv.part_concur
-        })
+    await s3
+        .upload(
+            {
+                Bucket: argv.bucket,
+                Key: upload_key,
+                ContentLength: data_size,
+                Body: new RandStream(data_size, {
+                    highWaterMark: 1024 * 1024,
+                }),
+            },
+            {
+                partSize: argv.part_size * 1024 * 1024,
+                queueSize: argv.part_concur,
+            },
+        )
         .on('httpUploadProgress', progress => {
             send_message({ ops: 0, size: progress.loaded, took_ms: 0 });
         })

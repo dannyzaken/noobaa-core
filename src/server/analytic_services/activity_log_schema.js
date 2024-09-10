@@ -6,19 +6,13 @@ const SensitiveString = require('../../util/sensitive_string');
 module.exports = {
     $id: 'activity_log_schema',
     type: 'object',
-    required: [
-        '_id',
-        'system',
-        'time',
-        'level',
-        'event'
-    ],
+    required: ['_id', 'system', 'time', 'level', 'event'],
     properties: {
         _id: {
-            objectid: true
+            objectid: true,
         },
         system: {
-            objectid: true
+            objectid: true,
         },
         time: {
             date: true,
@@ -34,40 +28,40 @@ module.exports = {
             wrapper: SensitiveString,
         },
         tier: {
-            objectid: true
+            objectid: true,
         },
         node: {
-            objectid: true
+            objectid: true,
         },
         bucket: {
-            objectid: true
+            objectid: true,
         },
         obj: {
-            objectid: true
+            objectid: true,
         },
         account: {
-            objectid: true
+            objectid: true,
         },
         pool: {
-            objectid: true
+            objectid: true,
         },
         func: {
-            objectid: true
+            objectid: true,
         },
         server: {
             type: 'object',
             properties: {
                 secret: {
-                    type: 'string'
+                    type: 'string',
                 },
                 hostname: {
-                    type: 'string'
-                }
-            }
+                    type: 'string',
+                },
+            },
         },
         // The User that performed the action
         actor: {
-            objectid: true
-        }
-    }
+            objectid: true,
+        },
+    },
 };

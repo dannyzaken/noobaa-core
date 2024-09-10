@@ -29,14 +29,17 @@ const NODE_FIELDS_FOR_MAP = Object.freeze([
 ]);
 
 class NodesClient {
-
     list_nodes_by_system(system_id) {
-        return server_rpc.client.node.list_nodes({}, {
-                auth_token: auth_server.make_auth_token({
-                    system_id: system_id,
-                    role: 'admin'
-                })
-            })
+        return server_rpc.client.node
+            .list_nodes(
+                {},
+                {
+                    auth_token: auth_server.make_auth_token({
+                        system_id: system_id,
+                        role: 'admin',
+                    }),
+                },
+            )
             .then(res => {
                 db_client.instance().fix_id_type(res.nodes);
                 return res;
@@ -44,17 +47,20 @@ class NodesClient {
     }
 
     list_nodes_by_pool(pool_name, system_id) {
-
-        return server_rpc.client.node.list_nodes({
-                query: {
-                    pools: [pool_name]
-                }
-            }, {
-                auth_token: auth_server.make_auth_token({
-                    system_id: system_id,
-                    role: 'admin'
-                })
-            })
+        return server_rpc.client.node
+            .list_nodes(
+                {
+                    query: {
+                        pools: [pool_name],
+                    },
+                },
+                {
+                    auth_token: auth_server.make_auth_token({
+                        system_id: system_id,
+                        role: 'admin',
+                    }),
+                },
+            )
             .then(res => {
                 db_client.instance().fix_id_type(res.nodes);
                 return res;
@@ -62,15 +68,19 @@ class NodesClient {
     }
 
     list_nodes_by_identity(system_id, nodes_identities, fields) {
-        return server_rpc.client.node.list_nodes({
-                query: { nodes: nodes_identities },
-                fields,
-            }, {
-                auth_token: auth_server.make_auth_token({
-                    system_id: system_id,
-                    role: 'admin'
-                })
-            })
+        return server_rpc.client.node
+            .list_nodes(
+                {
+                    query: { nodes: nodes_identities },
+                    fields,
+                },
+                {
+                    auth_token: auth_server.make_auth_token({
+                        system_id: system_id,
+                        role: 'admin',
+                    }),
+                },
+            )
             .then(res => {
                 db_client.instance().fix_id_type(res.nodes);
                 return res;
@@ -78,67 +88,86 @@ class NodesClient {
     }
 
     get_nodes_stats_by_cloud_service(system_id, start_date, end_date) {
-        return server_rpc.client.node.get_nodes_stats_by_cloud_service({ start_date, end_date }, {
-            auth_token: auth_server.make_auth_token({
-                system_id: system_id,
-                role: 'admin'
-            })
-        });
+        return server_rpc.client.node.get_nodes_stats_by_cloud_service(
+            { start_date, end_date },
+            {
+                auth_token: auth_server.make_auth_token({
+                    system_id: system_id,
+                    role: 'admin',
+                }),
+            },
+        );
     }
 
-    aggregate_nodes_by_pool(pool_names, system_id, skip_cloud_nodes, skip_mongo_nodes) {
-        const nodes_aggregate_pool = server_rpc.client.node.aggregate_nodes({
-            query: {
-                pools: pool_names || undefined,
-                skip_cloud_nodes: skip_cloud_nodes,
-                skip_mongo_nodes: skip_mongo_nodes
+    aggregate_nodes_by_pool(
+        pool_names,
+        system_id,
+        skip_cloud_nodes,
+        skip_mongo_nodes,
+    ) {
+        const nodes_aggregate_pool = server_rpc.client.node.aggregate_nodes(
+            {
+                query: {
+                    pools: pool_names || undefined,
+                    skip_cloud_nodes: skip_cloud_nodes,
+                    skip_mongo_nodes: skip_mongo_nodes,
+                },
+                group_by: 'pool',
             },
-            group_by: 'pool'
-        }, {
-            auth_token: auth_server.make_auth_token({
-                system_id: system_id,
-                role: 'admin'
-            })
-        });
+            {
+                auth_token: auth_server.make_auth_token({
+                    system_id: system_id,
+                    role: 'admin',
+                }),
+            },
+        );
         return nodes_aggregate_pool;
     }
 
     aggregate_hosts_by_pool(pool_names, system_id) {
-        const nodes_aggregate_pool = server_rpc.client.node.aggregate_nodes({
-            query: {
-                pools: pool_names || undefined,
-                skip_cloud_nodes: true,
+        const nodes_aggregate_pool = server_rpc.client.node.aggregate_nodes(
+            {
+                query: {
+                    pools: pool_names || undefined,
+                    skip_cloud_nodes: true,
+                },
+                group_by: 'pool',
+                aggregate_hosts: true,
             },
-            group_by: 'pool',
-            aggregate_hosts: true,
-        }, {
-            auth_token: auth_server.make_auth_token({
-                system_id: system_id,
-                role: 'admin'
-            })
-        });
+            {
+                auth_token: auth_server.make_auth_token({
+                    system_id: system_id,
+                    role: 'admin',
+                }),
+            },
+        );
         return nodes_aggregate_pool;
     }
 
-
     aggregate_data_free_by_tier(tier_ids, system_id) {
-        return server_rpc.client.node.aggregate_data_free_by_tier({
-                tier_ids: tier_ids,
-            }, {
-                auth_token: auth_server.make_auth_token({
-                    system_id: system_id,
-                    role: 'admin'
-                })
-            })
-            .then(res => _.mapValues(_.keyBy(res, 'tier_id'), 'mirrors_storage'));
+        return server_rpc.client.node
+            .aggregate_data_free_by_tier(
+                {
+                    tier_ids: tier_ids,
+                },
+                {
+                    auth_token: auth_server.make_auth_token({
+                        system_id: system_id,
+                        role: 'admin',
+                    }),
+                },
+            )
+            .then(res =>
+                _.mapValues(_.keyBy(res, 'tier_id'), 'mirrors_storage'),
+            );
     }
 
     collect_agent_diagnostics(node_identity, system_id) {
         return server_rpc.client.node.collect_agent_diagnostics(node_identity, {
             auth_token: auth_server.make_auth_token({
                 system_id: system_id,
-                role: 'admin'
-            })
+                role: 'admin',
+            }),
         });
     }
 
@@ -146,17 +175,24 @@ class NodesClient {
 
     read_node_by_name(system_id, node_name) {
         if (!system_id) {
-            dbg.error('read_node_by_name: expected system_id. node_name', node_name);
+            dbg.error(
+                'read_node_by_name: expected system_id. node_name',
+                node_name,
+            );
             throw new Error('read_node_by_name: expected system_id');
         }
-        return server_rpc.client.node.read_node({
-                name: node_name
-            }, {
-                auth_token: auth_server.make_auth_token({
-                    system_id: system_id,
-                    role: 'admin'
-                })
-            })
+        return server_rpc.client.node
+            .read_node(
+                {
+                    name: node_name,
+                },
+                {
+                    auth_token: auth_server.make_auth_token({
+                        system_id: system_id,
+                        role: 'admin',
+                    }),
+                },
+            )
             .then(node => {
                 db_client.instance().fix_id_type(node);
                 return node;
@@ -168,14 +204,18 @@ class NodesClient {
             dbg.error('read_node_by_id: expected system_id. node_id', node_id);
             throw new Error('read_node_by_id: expected system_id');
         }
-        return server_rpc.client.node.read_node({
-                id: node_id
-            }, {
-                auth_token: auth_server.make_auth_token({
-                    system_id: system_id,
-                    role: 'admin'
-                })
-            })
+        return server_rpc.client.node
+            .read_node(
+                {
+                    id: node_id,
+                },
+                {
+                    auth_token: auth_server.make_auth_token({
+                        system_id: system_id,
+                        role: 'admin',
+                    }),
+                },
+            )
             .then(node => {
                 db_client.instance().fix_id_type(node);
                 return node;
@@ -184,35 +224,52 @@ class NodesClient {
 
     get_node_ids_by_name(system_id, identity, by_host) {
         if (!system_id) {
-            dbg.error('read_node_by_name: expected system_id. node_name', identity);
+            dbg.error(
+                'read_node_by_name: expected system_id. node_name',
+                identity,
+            );
             throw new Error('read_node_by_name: expected system_id');
         }
-        return server_rpc.client.node.get_node_ids({
-                identity,
-                by_host
-            }, {
-                auth_token: auth_server.make_auth_token({
-                    system_id: system_id,
-                    role: 'admin'
-                })
-            })
-            .then(node_ids => node_ids.map(node_id => db_client.instance().parse_object_id(node_id)));
+        return server_rpc.client.node
+            .get_node_ids(
+                {
+                    identity,
+                    by_host,
+                },
+                {
+                    auth_token: auth_server.make_auth_token({
+                        system_id: system_id,
+                        role: 'admin',
+                    }),
+                },
+            )
+            .then(node_ids =>
+                node_ids.map(node_id =>
+                    db_client.instance().parse_object_id(node_id),
+                ),
+            );
     }
 
     delete_node_by_name(system_id, node_name) {
         if (!system_id) {
-            dbg.error('read_node_by_name: expected system_id. node_name', node_name);
+            dbg.error(
+                'read_node_by_name: expected system_id. node_name',
+                node_name,
+            );
             throw new Error('read_node_by_name: expected system_id');
         }
 
-        return server_rpc.client.node.delete_node({
-            name: node_name
-        }, {
-            auth_token: auth_server.make_auth_token({
-                system_id: system_id,
-                role: 'admin'
-            })
-        });
+        return server_rpc.client.node.delete_node(
+            {
+                name: node_name,
+            },
+            {
+                auth_token: auth_server.make_auth_token({
+                    system_id: system_id,
+                    role: 'admin',
+                }),
+            },
+        );
     }
 
     allocate_nodes(system_id, pool_id) {
@@ -221,19 +278,25 @@ class NodesClient {
             throw new Error('allocate_nodes: expected system_id');
         }
 
-        return P.resolve(server_rpc.client.node.allocate_nodes({
-                pool_id: String(pool_id),
-                fields: NODE_FIELDS_FOR_MAP
-            }, {
-                auth_token: auth_server.make_auth_token({
-                    system_id: system_id,
-                    role: 'admin'
-                })
-            }))
-            .then(res => {
-                res.latency_groups.forEach(group => db_client.instance().fix_id_type(group.nodes));
-                return res;
-            });
+        return P.resolve(
+            server_rpc.client.node.allocate_nodes(
+                {
+                    pool_id: String(pool_id),
+                    fields: NODE_FIELDS_FOR_MAP,
+                },
+                {
+                    auth_token: auth_server.make_auth_token({
+                        system_id: system_id,
+                        role: 'admin',
+                    }),
+                },
+            ),
+        ).then(res => {
+            res.latency_groups.forEach(group =>
+                db_client.instance().fix_id_type(group.nodes),
+            );
+            return res;
+        });
     }
 
     /**
@@ -252,9 +315,9 @@ class NodesClient {
         const params = {
             query: {
                 nodes: _.map(ids, id => ({
-                    id: String(id)
-                }))
-            }
+                    id: String(id),
+                })),
+            },
         };
         if (fields) params.fields = fields;
         if (!system_id) {
@@ -262,12 +325,14 @@ class NodesClient {
             throw new Error('populate_nodes: expected system_id');
         }
         return P.resolve()
-            .then(() => server_rpc.client.node.list_nodes(params, {
-                auth_token: auth_server.make_auth_token({
-                    system_id: system_id,
-                    role: 'admin'
-                })
-            }))
+            .then(() =>
+                server_rpc.client.node.list_nodes(params, {
+                    auth_token: auth_server.make_auth_token({
+                        system_id: system_id,
+                        role: 'admin',
+                    }),
+                }),
+            )
             .then(res => {
                 const idmap = _.keyBy(res.nodes, '_id');
                 _.each(docs_list, doc => {
@@ -277,8 +342,14 @@ class NodesClient {
                         db_client.instance().fix_id_type(node);
                         _.set(doc, doc_path, node);
                     } else {
-                        dbg.warn('populate_nodes: missing node for id',
-                            id, 'DOC', doc, 'IDMAP', _.keys(idmap));
+                        dbg.warn(
+                            'populate_nodes: missing node for id',
+                            id,
+                            'DOC',
+                            doc,
+                            'IDMAP',
+                            _.keys(idmap),
+                        );
                     }
                 });
                 return docs;
@@ -290,15 +361,17 @@ class NodesClient {
     }
 
     async report_error_on_node_blocks(system_id, blocks_report, bucket_name) {
-
-        await server_rpc.client.node.report_error_on_node_blocks({
-            blocks_report: blocks_report
-        }, {
-            auth_token: auth_server.make_auth_token({
-                system_id: system_id,
-                role: 'admin'
-            })
-        });
+        await server_rpc.client.node.report_error_on_node_blocks(
+            {
+                blocks_report: blocks_report,
+            },
+            {
+                auth_token: auth_server.make_auth_token({
+                    system_id: system_id,
+                    role: 'admin',
+                }),
+            },
+        );
 
         // node_allocator keeps nodes in memory,
         // and in the write path it allocated a block on a node that failed to write
@@ -306,8 +379,14 @@ class NodesClient {
         // until it will refresh the alloc.
         for (const block_report of blocks_report) {
             if (block_report.rpc_code === 'NO_BLOCK_STORE_SPACE') {
-                const bucket = _.find(system_store.data.buckets, b => (b.name.unwrap() === bucket_name.unwrap()));
-                await node_allocator.refresh_tiering_alloc(bucket.tiering, 'force');
+                const bucket = _.find(
+                    system_store.data.buckets,
+                    b => b.name.unwrap() === bucket_name.unwrap(),
+                );
+                await node_allocator.refresh_tiering_alloc(
+                    bucket.tiering,
+                    'force',
+                );
             } else {
                 const node_id = block_report.block_md.node;
                 node_allocator.report_error_on_node_alloc(node_id);
@@ -319,17 +398,20 @@ class NodesClient {
         if (!auth_token) {
             auth_token = auth_server.make_auth_token({
                 system_id: system_id,
-                role: 'admin'
+                role: 'admin',
             });
         }
 
-        const res = await server_rpc.client.host.list_hosts({
-            query: {
-                pools: [pool_name]
-            }
-        }, {
-            auth_token
-        });
+        const res = await server_rpc.client.host.list_hosts(
+            {
+                query: {
+                    pools: [pool_name],
+                },
+            },
+            {
+                auth_token,
+            },
+        );
         db_client.instance().fix_id_type(res.hosts);
         return res;
     }
@@ -337,23 +419,30 @@ class NodesClient {
     async delete_hosts_by_pool(pool_name, system_id, count = Infinity) {
         const auth_token = auth_server.make_auth_token({
             system_id: system_id,
-            role: 'admin'
+            role: 'admin',
         });
 
-        const { hosts } = await this.list_hosts_by_pool(pool_name, system_id, auth_token);
-        const promise_list = hosts
-            .slice(-count)
-            .map(async host => {
-                if (host.mode === 'DELETING') {
-                    return;
-                }
+        const { hosts } = await this.list_hosts_by_pool(
+            pool_name,
+            system_id,
+            auth_token,
+        );
+        const promise_list = hosts.slice(-count).map(async host => {
+            if (host.mode === 'DELETING') {
+                return;
+            }
 
-                try {
-                    await server_rpc.client.host.delete_host({ name: host.name }, { auth_token });
-                } catch (err) {
-                    console.error(`delete_hosts_by_pool: could not initiate delete for host ${host.name}, got: ${err.message}`);
-                }
-            });
+            try {
+                await server_rpc.client.host.delete_host(
+                    { name: host.name },
+                    { auth_token },
+                );
+            } catch (err) {
+                console.error(
+                    `delete_hosts_by_pool: could not initiate delete for host ${host.name}, got: ${err.message}`,
+                );
+            }
+        });
 
         await Promise.all(promise_list);
     }
@@ -365,7 +454,6 @@ class NodesClient {
         }
         return NodesClient._instance;
     }
-
 }
 
 NodesClient._instance = undefined;

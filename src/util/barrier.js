@@ -43,10 +43,9 @@ function Barrier(options) {
  * @returns a promise that will be resolved once all the barrier is resolved.
  *
  */
-Barrier.prototype.call = function(item) {
+Barrier.prototype.call = function (item) {
     const self = this;
-    return P.fcall(function() {
-
+    return P.fcall(function () {
         // add the item to the pending barrier and assign a defer
         // that will be resolved/rejected per this item.
         const defer = new P.Defer();
@@ -54,14 +53,14 @@ Barrier.prototype.call = function(item) {
         self.barrier.defers.push(defer);
 
         if (self.barrier.items.length >= self.max_length) {
-
             // release barrier when max length is reached
             self.release();
-
         } else if (self.expiry_ms >= 0 && !self.barrier.timeout) {
-
             // schedule a timeout to release the barrier
-            self.barrier.timeout = setTimeout(self.release.bind(self), self.expiry_ms);
+            self.barrier.timeout = setTimeout(
+                self.release.bind(self),
+                self.expiry_ms,
+            );
         }
 
         return defer.promise;
@@ -76,7 +75,7 @@ Barrier.prototype.call = function(item) {
  * and reset a new pending barrier for new joins to use.
  *
  */
-Barrier.prototype.release = function() {
+Barrier.prototype.release = function () {
     const self = this;
     const barrier = self.barrier;
     clearTimeout(barrier.timeout);
@@ -89,14 +88,14 @@ Barrier.prototype.release = function() {
 
     // call the process function with the items list
     P.fcall(self.process, barrier.items)
-        .then(function(res) {
+        .then(function (res) {
             res = res || [];
-            _.each(barrier.defers, function(defer, index) {
+            _.each(barrier.defers, function (defer, index) {
                 defer.resolve(res[index]);
             });
         })
-        .catch(function(err) {
-            _.each(barrier.defers, function(defer, index) {
+        .catch(function (err) {
+            _.each(barrier.defers, function (defer, index) {
                 defer.reject(err);
             });
         });

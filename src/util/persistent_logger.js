@@ -11,10 +11,10 @@ const dbg = require('./debug_module')(__filename);
 
 /**
  * PersistentLogger is a logger that is used to record data onto disk separated by newlines.
- * 
+ *
  * WAL should ideally use DirectIO to avoid fsyncgate (this does not)
  *   Refer: [Can applications recover from fsync failures?](https://ramalagappan.github.io/pdfs/papers/cuttlefs.pdf)
- * 
+ *
  * Cannot recover from bit rot (Use RAID or something).
  */
 class PersistentLogger {
@@ -24,7 +24,7 @@ class PersistentLogger {
      * @param {{
      *  poll_interval?: Number,
      *  locking?: "SHARED" | "EXCLUSIVE",
-     * }} cfg 
+     * }} cfg
      */
     constructor(dir, namespace, cfg) {
         this.dir = dir;
@@ -59,10 +59,15 @@ class PersistentLogger {
                 let fh = null;
                 try {
                     fh = await this._open();
-                    if (this.locking) await fh.fcntllock(this.fs_context, this.locking);
+                    if (this.locking) {
+                        await fh.fcntllock(this.fs_context, this.locking);
+                    }
 
                     const fh_stat = await fh.stat(this.fs_context);
-                    const path_stat = await nb_native().fs.stat(this.fs_context, this.active_path);
+                    const path_stat = await nb_native().fs.stat(
+                        this.fs_context,
+                        this.active_path,
+                    );
 
                     if (fh_stat.ino === path_stat.ino && fh_stat.nlink > 0) {
                         this.fh = fh;
@@ -76,14 +81,18 @@ class PersistentLogger {
                     }
 
                     dbg.log0(
-                        'failed to init active log file, retry:', retries + 1,
-                        'active path:', this.active_path,
+                        'failed to init active log file, retry:',
+                        retries + 1,
+                        'active path:',
+                        this.active_path,
                     );
                     await P.delay(backoff * (1 + Math.random()));
                 } catch (error) {
                     dbg.log0(
-                        'an error occured during init:', error,
-                        'active path:', this.active_path,
+                        'an error occured during init:',
+                        error,
+                        'active path:',
+                        this.active_path,
                     );
                     throw error;
                 } finally {
@@ -94,7 +103,8 @@ class PersistentLogger {
             dbg.log0(
                 'init retries exceeded, total retries:',
                 total_retries,
-                'active path:', this.active_path,
+                'active path:',
+                this.active_path,
             );
             throw new Error('init retries exceeded');
         });
@@ -102,7 +112,7 @@ class PersistentLogger {
 
     /**
      * appends the given data to the log file
-     * @param {string} data 
+     * @param {string} data
      */
     async append(data) {
         const fh = await this.init();
@@ -143,10 +153,18 @@ class PersistentLogger {
 
         let filtered_files = [];
         try {
-            const files = await nb_native().fs.readdir(this.fs_context, this.dir);
+            const files = await nb_native().fs.readdir(
+                this.fs_context,
+                this.dir,
+            );
             filtered_files = files
                 .sort((a, b) => a.name.localeCompare(b.name))
-                .filter(f => this.inactive_regex.test(f.name) && f.name !== this.file && !native_fs_utils.isDirectory(f));
+                .filter(
+                    f =>
+                        this.inactive_regex.test(f.name) &&
+                        f.name !== this.file &&
+                        !native_fs_utils.isDirectory(f),
+                );
         } catch (error) {
             dbg.error('failed reading dir:', this.dir, 'with error:', error);
             return;
@@ -157,7 +175,10 @@ class PersistentLogger {
             dbg.log1('Processing', this.dir, file);
             const delete_processed = await cb(path.join(this.dir, file.name));
             if (delete_processed) {
-                await nb_native().fs.unlink(this.fs_context, path.join(this.dir, file.name));
+                await nb_native().fs.unlink(
+                    this.fs_context,
+                    path.join(this.dir, file.name),
+                );
             } else {
                 result = false;
             }
@@ -184,24 +205,45 @@ class PersistentLogger {
 
             try {
                 // Process all the inactive and currently active log
-                result = await this._process(async file => cb(file, failure_log.append.bind(failure_log)));
+                result = await this._process(async file =>
+                    cb(file, failure_log.append.bind(failure_log)),
+                );
             } catch (error) {
-                dbg.error('failed to process logs, error:', error, 'log_namespace:', this.namespace);
+                dbg.error(
+                    'failed to process logs, error:',
+                    error,
+                    'log_namespace:',
+                    this.namespace,
+                );
             }
 
             try {
                 // Process the inactive failure logs (don't process the current though)
                 // This will REMOVE the previous failure logs and will merge them with the current failures
-                await failure_log._process(async file => cb(file, failure_log.append.bind(failure_log)), false);
+                await failure_log._process(
+                    async file =>
+                        cb(file, failure_log.append.bind(failure_log)),
+                    false,
+                );
             } catch (error) {
-                dbg.error('failed to process failure logs:', error, 'log_namespace:', this.namespace);
+                dbg.error(
+                    'failed to process failure logs:',
+                    error,
+                    'log_namespace:',
+                    this.namespace,
+                );
             }
 
             try {
                 // Finally replace the current active so as to consume them in the next iteration
                 await failure_log._replace_active();
             } catch (error) {
-                dbg.error('failed to replace active failure log:', error, 'log_namespace:', this.namespace);
+                dbg.error(
+                    'failed to replace active failure log:',
+                    error,
+                    'log_namespace:',
+                    this.namespace,
+                );
             }
             return result;
         } finally {
@@ -214,7 +256,11 @@ class PersistentLogger {
         const inactive_file_path = path.join(this.dir, inactive_file);
 
         try {
-            await nb_native().fs.rename(this.fs_context, this.active_path, inactive_file_path);
+            await nb_native().fs.rename(
+                this.fs_context,
+                this.active_path,
+                inactive_file_path,
+            );
         } catch (error) {
             dbg.warn('failed to rename active file:', error);
         }
@@ -234,20 +280,29 @@ class PersistentLogger {
     _poll_active_file_change(poll_interval) {
         setInterval(async () => {
             try {
-                const stat = await nb_native().fs.stat(this.fs_context, this.active_path);
+                const stat = await nb_native().fs.stat(
+                    this.fs_context,
+                    this.active_path,
+                );
 
                 // Don't race with init process - Can happen if arogue/misconfigured
                 // process is continuously moving the active file
                 this.init_lock.surround(async () => {
                     // If the file has changed, re-init
                     if (this.fh_stat && stat.ino !== this.fh_stat.ino) {
-                        dbg.log1('active file changed, closing for namespace:', this.namespace);
+                        dbg.log1(
+                            'active file changed, closing for namespace:',
+                            this.namespace,
+                        );
                         await this.close();
                     }
                 });
             } catch (error) {
                 if (error.code === 'ENOENT') {
-                    dbg.log1('active file removed, closing for namespace:', this.namespace);
+                    dbg.log1(
+                        'active file removed, closing for namespace:',
+                        this.namespace,
+                    );
                     await this.close();
                 }
             }
@@ -257,8 +312,8 @@ class PersistentLogger {
 
 class LogFile {
     /**
-     * @param {nb.NativeFSContext} fs_context 
-     * @param {string} log_path 
+     * @param {nb.NativeFSContext} fs_context
+     * @param {string} log_path
      */
     constructor(fs_context, log_path) {
         this.fs_context = fs_context;
@@ -269,8 +324,8 @@ class LogFile {
      * batch_and_consume takes 2 functins, first function iterates over the log file
      * line by line and can choose to add some entries to a batch and then the second
      * function will be invoked to a with a path to the persistent log.
-     * 
-     * 
+     *
+     *
      * The fact that this function allows easy iteration and then later on optional consumption
      * of that batch provides the ability to invoke this funcition recursively composed in whatever
      * order that is required.
@@ -285,10 +340,14 @@ class LogFile {
             filtered_log = new PersistentLogger(
                 path.dirname(this.log_path),
                 `tmp_consume_${Date.now().toString()}`,
-                { locking: 'EXCLUSIVE'}
+                { locking: 'EXCLUSIVE' },
             );
 
-            log_reader = new NewlineReader(this.fs_context, this.log_path, 'EXCLUSIVE');
+            log_reader = new NewlineReader(
+                this.fs_context,
+                this.log_path,
+                'EXCLUSIVE',
+            );
             await log_reader.forEach(async entry => {
                 await collect(entry, filtered_log.append.bind(filtered_log));
                 return true;

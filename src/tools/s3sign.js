@@ -20,8 +20,10 @@ req.region = req.region || 'us-east-1';
 req.headers = req.headers || {};
 req.headers.Date = req.headers.Date || AWS.util.date.rfc822();
 req.credentials = req.credentials || {};
-req.credentials.accessKeyId = req.credentials.accessKeyId || req.access_key || '123';
-req.credentials.secretAccessKey = req.credentials.secretAccessKey || req.secret_key || 'abc';
+req.credentials.accessKeyId =
+    req.credentials.accessKeyId || req.access_key || '123';
+req.credentials.secretAccessKey =
+    req.credentials.secretAccessKey || req.secret_key || 'abc';
 
 console.log();
 p('Request', req);

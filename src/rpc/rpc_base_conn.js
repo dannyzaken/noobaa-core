@@ -13,14 +13,12 @@ const time_utils = require('../util/time_utils');
 const RpcError = require('./rpc_error');
 const RpcMessage = require('./rpc_message');
 
-
 const STATE_INIT = 'init';
 const STATE_CONNECTING = 'connecting';
 const STATE_CONNECTED = 'connected';
 const STATE_CLOSED = 'closed';
 
 class RpcBaseConnection extends events.EventEmitter {
-
     constructor(addr_url) {
         super();
 
@@ -29,7 +27,8 @@ class RpcBaseConnection extends events.EventEmitter {
 
         // connid is for debugging purposes
         // TODO commnicate connid to the other side to match in logs
-        this.connid = addr_url.href + '(' + time_utils.nanostamp().toString(36) + ')';
+        this.connid =
+            addr_url.href + '(' + time_utils.nanostamp().toString(36) + ')';
 
         // the connection generates request sequences, see _alloc_reqid()
         this._rpc_req_seq = 1;
@@ -66,7 +65,10 @@ class RpcBaseConnection extends events.EventEmitter {
             if (!this.transient) {
                 dbg.log1('RPC CONN CONNECTED state', this._state, this.connid);
             }
-            if (this._state === STATE_CONNECTING || this._state === STATE_INIT) {
+            if (
+                this._state === STATE_CONNECTING ||
+                this._state === STATE_INIT
+            ) {
                 this._state = STATE_CONNECTED;
                 clearTimeout(this._connect_timeout);
             }
@@ -79,7 +81,11 @@ class RpcBaseConnection extends events.EventEmitter {
         // connections are closed on error, and once closed will not be reopened again.
         this.on('error', err => {
             // RPC connecteion closed after an error event received from the connection
-            dbg.log0('RPC CONNECTION CLOSED. got event from connection:', this.connid, err.stack || err.message || err);
+            dbg.log0(
+                'RPC CONNECTION CLOSED. got event from connection:',
+                this.connid,
+                err.stack || err.message || err,
+            );
             this.close(err);
         });
 
@@ -117,8 +123,15 @@ class RpcBaseConnection extends events.EventEmitter {
                 this._state = STATE_CONNECTING;
                 // set a timer to limit how long we are waiting for connect
                 this._connect_timeout = setTimeout(
-                    () => this.emit_error(new RpcError('RPC_CONNECT_TIMEOUT', 'RPC CONNECT TIMEOUT')),
-                    this._connect_timeout_ms);
+                    () =>
+                        this.emit_error(
+                            new RpcError(
+                                'RPC_CONNECT_TIMEOUT',
+                                'RPC CONNECT TIMEOUT',
+                            ),
+                        ),
+                    this._connect_timeout_ms,
+                );
                 this._connect();
                 return this.connecting_defer.promise;
             case STATE_CONNECTING:
@@ -128,7 +141,12 @@ class RpcBaseConnection extends events.EventEmitter {
             case STATE_CLOSED:
                 throw new Error('RPC CONN CLOSED ' + this.connid);
             default:
-                throw new Error('RPC CONN ON WEIRD STATE ' + this._state + ' ' + this.connid);
+                throw new Error(
+                    'RPC CONN ON WEIRD STATE ' +
+                        this._state +
+                        ' ' +
+                        this.connid,
+                );
         }
     }
 
@@ -142,17 +160,24 @@ class RpcBaseConnection extends events.EventEmitter {
      */
     async send(msg, req) {
         if (this._state !== STATE_CONNECTED) {
-            throw new Error('RPC CONN NOT CONNECTED ' + this._state + ' ' + this.connid);
+            throw new Error(
+                'RPC CONN NOT CONNECTED ' + this._state + ' ' + this.connid,
+            );
         }
         try {
             const encoded_message = this._encode_message(msg);
-            const send_promise = this._send(encoded_message, msg.body && msg.body.op, req);
+            const send_promise = this._send(
+                encoded_message,
+                msg.body && msg.body.op,
+                req,
+            );
             if (!send_promise) {
                 console.error('RPC _send() must return a promise', this);
             }
-            await P.timeout(config.RPC_SEND_TIMEOUT,
+            await P.timeout(
+                config.RPC_SEND_TIMEOUT,
                 send_promise,
-                () => new RpcError('RPC_SEND_TIMEOUT', 'RPC SEND TIMEOUT')
+                () => new RpcError('RPC_SEND_TIMEOUT', 'RPC SEND TIMEOUT'),
             );
         } catch (err) {
             this.emit_error(err);
@@ -165,7 +190,13 @@ class RpcBaseConnection extends events.EventEmitter {
         this.emit('close');
         clearTimeout(this._connect_timeout);
         if (this.connecting_defer) {
-            this.connecting_defer.reject(err || new RpcError('RPC_CONN_CLOSED', 'RPC CONN CLOSED ' + this.connid));
+            this.connecting_defer.reject(
+                err ||
+                    new RpcError(
+                        'RPC_CONN_CLOSED',
+                        'RPC CONN CLOSED ' + this.connid,
+                    ),
+            );
             this.connecting_defer = null;
         }
         this._close();
@@ -206,28 +237,26 @@ class RpcBaseConnection extends events.EventEmitter {
      * start the connection
      */
     _connect() {
-        throw new Error("Not Implemented");
+        throw new Error('Not Implemented');
     }
 
     /**
      * send a message
      * @param {Buffer[]} msg
-     * @param {string} op 
-     * @param {RpcRequest} req 
+     * @param {string} op
+     * @param {RpcRequest} req
      * @returns {Promise<void>}
      */
     async _send(msg, op, req) {
-        throw new Error("Not Implemented");
+        throw new Error('Not Implemented');
     }
 
     /**
      * close the underlying connection
      */
     _close() {
-        throw new Error("Not Implemented");
+        throw new Error('Not Implemented');
     }
-
 }
-
 
 module.exports = RpcBaseConnection;

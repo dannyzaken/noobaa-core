@@ -9,23 +9,29 @@
  *
  */
 module.exports = {
-
     $id: 'replication_api',
 
     methods: {
-
         copy_objects: {
             method: 'POST',
             params: {
                 type: 'object',
-                required: ['src_bucket_name', 'dst_bucket_name', 'keys_diff_map'],
+                required: [
+                    'src_bucket_name',
+                    'dst_bucket_name',
+                    'keys_diff_map',
+                ],
                 properties: {
                     copy_type: {
                         type: 'string',
-                        enum: ['MIX', 'AWS', 'AZURE', 'NB']
+                        enum: ['MIX', 'AWS', 'AZURE', 'NB'],
                     },
-                    src_bucket_name: { $ref: 'common_api#/definitions/bucket_name' },
-                    dst_bucket_name: { $ref: 'common_api#/definitions/bucket_name' },
+                    src_bucket_name: {
+                        $ref: 'common_api#/definitions/bucket_name',
+                    },
+                    dst_bucket_name: {
+                        $ref: 'common_api#/definitions/bucket_name',
+                    },
                     keys_diff_map: {
                         type: 'object',
                         patternProperties: {
@@ -34,24 +40,24 @@ module.exports = {
                                 items: {
                                     type: 'object',
                                     additionalProperties: true,
-                                    properties: {}
-                                }
-                            }
-                        }
+                                    properties: {},
+                                },
+                            },
+                        },
                     },
-                }
+                },
             },
             reply: {
                 type: 'object',
                 required: ['num_of_objects', 'size_of_objects'],
                 properties: {
                     num_of_objects: { type: 'integer' },
-                    size_of_objects: { type: 'integer' }
+                    size_of_objects: { type: 'integer' },
                 },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
         delete_objects: {
             method: 'POST',
@@ -59,24 +65,26 @@ module.exports = {
                 type: 'object',
                 required: ['bucket_name', 'keys'],
                 properties: {
-                    bucket_name: { $ref: 'common_api#/definitions/bucket_name' },
+                    bucket_name: {
+                        $ref: 'common_api#/definitions/bucket_name',
+                    },
                     keys: {
                         type: 'array',
                         items: {
-                            type: 'string'
-                        }
+                            type: 'string',
+                        },
                     },
-                }
+                },
             },
             reply: {
                 type: 'array',
                 items: {
-                    type: 'string'
-                }
+                    type: 'string',
+                },
             },
             auth: {
-                system: 'admin'
-            }
+                system: 'admin',
+            },
         },
-    }
+    },
 };

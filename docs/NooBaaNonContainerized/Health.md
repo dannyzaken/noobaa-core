@@ -3,24 +3,26 @@
 1. [Introduction](#introduction)
 2. [Installation](#installation)
 3. [General Information](#general-information)
-5. [Usage](#usage)
-6. [Output](#output)
-7. [Example](#example)
-8. [Health Errors](#health-errors)
-    1. [General Errors](#general-errors)
-    2. [Accounts / Buckets Health Errors](#accounts--buckets-health-errors)
-
+4. [Usage](#usage)
+5. [Output](#output)
+6. [Example](#example)
+7. [Health Errors](#health-errors)
+   1. [General Errors](#general-errors)
+   2. [Accounts / Buckets Health Errors](#accounts--buckets-health-errors)
 
 ## Introduction
+
 The Health CLI tool is a powerful command-line interface designed to efficiently analyze the NooBaa service, endpoints, accounts and buckets health.
 
 ## Installation
+
 Health CLI installed automatically during the NooBaa RPM installation.
 For more details about NooBaa RPM installation, see - [Getting Started](./GettingStarted.md).
 
+## General Information
 
-## General Information 
-* NooBaa Health CLI will analyze the following aspects - 
+- NooBaa Health CLI will analyze the following aspects -
+
   - `NooBaa service health`
     - Verifying that the NooBaa service is active and has a valid PID (not equal to 0).
   - `NooBaa endpoints health`
@@ -30,116 +32,132 @@ For more details about NooBaa RPM installation, see - [Getting Started](./Gettin
     - Confirming the existence of the account's configuration file and its validity as a JSON file.
     - Verifying that the account's `new_buckets_path` is defined and `allow_bucket_creation` is set to true.
     - Ensuring that the account has read and write access to its new_buckets_path.
-  - `NooBaa buckets health` 
+  - `NooBaa buckets health`
     - Iterating buckets under the config directory.
     - Confirming the existence of the bucket's configuration file and its validity as a JSON file.
     - Verifying that the underlying storage path of a bucket exists.
 
-* Health CLI requires root permissions.
+- Health CLI requires root permissions.
 
-* Add `2>/dev/null` to the NooBaa CLI commands for omitting stderr logs printed by NooBaa.
-
+- Add `2>/dev/null` to the NooBaa CLI commands for omitting stderr logs printed by NooBaa.
 
 ## Usage
+
 The `health` command is used to analyze NooBaa health with customizable options.
 
 ```sh
 noobaa-cli diagnose health [--deployment_type][--https_port]
 [--all_account_details][--all_bucket_details][--config_root][--debug]
 ```
+
 ### Flags -
 
 - `deployment_type`
-    - <u>Type</u>: String
-    - <u>Default</u>: 'nc'
-    - <u>Description</u>: Indicates the deployment type.  
+
+  - <u>Type</u>: String
+  - <u>Default</u>: 'nc'
+  - <u>Description</u>: Indicates the deployment type.
 
 - `https_port`
-    - Type: Number
-    - Default: 6443
-    - Description: Indicates NooBaa's https port number.  
+
+  - Type: Number
+  - Default: 6443
+  - Description: Indicates NooBaa's https port number.
 
 - `all_account_details`
-    - Type: Boolean
-    - Default: false
-    - Description: Indicates if health output should contain valid accounts.  
+
+  - Type: Boolean
+  - Default: false
+  - Description: Indicates if health output should contain valid accounts.
 
 - `all_bucket_details`
-    - Type: Boolean
-    - Default: false
-    - Description: Indicates if health output should contain valid buckets.  
+
+  - Type: Boolean
+  - Default: false
+  - Description: Indicates if health output should contain valid buckets.
 
 - `config_root`
-    - Type: String
-    - Description: Indicates the config directory (default config.NSFS_NC_DEFAULT_CONF_DIR). config_root flag should be used only for dev/tests envs.
+
+  - Type: String
+  - Description: Indicates the config directory (default config.NSFS_NC_DEFAULT_CONF_DIR). config_root flag should be used only for dev/tests envs.
 
 - `debug`
-    - Type: Number
-    - Description: Specifies the debug level used for increasing the log verbosity (Debug levels are 0-5).    
-
+  - Type: Number
+  - Description: Specifies the debug level used for increasing the log verbosity (Debug levels are 0-5).
 
 ## Output
-The output of the Health CLI is a JSON object containing the following properties - 
+
+The output of the Health CLI is a JSON object containing the following properties -
 
 - `status`
-    - Type: String
-    - Enum: OK | NOTOK
-    - Description: Overall status of the system.
+
+  - Type: String
+  - Enum: OK | NOTOK
+  - Description: Overall status of the system.
 
 - `memory`
-    - Type: String
-    - Description: Current memory being used by NooBaa service.
+
+  - Type: String
+  - Description: Current memory being used by NooBaa service.
 
 - `error_code`
-    - Type: String
-    - Enum: See - [Health Errors](#health-errors)
-    - Description: Error code of the health issue uncovered by the Health CLI. Will be displayed in Health response if status is NOTOK.
-    
+
+  - Type: String
+  - Enum: See - [Health Errors](#health-errors)
+  - Description: Error code of the health issue uncovered by the Health CLI. Will be displayed in Health response if status is NOTOK.
 
 - `error_message`
-    - Type: String
-    - Enum: See - [Health Errors](#health-errors)
-    - Description: Error message describing a health issue uncovered by the Health CLI. Will be displayed in Health response if status is NOTOK.
+
+  - Type: String
+  - Enum: See - [Health Errors](#health-errors)
+  - Description: Error message describing a health issue uncovered by the Health CLI. Will be displayed in Health response if status is NOTOK.
 
 - `service_status`
-    - Type: String
-    - Enum: "active" | "inactive" | "missing service status info"
-    - Description: NooBaa service status. Determined by whether the service is up and running.
+
+  - Type: String
+  - Enum: "active" | "inactive" | "missing service status info"
+  - Description: NooBaa service status. Determined by whether the service is up and running.
 
 - `pid`
-    - Type: Number | "missing pid info"
-    - Description: NooBaa service process ID or Error message.
+
+  - Type: Number | "missing pid info"
+  - Description: NooBaa service process ID or Error message.
 
 - `endpoint_state`
-    - Type: { response: { response_code: "Running" | "NOT_RUNNING", response_message: String } }
-    - Description: NooBaa endpoint response.
-  
+  - Type: { response: { response_code: "Running" | "NOT_RUNNING", response_message: String } }
+  - Description: NooBaa endpoint response.
 - `total_fork_count`:
-    - Type: Number
-    - Description: Total number of expected forks in NooBaa.
+
+  - Type: Number
+  - Description: Total number of expected forks in NooBaa.
 
 - `running_workers`
-    - Type: Array
-    - Description: Running NooBaa endpoint workers IDs.
 
-- `invalid_buckets`: 
+  - Type: Array
+  - Description: Running NooBaa endpoint workers IDs.
+
+- `invalid_buckets`:
+
   - Type: [{"name": "bucket_name", "config_path": "/bucket/config/path" OR "storage_path": "/bucket/storage/path", "code": String }]
   - Description: Array of invalid buckets, invalid bucket is a bucket that -
     1. The bucket's missing a valid storage path
     2. The bucket has an invalid config JSON file.
 
-- `invalid_accounts`: 
-  - Type: [{ "name": "account_name", "config_path": "/account/config/path" OR "storage_path": "/path/to/accounts/new_buckets_path","code": String }] 
-  - Description: Array of invalid accounts, invalid account is account that - 
+- `invalid_accounts`:
+
+  - Type: [{ "name": "account_name", "config_path": "/account/config/path" OR "storage_path": "/path/to/accounts/new_buckets_path","code": String }]
+  - Description: Array of invalid accounts, invalid account is account that -
     1. The account's new_buckets_path doesn't exist.
     2. The account doesn't have RW access to its `new_buckets_path` or having invalid config JSON file.
     3. The account has an invalid config JSON file.
 
 - `valid_accounts`
+
   - Type: [{ "name": account_name, "storage_path": "/path/to/accounts/new_buckets_path" }]
   - Description: Array of all the valid accounts. If the all_account_details flag is set to true, valid_accounts will be included in the Health response.
 
 - `valid_buckets`
+
   - Type: [{ "name": bucket_name, "storage_path": "/path/to/bucket/path" }]
   - Description: Array of all the valid buckets. If the all_bucket_details flag is set to true, valid_buckets will be included in the Health response.
 
@@ -147,14 +165,15 @@ The output of the Health CLI is a JSON object containing the following propertie
   - Type: String
   - Enum: 'PERSISTENT' | 'TEMPORARY'
   - Description: For TEMPORARY error types, NooBaa attempts multiple retries before updating the status to reflect an error. Currently, TEMPORARY error types are only observed in checks for invalid NooBaa endpoints.
- 
 
-## Example 
+## Example
+
 ```sh
 noobaa-cli diagnose health --all_account_details --all_bucket_details
 ```
 
 Output:
+
 ```json
 {
   "service_name": "noobaa",
@@ -180,9 +199,7 @@ Output:
           "response_message": "Endpoint running successfuly."
         },
         "total_fork_count": 1,
-        "running_workers": [
-          "1"
-        ]
+        "running_workers": ["1"]
       },
       "error_type": "TEMPORARY"
     },
@@ -193,9 +210,11 @@ Output:
           "storage_path": "/tmp/nsfs_root_invalid/",
           "code": "STORAGE_NOT_EXIST"
         },
-        { "name": "account_inaccessible",
+        {
+          "name": "account_inaccessible",
           "storage_path": "/tmp/account_inaccessible",
-          "code": "ACCESS_DENIED" }
+          "code": "ACCESS_DENIED"
+        }
       ],
       "valid_accounts": [
         {
@@ -230,21 +249,20 @@ Output:
 }
 ```
 
-### Example Output Details - 
+### Example Output Details -
 
 - NooBaa endpoint response:
+
   - Curl command to NooBaa endpoint returned successfully, therefore, NooBaa health reports RUNNING.
 
-- invalid_accounts: 
+- invalid_accounts:
+
   - The new_buckets_path of account_invalid's doesn't exist in the file system, therefore, NooBaa health reports STORAGE_NOT_EXIST.
   - The uid/gid/user of account_inaccessible has insufficient read and write permissions to its new_buckets_path, therefore, NooBaa health reports ACCESS_DENIED.
 
 - invalid_buckets:
   - The config file of bucket1 is invalid. Therefore, NooBaa health reports INVALID_CONFIG.
   - The underlying file system directory of bucket3 is missing. Therefore, NooBaa health reports STORAGE_NOT_EXIST.
-
-
-
 
 ## Health Errors
 
@@ -253,61 +271,66 @@ If the Health CLI encounters issues, the following errors will appear in the hea
 ### General Errors
 
 #### 1. Invalid NooBaa Service
-  - Error code: `NOOBAA_SERVICE_FAILED`
-  - Error message: NooBaa service is not started properly, Please verify the service with status command.
-  - Reasons:
-    - NooBaa service is not started properly.
-    - Stopped NooBaa service is not removed.
-  - Resolutions:
-    - Verify the NooBaa service is running by checking the status and logs command.
-      ```
-      systemctl status noobaa.service
-      journalctl -xeu noobaa.service
-      ```
-      If the NooBaa service is not started, start the service
-      ```
-      systemctl enable noobaa.service
-      systemctl start noobaa.service
-      ```
+
+- Error code: `NOOBAA_SERVICE_FAILED`
+- Error message: NooBaa service is not started properly, Please verify the service with status command.
+- Reasons:
+  - NooBaa service is not started properly.
+  - Stopped NooBaa service is not removed.
+- Resolutions:
+  - Verify the NooBaa service is running by checking the status and logs command.
+    ```
+    systemctl status noobaa.service
+    journalctl -xeu noobaa.service
+    ```
+    If the NooBaa service is not started, start the service
+    ```
+    systemctl enable noobaa.service
+    systemctl start noobaa.service
+    ```
 
 #### 2. Missing Forks
-  - Error code: `NOOBAA_ENDPOINT_FORK_MISSING`
-  - Error message: One or more endpoint fork is not started properly. Verify the total and missing fork count in response.
-  - Reasons:
-    - One or more endpoint fork is not started properly.
-    - Number of workers running is less than the configured `forks` value.
-  - Resolutions:
-    - Restart the NooBaa service and also verify NooBaa fork/s is exited with an error within the logs.
-      ```
-      systemctl status rsyslog.service
-      journalctl -xeu rsyslog.service
-      ```
+
+- Error code: `NOOBAA_ENDPOINT_FORK_MISSING`
+- Error message: One or more endpoint fork is not started properly. Verify the total and missing fork count in response.
+- Reasons:
+  - One or more endpoint fork is not started properly.
+  - Number of workers running is less than the configured `forks` value.
+- Resolutions:
+  - Restart the NooBaa service and also verify NooBaa fork/s is exited with an error within the logs.
+    ```
+    systemctl status rsyslog.service
+    journalctl -xeu rsyslog.service
+    ```
 
 #### 3. NooBaa Endpoint Is Not Running
-  - Error code: `NOOBAA_ENDPOINT_FAILED`
-  - Error message: S3 endpoint process is not running. Restart the endpoint process.
-  - Reasons:
-    - NooBaa endpoint process is not running, and it's not able to respond to any requests.
-  - Resolutions:
-    - Restart the NooBaa service and verify NooBaa process is exited with errors within the logs.
-      ```
-      systemctl status rsyslog
-      journalctl -xeu rsyslog.service
-      ```
+
+- Error code: `NOOBAA_ENDPOINT_FAILED`
+- Error message: S3 endpoint process is not running. Restart the endpoint process.
+- Reasons:
+  - NooBaa endpoint process is not running, and it's not able to respond to any requests.
+- Resolutions:
+  - Restart the NooBaa service and verify NooBaa process is exited with errors within the logs.
+    ```
+    systemctl status rsyslog
+    journalctl -xeu rsyslog.service
+    ```
 
 #### 5. Unknown Error
-  - Error code: `UNKNOWN_ERROR`
-  - Error message: An unknown error occurred.
-  - Reasons:
-    - Unknown.
-  - Resolutions:
-    - Unknown.
+
+- Error code: `UNKNOWN_ERROR`
+- Error message: An unknown error occurred.
+- Reasons:
+  - Unknown.
+- Resolutions:
+  - Unknown.
 
 ### Accounts / Buckets Health Errors
 
 The following error codes will be associated with a specific Bucket or Account schema under the invalid_buckets or invalid_accounts property.
 
 #### 1. Storage path does not exist
+
 - Error code: `STORAGE_NOT_EXIST`
 - Error message: Storage path mentioned in schema pointing to the invalid directory.
 - Reasons:
@@ -318,36 +341,37 @@ The following error codes will be associated with a specific Bucket or Account s
   - Ensure that the bucket's path is an existing file.
 
 #### 2. Invalid Account/Bucket Configuration File
-  - Error code: `INVALID_CONFIG`
-  - Error message: Schema JSON is not valid, Please check the JSON format.
-  - Reasons:
-    - Bucket/Account JSON is not valid or not in JSON format.
-  - Resolutions:
-    - Check for any JSON syntax error in the schema structure of the Bucket/Account.
+
+- Error code: `INVALID_CONFIG`
+- Error message: Schema JSON is not valid, Please check the JSON format.
+- Reasons:
+  - Bucket/Account JSON is not valid or not in JSON format.
+- Resolutions:
+  - Check for any JSON syntax error in the schema structure of the Bucket/Account.
 
 #### 3. Account Can Not Access New_Buckets_Path
-  - Error code: `INVALID_CONFIG`
-  - Error message: Account do no have access to storage path mentioned in schema.
-  - Reasons:
-    - Account `new_buckets_path` is not accessible with account uid and gid.
-  - Resolutions:
-    - Ensure that the account's uid/gid/user has read and write permissions within the `new_buckets_path` file system directory.
 
+- Error code: `INVALID_CONFIG`
+- Error message: Account do no have access to storage path mentioned in schema.
+- Reasons:
+  - Account `new_buckets_path` is not accessible with account uid and gid.
+- Resolutions:
+  - Ensure that the account's uid/gid/user has read and write permissions within the `new_buckets_path` file system directory.
 
 #### 4. Bucket/Account Config File Is Missing
-  - Error code: `MISSING_CONFIG`
-  - Error message: Schema JSON is not found.
-  - Reasons:
-    - The Bucket/Account configuration file is missing from the config directory.
-  - Resolutions:
-    - Check for config files in respective Accounts or Buckets directories.
 
+- Error code: `MISSING_CONFIG`
+- Error message: Schema JSON is not found.
+- Reasons:
+  - The Bucket/Account configuration file is missing from the config directory.
+- Resolutions:
+  - Check for config files in respective Accounts or Buckets directories.
 
 #### 5. Account's User (FS Distinguished Name) Is Invalid
-  - Error code: `INVALID_DISTINGUISHED_NAME`
-  - Error message: Account distinguished name was not found.
-  - Reasons:
-    - The account user (distinguished name) was not found.
-  - Resolutions:
-    - Check for FS user on the host running the Health CLI.
 
+- Error code: `INVALID_DISTINGUISHED_NAME`
+- Error message: Account distinguished name was not found.
+- Reasons:
+  - The account user (distinguished name) was not found.
+- Resolutions:
+  - Check for FS user on the host running the Health CLI.

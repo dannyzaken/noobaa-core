@@ -10,7 +10,6 @@ const s3_utils = require('../s3_utils');
  * http://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadListMPUpload.html
  */
 async function get_bucket_uploads(req) {
-
     const max_keys_received = Number(req.query['max-uploads'] || 1000);
     if (!Number.isInteger(max_keys_received) || max_keys_received < 0) {
         dbg.warn('Invalid max-uploads', req.query['max-uploads']);
@@ -22,41 +21,45 @@ async function get_bucket_uploads(req) {
         prefix: req.query.prefix,
         delimiter: req.query.delimiter,
         key_marker: req.query['key-marker'],
-        upload_id_marker: req.query['key-marker'] && req.query['upload-id-marker'],
+        upload_id_marker:
+            req.query['key-marker'] && req.query['upload-id-marker'],
         limit: Math.min(max_keys_received, 1000),
     });
 
     const field_encoder = s3_utils.get_response_field_encoder(req);
 
     return {
-        ListMultipartUploadsResult: [{
-            Bucket: req.params.bucket,
-            Prefix: field_encoder(req.query.prefix),
-            Delimiter: field_encoder(req.query.delimiter),
-            MaxUploads: max_keys_received,
-            KeyMarker: field_encoder(req.query['key-marker']),
-            UploadIdMarker: req.query['upload-id-marker'],
-            IsTruncated: reply.is_truncated,
-            NextKeyMarker: field_encoder(reply.next_marker),
-            NextUploadIdMarker: reply.next_upload_id_marker,
-            EncodingType: req.query['encoding-type'],
-        },
-        _.map(reply.objects, obj => ({
-            Upload: {
-                Key: field_encoder(obj.key),
-                UploadId: obj.obj_id,
-                Initiated: s3_utils.format_s3_xml_date(obj.upload_started),
-                Initiator: s3_utils.DEFAULT_S3_USER,
-                Owner: s3_utils.DEFAULT_S3_USER,
-                StorageClass: s3_utils.parse_storage_class(obj.storage_class),
-            }
-        })),
-        _.map(reply.common_prefixes, prefix => ({
-            CommonPrefixes: {
-                Prefix: field_encoder(prefix) || ''
-            }
-        }))
-        ]
+        ListMultipartUploadsResult: [
+            {
+                Bucket: req.params.bucket,
+                Prefix: field_encoder(req.query.prefix),
+                Delimiter: field_encoder(req.query.delimiter),
+                MaxUploads: max_keys_received,
+                KeyMarker: field_encoder(req.query['key-marker']),
+                UploadIdMarker: req.query['upload-id-marker'],
+                IsTruncated: reply.is_truncated,
+                NextKeyMarker: field_encoder(reply.next_marker),
+                NextUploadIdMarker: reply.next_upload_id_marker,
+                EncodingType: req.query['encoding-type'],
+            },
+            _.map(reply.objects, obj => ({
+                Upload: {
+                    Key: field_encoder(obj.key),
+                    UploadId: obj.obj_id,
+                    Initiated: s3_utils.format_s3_xml_date(obj.upload_started),
+                    Initiator: s3_utils.DEFAULT_S3_USER,
+                    Owner: s3_utils.DEFAULT_S3_USER,
+                    StorageClass: s3_utils.parse_storage_class(
+                        obj.storage_class,
+                    ),
+                },
+            })),
+            _.map(reply.common_prefixes, prefix => ({
+                CommonPrefixes: {
+                    Prefix: field_encoder(prefix) || '',
+                },
+            })),
+        ],
     };
 }
 

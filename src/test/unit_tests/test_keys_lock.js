@@ -7,38 +7,37 @@ const mocha = require('mocha');
 const assert = require('assert');
 const KeysLock = require('../../util/keys_lock');
 
-mocha.describe('keys_lock', function() {
-
-    mocha.it('should create ok', function() {
+mocha.describe('keys_lock', function () {
+    mocha.it('should create ok', function () {
         const kl = new KeysLock();
         assert.strictEqual(kl.length, 0);
     });
 
-    mocha.it('should lock key', function() {
+    mocha.it('should lock key', function () {
         let kl;
         let first_woke = false;
 
         function do_wake() {
-            return P.resolve()
-                .then(() => {
-                    first_woke = true;
-                });
+            return P.resolve().then(() => {
+                first_woke = true;
+            });
         }
 
-        return P.resolve()
-            .then(function() {
-                kl = new KeysLock();
-                assert.strictEqual(kl.length, 0);
+        return P.resolve().then(function () {
+            kl = new KeysLock();
+            assert.strictEqual(kl.length, 0);
 
-                P.resolve(kl.surround_keys(['key'], do_wake));
-                assert.strictEqual(kl.length, 0);
+            P.resolve(kl.surround_keys(['key'], do_wake));
+            assert.strictEqual(kl.length, 0);
 
-                P.resolve(kl.surround_keys(['key'], function() {
+            P.resolve(
+                kl.surround_keys(['key'], function () {
                     assert.strictEqual(first_woke, true);
                     assert.strictEqual(kl.length, 0);
-                }));
-                assert.strictEqual(kl.length, 1);
-            });
+                }),
+            );
+            assert.strictEqual(kl.length, 1);
+        });
     });
 
     // mocha.it('should work like guy says', function() {
@@ -64,37 +63,39 @@ mocha.describe('keys_lock', function() {
     //     ])
     // });
 
-
-    mocha.it('should work parallel keys', function() {
+    mocha.it('should work parallel keys', function () {
         let kl;
         let first_woke = false;
 
         function do_wake_first() {
-            return P.resolve()
-                .then(() => {
-                    first_woke = true;
-                });
+            return P.resolve().then(() => {
+                first_woke = true;
+            });
         }
 
-        return P.resolve()
-            .then(function() {
-                kl = new KeysLock();
-                assert.strictEqual(kl.length, 0);
+        return P.resolve().then(function () {
+            kl = new KeysLock();
+            assert.strictEqual(kl.length, 0);
 
-                P.resolve(kl.surround_keys(['key1'], () => { /* Empty Func */ }));
-                assert.strictEqual(kl.length, 0);
+            P.resolve(
+                kl.surround_keys(['key1'], () => {
+                    /* Empty Func */
+                }),
+            );
+            assert.strictEqual(kl.length, 0);
 
-                P.resolve(kl.surround_keys(['key2'], do_wake_first));
-                assert.strictEqual(kl.length, 0);
+            P.resolve(kl.surround_keys(['key2'], do_wake_first));
+            assert.strictEqual(kl.length, 0);
 
-                P.resolve(kl.surround_keys(['key2'], function() {
+            P.resolve(
+                kl.surround_keys(['key2'], function () {
                     assert.strictEqual(first_woke, true);
                     assert.strictEqual(kl.length, 0);
-                }));
-                assert.strictEqual(kl.length, 1);
-            });
+                }),
+            );
+            assert.strictEqual(kl.length, 1);
+        });
     });
-
 
     // mocha.it('should surround', function() {
     //     var kl = new KeysLock();
@@ -160,5 +161,4 @@ mocha.describe('keys_lock', function() {
     //             assert(results[4].value() < results[2].value());
     //         });
     // });
-
 });

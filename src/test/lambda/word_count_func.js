@@ -5,7 +5,7 @@ const http = require('http');
 const https = require('https');
 const crypto = require('crypto');
 
-exports.handler = function(event, context, callback) {
+exports.handler = function (event, context, callback) {
     let text = '';
 
     if (event.random) {
@@ -20,18 +20,19 @@ exports.handler = function(event, context, callback) {
 
     if (event.url) {
         return (event.url.startsWith('https:') ? https : http)
-            .get(event.url, res => res
-                .setEncoding('utf8')
-                .on('data', data => {
-                    text += data;
-                })
-                .once('end', () => {
-                    const reply = count_text(text, event.return_text);
-                    reply.status_code = res.statusCode;
-                    reply.headers = res.headers;
-                    callback(null, reply);
-                })
-                .once('error', err => callback(err))
+            .get(event.url, res =>
+                res
+                    .setEncoding('utf8')
+                    .on('data', data => {
+                        text += data;
+                    })
+                    .once('end', () => {
+                        const reply = count_text(text, event.return_text);
+                        reply.status_code = res.statusCode;
+                        reply.headers = res.headers;
+                        callback(null, reply);
+                    })
+                    .once('error', err => callback(err)),
             )
             .once('error', err => callback(err));
     }
@@ -54,8 +55,15 @@ function count_text(text, return_text) {
 function random_text(length) {
     let str = '';
     const WORDSET = 'abcdefghijklmnopqrstuvwxyz';
-    const CHARSET = WORDSET + ' '.repeat(0.2 * WORDSET.length) + '\n'.repeat(0.1 * WORDSET.length);
-    const cipher = crypto.createCipheriv('aes-128-gcm', crypto.randomBytes(16), crypto.randomBytes(12));
+    const CHARSET =
+        WORDSET +
+        ' '.repeat(0.2 * WORDSET.length) +
+        '\n'.repeat(0.1 * WORDSET.length);
+    const cipher = crypto.createCipheriv(
+        'aes-128-gcm',
+        crypto.randomBytes(16),
+        crypto.randomBytes(12),
+    );
     const zero_buf = Buffer.alloc(Math.min(1024, length));
     while (length > 0) {
         const rand_buf = cipher.update(zero_buf);

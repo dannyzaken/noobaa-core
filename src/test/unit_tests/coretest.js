@@ -30,10 +30,7 @@ config.OBJECT_SDK_BUCKET_CACHE_EXPIRY_MS = 1;
 config.ROOT_KEY_MOUNT = '/tmp/noobaa-server/root_keys';
 
 const dbg = require('../../util/debug_module')(__filename);
-const dbg_level =
-    (process.env.SUPPRESS_LOGS && -5) ||
-    (argv.verbose && 5) ||
-    0;
+const dbg_level = (process.env.SUPPRESS_LOGS && -5) || (argv.verbose && 5) || 0;
 dbg.set_module_level(dbg_level, 'core');
 
 const P = require('../../util/promise');
@@ -45,15 +42,17 @@ const auth_server = require('../../server/common_services/auth_server');
 const node_server = require('../../server/node_services/node_server');
 const account_server = require('../../server/system_services/account_server');
 const system_server = require('../../server/system_services/system_server');
-const system_store = require('../../server/system_services/system_store').get_instance();
+const system_store =
+    require('../../server/system_services/system_store').get_instance();
 const MDStore = require('../../server/object_services/md_store').MDStore;
 const pool_server = require('../../server/system_services/pool_server');
 const pool_ctrls = require('../../server/system_services/pool_controllers');
 
 // Set the pools server pool controller factory to create pools with
 // backed by in process agents.
-pool_server.set_pool_controller_factory((system, pool) =>
-    new pool_ctrls.InProcessAgentsPoolController(system.name, pool.name)
+pool_server.set_pool_controller_factory(
+    (system, pool) =>
+        new pool_ctrls.InProcessAgentsPoolController(system.name, pool.name),
 );
 
 let base_address;
@@ -75,14 +74,15 @@ const anon_rpc_client = server_rpc.rpc.new_client({});
 const SYSTEM = CORETEST;
 const EMAIL = `${CORETEST}@noobaa.com`;
 const PASSWORD = CORETEST;
-const POOL_LIST = [{
+const POOL_LIST = [
+    {
         name: 'pool-with-10-hosts',
-        host_count: 10
+        host_count: 10,
     },
     {
         name: 'pool-with-1-host',
-        host_count: 1
-    }
+        host_count: 1,
+    },
 ];
 
 let CREATED_POOLS = null;
@@ -100,7 +100,8 @@ function init_all_collections() {
     require('../../server/analytic_services/history_data_store').HistoryDataStore.instance();
     require('../../server/analytic_services/activity_log_store').ActivityLogStore.instance();
     // eslint-disable-next-line no-unused-expressions
-    require('../../server/analytic_services/endpoint_stats_store').EndpointStatsStore.instance;
+    require('../../server/analytic_services/endpoint_stats_store')
+        .EndpointStatsStore.instance;
 }
 
 function setup(options = {}) {
@@ -109,8 +110,11 @@ function setup(options = {}) {
     _setup = true;
 
     if (incomplete_rpc_coverage) {
-        assert(incomplete_rpc_coverage === 'show' || incomplete_rpc_coverage === 'fail',
-            'coretest: incomplete_rpc_coverage expected value "show" or "fail"');
+        assert(
+            incomplete_rpc_coverage === 'show' ||
+                incomplete_rpc_coverage === 'fail',
+            'coretest: incomplete_rpc_coverage expected value "show" or "fail"',
+        );
         _incomplete_rpc_coverage = incomplete_rpc_coverage;
     }
 
@@ -129,14 +133,19 @@ function setup(options = {}) {
     _.each(server_rpc.rpc.router, (val, key) => {
         server_rpc.rpc.router[key] = 'fcall://fcall';
     });
-    _.each(server_rpc.rpc._services,
-        (service, srv) => api_coverage.add(srv));
+    _.each(server_rpc.rpc._services, (service, srv) => api_coverage.add(srv));
 
     const object_io = new ObjectIO();
     const endpoint_request_handler = endpoint.create_endpoint_handler(
-        endpoint.create_init_request_sdk(server_rpc.rpc, rpc_client, object_io), [], false);
+        endpoint.create_init_request_sdk(server_rpc.rpc, rpc_client, object_io),
+        [],
+        false,
+    );
     const endpoint_request_handler_sts = endpoint.create_endpoint_handler(
-        endpoint.create_init_request_sdk(server_rpc.rpc, rpc_client, object_io), [], true);
+        endpoint.create_init_request_sdk(server_rpc.rpc, rpc_client, object_io),
+        [],
+        true,
+    );
 
     async function announce(msg) {
         if (process.env.SUPPRESS_LOGS) return;
@@ -149,13 +158,19 @@ function setup(options = {}) {
         await P.delay(500);
     }
 
-    mocha.before('coretest-before', async function() {
+    mocha.before('coretest-before', async function () {
         this.timeout(600000); // eslint-disable-line no-invalid-this
         const start = Date.now();
 
-        await fs.promises.mkdir(config.ROOT_KEY_MOUNT, { recursive: true});
-        await fs.promises.writeFile(config.ROOT_KEY_MOUNT + '/active_root_key', 'key1');
-        await fs.promises.writeFile(config.ROOT_KEY_MOUNT + '/key1', root_secret);
+        await fs.promises.mkdir(config.ROOT_KEY_MOUNT, { recursive: true });
+        await fs.promises.writeFile(
+            config.ROOT_KEY_MOUNT + '/active_root_key',
+            'key1',
+        );
+        await fs.promises.writeFile(
+            config.ROOT_KEY_MOUNT + '/key1',
+            root_secret,
+        );
 
         await announce('db_client createDatabase()');
         await db_client.instance().createDatabase();
@@ -166,7 +181,7 @@ function setup(options = {}) {
             method_api: 'server_inter_process_api',
             method_name: 'load_system_store',
             target: '',
-            request_params: {}
+            request_params: {},
         });
         await announce('ensure_support_account()');
         await account_server.ensure_support_account();
@@ -195,12 +210,18 @@ function setup(options = {}) {
             default_handler: endpoint_request_handler_sts,
         });
         // the http/ws port is used by the agents
-        const http_net_address = /** @type {import('net').AddressInfo} */ (http_server.address());
-        const https_net_address = /** @type {import('net').AddressInfo} */ (https_server.address());
+        const http_net_address = /** @type {import('net').AddressInfo} */ (
+            http_server.address()
+        );
+        const https_net_address = /** @type {import('net').AddressInfo} */ (
+            https_server.address()
+        );
         const http_port = http_net_address.port;
         const https_port = https_net_address.port;
 
-        const https_net_address_sts = /** @type {import('net').AddressInfo} */ (https_server_sts.address());
+        const https_net_address_sts = /** @type {import('net').AddressInfo} */ (
+            https_server_sts.address()
+        );
         const https_port_sts = https_net_address_sts.port;
 
         base_address = `wss://localhost:${https_port}`;
@@ -225,16 +246,21 @@ function setup(options = {}) {
             await announce('setup_pools()');
             await setup_pools(pools_to_create);
         }
-        await announce(`coretest ready... (took ${((Date.now() - start) / 1000).toFixed(1)} sec)`);
+        await announce(
+            `coretest ready... (took ${((Date.now() - start) / 1000).toFixed(1)} sec)`,
+        );
     });
 
-
-    mocha.after('coretest-after', async function() {
+    mocha.after('coretest-after', async function () {
         this.timeout(600000); // eslint-disable-line no-invalid-this
 
         try {
-            console.log('Database', db_client.instance().get_db_name(), 'is intentionally',
-                'left for debugging and will be deleted before next test run');
+            console.log(
+                'Database',
+                db_client.instance().get_db_name(),
+                'is intentionally',
+                'left for debugging and will be deleted before next test run',
+            );
 
             if (_incomplete_rpc_coverage) {
                 let had_missing = false;
@@ -264,18 +290,21 @@ function setup(options = {}) {
             await announce('https_server_sts close()');
             if (https_server_sts) https_server_sts.close();
             await announce('coretest done ...');
-
         } catch (err) {
             dbg.error('got error on mocha.after', err);
         }
         let tries_left = 3;
         setInterval(function check_dangling_handles() {
             tries_left -= 1;
-            console.info(`Waiting for dangling handles to release, re-sample in 30s (tries left: ${tries_left})`);
+            console.info(
+                `Waiting for dangling handles to release, re-sample in 30s (tries left: ${tries_left})`,
+            );
             wtf.dump();
 
             if (tries_left === 0) {
-                console.error('Tests cannot complete successfully, running tests resulted in dangling handles');
+                console.error(
+                    'Tests cannot complete successfully, running tests resulted in dangling handles',
+                );
 
                 // Force the test suite to fail (ignoring the exist handle that mocha sets up in order to return a fail
                 // exit code)
@@ -283,7 +312,6 @@ function setup(options = {}) {
                 process.exit(1);
             }
         }, 30000).unref();
-
     });
 }
 
@@ -312,33 +340,38 @@ async function overwrite_system_address(system_name) {
     await P.wait_until(
         () => system_server.is_initialized(),
         2 * 60 * 1000,
-        1000
+        1000,
     );
 
     console.log('Overriding system, address with:', base_address);
-    const system = system_store.data.systems
-        .find(sys => sys.name === system_name);
+    const system = system_store.data.systems.find(
+        sys => sys.name === system_name,
+    );
 
     // Add the base address as external address to allow
     // the pool server to pass it to the created agents.
     const { hostname, port, protocol } = new URL(base_address);
-    const system_address = [{
-        service: 'noobaa-mgmt',
-        port: Number(port),
-        api: 'mgmt',
-        secure: protocol === 'wss:',
-        kind: 'INTERNAL',
-        weight: 0,
-        hostname
-    }];
+    const system_address = [
+        {
+            service: 'noobaa-mgmt',
+            port: Number(port),
+            api: 'mgmt',
+            secure: protocol === 'wss:',
+            kind: 'INTERNAL',
+            weight: 0,
+            hostname,
+        },
+    ];
 
     await system_store.make_changes({
         update: {
-            systems: [{
-                _id: system._id,
-                $set: { system_address }
-            }]
-        }
+            systems: [
+                {
+                    _id: system._id,
+                    $set: { system_address },
+                },
+            ],
+        },
     });
 }
 
@@ -348,30 +381,37 @@ async function init_test_pools(pools_to_create) {
     await node_server.start_monitor();
 
     // Create pools.
-    await Promise.all(pools_to_create.map(pool_info =>
-        rpc_client.pool.create_hosts_pool({
-            name: pool_info.name,
-            host_count: pool_info.host_count,
-            is_managed: true,
-        })
-    ));
+    await Promise.all(
+        pools_to_create.map(pool_info =>
+            rpc_client.pool.create_hosts_pool({
+                name: pool_info.name,
+                host_count: pool_info.host_count,
+                is_managed: true,
+            }),
+        ),
+    );
 
     // Wait until all pools have hosts in optimal state.
-    await P.wait_until(async () => {
-        await node_server.sync_monitor_to_store();
+    await P.wait_until(
+        async () => {
+            await node_server.sync_monitor_to_store();
 
-        const { hosts } = await rpc_client.host.list_hosts({
-            query: {
-                pools: pools_to_create.map(pool_info => pool_info.name),
-                mode: ['OPTIMAL'],
-            }
-        });
+            const { hosts } = await rpc_client.host.list_hosts({
+                query: {
+                    pools: pools_to_create.map(pool_info => pool_info.name),
+                    mode: ['OPTIMAL'],
+                },
+            });
 
-        const optimal_hosts_by_Pool = _.countBy(hosts, host => host.pool);
-        return pools_to_create.every(pool =>
-            pool.host_count === (optimal_hosts_by_Pool[pool.name] || 0)
-        );
-    }, 5 * 60 * 1000, 2500);
+            const optimal_hosts_by_Pool = _.countBy(hosts, host => host.pool);
+            return pools_to_create.every(
+                pool =>
+                    pool.host_count === (optimal_hosts_by_Pool[pool.name] || 0),
+            );
+        },
+        5 * 60 * 1000,
+        2500,
+    );
 
     CREATED_POOLS = pools_to_create;
 
@@ -392,44 +432,60 @@ async function clear_test_pools() {
             rpc_client.tier.update_tier({
                 name: tier.name,
                 data_placement: 'MIRROR', // Must be sent in order to apply attached_pools
-                attached_pools: []
-            })
-        )
+                attached_pools: [],
+            }),
+        ),
     );
 
     // Prevent accounts from preventing pool deletions (by using a pool as default resource)
     // by disabling s3 access for all accounts.
     const { accounts } = await rpc_client.account.list_accounts({});
-    await Promise.all(accounts.map(account =>
-        rpc_client.account.update_account_s3_access({
-            email: account.email,
-            s3_access: false
-        })
-    ));
+    await Promise.all(
+        accounts.map(account =>
+            rpc_client.account.update_account_s3_access({
+                email: account.email,
+                s3_access: false,
+            }),
+        ),
+    );
 
     // Delete all pools (will stop all agents managed by the pool)
     if (CREATED_POOLS) {
-        console.log(`cleaning pools`, CREATED_POOLS.map(p => p.name));
+        console.log(
+            `cleaning pools`,
+            CREATED_POOLS.map(p => p.name),
+        );
 
-        await Promise.all(CREATED_POOLS.map(async pool => {
-            try {
-                await P.wait_until(async () => {
-                    try {
-                        console.log(`deleting pool`, pool.name);
-                        await rpc_client.pool.delete_pool({ name: pool.name });
-                    } catch (err) {
-                        if (err.rpc_code === 'NO_SUCH_POOL') {
-                            console.log(`deleted pool ${pool.name}`);
-                            return true;
-                        }
-                        console.log(`got error on delete_pool for pool ${pool.name}`, err.rpc_code);
-                    }
-                    return false;
-                }, 2 * 60 * 1000, 2500);
-            } catch (err) {
-                dbg.error('failed on pool cleanup', err);
-            }
-        }));
+        await Promise.all(
+            CREATED_POOLS.map(async pool => {
+                try {
+                    await P.wait_until(
+                        async () => {
+                            try {
+                                console.log(`deleting pool`, pool.name);
+                                await rpc_client.pool.delete_pool({
+                                    name: pool.name,
+                                });
+                            } catch (err) {
+                                if (err.rpc_code === 'NO_SUCH_POOL') {
+                                    console.log(`deleted pool ${pool.name}`);
+                                    return true;
+                                }
+                                console.log(
+                                    `got error on delete_pool for pool ${pool.name}`,
+                                    err.rpc_code,
+                                );
+                            }
+                            return false;
+                        },
+                        2 * 60 * 1000,
+                        2500,
+                    );
+                } catch (err) {
+                    dbg.error('failed on pool cleanup', err);
+                }
+            }),
+        );
         console.log(`finished pools cleanup`);
     }
 
@@ -477,36 +533,41 @@ function get_https_address_sts() {
 // }
 
 function attach_pool_to_bucket(system_name, bucket_name, pool_name) {
-    const system = _.find(system_store.data.systems, sys => sys.name === system_name);
+    const system = _.find(
+        system_store.data.systems,
+        sys => sys.name === system_name,
+    );
     const pool = system.pools_by_name[pool_name];
     const bucket = system.buckets_by_name[bucket_name];
     const tiering = bucket.tiering;
     const tier0 = tiering.tiers[0].tier;
     const change = {
         update: {
-            tiers: [{
-                _id: tier0._id,
-                $set: {
-                    "mirrors.0.spread_pools.0": pool._id
-                }
-            }]
-        }
+            tiers: [
+                {
+                    _id: tier0._id,
+                    $set: {
+                        'mirrors.0.spread_pools.0': pool._id,
+                    },
+                },
+            ],
+        },
     };
     return system_store.make_changes(change);
 }
 
 function set_pool_as_default_resource(pool_name) {
-    const pool_id = system_store.data.pools
-        .find(pool => pool.name === pool_name)
-        ._id;
+    const pool_id = system_store.data.pools.find(
+        pool => pool.name === pool_name,
+    )._id;
 
     return system_store.make_changes({
         update: {
             accounts: _.map(system_store.data.accounts, account => ({
                 _id: account._id,
                 default_resource: pool_id,
-            }))
-        }
+            })),
+        },
     });
 }
 
@@ -526,11 +587,27 @@ function describe_mapper_test_case({ name, bucket_name_prefix }, func) {
     ].map(parse_ec);
 
     const EC_FULL = [
-        '1+0', '1+1', '1+2',
-        '2+0', '2+1', '2+2',
-        '4+0', '4+1', '4+2', '4+3', '4+4',
-        '6+0', '6+1', '6+2', '6+3', '6+4',
-        '8+0', '8+1', '8+2', '8+3', '8+4',
+        '1+0',
+        '1+1',
+        '1+2',
+        '2+0',
+        '2+1',
+        '2+2',
+        '4+0',
+        '4+1',
+        '4+2',
+        '4+3',
+        '4+4',
+        '6+0',
+        '6+1',
+        '6+2',
+        '6+3',
+        '6+4',
+        '8+0',
+        '8+1',
+        '8+2',
+        '8+3',
+        '8+4',
     ].map(parse_ec);
 
     function parse_ec(str) {
@@ -592,18 +669,20 @@ function describe_mapper_test_case({ name, bucket_name_prefix }, func) {
     let bucket_counter = 1;
 
     for (const {
-            data_placement,
-            num_pools,
-            replicas,
-            data_frags,
-            parity_frags,
-        } of variations) {
+        data_placement,
+        num_pools,
+        replicas,
+        data_frags,
+        parity_frags,
+    } of variations) {
         const total_frags = data_frags + parity_frags;
-        const total_replicas = data_placement === 'MIRROR' ? replicas * num_pools : replicas;
+        const total_replicas =
+            data_placement === 'MIRROR' ? replicas * num_pools : replicas;
         const total_blocks = total_replicas * total_frags;
         const chunk_coder_config = { replicas, data_frags, parity_frags };
         const test_name = `${data_placement} num_pools=${num_pools} replicas=${replicas} data_frags=${data_frags} parity_frags=${parity_frags}`;
-        const bucket_name = bucket_name_prefix ? `${bucket_name_prefix}-${bucket_counter}` : '';
+        const bucket_name =
+            bucket_name_prefix ? `${bucket_name_prefix}-${bucket_counter}` : '';
         bucket_counter += 1;
         const test_case = {
             test_name,
@@ -625,11 +704,9 @@ function describe_mapper_test_case({ name, bucket_name_prefix }, func) {
 function _describe_mapper_test_case(test_case, func) {
     const { test_name, bucket_name, chunk_coder_config } = test_case;
 
-    mocha.describe(test_name, function() {
-
+    mocha.describe(test_name, function () {
         if (bucket_name) {
-
-            mocha.before(async function() {
+            mocha.before(async function () {
                 this.timeout(600000); // eslint-disable-line no-invalid-this
                 await rpc_client.bucket.create_bucket({
                     name: bucket_name,
@@ -643,9 +720,11 @@ function _describe_mapper_test_case(test_case, func) {
             });
 
             // deleting the objects to free memory because the test uses block_store_mem.js
-            mocha.after(async function() {
+            mocha.after(async function () {
                 this.timeout(600000); // eslint-disable-line no-invalid-this
-                const res = await rpc_client.object.list_objects_admin({ bucket: bucket_name });
+                const res = await rpc_client.object.list_objects_admin({
+                    bucket: bucket_name,
+                });
                 await rpc_client.object.delete_multiple_objects({
                     bucket: bucket_name,
                     objects: res.objects.map(o => ({ key: o.key })),
@@ -654,7 +733,6 @@ function _describe_mapper_test_case(test_case, func) {
         }
 
         func(test_case);
-
     });
 }
 

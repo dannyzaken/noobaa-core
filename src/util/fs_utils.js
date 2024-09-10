@@ -19,14 +19,15 @@ const PRIVATE_DIR_PERMISSIONS = 0o700; // octal 700
  *
  */
 function file_must_not_exist(file_path) {
-    return fs.promises.stat(file_path)
-        .then(function() {
+    return fs.promises.stat(file_path).then(
+        function () {
             throw new Error(`${file_path} exists`);
-        }, function(err) {
+        },
+        function (err) {
             if (err.code !== 'ENOENT') throw err;
-        });
+        },
+    );
 }
-
 
 /**
  * file_must_exist
@@ -80,37 +81,54 @@ async function read_dir_recursive(options) {
 
         const entries = await fs.promises.readdir(root);
 
-        await Promise.all(entries.map(async entry => {
-            const entry_path = path.join(root, entry);
-            try {
-                const stat = await stat_sem.surround(() => fs.promises.stat(entry_path));
-                if (on_entry) {
-                    const res = await on_entry({ path: entry_path, stat });
-                    // when on_entry returns explicit false, we stop recursing.
-                    if (res === false) return;
-                }
-                if (stat.isDirectory() && level < depth) {
-                    if (stat.size > 64 * 1024 * 1024) {
-                        // what to do AAAHH
-                        console.error(`read_dir_recursive: huge dir might crash the process ${entry_path}`);
+        await Promise.all(
+            entries.map(async entry => {
+                const entry_path = path.join(root, entry);
+                try {
+                    const stat = await stat_sem.surround(() =>
+                        fs.promises.stat(entry_path),
+                    );
+                    if (on_entry) {
+                        const res = await on_entry({ path: entry_path, stat });
+                        // when on_entry returns explicit false, we stop recursing.
+                        if (res === false) return;
                     }
-                    sub_dirs.push(entry_path);
+                    if (stat.isDirectory() && level < depth) {
+                        if (stat.size > 64 * 1024 * 1024) {
+                            // what to do AAAHH
+                            console.error(
+                                `read_dir_recursive: huge dir might crash the process ${entry_path}`,
+                            );
+                        }
+                        sub_dirs.push(entry_path);
+                    }
+                } catch (err) {
+                    console.warn(
+                        `read_dir_recursive: entry error ${entry_path}:`,
+                        err,
+                    );
                 }
-            } catch (err) {
-                console.warn(`read_dir_recursive: entry error ${entry_path}:`, err);
-            }
-        }));
+            }),
+        );
     });
 
     // second step: recurse to sub dirs
 
-    if (!level) console.log(`read_dir_recursive: recursing ${root} with ${sub_dirs.length} sub dirs`);
+    if (!level) {
+        console.log(
+            `read_dir_recursive: recursing ${root} with ${sub_dirs.length} sub dirs`,
+        );
+    }
 
-    await Promise.all(sub_dirs.map(sub_dir => read_dir_recursive({
-        ...options,
-        root: sub_dir,
-        level: level + 1
-    })));
+    await Promise.all(
+        sub_dirs.map(sub_dir =>
+            read_dir_recursive({
+                ...options,
+                root: sub_dir,
+                level: level + 1,
+            }),
+        ),
+    );
 
     if (!level) console.log(`read_dir_recursive: finished ${root}`);
 }
@@ -130,38 +148,38 @@ async function disk_usage(root) {
                 size += entry.stat.size;
                 count += 1;
             }
-        }
+        },
     });
     return { size, count };
 }
 
-
 // returns the first line in the file that contains the substring
 function find_line_in_file(file_name, line_sub_string) {
-    return fs.promises.readFile(file_name, 'utf8')
-        .then(data => data.split('\n')
-            .find(line => line.indexOf(line_sub_string) > -1));
+    return fs.promises
+        .readFile(file_name, 'utf8')
+        .then(data =>
+            data.split('\n').find(line => line.indexOf(line_sub_string) > -1),
+        );
 }
 
 // returns all lines in the file that contains the substring
 function find_all_lines_in_file(file_name, line_sub_string) {
-    return fs.promises.readFile(file_name, 'utf8')
-        .then(data => data.split('\n')
-            .filter(function(line) {
-                return line.indexOf(line_sub_string) > -1;
-            }));
+    return fs.promises.readFile(file_name, 'utf8').then(data =>
+        data.split('\n').filter(function (line) {
+            return line.indexOf(line_sub_string) > -1;
+        }),
+    );
 }
 
 function get_last_line_in_file(file_name) {
-    return fs.promises.readFile(file_name, 'utf8')
-        .then(data => {
-            const lines = data.split('\n');
-            let idx = lines.length - 1;
-            while (!lines[idx] && idx > 0) {
-                idx -= 1;
-            }
-            return lines[idx] || undefined;
-        });
+    return fs.promises.readFile(file_name, 'utf8').then(data => {
+        const lines = data.split('\n');
+        let idx = lines.length - 1;
+        while (!lines[idx] && idx > 0) {
+            idx -= 1;
+        }
+        return lines[idx] || undefined;
+    });
 }
 
 function create_path(dir, mode) {
@@ -177,9 +195,12 @@ function create_fresh_path(dir, mode) {
 function file_copy(src, dst) {
     let cmd;
     if (os_utils.IS_WIN) {
-        cmd = 'copy /Y  "' +
-            src.replace(/\//g, '\\') + '" "' +
-            dst.replace(/\//g, '\\') + '"';
+        cmd =
+            'copy /Y  "' +
+            src.replace(/\//g, '\\') +
+            '" "' +
+            dst.replace(/\//g, '\\') +
+            '"';
     } else {
         cmd = 'cp -fp ' + src + ' ' + dst;
     }
@@ -222,7 +243,7 @@ function full_dir_copy(src, dst, filter_regex) {
         }
         ncp(src, dst, ncp_options, callback);
     }).then(() => {
-        // do nothing. 
+        // do nothing.
     });
 }
 
@@ -231,20 +252,25 @@ function tar_pack(tar_file_name, source, ignore_file_changes) {
     if (os_utils.IS_MAC) {
         cmd = 'tar -zcvf ' + tar_file_name + ' ' + source + '/*';
     } else {
-        cmd = 'tar -zcvf ' +
+        cmd =
+            'tar -zcvf ' +
             (ignore_file_changes ? '--warning=no-file-changed ' : '') +
-            tar_file_name + ' ' + source + '/*';
+            tar_file_name +
+            ' ' +
+            source +
+            '/*';
     }
     console.log('tar_pack:', cmd);
     return os_utils.exec(cmd);
 }
 
 function write_file_from_stream(file_path, read_stream) {
-    return new Promise((resolve, reject) => read_stream
-        .once('error', reject)
-        .pipe(fs.createWriteStream(file_path))
-        .once('error', reject)
-        .once('finish', resolve)
+    return new Promise((resolve, reject) =>
+        read_stream
+            .once('error', reject)
+            .pipe(fs.createWriteStream(file_path))
+            .once('error', reject)
+            .once('finish', resolve),
     );
 }
 
@@ -265,15 +291,16 @@ function replace_file(file_path, data) {
         process_file_locks.set(lock_key, new Semaphore(1));
     }
     const lock = process_file_locks.get(lock_key);
-    return lock.surround(() =>
+    return lock
+        .surround(() =>
             P.resolve()
-            .then(() => fs.promises.writeFile(tmp_name, data))
-            .then(() => fs.promises.rename(tmp_name, file_path))
-            .catch(err => fs.promises.unlink(tmp_name)
-                .then(() => {
-                    throw err;
-                })
-            )
+                .then(() => fs.promises.writeFile(tmp_name, data))
+                .then(() => fs.promises.rename(tmp_name, file_path))
+                .catch(err =>
+                    fs.promises.unlink(tmp_name).then(() => {
+                        throw err;
+                    }),
+                ),
         )
         .finally(() => {
             if (!lock.length) {

@@ -1,6 +1,6 @@
 name: Current Version Build on Changes
 # Run on Backports
-on: 
+on:
   push:
     branches:
       - 5.10
