@@ -4,4 +4,3 @@ const coretest = require('./coretest');
 coretest.setup({ pools_to_create: [coretest.POOL_LIST[0]] });
 
 require('./test_lifecycle');
-

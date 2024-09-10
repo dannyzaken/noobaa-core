@@ -1,5 +1,5 @@
 name: Manual RPM Build Dispatch
-on: 
+on:
   workflow_dispatch:
     inputs:
       branch:
@@ -12,14 +12,14 @@ on:
         type: choice
         description: 'Centos Base image (options: 8/9) - Optional, default is 9'
         default: '9'
-        options: 
+        options:
           - '8'
           - '9'
       architecture:
         type: choice
         description: 'Architecture (options: linux/amd64 or linux/ppc64le) - Optional, default is linux/amd64'
         default: 'linux/amd64'
-        options: 
+        options:
           - 'linux/amd64'
           - 'linux/ppc64le'
 
@@ -32,12 +32,12 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: ${{ github.event.inputs.branch }}
-     
+
       - name: Prepare Suffix
         id: suffix
         if: ${{ github.event.inputs.tag != '' }}
         run: echo suffix="-${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
-      
+
       - name: Prepare CENTOS base image version
         id: centos_ver
         run: echo "centos_ver=${{ github.event.inputs.centos_ver }}" >> $GITHUB_OUTPUT
@@ -54,7 +54,7 @@ jobs:
             # enable cross-architecture builds 
             docker run --privileged --rm tonistiigi/binfmt --install all
           fi
-      
+
       - name: Build RPM
         id: build_rpm
         run: |

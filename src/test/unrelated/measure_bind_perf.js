@@ -4,33 +4,35 @@
 const _ = require('lodash');
 const js_utils = require('../util/js_utils');
 
-function Clazz() { /* Clazz? */ }
+function Clazz() {
+  /* Clazz? */
+}
 
-Clazz.prototype.func = function() {
-    return this;
+Clazz.prototype.func = function () {
+  return this;
 };
 
-Clazz.prototype.measure = function() {
-    const self = this;
-    const start = Date.now();
-    let now = Date.now();
-    let count = 0;
-    let run = true;
-    while (run) {
-        for (let i = 0; i < 100000; ++i) {
-            if (self.func() !== self) {
-                throw new Error('HUH');
-            }
-            count += 1;
-        }
-        process.stdout.write('.');
-        now = Date.now();
-        if (now - start > 2000) {
-            process.stdout.write('\n');
-            run = false;
-        }
+Clazz.prototype.measure = function () {
+  const self = this;
+  const start = Date.now();
+  let now = Date.now();
+  let count = 0;
+  let run = true;
+  while (run) {
+    for (let i = 0; i < 100000; ++i) {
+      if (self.func() !== self) {
+        throw new Error('HUH');
+      }
+      count += 1;
     }
-    console.log('Calls per second', (count * 1000 / (now - start)).toFixed(1));
+    process.stdout.write('.');
+    now = Date.now();
+    if (now - start > 2000) {
+      process.stdout.write('\n');
+      run = false;
+    }
+  }
+  console.log('Calls per second', ((count * 1000) / (now - start)).toFixed(1));
 };
 
 console.log('\nBIND');
@@ -45,8 +47,8 @@ binded.measure();
 
 console.log('\nCLOSURE');
 const closure = new Clazz();
-closure.func = function() {
-    return Clazz.prototype.func.apply(closure, arguments);
+closure.func = function () {
+  return Clazz.prototype.func.apply(closure, arguments);
 };
 closure.measure();
 

@@ -9,15 +9,15 @@ const minimist = require('minimist');
 
 // using functions to avoid loading modules until the actual command is parsed from args
 const CORE_COMMANDS = Object.freeze({
-    api: () => require('./api'),
-    nsfs: () => require('./nsfs'),
-    backingstore: () => require('./backingstore'),
-    web: () => require('../server/web_server'),
-    s3: () => require('../endpoint/endpoint'),
-    bg: () => require('../server/bg_workers'),
-    s3cat: () => require('../tools/s3cat'),
-    health: () => require('./health'),
-    manage_nsfs: () => require('./manage_nsfs'),
+  api: () => require('./api'),
+  nsfs: () => require('./nsfs'),
+  backingstore: () => require('./backingstore'),
+  web: () => require('../server/web_server'),
+  s3: () => require('../endpoint/endpoint'),
+  bg: () => require('../server/bg_workers'),
+  s3cat: () => require('../tools/s3cat'),
+  health: () => require('./health'),
+  manage_nsfs: () => require('./manage_nsfs'),
 });
 
 const HELP = `
@@ -39,23 +39,25 @@ Usage:
 const COMMANDS = `
 Commands:
 
-${Object.keys(CORE_COMMANDS).map(cmd => '    - ' + cmd).join('\n')}
+${Object.keys(CORE_COMMANDS)
+  .map(cmd => '    - ' + cmd)
+  .join('\n')}
 `;
 
 function print_usage() {
-    console.warn(HELP);
-    console.warn(USAGE.trimStart());
-    console.warn(COMMANDS.trimStart());
-    process.exit(1);
+  console.warn(HELP);
+  console.warn(USAGE.trimStart());
+  console.warn(COMMANDS.trimStart());
+  process.exit(1);
 }
 
 function main() {
-    const argv = minimist(process.argv.slice(2));
-    const cmd_name = argv._[0];
-    const cmd = CORE_COMMANDS[cmd_name];
-    if (!cmd) return print_usage();
-    argv._.shift(); // remove the command name from arg list
-    cmd().main(argv);
+  const argv = minimist(process.argv.slice(2));
+  const cmd_name = argv._[0];
+  const cmd = CORE_COMMANDS[cmd_name];
+  if (!cmd) return print_usage();
+  argv._.shift(); // remove the command name from arg list
+  cmd().main(argv);
 }
 
 exports.main = main;

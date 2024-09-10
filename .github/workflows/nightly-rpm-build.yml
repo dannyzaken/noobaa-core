@@ -1,8 +1,7 @@
 name: Nightly RPM Build Dispatch
-on: 
+on:
   schedule:
-    - cron: "0 23 * * *"
-
+    - cron: '0 23 * * *'
 
 jobs:
   nightly-rpm-build-and-upload-artifact:
@@ -13,7 +12,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: master
-     
+
       - name: Build RPM CENTOS8
         id: build_rpm_centos8
         run: |

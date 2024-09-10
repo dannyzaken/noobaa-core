@@ -8,8 +8,9 @@
     }
 */
 
-exports.handler = function(event, context, callback) {
-    context.rpc_client.account.update_account(event)
-        .then(res => callback(null, "Done"))
-        .catch(err => callback(err));
+exports.handler = function (event, context, callback) {
+  context.rpc_client.account
+    .update_account(event)
+    .then(res => callback(null, 'Done'))
+    .catch(err => callback(err));
 };

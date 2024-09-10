@@ -1,26 +1,33 @@
 # NooBaa Spectrum Scale/Archive Deployment Guide
+
 This deployment guide goes over the steps that needs to be taken to get NooBaa running on GPFS filesystem. The steps in this guide should be followed in the same order as mentioned in the guide.
 
 ## NooBaa Prerequisites
+
 NooBaa has the following prerequisites and expects them to be in place before proceeding with its installation and deployment.
+
 1. Host is a Red Hat OS like Centos/RHEL.
 2. Spectrum Scale along with Spectrum Archive must be in installed on the host machine.
 3. libboost RPM packages must be already installed. In particular, `boost-system` and `boost-thread` packages are required. Without them in place, NooBaa installation will fail.
 
 ## NooBaa Installation
+
 NooBaa is packaged as a RPM which needs to be installed in order to be able to use NooBaa.
 
 1. Install by using `dnf`, `yum` or `rpm`.
    - Example: `rpm -i noobaa-core-5.15.0-1.el8.x86_64.20231009`.
 2. NooBaa RPM installation should provide the following things
-	1. `noobaa.service` file located at `/usr/lib/systemd/system/noobaa.service`.
-	2. NooBaa source available at `/usr/local/noobaa-core`.
+   1. `noobaa.service` file located at `/usr/lib/systemd/system/noobaa.service`.
+   2. NooBaa source available at `/usr/local/noobaa-core`.
 
 ## NooBaa Configuration
+
 NooBaa needs some configurations to be in place before we start up the NooBaa process and it is important to ensure that this is done before starting up the service.
 
 ### Configure NooBaa User
+
 In order to be able to access NooBaa, the user should create a account. This can be done in the following way.
+
 ```console
 $ cd /usr/local/noobaa-core
 $ noobaa-cli account add --access_key <access-key> --secret_key <secret-key> --name <name-of-user> --new_buckets_path <path-to-store-bucket-data>
@@ -31,6 +38,7 @@ NOTE: `<path-to-store-bucket-data>` should already exist or else the above comma
 Following the above steps we will create a new user for NooBaa with the given name. The user will be able to access the NooBaa S3 endpoint with the access key and secret key pair.
 
 #### Example
+
 ```console
 $ cd /usr/local/noobaa-core
 $ mkdir /ibm/gpfs/noobaadata #Bucket Data Path should already exist
@@ -40,6 +48,7 @@ $ noobaa-cli account add --access_key $AWS_ACCESS_KEY_ID --secret_key $AWS_SECRE
 ```
 
 ### Configure NooBaa
+
 ```console
 $ cat >/usr/local/noobaa-core/.env <<EOF
 ENDPOINT_PORT=80
@@ -63,6 +72,7 @@ EOF
 ```
 
 ### Configure Archiving
+
 The following will setup appropriate spectrum scale policies which will assist NooBaa in moving data between different pools.
 
 ```console
@@ -70,12 +80,15 @@ $ cd /usr/local/noobaa-core
 $ chmod +x ./src/deploy/spectrum_archive/setup_policies.sh
 $ ./src/deploy/spectrum_archive/setup_policies.sh <device-or-directory-name> <noobaa-bucket-data-path> <tape-pool-name>
 ```
+
 Here,
+
 - `device-or-directory-name` is the name of the GPFS device or directory name. You may be able to find this by running `mount | grep gpfs`.
 - `noobaa-bucket-data-path` is the path on GPFS where NooBaa is storing the data. This path should be the same as we passed in the [Configure NooBaa User](#configure-noobaa-user)'s `<path-to-store-bucket-data>`.
 - `tape-pool-name` should be a valid tape pool name. You can find this by running `eeadm pool list`.
 
 #### Example
+
 ```console
 $ cd /usr/local/noobaa-core
 $ chmod +x ./src/deploy/spectrum_archive/setup_policies.sh
@@ -83,6 +96,7 @@ $ ./src/deploy/spectrum_archive/setup_policies.sh /ibm/gpfs /ibm/gpfs/noobaadata
 ```
 
 ## Start NooBaa
+
 ```console
 $ systemctl start noobaa
 $ systemctl enable noobaa #optional
@@ -90,6 +104,7 @@ $ systemctl status noobaa # You should see status "Active" in green color
 ```
 
 ## Test NooBaa Installation
+
 Now that NooBaa has been installed and is active, we can test out the deployment.
 These AWS commands will read `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` from the environment, ensure that these are available in the environment and should be the same that we used in [configure NooBaa user](#configure-noobaa-user).
 
@@ -101,9 +116,11 @@ $ aws s3 --endpoint https://localhost:443 --no-verify-ssl ls # List all of the b
 ```
 
 ## Log and Logrotate
+
 Noobaa logs are configured using rsyslog and logrotate. RPM will configure rsyslog and logrotate if both are already running.
 
 Rsyslog status check
+
 ```
 systemctl status rsyslog
 ```
@@ -119,6 +136,7 @@ logrotate /etc/logrotate.d/noobaa/logrotate_noobaa.conf
 ```
 
 # FAQ
+
 - What happens if I forget the credentials used to generate NooBaa User?
   - You can find all of the NooBaa accounts details here: `/etc/noobaa.conf.d/accounts`.
 - How do I add new users?

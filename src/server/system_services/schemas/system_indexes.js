@@ -1,14 +1,16 @@
 /* Copyright (C) 2016 NooBaa */
 'use strict';
 
-module.exports = [{
+module.exports = [
+  {
     fields: {
-        name: 1,
+      name: 1,
     },
     options: {
-        unique: true,
-        partialFilterExpression: {
-            deleted: null,
-        }
-    }
-}, ];
+      unique: true,
+      partialFilterExpression: {
+        deleted: null,
+      },
+    },
+  },
+];

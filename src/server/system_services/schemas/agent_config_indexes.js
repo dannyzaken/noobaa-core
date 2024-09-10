@@ -1,12 +1,14 @@
 /* Copyright (C) 2016 NooBaa */
 'use strict';
 
-module.exports = [{
+module.exports = [
+  {
     fields: {
-        system: 1,
-        name: 1
+      system: 1,
+      name: 1,
     },
     options: {
-        unique: true,
-    }
-}, ];
+      unique: true,
+    },
+  },
+];

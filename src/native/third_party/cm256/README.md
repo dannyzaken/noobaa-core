@@ -1,30 +1,29 @@
 # cm256
+
 Fast GF(256) Cauchy MDS Block Erasure Codec in C
 
-cm256 is a simple library for erasure codes.  From given data it generates
+cm256 is a simple library for erasure codes. From given data it generates
 redundant data that can be used to recover the originals.
 
 It is roughly 2x faster than Longhair, and CM256 supports input data that is not a multiple of 8 bytes.
 
 Currently only Visual Studio 2013 is supported, though other versions of MSVC may work.
 
-The original data should be split up into equally-sized chunks.  If one of these chunks
+The original data should be split up into equally-sized chunks. If one of these chunks
 is erased, the redundant data can fill in the gap through decoding.
 
-The erasure code is parameterized by three values (`OriginalCount`, `RecoveryCount`, `BlockBytes`).  These are:
+The erasure code is parameterized by three values (`OriginalCount`, `RecoveryCount`, `BlockBytes`). These are:
 
-+ The number of blocks of original data (`OriginalCount`), which must be less than 256.
-+ The number of blocks of redundant data (`RecoveryCount`), which must be no more than `256 - OriginalCount`.
+- The number of blocks of original data (`OriginalCount`), which must be less than 256.
+- The number of blocks of redundant data (`RecoveryCount`), which must be no more than `256 - OriginalCount`.
 
 For example, if a file is split into 3 equal pieces and sent over a network, `OriginalCount` is 3.
 And if 2 additional redundant packets are generated, `RecoveryCount` is 2.
 In this case up to 256 - 3 = 253 additional redundant packets can be generated.
 
-
 ##### Building: Quick Setup
 
-Include the cm256.* and gf256.* files in your project and consult the cm256.h header for usage.
-
+Include the cm256._ and gf256._ files in your project and consult the cm256.h header for usage.
 
 ## Usage
 
@@ -32,20 +31,20 @@ Documentation is provided in the header file [cm256.h](https://github.com/catid/
 
 When your application starts up it should call `cm256_init()` to verify that the library is linked properly:
 
-~~~
+```
 	#include "cm256.h"
 
 	if (cm256_init()) {
 		// Wrong static library
 		exit(1);
 	}
-~~~
+```
 
-To generate redundancy, use the `cm256_encode` function.  To solve for the original data use the `cm256_decode` function.
+To generate redundancy, use the `cm256_encode` function. To solve for the original data use the `cm256_decode` function.
 
 Example usage:
 
-~~~
+```
 bool ExampleFileUsage()
 {
     if (cm256_init())
@@ -110,19 +109,18 @@ bool ExampleFileUsage()
 
     return true;
 }
-~~~
+```
 
 The example above is just one way to use the `cm256_decode` function.
 
 This API was designed to be flexible enough for UDP/IP-based file transfer where
 the blocks arrive out of order.
 
-
 #### Benchmark
 
 CM256 demonstrates similar encoding and (worst case) decoding performance:
 
-~~~
+```
 Encoder: 1296 bytes k = 100 m = 1 : 5.55886 usec, 23314.1 MBps
 Decoder: 1296 bytes k = 100 m = 1 : 6.72915 usec, 19259.5 MBps
 Encoder: 1296 bytes k = 100 m = 2 : 17.2617 usec, 7507.93 MBps
@@ -155,14 +153,15 @@ Decoder: 1296 bytes k = 100 m = 40 : 434.762 usec, 298.094 MBps
 
 Encoder: 1296 bytes k = 100 m = 50 : 592.751 usec, 218.642 MBps
 Decoder: 1296 bytes k = 100 m = 50 : 545.939 usec, 237.389 MBps
-~~~
+```
+
 (These performance numbers are out of date and not well calibrated - Decoding now takes the same time as encoding within a few microseconds thanks to the new matrix solver.)
 
 Longhair Library Results:
 
 Note that I hand-optimized the MemXOR.cpp implementation on this PC to run faster than what is available on github, so this is a fair comparison.
 
-~~~
+```
 Encoded k=100 data blocks with m=1 recovery blocks in 4.09607 usec : 31640.1 MB/s
 + Decoded 1 erasures in 5.85144 usec : 22148.4 MB/s
 Encoded k=100 data blocks with m=2 recovery blocks in 41.5452 usec : 3119.5 MB/s
@@ -195,7 +194,7 @@ Encoded k=100 data blocks with m=40 recovery blocks in 562.323 usec : 230.472 MB
 
 Encoded k=100 data blocks with m=50 recovery blocks in 727.041 usec : 178.257 MB/s
 + Decoded 50 erasures in 1181.11 usec : 109.727 MB/s
-~~~
+```
 
 Results Discussion:
 
@@ -203,12 +202,11 @@ For m=1 they are both running the same kind of code, so they're basically the sa
 
 For m=2 and m=3, CM256 is 2.5x faster.
 
-For m=4, CM256 is 3x faster in this case.  Longhair could use more tuning.  Back when I wrote it, the right time to switch to the Windowed decoder was at m=5, but on my new PC it seems like m=4 is a better time to do it.  CM256 only has one mode so it doesn't require any tuning for best performance.
+For m=4, CM256 is 3x faster in this case. Longhair could use more tuning. Back when I wrote it, the right time to switch to the Windowed decoder was at m=5, but on my new PC it seems like m=4 is a better time to do it. CM256 only has one mode so it doesn't require any tuning for best performance.
 
 For m=5...30, CM256 performance is not quite 2x faster, maybe 1.7x or so.
 
 For m>30, CM256 is at least 2x faster.
-
 
 #### Comparisons with Other Libraries
 
@@ -220,10 +218,9 @@ ISA-L more aggressively optimizes the matrix multiplication operation, which is 
 
 CM256 takes better advantage of the m=1 case and the first recovery symbol, which is also possible with the Vandermonde matrices supported by ISA-L.
 
-ISA-L uses a O(N^3) Gaussian elimination solver for decoding.  The CM256 decoder solves the linear system using a fast O(N^2) LDU-decomposition algorithm from "Pivoting and Backward Stability of Fast Algorithms for Solving Cauchy Linear Equations" (T. Boros, T. Kailath, V. Olshevsky), which was hand-optimized for memory accesses.
-
+ISA-L uses a O(N^3) Gaussian elimination solver for decoding. The CM256 decoder solves the linear system using a fast O(N^2) LDU-decomposition algorithm from "Pivoting and Backward Stability of Fast Algorithms for Solving Cauchy Linear Equations" (T. Boros, T. Kailath, V. Olshevsky), which was hand-optimized for memory accesses.
 
 #### Credits
 
-This software was written entirely by myself ( Christopher A. Taylor <mrcatid@gmail.com> ).  If you
+This software was written entirely by myself ( Christopher A. Taylor <mrcatid@gmail.com> ). If you
 find it useful and would like to buy me a coffee, consider [tipping](https://www.gittip.com/catid/).

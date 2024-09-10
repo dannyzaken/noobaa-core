@@ -15,21 +15,24 @@ let is_cluster_master = false;
 exports.background_worker = background_worker;
 
 function background_worker() {
-    if (!system_store.is_finished_initial_load) {
-        dbg.log0('System did not finish initial load');
-        return;
-    }
+  if (!system_store.is_finished_initial_load) {
+    dbg.log0('System did not finish initial load');
+    return;
+  }
 
-    dbg.log2(`checking cluster_master`);
-    dbg.log0('no local cluster info or server is not part of a cluster. therefore will be cluster master');
-    return cutil.send_master_update(true)
-        .then(() => {
-            if (!is_cluster_master) {
-                bg_workers.run_master_workers();
-                is_cluster_master = true;
-            }
-        })
-        .catch(err => {
-            dbg.error('send_master_update had an error:', err.stack || err);
-        });
+  dbg.log2(`checking cluster_master`);
+  dbg.log0(
+    'no local cluster info or server is not part of a cluster. therefore will be cluster master',
+  );
+  return cutil
+    .send_master_update(true)
+    .then(() => {
+      if (!is_cluster_master) {
+        bg_workers.run_master_workers();
+        is_cluster_master = true;
+      }
+    })
+    .catch(err => {
+      dbg.error('send_master_update had an error:', err.stack || err);
+    });
 }

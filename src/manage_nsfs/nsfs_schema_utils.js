@@ -23,17 +23,17 @@ const account_schema = require('../server/system_services/schemas/nsfs_account_s
 const nsfs_config_schema = require('../server/system_services/schemas/nsfs_config_schema');
 
 _.each(common_api.definitions, schema => {
-    schema_utils.strictify(schema, {
-        additionalProperties: false
-    });
+  schema_utils.strictify(schema, {
+    additionalProperties: false,
+  });
 });
 
 schema_utils.strictify(bucket_schema, {
-    additionalProperties: false
+  additionalProperties: false,
 });
 
 schema_utils.strictify(account_schema, {
-    additionalProperties: false
+  additionalProperties: false,
 });
 
 // NOTE - DO NOT strictify nsfs_config_schema
@@ -44,11 +44,12 @@ schema_utils.strictify(account_schema, {
  * @param {object} account
  */
 function validate_account_schema(account) {
-    const valid = ajv.validate(account_schema, account);
-    if (!valid) {
-        const err_msg = ajv.errors[0].message ? create_schema_err_msg(ajv.errors[0]) : undefined;
-        throw new RpcError('INVALID_SCHEMA', err_msg);
-    }
+  const valid = ajv.validate(account_schema, account);
+  if (!valid) {
+    const err_msg =
+      ajv.errors[0].message ? create_schema_err_msg(ajv.errors[0]) : undefined;
+    throw new RpcError('INVALID_SCHEMA', err_msg);
+  }
 }
 
 /**
@@ -56,11 +57,12 @@ function validate_account_schema(account) {
  * @param {object} bucket
  */
 function validate_bucket_schema(bucket) {
-    const valid = ajv.validate(bucket_schema, bucket);
-    if (!valid) {
-        const err_msg = ajv.errors[0].message ? create_schema_err_msg(ajv.errors[0]) : undefined;
-        throw new RpcError('INVALID_SCHEMA', err_msg);
-    }
+  const valid = ajv.validate(bucket_schema, bucket);
+  if (!valid) {
+    const err_msg =
+      ajv.errors[0].message ? create_schema_err_msg(ajv.errors[0]) : undefined;
+    throw new RpcError('INVALID_SCHEMA', err_msg);
+  }
 }
 
 /**
@@ -68,11 +70,12 @@ function validate_bucket_schema(bucket) {
  * @param {object} config
  */
 function validate_nsfs_config_schema(config) {
-    const valid = ajv.validate(nsfs_config_schema, config);
-    if (!valid) {
-        const err_msg = ajv.errors[0].message ? create_schema_err_msg(ajv.errors[0]) : undefined;
-        throw new RpcError('INVALID_SCHEMA', err_msg);
-    }
+  const valid = ajv.validate(nsfs_config_schema, config);
+  if (!valid) {
+    const err_msg =
+      ajv.errors[0].message ? create_schema_err_msg(ajv.errors[0]) : undefined;
+    throw new RpcError('INVALID_SCHEMA', err_msg);
+  }
 }
 
 /**
@@ -81,11 +84,11 @@ function validate_nsfs_config_schema(config) {
  * @param {object} err
  */
 function create_schema_err_msg(err) {
-    if (!err || !err.message) return;
-    const err_msg = [err.message];
-    if (err.params) err_msg.push(JSON.stringify(err.params));
-    if (err.instancePath) err_msg.push(JSON.stringify(err.instancePath));
-    return err_msg.join(' | ');
+  if (!err || !err.message) return;
+  const err_msg = [err.message];
+  if (err.params) err_msg.push(JSON.stringify(err.params));
+  if (err.instancePath) err_msg.push(JSON.stringify(err.instancePath));
+  return err_msg.join(' | ');
 }
 
 //EXPORTS

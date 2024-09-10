@@ -29,6 +29,7 @@ make
 ```
 
 optionally to package everything into a single-executable at build/noobaa-core
+
 ```sh
 make pkg
 ```
@@ -49,20 +50,18 @@ Sometimes it is desireable to build inside a build container in order, for examp
 make executable
 ```
 
-
-
 The created binary is in /tmp/noobaa-core-executable on the container runtime host, e.g for lima use -
 
 ```sh
 limactl copy 'default:/tmp/noobaa-core-executable/noobaa-core-*' ~/Downloads/
 ```
 
-
 ---
 
 ## DATABASE
 
 Currently noobaa uses postgres 12 from the docker image `centos/postgresql-12-centos7`.
+
 - On Linux - `dnf install postgresql12 postgresql12-server` (might require yum repos)
 - On MacOS - `brew install postgresql@12`
 

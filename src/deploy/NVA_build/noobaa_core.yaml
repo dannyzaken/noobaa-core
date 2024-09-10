@@ -26,7 +26,7 @@ rules:
       - patch
       - delete
   - apiGroups:
-      - "" # "" indicates the core API group
+      - '' # "" indicates the core API group
     resources:
       - services
       - pods
@@ -68,7 +68,7 @@ spec:
       targetPort: 6443
       name: s3-https
   selector:
-    noobaa-s3: "true"
+    noobaa-s3: 'true'
 ---
 kind: Service
 apiVersion: v1
@@ -77,9 +77,9 @@ metadata:
   labels:
     app: noobaa
   annotations:
-    prometheus.io/scrape: "true"
+    prometheus.io/scrape: 'true'
     prometheus.io/scheme: http
-    prometheus.io/port: "8080"
+    prometheus.io/port: '8080'
 spec:
   type: LoadBalancer
   ports:
@@ -94,7 +94,7 @@ spec:
     - port: 8446
       name: hosted-agents-https
   selector:
-    noobaa-mgmt: "true"
+    noobaa-mgmt: 'true'
 ---
 kind: StatefulSet
 apiVersion: apps/v1
@@ -116,8 +116,8 @@ spec:
       labels:
         app: noobaa
         noobaa-module: noobaa-server
-        noobaa-s3: "true"
-        noobaa-mgmt: "true"
+        noobaa-s3: 'true'
+        noobaa-mgmt: 'true'
     spec:
       containers:
         - name: noobaa-server
@@ -126,11 +126,11 @@ spec:
           resources:
             # https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
             requests:
-              cpu: "500m"
-              memory: "1Gi"
+              cpu: '500m'
+              memory: '1Gi'
             limits:
-              cpu: "2"
-              memory: "4Gi"
+              cpu: '2'
+              memory: '4Gi'
           ports:
             - containerPort: 8080
             - containerPort: 8443
@@ -211,24 +211,24 @@ spec:
                   optional: true
             # replacing the empty value with any value will set the container to dbg mode
             - name: container_dbg
-              value: ""
+              value: ''
         - name: mongodb
           image: centos/mongodb-36-centos7
           imagePullPolicy: IfNotPresent
           command:
             [
-              "/bin/bash",
-              "-c",
-              "/opt/rh/rh-mongodb36/root/usr/bin/mongod --port 27017 --bind_ip localhost --dbpath /data/mongo/cluster/shard1",
+              '/bin/bash',
+              '-c',
+              '/opt/rh/rh-mongodb36/root/usr/bin/mongod --port 27017 --bind_ip localhost --dbpath /data/mongo/cluster/shard1',
             ]
           resources:
             # https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
             requests:
-              cpu: "500m"
-              memory: "1Gi"
+              cpu: '500m'
+              memory: '1Gi'
             limits:
-              cpu: "2"
-              memory: "8Gi"
+              cpu: '2'
+              memory: '8Gi'
           volumeMounts:
             - mountPath: /data
               name: mongo-datadir
@@ -240,11 +240,11 @@ spec:
             - init_endpoint
           resources:
             requests:
-              cpu: "100m"
-              memory: "100Mi"
+              cpu: '100m'
+              memory: '100Mi'
             limits:
-              cpu: "1"
-              memory: "1Gi"
+              cpu: '1'
+              memory: '1Gi'
           ports:
             - containerPort: 6001
             - containerPort: 6443
@@ -262,7 +262,7 @@ spec:
                   name: noobaa-secrets
                   key: noobaa_root_secret
             - name: LOCAL_MD_SERVER
-              value: "true"
+              value: 'true'
           # - name: MGMT_URL
           # - name: MONGODB_URL
           # - name: VIRTUAL_HOSTS
@@ -276,7 +276,7 @@ spec:
           image: noobaa/noobaa-core:5.0.1
           imagePullPolicy: IfNotPresent
           # command: ['/noobaa_init_files/kube_pv_chown', 'server']
-          command: ["/noobaa_init_files/noobaa_init.sh", "init_mongo"]
+          command: ['/noobaa_init_files/noobaa_init.sh', 'init_mongo']
           volumeMounts:
             - mountPath: /mongo_data
               name: mongo-datadir
@@ -291,7 +291,7 @@ spec:
         labels:
           app: noobaa
       spec:
-        accessModes: ["ReadWriteOnce"]
+        accessModes: ['ReadWriteOnce']
         resources:
           requests:
             storage: 10Gi
@@ -300,7 +300,7 @@ spec:
         labels:
           app: noobaa
       spec:
-        accessModes: ["ReadWriteOnce"]
+        accessModes: ['ReadWriteOnce']
         resources:
           requests:
             storage: 50Gi

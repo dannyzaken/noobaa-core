@@ -1,5 +1,5 @@
 name: Manual Build Dispatch
-on: 
+on:
   workflow_dispatch:
     inputs:
       branch:
@@ -22,7 +22,7 @@ jobs:
       - name: Get Current Date
         id: date
         run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
-      
+
       - name: Prepare Suffix
         id: suffix
         if: ${{ github.event.inputs.tag != '' }}
@@ -53,23 +53,23 @@ jobs:
         env:
           DOCKERHUB_OWNER: ${{ secrets.GHACTIONSDOCKERHUBNAME }}
         run: |
-            make noobaa
-            docker tag noobaa-base ${{ steps.prep.outputs.basetags }}
-            docker push ${{ steps.prep.outputs.basetags }}
-            docker tag noobaa-builder ${{ steps.prep.outputs.buildertags }}
-            docker push ${{ steps.prep.outputs.buildertags }}
-            docker tag noobaa ${{ steps.prep.outputs.coretags }}
-            docker push ${{ steps.prep.outputs.coretags }}
+          make noobaa
+          docker tag noobaa-base ${{ steps.prep.outputs.basetags }}
+          docker push ${{ steps.prep.outputs.basetags }}
+          docker tag noobaa-builder ${{ steps.prep.outputs.buildertags }}
+          docker push ${{ steps.prep.outputs.buildertags }}
+          docker tag noobaa ${{ steps.prep.outputs.coretags }}
+          docker push ${{ steps.prep.outputs.coretags }}
 
       - name: Login to Quay Registry
         run: echo ${{ secrets.GHACTIONQUAYTOKEN }} | docker login quay.io -u ${{ secrets.GHACTIONQUAYNAME }} --password-stdin
-      
+
       - name: Push Docker Images to Quay
         env:
           DOCKERHUB_OWNER: ${{ secrets.GHACTIONQUAYNAME }}
         run: |
-            docker tag ${{ steps.prep.outputs.coretags }} quay.io/${{ steps.prep.outputs.coretags }}
-            docker push quay.io/${{ steps.prep.outputs.coretags }}
+          docker tag ${{ steps.prep.outputs.coretags }} quay.io/${{ steps.prep.outputs.coretags }}
+          docker push quay.io/${{ steps.prep.outputs.coretags }}
 
       - name: Push to ocs-dev as latest
         env:
@@ -78,7 +78,7 @@ jobs:
           docker login -u="${{ secrets.OCSDEVCIUSER }}" -p="${{ secrets.OCSDEVCITOKEN }}" quay.io
           docker tag ${{ steps.prep.outputs.coretags }} quay.io/${{ steps.prep.outputs.ocsdevlatest }} 
           docker push quay.io/${{ steps.prep.outputs.ocsdevlatest }}
-          
+
       - name: Sleep for 180 seconds
         run: sleep 180s
         shell: bash
@@ -90,6 +90,3 @@ jobs:
           repo: noobaa/noobaa-operator
           token: ${{ secrets.GHACCESSTOKEN }}
           inputs: '{ "branch": "${{ github.event.inputs.branch }}", "tag": "${{ github.event.inputs.tag }}" }'
-      
-
-            

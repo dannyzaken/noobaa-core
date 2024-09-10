@@ -1,12 +1,13 @@
 ## How to run namespace cache tests locally
+
 - Copy config-local.js to the root of the repository
 - Start the services locally
 
-    - npm run db
-    - npm run web_server
-    - npm run hosted_agents
-    - npm run bg
-    - npm run s3
+  - npm run db
+  - npm run web_server
+  - npm run hosted_agents
+  - npm run bg
+  - npm run s3
 
 - Set the following envs for the command to be run below
 

@@ -2,31 +2,35 @@
 
 Running NooBaa non containerized is useful for deploying in linux without depending on kubernetes, but requires some steps which are described next.
 
-
 ## Build
 
 ### Build options -
+
 1. noobaa-core S3 Select is enabled. This requires boost shared objects to be present on the machine where noobaa is supposed to be installed. This feature can be disabled if not required (due to additional dependency) by running make rpm BUILD_S3SELECT=0.
 2. In order to build RPM packages for other architectures simply run make rpm CONTAINER_PLATFORM=linux/amd64 or make rpm CONTAINER_PLATFORM=linux/ppc64le
 3. Building RPM packages is available on top of centos:9 / centos:8 base images, The default base image is centos:9.
-In order to build RPM packages for centos:8 simply run `make rpm CENTOS_VER=8`.
+   In order to build RPM packages for centos:8 simply run `make rpm CENTOS_VER=8`.
 
 Running the following command will result with an RPM file -
+
 ```sh
 make rpm
 ```
 
-
 ## Install
 
 ### Pre-requisites (S3 select enabled) -
+
 1. boost -
+
 ```sh
 yum install epel-release && yum install boost
 ```
 
 ### A workaround for machines that cannot install epel-release -
+
 Use the workaround below if `yum install epel-release` resulted in the following error -
+
 ```
 Updating Subscription Management repositories.
 Unable to read consumer identity
@@ -37,14 +41,17 @@ Last metadata expiration check: <SomeTimeStamp>
 No match for argument: epel-release
 Error: Unable to find a match: epel-release
 ```
+
 1. Install wget -
 
 ```sh
 yum install wget
 ```
+
 2. Download and install boost -
 
 RHEL8 / centos:stream8 -
+
 ```sh
 wget https://rpmfind.net/linux/centos/8-stream/AppStream/x86_64/os/Packages/boost-system-1.66.0-13.el8.x86_64.rpm
 wget https://rpmfind.net/linux/centos/8-stream/AppStream/x86_64/os/Packages/boost-thread-1.66.0-13.el8.x86_64.rpm
@@ -62,6 +69,7 @@ rpm -i boost-thread-1.75.0-8.el9.x86_64.rpm
 ```
 
 ### Download NooBaa RPM -
+
 Nightly RPM builds of the upstream master branch can be downloaded from a public S3 bucket by running the following command -
 
 ```sh
@@ -72,6 +80,7 @@ wget https://noobaa-core-rpms.s3.amazonaws.com/noobaa-core-5.15.0-20231106.el9.x
 ```
 
 ### Install NooBaa RPM -
+
 Install NooBaa RPM by running the following command -
 
 ```sh
@@ -81,6 +90,7 @@ rpm -i <rpm_file_name>.rpm
 After installing NooBaa RPM, it's expected to have noobaa-core source code under /usr/local/noobaa-core and an noobaa systemd example script under /usr/lib/systemd/system/.
 
 ## Create config dir redirect file -
+
 NooBaa will try locate a text file that contains a path to the configuration directory, the user should create the redirect file in the fixed location - /etc/noobaa.conf.d/config_dir_redirect
 
 ```sh
@@ -90,9 +100,11 @@ echo "/path/to/config/dir" > /etc/noobaa.conf.d/config_dir_redirect
 If config_root flag was not provided to the NooBaa service and /etc/noobaa.conf.d/config_dir_redirect file does not exist, NooBaa service will use /etc/noobaa.conf.d/ as its default config_dir.
 
 ## Create configuration files -
+
 **IMPORTANT NOTE** - It's not mendatory to create the config_root under /etc/noobaa.conf.d/. config_dir path can be set using an CONFIG_JS_NSFS_NC_DEFAULT_CONF_DIR.
 
 **1. Create buckets and accounts directories -**
+
 ```sh
 mkdir -p /etc/noobaa.conf.d/
 mkdir -p /etc/noobaa.conf.d/buckets/
@@ -102,6 +114,7 @@ mkdir -p /etc/noobaa.conf.d/access_keys/
 ```
 
 ## Create FS -
+
 If it's not already existing, create the fs root path in which buckets (directories) and objects (files) will be created.
 
 ```sh
@@ -109,58 +122,63 @@ mkdir -p /tmp/fs1/
 ```
 
 ## Developer customization of the NooBaa service (OPTIONAL) -
+
 One can customize NooBaa service by creation of config.json file under the config_dir/ directory (/path/to/config_dir/config.json).
 The following are some of the properties that can be customized -
+
 1. Number of forks
 2. Log debug level
 3. Ports
 4. Allow http
 5. GPFS library path
-etc...
+   etc...
 
 For more details about the available properties and an example see - [Non Containerized NooBaa Developer Customization](https://github.com/noobaa/noobaa-core/blob/master/docs/dev_guide/NonContainerizedDeveloperCustomizations.md)
 
-## Create accounts and exported buckets configuration files - ##
+## Create accounts and exported buckets configuration files -
 
 In order to create accounts and exported buckets see the management CLI instructions - [Bucket and Account Manage CLI](#bucket-and-account-manage-cli) <br />
 Design of Accounts and buckets configuration entities - [NonContainerizedNooBaa](https://github.com/noobaa/noobaa-core/blob/master/docs/design/NonContainerizedNooBaaDesign.md). <br />
 **Note** - All required paths on the configuration files (bucket - path, account - new_buckets_path) must be absolute paths.
 
-
 ## Run the NooBaa service -
+
 The systemd script runs noobaa non containerized, and requires config_root in order to find the location of the system/accounts/buckets configuration file.
 Limitation - In a cluster each host should have a unique name.
+
 ```sh
 systemctl enable noobaa.service
 systemctl start noobaa.service
 ```
 
 ## NooBaa service logs -
+
 Run the following command in order to get the NooBaa service logs -
 
 ```sh
 journalctl -u noobaa.service
 ```
 
-
 ## S3 Test
 
 #### 1. Create account -
+
 see the management CLI instructions for creating an account - [Bucket and Account Manage CLI](#bucket-and-account-manage-cli)
 
 #### 2. Install aws cli -
+
 see https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
 
-
 #### 3. Create s3 alias for the new account (to be referenced as account1) -
+
 ```sh
 alias s3-account1='AWS_ACCESS_KEY_ID=abc AWS_SECRET_ACCESS_KEY=123 aws --endpoint https://localhost:6443 --no-verify-ssl s3'
 ```
 
-
 #### 4. S3 Create bucket -
 
-4.1. Create  a bucket called s3bucket using account1 -
+4.1. Create a bucket called s3bucket using account1 -
+
 ```sh
 s3-account1 mb s3://s3bucket
 
@@ -169,6 +187,7 @@ make_bucket: s3bucket
 ```
 
 4.2. Check that the bucket configuration file was created successfully -
+
 ```sh
 cat /tmp/noobaa_config_dir/buckets/s3bucket.json
 
@@ -186,13 +205,13 @@ total 0
 ```
 
 #### 5. S3 List buckets -
+
 ```sh
 s3-account1 ls
 
 Output -
 2023-09-21 11:50:26 s3bucket
 ```
-
 
 #### 6. S3 Upload objects -
 
@@ -211,7 +230,6 @@ Output -
 This is the content of object1
 ```
 
-
 #### 7. S3 List objects -
 
 ```sh
@@ -222,89 +240,92 @@ Output -
 ```
 
 ## Health script
+
 NooBaa Health status can be fetched using the command line. Run `--help` to get all the available options.
 
 NOTE - health script execution requires root permissions.
 
- ```
- sudo node usr/local/noobaa-core/src/cmd/health [--https_port, --all_account_details, --all_bucket_details]
- ```
+```
+sudo node usr/local/noobaa-core/src/cmd/health [--https_port, --all_account_details, --all_bucket_details]
+```
 
- output:
- ```
+output:
+
+```
 {
-  "service_name": "noobaa",
-  "status": "NOTOK",
-  "memory": "88.6M",
-  "error": {
-    "error_code": "NOOBAA_SERVICE_FAILED",
-    "error_message": "NooBaa service is not started properly, Please verify the service with status command."
-  },
-  "checks": {
-    "services": [
-      {
-        "name": "noobaa",
-        "service_status": "active",
-        "pid": "1204",
-        "error_type": "PERSISTENT"
-      }
-    ],
-    "endpoint": {
-      "endpoint_state": {
-        "response": {
-          "response_code": 200,
-          "response_message": "Endpoint running successfuly."
-        },
-        "total_fork_count": 1,
-        "running_workers": [
-          "1"
-        ]
-      },
-      "error_type": "TEMPORARY"
-    },
-    "accounts_status": {
-      "invalid_accounts": [
-        {
-          "name": "account_invalid",
-          "storage_path": "/tmp/nsfs_root_invalid/",
-          "code": "STORAGE_NOT_EXIST"
-        },
-        { "name": "account_inaccessible",
-          "storage_path": "/tmp/account_inaccessible",
-          "code": "ACCESS_DENIED" }
-      ],
-      "valid_accounts": [
-        {
-          "name": "account2",
-          "storage_path": "/tmp/nsfs_root"
-        }
-      ],
-      "error_type": "PERSISTENT"
-    },
-    "buckets_status": {
-      "invalid_buckets": [
-        {
-          "name": "bucket1.json",
-          "config_path": "/etc/noobaa.conf.d/buckets/bucket1.json",
-          "code": "INVALID_CONFIG"
-        },
-        {
-          "name": "bucket3",
-          "storage_path": "/tmp/nsfs_root/bucket3",
-          "code": "STORAGE_NOT_EXIST"
-        }
-      ],
-      "valid_buckets": [
-        {
-          "name": "bucket2",
-          "storage_path": "/tmp/nsfs_root/bucket2"
-        }
-      ],
-      "error_type": "PERSISTENT"
-    }
-  }
+ "service_name": "noobaa",
+ "status": "NOTOK",
+ "memory": "88.6M",
+ "error": {
+   "error_code": "NOOBAA_SERVICE_FAILED",
+   "error_message": "NooBaa service is not started properly, Please verify the service with status command."
+ },
+ "checks": {
+   "services": [
+     {
+       "name": "noobaa",
+       "service_status": "active",
+       "pid": "1204",
+       "error_type": "PERSISTENT"
+     }
+   ],
+   "endpoint": {
+     "endpoint_state": {
+       "response": {
+         "response_code": 200,
+         "response_message": "Endpoint running successfuly."
+       },
+       "total_fork_count": 1,
+       "running_workers": [
+         "1"
+       ]
+     },
+     "error_type": "TEMPORARY"
+   },
+   "accounts_status": {
+     "invalid_accounts": [
+       {
+         "name": "account_invalid",
+         "storage_path": "/tmp/nsfs_root_invalid/",
+         "code": "STORAGE_NOT_EXIST"
+       },
+       { "name": "account_inaccessible",
+         "storage_path": "/tmp/account_inaccessible",
+         "code": "ACCESS_DENIED" }
+     ],
+     "valid_accounts": [
+       {
+         "name": "account2",
+         "storage_path": "/tmp/nsfs_root"
+       }
+     ],
+     "error_type": "PERSISTENT"
+   },
+   "buckets_status": {
+     "invalid_buckets": [
+       {
+         "name": "bucket1.json",
+         "config_path": "/etc/noobaa.conf.d/buckets/bucket1.json",
+         "code": "INVALID_CONFIG"
+       },
+       {
+         "name": "bucket3",
+         "storage_path": "/tmp/nsfs_root/bucket3",
+         "code": "STORAGE_NOT_EXIST"
+       }
+     ],
+     "valid_buckets": [
+       {
+         "name": "bucket2",
+         "storage_path": "/tmp/nsfs_root/bucket2"
+       }
+     ],
+     "error_type": "PERSISTENT"
+   }
+ }
 }
- ```
+```
+
 `status`: overall status of the system.
 
 `error_code`: Error code for specific issue in health.
@@ -336,83 +357,121 @@ In this health output, `bucket2`'s storage path is invalid and the directory men
 Account without `new_buckets_path` and `allow_bucket_creation` value is `false` then it's considered a valid account, But if the `allow_bucket_creation` is true `new_buckets_path` is empty, in that case account is invalid.
 
 ### Health Error Codes
+
 These are the error codes populated in the health output if the system is facing some issues. If any of these error codes are present in health status then the overall status will be in `NOTOK` state.
+
 #### 1. `NOOBAA_SERVICE_FAILED`
+
 #### Reasons
+
 - NooBaa service is not started properly.
 - Stopped NooBaa service is not removed.
 
 #### Resolutions
+
 - Verify the NooBaa service is running by checking the status and logs command.
+
 ```
 systemctl status noobaa.service
 journalctl -xeu noobaa.service
 ```
+
 If the NooBaa service is not started, start the service
+
 ```
 systemctl enable noobaa.service
 systemctl start noobaa.service
 ```
 
 #### 2. `NOOBAA_ENDPOINT_FORK_MISSING`
+
 #### Reasons
+
 - One or more endpoint fork is not started properly.
 - Number of workers running is less than the configured `forks` value.
 
 #### Resolutions
+
 - Restart the NooBaa service and also verify NooBaa fork/s is exited with error in logs.
+
 ```
 systemctl status rsyslog.service
 journalctl -xeu rsyslog.service
 ```
 
 #### 3. `NOOBAA_ENDPOINT_FAILED`
+
 #### Reasons
+
 - NooBaa endpoint process is not running and Its not able to respond to any requests.
 
 #### Resolutions
+
 - Restart the NooBaa service and verify NooBaa process is exited with errors in logs.
+
 ```
 systemctl status rsyslog
 journalctl -xeu rsyslog.service
 ```
+
 ### Health Schema Error Codes
+
 These error codes will get attached with a specific Bucket or Account schema inside `invalid_buckets` or `invalid_accounts` property.
+
 #### 1. `STORAGE_NOT_EXIST`
+
 #### Reasons
+
 - Storage path mentioned in Bucket/Account schema pointing to the invalid directory.
+
 #### Resolutions
+
 - Make sure the path mentioned in Bucket/Account schema is a valid directory path.
 - User has sufficient access.
 
 #### 2. `INVALID_CONFIG`
+
 #### Reasons
+
 - Bucket/Account Schema JSON is not valid or not in JSON format.
+
 #### Resolutions
+
 - Check for any JSON syntax error in the schema structure for Bucket/Account.
 
 #### 3. `ACCESS_DENIED`
+
 #### Reasons
+
 - Account `new_buckets_path` is not accessible with account uid and gid.
+
 #### Resolutions
+
 - Check access restriction in the path mentioned in `new_buckets_path` and compare it with account uid and gid
 
 #### 4. `MISSING_CONFIG`
+
 #### Reasons
+
 - Account/Bucket schema config file is missing for config root.
+
 #### Resolutions
+
 - Check for schema config file in respective Accounts or Buckets dir.
 
 ## Bucket and Account Manage CLI
+
 Users can create, get status, update, delete, and list buckets and accounts using CLI. If the config directory is missing CLI will create one and also create accounts and buckets sub-directories in it and default config directory is `${config.NSFS_NC_DEFAULT_CONF_DIR}`.
 
 CLI will never create or delete a bucket directory for the user if a bucket directory is missing CLI will return with error.
 
 NOTES -
+
 1. noobaa cli execution requires root permissions.
 2. While path specifies a GPFS path, it's recommended to add fs_backend=GPFS in order to increase performance by ordering NooBaa to use GPFS library.
 
 Account Commands
+
 ```
 sudo noobaa-cli account add --config_root ../standalon/config_root --name noobaa --new_buckets_path ../standalon/nsfs_root/ --fs_backend GPFS 2>/dev/null
 
@@ -424,10 +483,11 @@ sudo noobaa-cli account delete --config_root ../standalon/config_root --name noo
 
 sudo noobaa-cli account list --config_root ../standalon/config_root 2>/dev/null
 
- ```
+```
 
 Bucket Commands
 Note: before creating a bucket, a user must create an account.
+
 ```
 sudo noobaa-cli bucket add --config_root ../standalon/config_root --name bucket1 --owner noobaa --path ../standalon/nsfs_root/1 --fs_backend GPFS 2>/dev/null
 
@@ -440,10 +500,12 @@ sudo noobaa-cli bucket delete --config_root ../standalon/config_root --name buck
 sudo noobaa-cli bucket list --config_root ../standalon/config_root 2>/dev/null
 
 ```
+
 NSFS management CLI run will create both accounts, access_keys, and buckets directories if they are missing under the config_root directory.
-**Important**:  All the Account/Bucket commands end with `2>/dev/null` to make sure there are no unwanted logs.
+**Important**: All the Account/Bucket commands end with `2>/dev/null` to make sure there are no unwanted logs.
 
 Using `from_file` flag:
+
 - For account and bucket creation users can also pass account or bucket values in JSON file (hereinafter referred to as "options JSON file") instead of passing them in CLI as arguments using flags.
 - General use:
 
@@ -458,10 +520,10 @@ sudo noobaa-cli bucket add --config_root ../standalon/config_root --from_file <o
 
 ```json
 {
-    "name": "account-1001",
-    "uid": 1001,
-    "gid": 1001,
-    "new_buckets_path": "/tmp/nsfs_root1"
+  "name": "account-1001",
+  "uid": 1001,
+  "gid": 1001,
+  "new_buckets_path": "/tmp/nsfs_root1"
 }
 ```
 
@@ -473,9 +535,9 @@ sudo noobaa-cli account add --config_root ../standalon/config_root --from_file <
 
 ```json
 {
-    "name": "account-1001-bucket-1",
-    "owner": "account-1001",
-    "path": "/tmp/nsfs_root1/account-1001-bucket-1"
+  "name": "account-1001-bucket-1",
+  "owner": "account-1001",
+  "path": "/tmp/nsfs_root1/account-1001-bucket-1"
 }
 ```
 
@@ -484,7 +546,7 @@ sudo noobaa-cli bucket add --config_root ../standalon/config_root --from_file <o
 ```
 
 - When using `from_file` flag the details about the account/bucket should be only inside the options JSON file.
-- The JSON config file and JSON options file of account are different! 
+- The JSON config file and JSON options file of account are different!
 
 ## NSFS Certificate
 
@@ -497,6 +559,7 @@ Non containerized NooBaa restrict insecure HTTP connections when `ALLOW_HTTP` is
 ### Setting Up Self signed SSL/TLS Certificates for Secure Communication Between S3 Client and NooBaa Service -
 
 #### 1. Creating a SAN (Subject Alternative Name) Config File -
+
 **Important**: This step is needed only if S3 Client and NooBaa Service Running on different nodes.
 
 To accommodate S3 requests originating from a different node than the one running the NooBaa service, it is recommended to create a Subject Alternative Name (SAN) configuration file. <br />
@@ -506,6 +569,7 @@ The Common Name (CN) sets the primary domain for the certificate, and additional
 Ensure to replace placeholders such as noobaa-domain-name-example.com and <noobaa-server-ip> with your actual domain and IP address.
 
 Example SAN Config File (san.cnf):
+
 ```
 # san.cnf
 
@@ -527,18 +591,20 @@ CN = localhost
 subjectAltName = DNS:localhost,DNS:noobaa-domain-name-example.com,IP:<noobaa-server-ip>
 ```
 
-
 #### 2. Generating TLS Key, CSR, and CRT Files via OpenSSL -
- The following process will generate the necessary TLS key (tls.key), certificate signing request (tls.csr), and SSL certificate (tls.crt) files for secure communication between the S3 client and the NooBaa service.
 
-* If S3 Client and NooBaa Service Running on the Same Node, run -
+The following process will generate the necessary TLS key (tls.key), certificate signing request (tls.csr), and SSL certificate (tls.crt) files for secure communication between the S3 client and the NooBaa service.
+
+- If S3 Client and NooBaa Service Running on the Same Node, run -
 
 ```bash
 sudo openssl genpkey -algorithm RSA -out tls.key
 sudo openssl req -new -key tls.key -out tls.csr
 sudo openssl x509 -req -days 365 -in tls.csr -signkey tls.key -out tls.crt
 ```
-* If S3 Client and NooBaa Service Running on Different Nodes, run -
+
+- If S3 Client and NooBaa Service Running on Different Nodes, run -
+
 ```
 $ sudo openssl genpkey -algorithm RSA -out tls.key
 $ sudo openssl req -new -key tls.key -out tls.csr -config san.cnf -subj "/CN=localhost"
@@ -546,23 +612,30 @@ $ sudo openssl x509 -req -days 365 -in tls.csr -signkey tls.key -out tls.crt -ex
 ```
 
 #### 3. Move tls.key and tls.crt under {config_dir_path}/cerfiticates -
+
 Note - The default config_dir is /etc/noobaa.conf.d/.
 
 ```bash
 sudo mv tls.key {config_dir_path}/certificates/
 sudo mv tls.crt {config_dir_path}/certificates/
 ```
+
 #### 4. Restart the NooBaa service -
+
 ```bash
 sudo systemctl restart noobaa
 ```
+
 #### 5. Create S3 CLI alias while including tls.crt at the s3 commands via AWS_CA_BUNDLE=/path/to/tls.crt -
-* Make sure to replace credentials placeholders with their respective values, and the <endpoint> placeholder either with `localhost` or the domain name or IP of the node which is running the NooBaa service.
+
+- Make sure to replace credentials placeholders with their respective values, and the <endpoint> placeholder either with `localhost` or the domain name or IP of the node which is running the NooBaa service.
+
 ```bash
 alias s3_ssl='AWS_CA_BUNDLE=/path/to/tls.crt AWS_ACCESS_KEY_ID=add_your_access_key AWS_SECRET_ACCESS_KEY=add_your_secret_key aws --endpoint https://<endpoint>:6443 s3'
 ```
 
 #### 6. Try running an s3 list buckets using the s3 alias -
+
 ```bash
 s3_ssl ls
 ```
@@ -573,9 +646,11 @@ Prometheus metrics port can be passed through the argument `--metrics_port` whil
 NooBaa state and output metrics can be fetched from URL `http:{host}:{metrics_port}/metrics/nsfs_stats`.
 
 ## Log and Logrotate
+
 Noobaa logs are configured using rsyslog and logrotate. RPM will configure rsyslog and logrotate if both are already running.
 
 Rsyslog status check
+
 ```
 systemctl status rsyslog
 ```
@@ -599,9 +674,11 @@ In order to apply env variables changes on the service, edit /etc/sysconfig/noob
 ```sh
 vim  /etc/sysconfig/noobaa
 ```
+
 **Note** - If another /usr/local/noobaa-core/.env exists it should be merged into /etc/sysconfig/noobaa carefully.
 
 In order to apply env changes after the service was started, edit the /etc/sysconfig/noobaa env file and restart the service -
+
 ```sh
 vim  /etc/sysconfig/noobaa
 systemctl restart noobaa

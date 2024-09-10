@@ -21,60 +21,58 @@ const util = require('util');
  *      to bind, if not supplied all enumerable functions will be used.
  */
 function self_bind(object, method_desc) {
-    if (!_.isString(method_desc)) {
-        method_desc = method_desc || _.functionsIn(object);
-        _.each(method_desc, function(method) {
-            self_bind(object, method);
-        });
-        return;
-    }
+  if (!_.isString(method_desc)) {
+    method_desc = method_desc || _.functionsIn(object);
+    _.each(method_desc, function (method) {
+      self_bind(object, method);
+    });
+    return;
+  }
 
-    const func = object[method_desc];
+  const func = object[method_desc];
 
-    // create a closure function that applies the original function on object
-    function closure_func() {
-        return func.apply(object, arguments);
-    }
+  // create a closure function that applies the original function on object
+  function closure_func() {
+    return func.apply(object, arguments);
+  }
 
-    object[method_desc] = closure_func;
+  object[method_desc] = closure_func;
 
-    return closure_func;
+  return closure_func;
 }
-
 
 // see http://jsperf.com/concat-vs-push-apply/39
 const _cached_array_push = Array.prototype.push;
-
 
 /**
  * push list of items into array
  */
 function array_push_all(array, items) {
-    // see http://jsperf.com/concat-vs-push-apply/39
-    // using Function.apply with items list to sends all the items
-    // to the push function which actually does: array.push(items[0], items[1], ...)
-    _cached_array_push.apply(array, items);
-    return array;
+  // see http://jsperf.com/concat-vs-push-apply/39
+  // using Function.apply with items list to sends all the items
+  // to the push function which actually does: array.push(items[0], items[1], ...)
+  _cached_array_push.apply(array, items);
+  return array;
 }
 
 function array_push_keep_latest(array, items, limit) {
-    array = array || [];
-    array_push_all(array, items);
-    return array.length > limit ? array.slice(-limit) : array;
+  array = array || [];
+  array_push_all(array, items);
+  return array.length > limit ? array.slice(-limit) : array;
 }
 
 /**
  * add to array, create it in the object if doesnt exist
  */
 function named_array_push(obj, arr_name, item) {
-    let arr = obj[arr_name];
-    if (arr) {
-        _cached_array_push.call(arr, item);
-    } else {
-        arr = [item];
-        obj[arr_name] = arr;
-    }
-    return arr;
+  let arr = obj[arr_name];
+  if (arr) {
+    _cached_array_push.call(arr, item);
+  } else {
+    arr = [item];
+    obj[arr_name] = arr;
+  }
+  return arr;
 }
 
 /**
@@ -83,43 +81,44 @@ function named_array_push(obj, arr_name, item) {
  * @returns {T}
  */
 function deep_freeze(obj) {
+  // Checking isFrozen is the break condition for the recursion
+  // Since isFrozen(non_object)===false it will break if it is number,string,etc,..
+  // But note that any shallow frozen object will not get recursive freeze by this
+  if (Object.isFrozen(obj)) return obj;
 
-    // Checking isFrozen is the break condition for the recursion
-    // Since isFrozen(non_object)===false it will break if it is number,string,etc,..
-    // But note that any shallow frozen object will not get recursive freeze by this
-    if (Object.isFrozen(obj)) return obj;
+  // Cannot freeze buffers - TypeError: Cannot freeze array buffer views with elements
+  if (Buffer.isBuffer(obj)) return obj;
 
-    // Cannot freeze buffers - TypeError: Cannot freeze array buffer views with elements
-    if (Buffer.isBuffer(obj)) return obj;
+  Object.freeze(obj);
 
-    Object.freeze(obj);
+  // Freeze all properties
+  const keys = Object.keys(obj);
+  for (let i = 0; i < keys.length; ++i) {
+    const k = keys[i];
+    const v = obj[k];
+    deep_freeze(v);
+  }
 
-    // Freeze all properties
-    const keys = Object.keys(obj);
-    for (let i = 0; i < keys.length; ++i) {
-        const k = keys[i];
-        const v = obj[k];
-        deep_freeze(v);
-    }
-
-    return obj;
+  return obj;
 }
-
 
 /**
  * Creates an object from a list of keys, intializing each key using the given value provider.
  */
 function make_object(keys, valueProvider) {
-    valueProvider = _.isFunction(valueProvider) ? valueProvider : _.noop;
-    return _.reduce(keys, (obj, key) => {
-        obj[key] = valueProvider(key);
-        return obj;
-    }, {});
+  valueProvider = _.isFunction(valueProvider) ? valueProvider : _.noop;
+  return _.reduce(
+    keys,
+    (obj, key) => {
+      obj[key] = valueProvider(key);
+      return obj;
+    },
+    {},
+  );
 }
 
-
 function default_value(val, def_val) {
-    return _.isUndefined(val) ? def_val : val;
+  return _.isUndefined(val) ? def_val : val;
 }
 
 /**
@@ -128,15 +127,15 @@ function default_value(val, def_val) {
  * @param order should be 1 or -1
  */
 function sort_compare_by(key_getter, order) {
-    key_getter = key_getter || (item => item);
-    order = order || 1;
-    return function(item1, item2) {
-        const key1 = key_getter(item1);
-        const key2 = key_getter(item2);
-        if (key1 < key2) return -order;
-        if (key1 > key2) return order;
-        return 0;
-    };
+  key_getter = key_getter || (item => item);
+  order = order || 1;
+  return function (item1, item2) {
+    const key1 = key_getter(item1);
+    const key2 = key_getter(item2);
+    if (key1 < key2) return -order;
+    if (key1 > key2) return order;
+    return 0;
+  };
 }
 
 /**
@@ -144,12 +143,12 @@ function sort_compare_by(key_getter, order) {
  * to allow v8 make this object as efficient as possible.
  */
 class PackedObject {
-    constructor(obj) {
-        const keys = Object.keys(obj);
-        for (let i = 0; i < keys.length; ++i) {
-            this[keys[i]] = obj[keys[i]];
-        }
+  constructor(obj) {
+    const keys = Object.keys(obj);
+    for (let i = 0; i < keys.length; ++i) {
+      this[keys[i]] = obj[keys[i]];
     }
+  }
 }
 
 /**
@@ -161,11 +160,11 @@ class PackedObject {
  *
  */
 function inspect_lazy(obj, ...inspect_args) {
-    return {
-        [util.inspect.custom]() {
-            return util.inspect(obj, ...inspect_args);
-        }
-    };
+  return {
+    [util.inspect.custom]() {
+      return util.inspect(obj, ...inspect_args);
+    },
+  };
 }
 
 /**
@@ -175,11 +174,11 @@ function inspect_lazy(obj, ...inspect_args) {
  * the index of the item will be created.
  */
 function make_array(length, item_initializer) {
-    if (!_.isFunction(item_initializer)) {
-        item_initializer = _.identity;
-    }
+  if (!_.isFunction(item_initializer)) {
+    item_initializer = _.identity;
+  }
 
-    return Array.from({ length }, (_unused_, i) => item_initializer(i));
+  return Array.from({ length }, (_unused_, i) => item_initializer(i));
 }
 
 /**
@@ -188,17 +187,17 @@ function make_array(length, item_initializer) {
  * and return it.
  */
 function map_get_or_create(map, key, item_initializer) {
-    if (!_.isFunction(item_initializer)) {
-        item_initializer = () => ({});
-    }
+  if (!_.isFunction(item_initializer)) {
+    item_initializer = () => ({});
+  }
 
-    if (map.has(key)) {
-        return map.get(key);
-    } else {
-        const val = item_initializer();
-        map.set(key, val);
-        return val;
-    }
+  if (map.has(key)) {
+    return map.get(key);
+  } else {
+    const val = item_initializer();
+    map.set(key, val);
+    return val;
+  }
 }
 
 /**
@@ -209,9 +208,9 @@ function map_get_or_create(map, key, item_initializer) {
  * @returns {Boolean}
  */
 function hasOwnProperty(obj, prop_name_or_sym) {
-    // TODO: replace to Object.hasOwn once we are using node 16.9.0 and remove the rule disable
-    // eslint-disable-next-line prefer-object-has-own
-    return Object.prototype.hasOwnProperty.call(obj, prop_name_or_sym);
+  // TODO: replace to Object.hasOwn once we are using node 16.9.0 and remove the rule disable
+  // eslint-disable-next-line prefer-object-has-own
+  return Object.prototype.hasOwnProperty.call(obj, prop_name_or_sym);
 }
 
 /**
@@ -225,16 +224,16 @@ function hasOwnProperty(obj, prop_name_or_sym) {
  * @returns {Omit<T,symbol> | T}
  */
 function omit_symbol(maybe_obj, sym) {
-    if (
-        !_.isObjectLike(maybe_obj) ||
-        Array.isArray(maybe_obj) ||
-        !hasOwnProperty(maybe_obj, sym)
-    ) {
-        return maybe_obj;
-    }
+  if (
+    !_.isObjectLike(maybe_obj) ||
+    Array.isArray(maybe_obj) ||
+    !hasOwnProperty(maybe_obj, sym)
+  ) {
+    return maybe_obj;
+  }
 
-    const obj = /** @type {object} */ (maybe_obj);
-    return _.omit(obj, sym);
+  const obj = /** @type {object} */ (maybe_obj);
+  return _.omit(obj, sym);
 }
 
 exports.self_bind = self_bind;

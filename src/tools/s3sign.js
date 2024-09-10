@@ -20,8 +20,10 @@ req.region = req.region || 'us-east-1';
 req.headers = req.headers || {};
 req.headers.Date = req.headers.Date || AWS.util.date.rfc822();
 req.credentials = req.credentials || {};
-req.credentials.accessKeyId = req.credentials.accessKeyId || req.access_key || '123';
-req.credentials.secretAccessKey = req.credentials.secretAccessKey || req.secret_key || 'abc';
+req.credentials.accessKeyId =
+  req.credentials.accessKeyId || req.access_key || '123';
+req.credentials.secretAccessKey =
+  req.credentials.secretAccessKey || req.secret_key || 'abc';
 
 console.log();
 p('Request', req);
@@ -38,13 +40,13 @@ p('V4 Authorization', req.headers.Authorization);
 p('V4 stringToSign', signer_v4.stringToSign(AWS.util.date.iso8601(date)));
 
 function p(title, value) {
-    console.log(`*** ${title} ***`);
-    console.log(util.inspect(value));
-    console.log();
+  console.log(`*** ${title} ***`);
+  console.log(util.inspect(value));
+  console.log();
 }
 
 function usage() {
-    console.log(`
+  console.log(`
 Usage:
 --method <HTTP-METHOD>      i.e. GET|HEAD|PUT|...
 --path <HTTP-PATH>          i.e. /bucket/key

@@ -3,11 +3,11 @@
 
 // see https://en.wikipedia.org/wiki/List_of_XML_and_HTML_character_entity_references#Predefined_entities_in_XML
 const XML_CHAR_ENTITY_MAP = Object.freeze({
-    '"': '&quot;',
-    '&': '&amp;',
-    '\'': '&apos;',
-    '<': '&lt;',
-    '>': '&gt;'
+  '"': '&quot;',
+  '&': '&amp;',
+  "'": '&apos;',
+  '<': '&lt;',
+  '>': '&gt;',
 });
 
 const XML_HEADER = '<?xml version="1.0" encoding="UTF-8"?>';
@@ -32,66 +32,65 @@ const XML_HEADER = '<?xml version="1.0" encoding="UTF-8"?>';
  *
  */
 function encode_xml(object, ignore_header) {
-    let output = ignore_header ? '' : XML_HEADER;
-    append_object(s => {
-        output += s;
-    }, object);
-    return output;
+  let output = ignore_header ? '' : XML_HEADER;
+  append_object(s => {
+    output += s;
+  }, object);
+  return output;
 }
 
 function append_object(append, object) {
-    if (typeof(object) !== 'object') {
-        append(encode_xml_str(object));
-    } else if (Array.isArray(object)) {
-        // arrays are encoded without adding new tags
-        // which allows repeating keys with the same name
-        for (let i = 0; i < object.length; ++i) {
-            append_object(append, object[i]);
-        }
-    } else {
-        // skip any keys from the prototype
-        const object_own_keys = Object.keys(object);
-        for (const key of object_own_keys) {
-
-            // undefined values skip encoding the key tag altogether
-            const val = object[key];
-            const val_type = typeof(val);
-            if (val_type === 'undefined') continue;
-
-            // keys starting with _ are not considered tag names
-            // _content - encode only the value but without a tag
-            // otherwise ignore the key and value altogether
-            if (key[0] === '_') {
-                if (key === '_content') {
-                    append_object(append, val);
-                }
-                continue;
-            }
-
-            if (val_type === 'object') {
-                if (val && val._attr) {
-                    append('<' + key);
-                    const attr_keys = Object.keys(val._attr);
-                    for (const a of attr_keys) {
-                        append(' ' + a + '="' + encode_xml_str(val._attr[a]) + '"');
-                    }
-                    append('>');
-                } else {
-                    append('<' + key + '>');
-                }
-                append_object(append, val);
-                append('</' + key + '>');
-            } else {
-                append('<' + key + '>');
-                append(encode_xml_str(val));
-                append('</' + key + '>');
-            }
-        }
+  if (typeof object !== 'object') {
+    append(encode_xml_str(object));
+  } else if (Array.isArray(object)) {
+    // arrays are encoded without adding new tags
+    // which allows repeating keys with the same name
+    for (let i = 0; i < object.length; ++i) {
+      append_object(append, object[i]);
     }
+  } else {
+    // skip any keys from the prototype
+    const object_own_keys = Object.keys(object);
+    for (const key of object_own_keys) {
+      // undefined values skip encoding the key tag altogether
+      const val = object[key];
+      const val_type = typeof val;
+      if (val_type === 'undefined') continue;
+
+      // keys starting with _ are not considered tag names
+      // _content - encode only the value but without a tag
+      // otherwise ignore the key and value altogether
+      if (key[0] === '_') {
+        if (key === '_content') {
+          append_object(append, val);
+        }
+        continue;
+      }
+
+      if (val_type === 'object') {
+        if (val && val._attr) {
+          append('<' + key);
+          const attr_keys = Object.keys(val._attr);
+          for (const a of attr_keys) {
+            append(' ' + a + '="' + encode_xml_str(val._attr[a]) + '"');
+          }
+          append('>');
+        } else {
+          append('<' + key + '>');
+        }
+        append_object(append, val);
+        append('</' + key + '>');
+      } else {
+        append('<' + key + '>');
+        append(encode_xml_str(val));
+        append('</' + key + '>');
+      }
+    }
+  }
 }
 
 function encode_xml_str(s) {
-    return String(s).replace(/(["&'<>])/g, (str, ch) => XML_CHAR_ENTITY_MAP[ch]);
+  return String(s).replace(/(["&'<>])/g, (str, ch) => XML_CHAR_ENTITY_MAP[ch]);
 }
 
 exports.encode_xml = encode_xml;

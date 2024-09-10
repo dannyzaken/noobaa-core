@@ -37,88 +37,91 @@ api_schema.register_api(require('./replication_api'));
 api_schema.compile();
 
 function get_schema(name) {
-    return api_schema._ajv.getSchema(name);
+  return api_schema._ajv.getSchema(name);
 }
 
 function get_protocol_port(protocol) {
-    switch (protocol.toLowerCase()) {
-        case 'http:':
-        case 'ws:': {
-            return 80;
-        }
-        case 'https:':
-        case 'wss:': {
-            return 443;
-        }
-        default:
-            return undefined;
+  switch (protocol.toLowerCase()) {
+    case 'http:':
+    case 'ws:': {
+      return 80;
     }
+    case 'https:':
+    case 'wss:': {
+      return 443;
+    }
+    default:
+      return undefined;
+  }
 }
 
 function new_router_from_base_address(base_address) {
-    const {
-        protocol,
-        hostname,
-        port,
-        slashes,
-    } = url.parse(base_address);
+  const { protocol, hostname, port, slashes } = url.parse(base_address);
 
-    const ports = get_default_ports(Number(port) || get_protocol_port(protocol));
+  const ports = get_default_ports(Number(port) || get_protocol_port(protocol));
 
-    return {
-        default: url.format({ protocol, slashes, hostname, port: ports.mgmt }),
-        md: url.format({ protocol, slashes, hostname, port: ports.md }),
-        bg: url.format({ protocol, slashes, hostname, port: ports.bg }),
-        hosted_agents: url.format({ protocol, slashes, hostname, port: ports.hosted_agents }),
-        master: url.format({ protocol, slashes, hostname, port: ports.mgmt })
-    };
+  return {
+    default: url.format({ protocol, slashes, hostname, port: ports.mgmt }),
+    md: url.format({ protocol, slashes, hostname, port: ports.md }),
+    bg: url.format({ protocol, slashes, hostname, port: ports.bg }),
+    hosted_agents: url.format({
+      protocol,
+      slashes,
+      hostname,
+      port: ports.hosted_agents,
+    }),
+    master: url.format({ protocol, slashes, hostname, port: ports.mgmt }),
+  };
 }
 
 function new_router_from_address_list(address_list, hint) {
-    return {
-        default: get_base_address(address_list, { hint, api: 'mgmt' }).toString(),
-        md: get_base_address(address_list, { hint, api: 'md' }).toString(),
-        bg: get_base_address(address_list, { hint, api: 'bg' }).toString(),
-        hosted_agents: get_base_address(address_list, { hint, api: 'hosted_agents' }).toString(),
-        master: get_base_address(address_list, { hint, api: 'mgmt' }).toString()
-    };
+  return {
+    default: get_base_address(address_list, { hint, api: 'mgmt' }).toString(),
+    md: get_base_address(address_list, { hint, api: 'md' }).toString(),
+    bg: get_base_address(address_list, { hint, api: 'bg' }).toString(),
+    hosted_agents: get_base_address(address_list, {
+      hint,
+      api: 'hosted_agents',
+    }).toString(),
+    master: get_base_address(address_list, { hint, api: 'mgmt' }).toString(),
+  };
 }
 
 function new_rpc() {
-    const routing_table = new_router_from_address_list([], 'LOOPBACK');
-    return new_rpc_from_routing(routing_table);
+  const routing_table = new_router_from_address_list([], 'LOOPBACK');
+  return new_rpc_from_routing(routing_table);
 }
 
 function new_rpc_from_base_address(base_address, routing_hint) {
-    if (!routing_hint) {
-        throw new Error('Routing hint was not provided');
-    }
+  if (!routing_hint) {
+    throw new Error('Routing hint was not provided');
+  }
 
-    // Create a routing table derived from the base address and default port offsets.
-    const routing_table = new_router_from_base_address(base_address);
-    const rpc = new_rpc_from_routing(routing_table);
-    rpc.routing_hint = routing_hint;
-    return rpc;
+  // Create a routing table derived from the base address and default port offsets.
+  const routing_table = new_router_from_base_address(base_address);
+  const rpc = new_rpc_from_routing(routing_table);
+  rpc.routing_hint = routing_hint;
+  return rpc;
 }
 
 function new_rpc_from_routing(routing_table) {
-    if (!routing_table) {
-        throw new TypeError(`Invalid new_router: ${routing_table}`);
-    }
+  if (!routing_table) {
+    throw new TypeError(`Invalid new_router: ${routing_table}`);
+  }
 
-    return new RPC({
-        schema: api_schema,
-        router: routing_table,
-        api_routes: {
-            object_api: 'md',
-            func_api: 'md',
-            scrubber_api: 'bg',
-            replication_api: 'bg',
-            hosted_agents_api: 'hosted_agents',
-            node_api: 'master',
-            host_api: 'master'
-        }
-    });
+  return new RPC({
+    schema: api_schema,
+    router: routing_table,
+    api_routes: {
+      object_api: 'md',
+      func_api: 'md',
+      scrubber_api: 'bg',
+      replication_api: 'bg',
+      hosted_agents_api: 'hosted_agents',
+      node_api: 'master',
+      host_api: 'master',
+    },
+  });
 }
 
 /**
@@ -135,13 +138,13 @@ function new_rpc_from_routing(routing_table) {
  *
  */
 function new_rpc_default_only(base_address) {
-    return new RPC({
-        schema: api_schema,
-        router: {
-            default: base_address
-        },
-        api_routes: {}
-    });
+  return new RPC({
+    schema: api_schema,
+    router: {
+      default: base_address,
+    },
+    api_routes: {},
+  });
 }
 
 exports.new_rpc = new_rpc;

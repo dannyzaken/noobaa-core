@@ -27,68 +27,62 @@
  *
  */
 module.exports = {
-    $id: 'data_chunk_schema',
-    type: 'object',
-    required: [
-        '_id',
-        'system',
-        'size',
-    ],
-    properties: {
+  $id: 'data_chunk_schema',
+  type: 'object',
+  required: ['_id', 'system', 'size'],
+  properties: {
+    // identification
+    _id: { objectid: true },
+    system: { objectid: true },
+    deleted: { date: true },
 
-        // identification
-        _id: { objectid: true },
-        system: { objectid: true },
-        deleted: { date: true },
+    // every chunk belongs exclusively to a bucket for data placement and storage accounting
+    bucket: { objectid: true },
+    // tiering
+    tier: { objectid: true },
+    tier_lru: { date: true },
 
-        // every chunk belongs exclusively to a bucket for data placement and storage accounting
-        bucket: { objectid: true },
-        // tiering
-        tier: { objectid: true },
-        tier_lru: { date: true },
+    // chunk_config defines how to decode the chunk data, and @@@ MUST NOT CHANGE @@@
+    chunk_config: { objectid: true },
 
-        // chunk_config defines how to decode the chunk data, and @@@ MUST NOT CHANGE @@@
-        chunk_config: { objectid: true },
+    // size in bytes
+    size: { type: 'integer' },
+    // the compressed size of the data
+    compress_size: { type: 'integer' },
+    // the frag size is saved although can be computed from size and chunk_config
+    // because the calculation requires padding and is easier to share this way
+    frag_size: { type: 'integer' },
 
-        // size in bytes
-        size: { type: 'integer' },
-        // the compressed size of the data
-        compress_size: { type: 'integer' },
-        // the frag size is saved although can be computed from size and chunk_config
-        // because the calculation requires padding and is easier to share this way
-        frag_size: { type: 'integer' },
+    // TODO: This value is depricated and not used anymore. Should remove from all systems in the future
+    // Used in extra replication for video type chunks
+    // Currently only the first and the last chunks of the video
+    special_replica: { type: 'boolean' },
 
-        // TODO: This value is depricated and not used anymore. Should remove from all systems in the future
-        // Used in extra replication for video type chunks
-        // Currently only the first and the last chunks of the video
-        special_replica: { type: 'boolean' },
+    // the key for data dedup, will include both the scope (bucket/tier) and the digest
+    // and once the chunk is marked as deleted it will be unset to remove from the index
+    dedup_key: { binary: true },
 
-        // the key for data dedup, will include both the scope (bucket/tier) and the digest
-        // and once the chunk is marked as deleted it will be unset to remove from the index
-        dedup_key: { binary: true },
+    // data digest (hash) - computed on the plain data before compression and encryption
+    digest: { binary: true },
 
-        // data digest (hash) - computed on the plain data before compression and encryption
-        digest: { binary: true },
+    // cipher used to provide confidentiality - computed on the compressed data
+    cipher_key: { binary: true },
+    cipher_iv: { binary: true },
+    cipher_auth_tag: { binary: true },
 
-        // cipher used to provide confidentiality - computed on the compressed data
-        cipher_key: { binary: true },
-        cipher_iv: { binary: true },
-        cipher_auth_tag: { binary: true },
-
-        master_key_id: { objectid: true },
-        frags: {
-            type: 'array',
-            items: {
-                type: 'object',
-                properties: {
-                    _id: { objectid: true },
-                    data_index: { type: 'integer' },
-                    parity_index: { type: 'integer' },
-                    lrc_index: { type: 'integer' },
-                    digest: { binary: true },
-                }
-            }
+    master_key_id: { objectid: true },
+    frags: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          _id: { objectid: true },
+          data_index: { type: 'integer' },
+          parity_index: { type: 'integer' },
+          lrc_index: { type: 'integer' },
+          digest: { binary: true },
         },
-
-    }
+      },
+    },
+  },
 };

@@ -2,16 +2,16 @@
 'use strict';
 
 async function put_container(req, res) {
-    await req.object_sdk.create_bucket({ name: req.params.bucket });
-    res.statusCode = 201;
+  await req.object_sdk.create_bucket({ name: req.params.bucket });
+  res.statusCode = 201;
 }
 
 module.exports = {
-    handler: put_container,
-    body: {
-        type: 'empty',
-    },
-    reply: {
-        type: 'empty',
-    },
+  handler: put_container,
+  body: {
+    type: 'empty',
+  },
+  reply: {
+    type: 'empty',
+  },
 };

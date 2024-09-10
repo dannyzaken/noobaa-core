@@ -1,5 +1,5 @@
 name: Build ppc64le image
-on: [ push, pull_request ]
+on: [push, pull_request]
 
 jobs:
   build-ppc64le-image:
@@ -11,7 +11,7 @@ jobs:
     env:
       # For multiplatform use list like:
       # "linux/amd64,linux/arm64"
-      PLATFORMS: "linux/ppc64le"
+      PLATFORMS: 'linux/ppc64le'
       GIT_COMMIT: ${{ github.sha }}
     steps:
       - name: Checkout
@@ -35,7 +35,7 @@ jobs:
       - name: Get Current Date
         id: date
         run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
-      
+
       - name: Prepare Suffix
         id: suffix
         if: ${{ github.event.inputs.tag != '' }}

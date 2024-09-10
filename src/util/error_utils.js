@@ -13,16 +13,16 @@
  * @returns {ErrorWithCode}
  */
 function new_error_code(code, message, options) {
-    return Object.assign(new Error(message ?? code, options), { code });
+  return Object.assign(new Error(message ?? code, options), { code });
 }
 
 /**
  * Remove the stack trace for errors that are too noisy with a stack.
- * @param {Error} err 
+ * @param {Error} err
  */
 function stackless(err) {
-    err.stack = null;
-    return err;
+  err.stack = null;
+  return err;
 }
 
 exports.new_error_code = new_error_code;

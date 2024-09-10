@@ -23,15 +23,15 @@ module.exports = Barrier;
  *
  */
 function Barrier(options) {
-    const self = this;
-    options = options || {};
-    self.max_length = options.max_length || 100;
-    self.expiry_ms = options.expiry_ms || 1000; // default 1 second
-    self.process = options.process;
-    self.barrier = {
-        items: [],
-        defers: [],
-    };
+  const self = this;
+  options = options || {};
+  self.max_length = options.max_length || 100;
+  self.expiry_ms = options.expiry_ms || 1000; // default 1 second
+  self.process = options.process;
+  self.barrier = {
+    items: [],
+    defers: [],
+  };
 }
 
 /**
@@ -43,29 +43,28 @@ function Barrier(options) {
  * @returns a promise that will be resolved once all the barrier is resolved.
  *
  */
-Barrier.prototype.call = function(item) {
-    const self = this;
-    return P.fcall(function() {
+Barrier.prototype.call = function (item) {
+  const self = this;
+  return P.fcall(function () {
+    // add the item to the pending barrier and assign a defer
+    // that will be resolved/rejected per this item.
+    const defer = new P.Defer();
+    self.barrier.items.push(item);
+    self.barrier.defers.push(defer);
 
-        // add the item to the pending barrier and assign a defer
-        // that will be resolved/rejected per this item.
-        const defer = new P.Defer();
-        self.barrier.items.push(item);
-        self.barrier.defers.push(defer);
+    if (self.barrier.items.length >= self.max_length) {
+      // release barrier when max length is reached
+      self.release();
+    } else if (self.expiry_ms >= 0 && !self.barrier.timeout) {
+      // schedule a timeout to release the barrier
+      self.barrier.timeout = setTimeout(
+        self.release.bind(self),
+        self.expiry_ms,
+      );
+    }
 
-        if (self.barrier.items.length >= self.max_length) {
-
-            // release barrier when max length is reached
-            self.release();
-
-        } else if (self.expiry_ms >= 0 && !self.barrier.timeout) {
-
-            // schedule a timeout to release the barrier
-            self.barrier.timeout = setTimeout(self.release.bind(self), self.expiry_ms);
-        }
-
-        return defer.promise;
-    });
+    return defer.promise;
+  });
 };
 
 /**
@@ -76,28 +75,28 @@ Barrier.prototype.call = function(item) {
  * and reset a new pending barrier for new joins to use.
  *
  */
-Barrier.prototype.release = function() {
-    const self = this;
-    const barrier = self.barrier;
-    clearTimeout(barrier.timeout);
+Barrier.prototype.release = function () {
+  const self = this;
+  const barrier = self.barrier;
+  clearTimeout(barrier.timeout);
 
-    // reset a new pending barrier
-    self.barrier = {
-        items: [],
-        defers: [],
-    };
+  // reset a new pending barrier
+  self.barrier = {
+    items: [],
+    defers: [],
+  };
 
-    // call the process function with the items list
-    P.fcall(self.process, barrier.items)
-        .then(function(res) {
-            res = res || [];
-            _.each(barrier.defers, function(defer, index) {
-                defer.resolve(res[index]);
-            });
-        })
-        .catch(function(err) {
-            _.each(barrier.defers, function(defer, index) {
-                defer.reject(err);
-            });
-        });
+  // call the process function with the items list
+  P.fcall(self.process, barrier.items)
+    .then(function (res) {
+      res = res || [];
+      _.each(barrier.defers, function (defer, index) {
+        defer.resolve(res[index]);
+      });
+    })
+    .catch(function (err) {
+      _.each(barrier.defers, function (defer, index) {
+        defer.reject(err);
+      });
+    });
 };

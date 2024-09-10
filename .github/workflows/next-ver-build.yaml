@@ -1,7 +1,7 @@
 name: Next Version Build
-on: 
+on:
   schedule:
-    - cron: "0 12 * * 1"
+    - cron: '0 12 * * 1'
   workflow_dispatch:
     inputs:
       branch:
@@ -19,4 +19,4 @@ jobs:
           workflow: Manual Build Dispatch
           repo: noobaa/noobaa-core
           token: ${{ secrets.GHACCESSTOKEN }}
-          inputs: '{ "branch": "5.11", "tag": "" }' 
+          inputs: '{ "branch": "5.11", "tag": "" }'

@@ -209,95 +209,122 @@ const GLACIER_EXPIRY_OPTIONS = ``;
  * @param {string} action
  */
 function print_usage(type, action) {
-    switch (type) {
-        case TYPES.ACCOUNT:
-            print_help_account(action);
-            break;
-        case TYPES.BUCKET:
-            print_help_bucket(action);
-            break;
-        case TYPES.IP_WHITELIST:
-            process.stdout.write(WHITELIST_FLAGS.trimStart());
-            break;
-        case TYPES.GLACIER:
-            print_help_glacier(action);
-            break;
-        default:
-            process.stdout.write(HELP + '\n');
-            process.stdout.write(USAGE.trimStart() + '\n');
-            process.stdout.write(ARGUMENTS.trimStart() + '\n');
-    }
-    process.exit(0);
+  switch (type) {
+    case TYPES.ACCOUNT:
+      print_help_account(action);
+      break;
+    case TYPES.BUCKET:
+      print_help_bucket(action);
+      break;
+    case TYPES.IP_WHITELIST:
+      process.stdout.write(WHITELIST_FLAGS.trimStart());
+      break;
+    case TYPES.GLACIER:
+      print_help_glacier(action);
+      break;
+    default:
+      process.stdout.write(HELP + '\n');
+      process.stdout.write(USAGE.trimStart() + '\n');
+      process.stdout.write(ARGUMENTS.trimStart() + '\n');
+  }
+  process.exit(0);
 }
 
-/** 
+/**
  * print_help_account would print the help options for account
  * @param {string} action
  */
 function print_help_account(action) {
-    switch (action) {
-        case ACTIONS.ADD:
-            process.stdout.write(ACCOUNT_FLAGS_ADD.trimStart() + GLOBAL_CONFIG_ROOT_ALL_FLAG.trimStart());
-            break;
-        case ACTIONS.UPDATE:
-            process.stdout.write(ACCOUNT_FLAGS_UPDATE.trimStart() + GLOBAL_CONFIG_ROOT_ALL_FLAG.trimStart());
-            break;
-        case ACTIONS.DELETE:
-            process.stdout.write(ACCOUNT_FLAGS_DELETE.trimStart() + GLOBAL_CONFIG_ROOT_ALL_FLAG.trimStart());
-            break;
-        case ACTIONS.STATUS:
-            process.stdout.write(ACCOUNT_FLAGS_STATUS.trimStart() + GLOBAL_CONFIG_ROOT_ALL_FLAG.trimStart());
-            break;
-        case ACTIONS.LIST:
-            process.stdout.write(ACCOUNT_FLAGS_LIST.trimStart() + GLOBAL_CONFIG_ROOT_ALL_FLAG.trimStart());
-            break;
-        default:
-            process.stdout.write(ACCOUNT_ACTIONS.trimStart());
-    }
-    process.exit(0);
+  switch (action) {
+    case ACTIONS.ADD:
+      process.stdout.write(
+        ACCOUNT_FLAGS_ADD.trimStart() + GLOBAL_CONFIG_ROOT_ALL_FLAG.trimStart(),
+      );
+      break;
+    case ACTIONS.UPDATE:
+      process.stdout.write(
+        ACCOUNT_FLAGS_UPDATE.trimStart() +
+          GLOBAL_CONFIG_ROOT_ALL_FLAG.trimStart(),
+      );
+      break;
+    case ACTIONS.DELETE:
+      process.stdout.write(
+        ACCOUNT_FLAGS_DELETE.trimStart() +
+          GLOBAL_CONFIG_ROOT_ALL_FLAG.trimStart(),
+      );
+      break;
+    case ACTIONS.STATUS:
+      process.stdout.write(
+        ACCOUNT_FLAGS_STATUS.trimStart() +
+          GLOBAL_CONFIG_ROOT_ALL_FLAG.trimStart(),
+      );
+      break;
+    case ACTIONS.LIST:
+      process.stdout.write(
+        ACCOUNT_FLAGS_LIST.trimStart() +
+          GLOBAL_CONFIG_ROOT_ALL_FLAG.trimStart(),
+      );
+      break;
+    default:
+      process.stdout.write(ACCOUNT_ACTIONS.trimStart());
+  }
+  process.exit(0);
 }
 
-/** 
+/**
  * print_help_bucket would print the help options for bucket
  * @param {string} action
  */
 function print_help_bucket(action) {
-    switch (action) {
-        case ACTIONS.ADD:
-            process.stdout.write(BUCKET_FLAGS_ADD.trimStart() + GLOBAL_CONFIG_ROOT_ALL_FLAG.trimStart());
-            break;
-        case ACTIONS.UPDATE:
-            process.stdout.write(BUCKET_FLAGS_UPDATE.trimStart() + GLOBAL_CONFIG_ROOT_ALL_FLAG.trimStart());
-            break;
-        case ACTIONS.DELETE:
-            process.stdout.write(BUCKET_FLAGS_DELETE.trimStart() + GLOBAL_CONFIG_ROOT_ALL_FLAG.trimStart());
-            break;
-        case ACTIONS.STATUS:
-            process.stdout.write(BUCKET_FLAGS_STATUS.trimStart() + GLOBAL_CONFIG_ROOT_ALL_FLAG.trimStart());
-            break;
-        case ACTIONS.LIST:
-            process.stdout.write(BUCKET_FLAGS_LIST.trimStart() + GLOBAL_CONFIG_ROOT_ALL_FLAG.trimStart());
-            break;
-        default:
-            process.stdout.write(BUCKET_ACTIONS.trimStart());
-    }
-    process.exit(0);
+  switch (action) {
+    case ACTIONS.ADD:
+      process.stdout.write(
+        BUCKET_FLAGS_ADD.trimStart() + GLOBAL_CONFIG_ROOT_ALL_FLAG.trimStart(),
+      );
+      break;
+    case ACTIONS.UPDATE:
+      process.stdout.write(
+        BUCKET_FLAGS_UPDATE.trimStart() +
+          GLOBAL_CONFIG_ROOT_ALL_FLAG.trimStart(),
+      );
+      break;
+    case ACTIONS.DELETE:
+      process.stdout.write(
+        BUCKET_FLAGS_DELETE.trimStart() +
+          GLOBAL_CONFIG_ROOT_ALL_FLAG.trimStart(),
+      );
+      break;
+    case ACTIONS.STATUS:
+      process.stdout.write(
+        BUCKET_FLAGS_STATUS.trimStart() +
+          GLOBAL_CONFIG_ROOT_ALL_FLAG.trimStart(),
+      );
+      break;
+    case ACTIONS.LIST:
+      process.stdout.write(
+        BUCKET_FLAGS_LIST.trimStart() + GLOBAL_CONFIG_ROOT_ALL_FLAG.trimStart(),
+      );
+      break;
+    default:
+      process.stdout.write(BUCKET_ACTIONS.trimStart());
+  }
+  process.exit(0);
 }
 
 function print_help_glacier(action) {
-    switch (action) {
-        case GLACIER_ACTIONS.MIGRATE:
-            process.stdout.write(GLACIER_MIGRATE_OPTIONS.trimStart());
-            break;
-        case GLACIER_ACTIONS.RESTORE:
-            process.stdout.write(GLACIER_RESTORE_OPTIONS.trimStart());
-            break;
-        case GLACIER_ACTIONS.EXPIRY:
-            process.stdout.write(GLACIER_EXPIRY_OPTIONS.trimStart());
-            break;
-        default:
-            process.stdout.write(GLACIER_OPTIONS.trimStart());
-    }
+  switch (action) {
+    case GLACIER_ACTIONS.MIGRATE:
+      process.stdout.write(GLACIER_MIGRATE_OPTIONS.trimStart());
+      break;
+    case GLACIER_ACTIONS.RESTORE:
+      process.stdout.write(GLACIER_RESTORE_OPTIONS.trimStart());
+      break;
+    case GLACIER_ACTIONS.EXPIRY:
+      process.stdout.write(GLACIER_EXPIRY_OPTIONS.trimStart());
+      break;
+    default:
+      process.stdout.write(GLACIER_OPTIONS.trimStart());
+  }
 }
 
 // EXPORTS

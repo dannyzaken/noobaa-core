@@ -29,31 +29,31 @@ addons:
     # List of whitelisted in travis apt-sources:
     #   https://github.com/travis-ci/apt-source-whitelist/blob/master/ubuntu.json
     sources:
-    - ubuntu-toolchain-r-test
-    - llvm-toolchain-trusty-4.0
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-trusty-4.0
     packages:
-    - cmake
-    - gcc-6
-    - g++-6
-    - clang-4.0
+      - cmake
+      - gcc-6
+      - g++-6
+      - clang-4.0
 
 install:
-# Travis doesn't have a nice way to install homebrew packages yet.
-# https://github.com/travis-ci/travis-ci/issues/5377
-- if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update; fi
-- if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install gcc@6; fi
-# /usr/bin/gcc is stuck to old versions by on both Linux and OSX.
-- if [ "$CXX" = "g++" ]; then export CXX="g++-6" CC="gcc-6"; fi
-- echo ${CC}
-- echo ${CXX}
-- ${CXX} --version
-- cmake --version
+  # Travis doesn't have a nice way to install homebrew packages yet.
+  # https://github.com/travis-ci/travis-ci/issues/5377
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install gcc@6; fi
+  # /usr/bin/gcc is stuck to old versions by on both Linux and OSX.
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-6" CC="gcc-6"; fi
+  - echo ${CC}
+  - echo ${CXX}
+  - ${CXX} --version
+  - cmake --version
 
 before_script:
-- mkdir -p build && cd build
-- cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
-- cmake --build .
-- cd ..
+  - mkdir -p build && cd build
+  - cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+  - cmake --build .
+  - cd ..
 
 script:
-- build/snappy_unittest
+  - build/snappy_unittest

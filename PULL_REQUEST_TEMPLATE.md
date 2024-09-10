@@ -1,12 +1,14 @@
 ### Explain the changes
-1. 
+
+1.
 
 ### Issues: Fixed #xxx / Gap #xxx
-1. 
+
+1.
 
 ### Testing Instructions:
-1. 
 
+1.
 
 - [ ] Doc added/updated
 - [ ] Tests added

@@ -21,25 +21,26 @@ const port = 38000;
 //     console.warn('Hello World POST!', req.body);
 // });
 
-const bodyParser = require("body-parser");
+const bodyParser = require('body-parser');
 
 /** bodyParser.urlencoded(options)
  * Parses the text as URL encoded data (which is how browsers tend to send form data from regular forms set to POST)
  * and exposes the resulting object (containing the keys and values) on req.body
  */
-app.use(bodyParser.urlencoded({
-    extended: true
-}));
+app.use(
+  bodyParser.urlencoded({
+    extended: true,
+  }),
+);
 
 /**bodyParser.json(options)
  * Parses the text as JSON and exposes the resulting object on req.body.
  */
 app.use(bodyParser.json());
 
-app.post("*", function(req, res) {
-    console.log(req.body);
-    res.end();
+app.post('*', function (req, res) {
+  console.log(req.body);
+  res.end();
 });
-
 
 app.listen(port, () => console.log(`Example app listening on port ${port}!`));

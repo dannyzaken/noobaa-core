@@ -9,7 +9,7 @@ const password = process.argv[2] || '';
 const hash = process.argv[3] || '';
 
 if (hash) {
-    console.log(bcrypt.compareSync(password, hash));
+  console.log(bcrypt.compareSync(password, hash));
 } else {
-    console.log(bcrypt.hashSync(password, 10));
+  console.log(bcrypt.hashSync(password, 10));
 }

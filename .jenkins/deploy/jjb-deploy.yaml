@@ -9,7 +9,7 @@ objects:
     metadata:
       labels:
         app: jjb
-        jjb/session: "${SESSION}"
+        jjb/session: '${SESSION}'
       name: jjb-deploy
     spec:
       ttlSecondsAfterFinished: 0
@@ -18,16 +18,16 @@ objects:
         metadata:
           labels:
             app: jjb-deploy
-            jjb/session: "${SESSION}"
+            jjb/session: '${SESSION}'
         spec:
           containers:
             - name: jjb
               image: image-registry.openshift-image-registry.svc:5000/noobaa/jjb:latest
               env:
                 - name: GIT_REPO
-                  value: "${GIT_REPO}"
+                  value: '${GIT_REPO}'
                 - name: GIT_REF
-                  value: "${GIT_REF}"
+                  value: '${GIT_REF}'
                 - name: MAKE_TARGET
                   value: deploy
               volumeMounts:

@@ -35,4 +35,4 @@
             - $GIT_BRANCH
     triggers:
       - pollscm:
-          cron: "H/5 * * * *"
+          cron: 'H/5 * * * *'

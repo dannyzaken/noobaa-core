@@ -1,7 +1,6 @@
 /* Copyright (C) 2016 NooBaa */
 'use strict';
 
-
 const coretest = require('./nc_coretest');
 coretest.setup();
 

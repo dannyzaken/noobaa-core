@@ -5,10 +5,9 @@ const _ = require('lodash');
 const os = require('os');
 
 module.exports = {
-    get_main_external_ipv4: get_main_external_ipv4,
-    get_external_ipv4: get_external_ipv4,
+  get_main_external_ipv4: get_main_external_ipv4,
+  get_external_ipv4: get_external_ipv4,
 };
-
 
 /**
  *
@@ -20,16 +19,15 @@ module.exports = {
  *
  */
 function get_main_external_ipv4() {
-    const ips = get_external_ipv4();
-    if (!_.isArray(ips)) {
-        return ips;
-    }
-    // if multiple external IPs we use an incredible algorithm
-    // to find the main external ip, and it is ... to pick the first.
-    // this is how AI is done in real life, bitches.
-    return ips[0];
+  const ips = get_external_ipv4();
+  if (!_.isArray(ips)) {
+    return ips;
+  }
+  // if multiple external IPs we use an incredible algorithm
+  // to find the main external ip, and it is ... to pick the first.
+  // this is how AI is done in real life, bitches.
+  return ips[0];
 }
-
 
 /**
  *
@@ -41,20 +39,20 @@ function get_main_external_ipv4() {
  *
  */
 function get_external_ipv4() {
-    let ips;
-    _.each(os.networkInterfaces(), function(ifcs, name) {
-        _.each(ifcs, function(ifc) {
-            if (ifc.internal || !ifc.address || ifc.family !== 'IPv4') {
-                return;
-            }
-            if (!ips) {
-                ips = ifc.address;
-            } else if (_.isArray(ips)) {
-                ips.push(ifc.address);
-            } else {
-                ips = [ips, ifc.address];
-            }
-        });
+  let ips;
+  _.each(os.networkInterfaces(), function (ifcs, name) {
+    _.each(ifcs, function (ifc) {
+      if (ifc.internal || !ifc.address || ifc.family !== 'IPv4') {
+        return;
+      }
+      if (!ips) {
+        ips = ifc.address;
+      } else if (_.isArray(ips)) {
+        ips.push(ifc.address);
+      } else {
+        ips = [ips, ifc.address];
+      }
     });
-    return ips;
+  });
+  return ips;
 }

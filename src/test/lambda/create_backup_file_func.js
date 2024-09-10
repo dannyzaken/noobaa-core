@@ -14,26 +14,28 @@
 
 const AWS = require('aws-sdk');
 
-exports.handler = async function(event, context, callback) {
-    const srcBucket = event.Records[0].s3.bucket.name;
-    const key = event.Records[0].s3.object.key;
-    const s3 = new AWS.S3();
+exports.handler = async function (event, context, callback) {
+  const srcBucket = event.Records[0].s3.bucket.name;
+  const key = event.Records[0].s3.object.key;
+  const s3 = new AWS.S3();
 
-    try {
-        const head = await s3.headObject({
-                Bucket: srcBucket,
-                Key: key
-            })
-            .promise();
-        await s3.putObject({
-                Bucket: srcBucket,
-                Key: key + '.json',
-                ContentType: 'text/json',
-                Body: JSON.stringify({ event, head }, null, 4),
-            })
-            .promise();
-        return callback(null);
-    } catch (err) {
-        return callback(err);
-    }
+  try {
+    const head = await s3
+      .headObject({
+        Bucket: srcBucket,
+        Key: key,
+      })
+      .promise();
+    await s3
+      .putObject({
+        Bucket: srcBucket,
+        Key: key + '.json',
+        ContentType: 'text/json',
+        Body: JSON.stringify({ event, head }, null, 4),
+      })
+      .promise();
+    return callback(null);
+  } catch (err) {
+    return callback(err);
+  }
 };

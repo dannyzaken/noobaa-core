@@ -52,90 +52,92 @@ WARNING:
 `;
 
 function print_usage() {
-    console.warn(HELP);
-    console.warn(USAGE.trimStart());
-    console.warn(ARGUMENTS.trimStart());
-    console.warn(OPTIONS.trimStart());
-    console.warn(WARNINGS.trimStart());
-    process.exit(1);
+  console.warn(HELP);
+  console.warn(USAGE.trimStart());
+  console.warn(ARGUMENTS.trimStart());
+  console.warn(OPTIONS.trimStart());
+  console.warn(WARNINGS.trimStart());
+  process.exit(1);
 }
 
 async function main(argv = minimist(process.argv.slice(2))) {
-    try {
-        if (argv.help || argv.h) return print_usage();
-        if (argv.debug) {
-            const debug_level = Number(argv.debug) || 0;
-            dbg.set_module_level(debug_level, 'core');
-            nb_native().fs.set_debug_level(debug_level);
-        }
-        const port = String(argv.port || '');
-        const address = argv.address || 'wss://localhost:5443';
-        const pool_name = argv.pool_name || 'backingstores';
-        const storage_path = argv._[0];
-
-        if (!port) print_usage();
-        if (!storage_path) print_usage();
-
-        console.warn(WARNINGS);
-        console.log('backingstore: setting up ...', argv);
-
-        if (!fs.existsSync(storage_path)) {
-            console.error(`storage directory not found: ${storage_path}`);
-            print_usage();
-        }
-
-        await run_backingstore(storage_path, address, port, pool_name);
-
-    } catch (err) {
-        console.error('backingstore: exit on error', err.stack || err);
-        process.exit(2);
+  try {
+    if (argv.help || argv.h) return print_usage();
+    if (argv.debug) {
+      const debug_level = Number(argv.debug) || 0;
+      dbg.set_module_level(debug_level, 'core');
+      nb_native().fs.set_debug_level(debug_level);
     }
+    const port = String(argv.port || '');
+    const address = argv.address || 'wss://localhost:5443';
+    const pool_name = argv.pool_name || 'backingstores';
+    const storage_path = argv._[0];
+
+    if (!port) print_usage();
+    if (!storage_path) print_usage();
+
+    console.warn(WARNINGS);
+    console.log('backingstore: setting up ...', argv);
+
+    if (!fs.existsSync(storage_path)) {
+      console.error(`storage directory not found: ${storage_path}`);
+      print_usage();
+    }
+
+    await run_backingstore(storage_path, address, port, pool_name);
+  } catch (err) {
+    console.error('backingstore: exit on error', err.stack || err);
+    process.exit(2);
+  }
 }
 
 async function run_backingstore(storage_path, address, port, pool_name) {
+  const conf_path = path.join(storage_path, 'agent_conf.json');
+  const token_path = path.join(storage_path, 'token');
+  const agent_conf = new json_utils.JsonFileWrapper(conf_path);
 
-    const conf_path = path.join(storage_path, 'agent_conf.json');
-    const token_path = path.join(storage_path, 'token');
-    const agent_conf = new json_utils.JsonFileWrapper(conf_path);
-
-    if (!fs.existsSync(token_path)) {
-        const rpc = api.new_rpc();
-        const client = rpc.new_client({ address });
-        await client.create_auth_token({
-            system: process.env.CREATE_SYS_NAME,
-            email: process.env.CREATE_SYS_EMAIL,
-            password: process.env.CREATE_SYS_PASSWD,
-        });
-        const install_string = await client.pool.get_hosts_pool_agent_config({ name: pool_name });
-        const install_conf = JSON.parse(Buffer.from(install_string, 'base64').toString());
-        await fs_utils.replace_file(token_path, install_conf.create_node_token);
-    }
-
-    const token_wrapper = {
-        read: () => fs.promises.readFile(token_path),
-        write: token => fs_utils.replace_file(token_path, token),
-    };
-    const create_node_token_wrapper = {
-        read: () => agent_conf.read().then(conf => conf.create_node_token),
-        write: new_token => agent_conf.update({ create_node_token: new_token }),
-    };
-
-    const agent = new Agent({
-        address,
-        rpc_port: port,
-        node_name: storage_path,
-        host_id: storage_path,
-        location_info: {
-            host_id: storage_path,
-        },
-        storage_path,
-        storage_limit: undefined,
-        agent_conf,
-        token_wrapper,
-        create_node_token_wrapper,
+  if (!fs.existsSync(token_path)) {
+    const rpc = api.new_rpc();
+    const client = rpc.new_client({ address });
+    await client.create_auth_token({
+      system: process.env.CREATE_SYS_NAME,
+      email: process.env.CREATE_SYS_EMAIL,
+      password: process.env.CREATE_SYS_PASSWD,
     });
+    const install_string = await client.pool.get_hosts_pool_agent_config({
+      name: pool_name,
+    });
+    const install_conf = JSON.parse(
+      Buffer.from(install_string, 'base64').toString(),
+    );
+    await fs_utils.replace_file(token_path, install_conf.create_node_token);
+  }
 
-    await agent.start();
+  const token_wrapper = {
+    read: () => fs.promises.readFile(token_path),
+    write: token => fs_utils.replace_file(token_path, token),
+  };
+  const create_node_token_wrapper = {
+    read: () => agent_conf.read().then(conf => conf.create_node_token),
+    write: new_token => agent_conf.update({ create_node_token: new_token }),
+  };
+
+  const agent = new Agent({
+    address,
+    rpc_port: port,
+    node_name: storage_path,
+    host_id: storage_path,
+    location_info: {
+      host_id: storage_path,
+    },
+    storage_path,
+    storage_limit: undefined,
+    agent_conf,
+    token_wrapper,
+    create_node_token_wrapper,
+  });
+
+  await agent.start();
 }
 
 exports.main = main;

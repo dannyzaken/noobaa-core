@@ -11,23 +11,21 @@ const stream = require('stream');
  *
  */
 class FlattenStream extends stream.Transform {
+  constructor() {
+    super({
+      objectMode: true,
+      allowHalfOpen: false,
+    });
+  }
 
-    constructor() {
-        super({
-            objectMode: true,
-            allowHalfOpen: false,
-        });
+  _transform(data, encoding, callback) {
+    if (Array.isArray(data)) {
+      data.forEach(item => this.push(item));
+    } else {
+      this.push(data);
     }
-
-    _transform(data, encoding, callback) {
-        if (Array.isArray(data)) {
-            data.forEach(item => this.push(item));
-        } else {
-            this.push(data);
-        }
-        return callback();
-    }
-
+    return callback();
+  }
 }
 
 module.exports = FlattenStream;

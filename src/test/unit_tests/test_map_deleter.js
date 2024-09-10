@@ -17,10 +17,12 @@ const mocha = require('mocha');
 const map_deleter = require('../../server/object_services/map_deleter');
 // const system_store = require('../../server/system_services/system_store').get_instance();
 
-coretest.describe_mapper_test_case({
+coretest.describe_mapper_test_case(
+  {
     name: 'map_deleter',
     bucket_name_prefix: 'test-map-deleter',
-}, ({
+  },
+  ({
     test_name,
     bucket_name,
     data_placement,
@@ -32,26 +34,28 @@ coretest.describe_mapper_test_case({
     total_blocks,
     total_replicas,
     chunk_coder_config,
-}) => {
-
+  }) => {
     // TODO we need to create more nodes and pools to support all MAPPER_TEST_CASES
-    if (data_placement !== 'SPREAD' || num_pools !== 1 || total_blocks > 10) return;
+    if (data_placement !== 'SPREAD' || num_pools !== 1 || total_blocks > 10) {
+      return;
+    }
 
     // TODO test_map_deleter
 
-    mocha.it('delete_chunks', function() {
-        return map_deleter.delete_chunks();
+    mocha.it('delete_chunks', function () {
+      return map_deleter.delete_chunks();
     });
 
-    mocha.it('delete_object_mappings', function() {
-        return map_deleter.delete_object_mappings();
+    mocha.it('delete_object_mappings', function () {
+      return map_deleter.delete_object_mappings();
     });
 
-    mocha.it('delete_blocks_from_nodes', function() {
-        return map_deleter.delete_blocks_from_nodes();
+    mocha.it('delete_blocks_from_nodes', function () {
+      return map_deleter.delete_blocks_from_nodes();
     });
 
-    mocha.it('delete_parts_by_chunks', function() {
-        return map_deleter.delete_parts_by_chunks();
+    mocha.it('delete_parts_by_chunks', function () {
+      return map_deleter.delete_parts_by_chunks();
     });
-});
+  },
+);

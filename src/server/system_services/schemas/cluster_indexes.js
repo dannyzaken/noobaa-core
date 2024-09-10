@@ -1,11 +1,13 @@
 /* Copyright (C) 2016 NooBaa */
 'use strict';
 
-module.exports = [{
+module.exports = [
+  {
     fields: {
-        owner_secret: 1,
+      owner_secret: 1,
     },
     options: {
-        unique: true,
-    }
-}, ];
+      unique: true,
+    },
+  },
+];

@@ -8,11 +8,11 @@ const S3Error = require('../s3_errors').S3Error;
  * http://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGETreplication.html
  */
 async function get_bucket_replication(req) {
-    await req.object_sdk.read_bucket({ name: req.params.bucket });
-    // TODO S3 get_bucket_replication not implemented
-    throw new S3Error(S3Error.ReplicationConfigurationNotFoundError);
+  await req.object_sdk.read_bucket({ name: req.params.bucket });
+  // TODO S3 get_bucket_replication not implemented
+  throw new S3Error(S3Error.ReplicationConfigurationNotFoundError);
 
-    /*
+  /*
     return {
         ReplicationConfiguration: {
             Role: `arn:noobaa:iam::112233445566:role/replication`,
@@ -34,11 +34,11 @@ async function get_bucket_replication(req) {
 }
 
 module.exports = {
-    handler: get_bucket_replication,
-    body: {
-        type: 'empty',
-    },
-    reply: {
-        type: 'xml',
-    },
+  handler: get_bucket_replication,
+  body: {
+    type: 'empty',
+  },
+  reply: {
+    type: 'xml',
+  },
 };

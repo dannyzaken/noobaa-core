@@ -10,69 +10,57 @@ const CloudVendor = require('./analyze_resource_cloud_vendor_abstract');
 
 /**
  * @typedef {{
- *      private_key_json: JSON, 
+ *      private_key_json: JSON,
  * }} AnalyzeGcpSpec
  */
 
 class AnalyzeGcp extends CloudVendor {
+  constructor(private_key_json) {
+    super(); // Constructors for derived classes must contain a 'super' call.
+    const gcs_params = {
+      keyFilename: private_key_json,
+    };
+    this.gcs = new Storage(gcs_params);
+  }
 
-    constructor(private_key_json) {
-        super(); // Constructors for derived classes must contain a 'super' call.
-        const gcs_params = {
-            keyFilename: private_key_json,
-        };
-        this.gcs = new Storage(gcs_params);
+  async list_objects(bucket) {
+    const options = {
+      maxResults: CloudVendor.MAX_KEYS,
+    };
+    dbg.log0(`Calling GCP bucket(${bucket}).getFiles`);
+    const [files] = await this.gcs.bucket(bucket).getFiles(options);
+    dbg.log0(`List object response: ${inspect(files)}`);
+
+    this.file = '';
+    if (files && files.length > 0) {
+      this.file = files[0].name;
     }
+  }
 
-    async list_objects(bucket) {
-        const options = {
-            maxResults: CloudVendor.MAX_KEYS,
-        };
-        dbg.log0(`Calling GCP bucket(${bucket}).getFiles`);
-        const [files] = await this.gcs
-            .bucket(bucket)
-            .getFiles(options);
-        dbg.log0(`List object response: ${inspect(files)}`);
+  async get_key() {
+    return this.file;
+  }
 
-        this.file = '';
-        if (files && files.length > 0) {
-            this.file = files[0].name;
-        }
-    }
+  async head_object(bucket, key) {
+    dbg.log0(`Calling GCP bucket(${bucket}).file(${key}).getMetadata`);
+    const [metadata] = await this.gcs.bucket(bucket).file(key).getMetadata();
+    dbg.log0(`Head of ${key} response: ${inspect(metadata)}`);
+  }
 
-    async get_key() {
-        return this.file;
-    }
+  async write_object(bucket, key) {
+    dbg.log0(`Calling GCP bucket(${bucket}).file(${key}).createWriteStream`);
+    const stream = await this.gcs.bucket(bucket).file(key).createWriteStream();
+    await buffer_utils.write_to_stream(stream, ''); //write an empty file
+    stream.on('response', resp => {
+      dbg.log0(`Write of ${key} response: ${inspect(resp)}`);
+    });
+  }
 
-    async head_object(bucket, key) {
-        dbg.log0(`Calling GCP bucket(${bucket}).file(${key}).getMetadata`);
-        const [metadata] = await this.gcs
-            .bucket(bucket)
-            .file(key)
-            .getMetadata();
-        dbg.log0(`Head of ${key} response: ${inspect(metadata)}`);
-    }
-
-    async write_object(bucket, key) {
-        dbg.log0(`Calling GCP bucket(${bucket}).file(${key}).createWriteStream`);
-        const stream = await this.gcs
-            .bucket(bucket)
-            .file(key)
-            .createWriteStream();
-        await buffer_utils.write_to_stream(stream, ''); //write an empty file
-        stream.on('response', resp => {
-            dbg.log0(`Write of ${key} response: ${inspect(resp)}`);
-        });
-    }
-
-    async delete_object(bucket, key) {
-        dbg.log0(`Calling GCP bucket(${bucket}).file(${key}).delete`);
-        await this.gcs
-            .bucket(bucket)
-            .file(key)
-            .delete();
-        dbg.log0(`Delete of ${key} done`);
-    }
+  async delete_object(bucket, key) {
+    dbg.log0(`Calling GCP bucket(${bucket}).file(${key}).delete`);
+    await this.gcs.bucket(bucket).file(key).delete();
+    dbg.log0(`Delete of ${key} done`);
+  }
 }
 
 // EXPORTS

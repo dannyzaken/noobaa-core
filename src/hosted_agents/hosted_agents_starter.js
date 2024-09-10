@@ -15,24 +15,24 @@ const prom_reporting = require('../server/analytic_services/prometheus_reporting
 const config = require('../../config.js');
 
 function register_rpc() {
-    server_rpc.register_hosted_agents_services();
-    server_rpc.register_common_services();
-    const u = url.parse(server_rpc.rpc.router.hosted_agents);
-    return server_rpc.rpc.start_http_server({
-        port: u.port,
-        protocol: u.protocol,
-        logging: true,
-    });
+  server_rpc.register_hosted_agents_services();
+  server_rpc.register_common_services();
+  const u = url.parse(server_rpc.rpc.router.hosted_agents);
+  return server_rpc.rpc.start_http_server({
+    port: u.port,
+    protocol: u.protocol,
+    logging: true,
+  });
 }
 
 async function start_hosted_agents() {
-    await Promise.all([
-        db_client.instance().connect(),
-        register_rpc(),
+  await Promise.all([
+    db_client.instance().connect(),
+    register_rpc(),
 
-        // Try to start the hosted agents metrics server
-        prom_reporting.start_server(config.HA_METRICS_SERVER_PORT)
-    ]);
+    // Try to start the hosted agents metrics server
+    prom_reporting.start_server(config.HA_METRICS_SERVER_PORT),
+  ]);
 }
 
 start_hosted_agents();

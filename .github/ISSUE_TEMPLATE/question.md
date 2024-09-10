@@ -4,7 +4,4 @@ about: Question Template
 title: 'Question: '
 labels: 'Type: Question'
 assignees: ''
-
 ---
-
-

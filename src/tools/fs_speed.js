@@ -11,7 +11,7 @@ const Speedometer = require('../util/speedometer');
 const RandStream = require('../util/rand_stream');
 
 function print_usage() {
-    console.log(`
+  console.log(`
 Usage:
   --help            show this usage
   --dir <path>      (default "./fs_speed_output") where to write the files
@@ -41,8 +41,8 @@ Example:
 }
 
 if (argv.help) {
-    print_usage();
-    process.exit(0);
+  print_usage();
+  process.exit(0);
 }
 
 argv.dir = argv.dir || 'fs_speed_output';
@@ -56,32 +56,32 @@ argv.block_size_units = argv.block_size_units || 'MB';
 argv.fsync = Boolean(argv.fsync);
 argv.mode = argv.mode || 'nsfs';
 if (argv.mode === 'dd') {
-    argv.device = argv.device || '/dev/zero';
+  argv.device = argv.device || '/dev/zero';
 } else {
-    // flags that are ignored on dd mode
-    // nvec larger than 1 will use writev instead of write
-    argv.nvec = argv.nvec || 1;
-    // generator value should be one that RandStream supports - 'crypto' | 'cipher' | 'fake' | 'zeros' | 'fill' | 'noinit'
-    argv.generator = argv.generator || 'zeros';
+  // flags that are ignored on dd mode
+  // nvec larger than 1 will use writev instead of write
+  argv.nvec = argv.nvec || 1;
+  // generator value should be one that RandStream supports - 'crypto' | 'cipher' | 'fake' | 'zeros' | 'fill' | 'noinit'
+  argv.generator = argv.generator || 'zeros';
 }
 
 Object.freeze(argv);
 console.log(argv);
 
 if (!['nsfs', 'nodejs', 'dd'].includes(argv.mode)) {
-    throw new Error('Invalid mode ' + argv.mode);
+  throw new Error('Invalid mode ' + argv.mode);
 }
 const size_units_table = {
-    B: 1,
-    KB: 1024,
-    MB: 1024 * 1024,
-    GB: 1024 * 1024 * 1024,
+  B: 1,
+  KB: 1024,
+  MB: 1024 * 1024,
+  GB: 1024 * 1024 * 1024,
 };
 if (!size_units_table[argv.file_size_units]) {
-    throw new Error('Invalid file_size_units ' + argv.file_size_units);
+  throw new Error('Invalid file_size_units ' + argv.file_size_units);
 }
 if (!size_units_table[argv.block_size_units]) {
-    throw new Error('Invalid block_size_units ' + argv.block_size_units);
+  throw new Error('Invalid block_size_units ' + argv.block_size_units);
 }
 
 const block_size = argv.block_size * size_units_table[argv.block_size_units];
@@ -92,128 +92,134 @@ const nb_native = argv.mode === 'nsfs' && require('../util/nb_native');
 const is_master = cluster.isMaster;
 const speedometer = new Speedometer(is_master ? 'Total Speed' : 'FS Speed');
 const start_time = Date.now();
-const end_time = start_time + (argv.time * 1000);
+const end_time = start_time + argv.time * 1000;
 
 if (argv.forks > 1 && is_master) {
-    speedometer.fork(argv.forks);
+  speedometer.fork(argv.forks);
 } else {
-    main();
+  main();
 }
 
 async function main() {
-    const promises = [];
-    fs.mkdirSync(argv.dir, { recursive: true });
-    for (let i = 0; i < argv.concur; ++i) promises.push(worker(i));
-    await Promise.all(promises);
-    speedometer.clear_interval();
-    if (is_master) speedometer.report();
-    process.exit(0);
+  const promises = [];
+  fs.mkdirSync(argv.dir, { recursive: true });
+  for (let i = 0; i < argv.concur; ++i) promises.push(worker(i));
+  await Promise.all(promises);
+  speedometer.clear_interval();
+  if (is_master) speedometer.report();
+  process.exit(0);
 }
 
 /**
  * @param {number} id
  */
 async function worker(id) {
-    const dir = path.join(
-        argv.dir,
-        `${id}`, // first level is id so that repeating runs will be collected together
-        // `pid-${process.pid}`,
-    );
-    await fs.promises.mkdir(dir, { recursive: true });
+  const dir = path.join(
+    argv.dir,
+    `${id}`, // first level is id so that repeating runs will be collected together
+    // `pid-${process.pid}`,
+  );
+  await fs.promises.mkdir(dir, { recursive: true });
 
-    let file_id = 0;
-    for (;;) {
-        const file_start_time = Date.now();
-        if (file_start_time >= end_time) break;
-        const file_path = path.join(dir, `file-${file_id}`);
-        file_id += 1;
-        if (argv.mode === 'nsfs') {
-            await work_with_nsfs(file_path);
-        } else if (argv.mode === 'nodejs') {
-            await work_with_nodejs(file_path);
-        } else if (argv.mode === 'dd') {
-            await work_with_dd(file_path);
-        }
-        const took_ms = Date.now() - file_start_time;
-        speedometer.add_op(took_ms);
+  let file_id = 0;
+  for (;;) {
+    const file_start_time = Date.now();
+    if (file_start_time >= end_time) break;
+    const file_path = path.join(dir, `file-${file_id}`);
+    file_id += 1;
+    if (argv.mode === 'nsfs') {
+      await work_with_nsfs(file_path);
+    } else if (argv.mode === 'nodejs') {
+      await work_with_nodejs(file_path);
+    } else if (argv.mode === 'dd') {
+      await work_with_dd(file_path);
     }
+    const took_ms = Date.now() - file_start_time;
+    speedometer.add_op(took_ms);
+  }
 }
 
 async function work_with_dd(file_path) {
-    const cmd = argv.read ?
-        `dd if=${file_path} of=/dev/null bs=${block_size} count=${block_count}` :
-        `dd if=${argv.device} of=${file_path} bs=${block_size} count=${block_count}`;
-    // console.log(cmd);
-    await execAsync(cmd);
-    if (argv.fsync) await execAsync(`sync ${file_path}`);
-    speedometer.update(file_size_aligned);
+  const cmd =
+    argv.read ?
+      `dd if=${file_path} of=/dev/null bs=${block_size} count=${block_count}`
+    : `dd if=${argv.device} of=${file_path} bs=${block_size} count=${block_count}`;
+  // console.log(cmd);
+  await execAsync(cmd);
+  if (argv.fsync) await execAsync(`sync ${file_path}`);
+  speedometer.update(file_size_aligned);
 }
 
 async function work_with_nsfs(file_path) {
-    const rand_stream = new RandStream(file_size_aligned, {
-        highWaterMark: 2 * block_size,
-        generator: argv.read ? 'noinit' : argv.generator,
-    });
-    const fs_context = {
-        // uid: 666,
-        // gid: 666,
-        backend: 'GPFS',
-        warn_threshold_ms: 1000,
-    };
-    const file = await nb_native().fs.open(fs_context, file_path, argv.read ? 'r' : 'w', 0x660);
-    for (let pos = 0; pos < file_size_aligned; pos += block_size) {
-        const buf_start_time = Date.now();
-        if (buf_start_time >= end_time) break;
-        const buf = rand_stream.generator(block_size);
-        if (argv.nvec > 1) {
-            if (argv.read) {
-                await file.readv(fs_context, split_to_nvec(buf, argv.nvec));
-            } else {
-                await file.writev(fs_context, split_to_nvec(buf, argv.nvec));
-            }
-        } else if (argv.read) {
-            await file.read(fs_context, buf, 0, buf.length, pos);
-        } else {
-            await file.write(fs_context, buf);
-        }
-        speedometer.update(block_size);
+  const rand_stream = new RandStream(file_size_aligned, {
+    highWaterMark: 2 * block_size,
+    generator: argv.read ? 'noinit' : argv.generator,
+  });
+  const fs_context = {
+    // uid: 666,
+    // gid: 666,
+    backend: 'GPFS',
+    warn_threshold_ms: 1000,
+  };
+  const file = await nb_native().fs.open(
+    fs_context,
+    file_path,
+    argv.read ? 'r' : 'w',
+    0x660,
+  );
+  for (let pos = 0; pos < file_size_aligned; pos += block_size) {
+    const buf_start_time = Date.now();
+    if (buf_start_time >= end_time) break;
+    const buf = rand_stream.generator(block_size);
+    if (argv.nvec > 1) {
+      if (argv.read) {
+        await file.readv(fs_context, split_to_nvec(buf, argv.nvec));
+      } else {
+        await file.writev(fs_context, split_to_nvec(buf, argv.nvec));
+      }
+    } else if (argv.read) {
+      await file.read(fs_context, buf, 0, buf.length, pos);
+    } else {
+      await file.write(fs_context, buf);
     }
-    if (argv.fsync) await file.fsync(fs_context);
-    await file.close(fs_context);
+    speedometer.update(block_size);
+  }
+  if (argv.fsync) await file.fsync(fs_context);
+  await file.close(fs_context);
 }
 
 async function work_with_nodejs(file_path) {
-    const rand_stream = new RandStream(file_size_aligned, {
-        highWaterMark: 2 * block_size,
-        generator: argv.read ? 'noinit' : argv.generator,
-    });
-    const file = await fs.promises.open(file_path, argv.read ? 'r' : 'w', 0x660);
-    for (let pos = 0; pos < file_size_aligned; pos += block_size) {
-        const buf_start_time = Date.now();
-        if (buf_start_time >= end_time) break;
-        const buf = rand_stream.generator(block_size);
-        if (argv.nvec > 1) {
-            if (argv.read) {
-                await file.readv(split_to_nvec(buf, argv.nvec));
-            } else {
-                await file.writev(split_to_nvec(buf, argv.nvec));
-            }
-        } else if (argv.read) {
-            await file.read(buf);
-        } else {
-            await file.write(buf);
-        }
-        speedometer.update(block_size);
+  const rand_stream = new RandStream(file_size_aligned, {
+    highWaterMark: 2 * block_size,
+    generator: argv.read ? 'noinit' : argv.generator,
+  });
+  const file = await fs.promises.open(file_path, argv.read ? 'r' : 'w', 0x660);
+  for (let pos = 0; pos < file_size_aligned; pos += block_size) {
+    const buf_start_time = Date.now();
+    if (buf_start_time >= end_time) break;
+    const buf = rand_stream.generator(block_size);
+    if (argv.nvec > 1) {
+      if (argv.read) {
+        await file.readv(split_to_nvec(buf, argv.nvec));
+      } else {
+        await file.writev(split_to_nvec(buf, argv.nvec));
+      }
+    } else if (argv.read) {
+      await file.read(buf);
+    } else {
+      await file.write(buf);
     }
-    if (argv.fsync) await file.sync();
-    await file.close();
+    speedometer.update(block_size);
+  }
+  if (argv.fsync) await file.sync();
+  await file.close();
 }
 
 function split_to_nvec(buf, nvec) {
-    const len = Math.ceil(buf.length / nvec);
-    const bufs = [];
-    for (let p = 0; p < buf.length; p += len) {
-        bufs.push(buf.slice(p, p + len));
-    }
-    return bufs;
+  const len = Math.ceil(buf.length / nvec);
+  const bufs = [];
+  for (let p = 0; p < buf.length; p += len) {
+    bufs.push(buf.slice(p, p + len));
+  }
+  return bufs;
 }

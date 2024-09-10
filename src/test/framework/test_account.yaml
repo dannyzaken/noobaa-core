@@ -9,7 +9,7 @@ metadata:
   name: noobaa-tests-role
 rules:
   - apiGroups:
-      - ""
+      - ''
     resources:
       - pods
       - services
@@ -20,32 +20,32 @@ rules:
       - secrets
       - serviceaccounts
     verbs:
-      - "*"
+      - '*'
   - apiGroups:
       - apps
     resources:
-      - "*"
+      - '*'
     verbs:
-      - "*"
+      - '*'
   - apiGroups:
       - apps
     resources:
-      - "*"
+      - '*'
     verbs:
-      - "*"
+      - '*'
   - apiGroups:
       - rbac.authorization.k8s.io
     resources:
       - roles
       - rolebindings
     verbs:
-      - "*"
+      - '*'
   - apiGroups:
-      - ""
+      - ''
     resources:
       - namespaces
     verbs:
-      - "*"
+      - '*'
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1

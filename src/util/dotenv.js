@@ -25,173 +25,180 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-
 'use strict';
 
 const fs = require('fs');
 const _ = require('lodash');
 
 const DROPPED_LINES = {
-    LINES: [],
-    INDICES: [],
+  LINES: [],
+  INDICES: [],
 };
 
 module.exports = {
+  /*
+   * Main entry point into dotenv. Allows configuration before loading .env
+   * @param {Object} options - valid options: path ('.env'), encoding ('utf8')
+   * @returns {Boolean}
+   */
+  config: function (options) {
+    const paths = ['.env', '/data/.env'];
+    const encoding = 'utf8';
 
-    /*
-     * Main entry point into dotenv. Allows configuration before loading .env
-     * @param {Object} options - valid options: path ('.env'), encoding ('utf8')
-     * @returns {Boolean}
-     */
-    config: function(options) {
-        const paths = ['.env', '/data/.env'];
-        const encoding = 'utf8';
+    paths.forEach(env_file => {
+      try {
+        const parsedObj = this.parse(
+          fs.readFileSync(env_file, {
+            encoding: encoding,
+          }),
+        );
 
-        paths.forEach(env_file => {
-            try {
-                const parsedObj = this.parse(fs.readFileSync(env_file, {
-                    encoding: encoding
-                }));
-
-                Object.keys(parsedObj).forEach(function(key) {
-                    process.env[key] = parsedObj[key];
-                });
-            } catch (e) {
-                _.noop();
-            }
+        Object.keys(parsedObj).forEach(function (key) {
+          process.env[key] = parsedObj[key];
         });
+      } catch (e) {
+        _.noop();
+      }
+    });
+  },
 
+  /*
+   * Parses a string or buffer into an object
+   * @param {String|Buffer} src - source to be parsed
+   * @returns {Object}
+   */
+  parse: function (src_param) {
+    let src = src_param;
+    if (!src) {
+      try {
+        src = fs.readFileSync('/data/.env', {
+          encoding: 'utf8',
+        });
+      } catch (e) {
+        src = fs.readFileSync('.env', {
+          encoding: 'utf8',
+        });
+      }
+    }
+    const obj = {};
+    let idx = 0;
 
-    },
+    // convert Buffers before splitting into lines and processing
+    src
+      .toString()
+      .split('\n')
+      .forEach(function (line) {
+        // matching "KEY' and 'VAL' in 'KEY=VAL'
+        const keyValueArr = line.match(/^\s*([\w\.\-]+)\s*=\s*(.*)?\s*$/);
+        // matched?
+        if (keyValueArr === null) {
+          DROPPED_LINES.INDICES.push(idx);
+          DROPPED_LINES.LINES.push(line);
+          // console.warn('line', line);
+        } else {
+          const key = keyValueArr[1];
 
-    /*
-     * Parses a string or buffer into an object
-     * @param {String|Buffer} src - source to be parsed
-     * @returns {Object}
-     */
-    parse: function(src_param) {
+          // default undefined or missing values to empty string
+          let value = keyValueArr[2] ? keyValueArr[2] : '';
 
-        let src = src_param;
-        if (!src) {
-            try {
-                src = fs.readFileSync('/data/.env', {
-                    encoding: 'utf8'
-                });
-            } catch (e) {
-                src = fs.readFileSync('.env', {
-                    encoding: 'utf8'
-                });
-            }
+          // expand newlines in quoted values
+          const len = value ? value.length : 0;
+          if (
+            len > 0 &&
+            value.charAt(0) === '"' &&
+            value.charAt(len - 1) === '"'
+          ) {
+            value = value.replace(/\\n/gm, '\n');
+          }
+
+          // remove any surrounding quotes and extra spaces
+          value = value.replace(/(^['"]|['"]$)/g, '').trim();
+
+          obj[key] = value;
         }
-        const obj = {};
-        let idx = 0;
+        idx += 1;
+      });
 
-        // convert Buffers before splitting into lines and processing
-        src.toString().split('\n')
-            .forEach(function(line) {
-                // matching "KEY' and 'VAL' in 'KEY=VAL'
-                const keyValueArr = line.match(/^\s*([\w\.\-]+)\s*=\s*(.*)?\s*$/);
-                // matched?
-                if (keyValueArr === null) {
-                    DROPPED_LINES.INDICES.push(idx);
-                    DROPPED_LINES.LINES.push(line);
-                    // console.warn('line', line);
-                } else {
-                    const key = keyValueArr[1];
+    return obj;
+  },
 
-                    // default undefined or missing values to empty string
-                    let value = keyValueArr[2] ? keyValueArr[2] : '';
+  stringify: obj =>
+    Object.keys(obj)
+      .map(key => `${key}=${obj[key]}`)
+      .join('\n') + '\n',
 
-                    // expand newlines in quoted values
-                    const len = value ? value.length : 0;
-                    if (len > 0 && value.charAt(0) === '"' && value.charAt(len - 1) === '"') {
-                        value = value.replace(/\\n/gm, '\n');
-                    }
+  /*
+   * Sets a new value for params
+   * @param {Object} newVal - param name and new value of param
+   */
+  set: function (newVal) {
+    const path = '/data/.env';
+    const encoding = 'utf8';
+    const silent = false;
 
-                    // remove any surrounding quotes and extra spaces
-                    value = value.replace(/(^['"]|['"]$)/g, '').trim();
+    try {
+      // specifying an encoding returns a string instead of a buffer
+      const newObj = this.replace(
+        fs.readFileSync(path, {
+          encoding: encoding,
+        }),
+        newVal,
+      );
 
-                    obj[key] = value;
-                }
-                idx += 1;
-            });
+      fs.writeFileSync(path, '');
+      Object.keys(newObj).forEach(function (key) {
+        fs.appendFileSync(path, key + '=' + newObj[key] + '\n');
+        process.env[key] = newObj[key];
+      });
 
-        return obj;
-    },
+      return true;
+    } catch (e) {
+      if (!silent) {
+        console.error(e);
+      }
+      return false;
+    }
+  },
 
-    stringify: obj => Object.keys(obj)
-        .map(key => `${key}=${obj[key]}`)
-        .join('\n') + '\n',
+  /*
+   * Replaces a value on a given source buffer
+   * @param {Object} newVal - param name and new value of param
+   * @param {String|Buffer} src - source to be parsed
+   * @returns {Object}
+   */
+  replace: function (src, newVal) {
+    const obj = {};
+    let found = false;
 
-    /*
-     * Sets a new value for params
-     * @param {Object} newVal - param name and new value of param
-     */
-    set: function(newVal) {
-        const path = '/data/.env';
-        const encoding = 'utf8';
-        const silent = false;
+    // convert Buffers before splitting into lines and processing
+    src
+      .toString()
+      .split('\n')
+      .forEach(function (line) {
+        // matching "KEY' and 'VAL' in 'KEY=VAL'
+        const keyValueArr = line.match(/^\s*([\w\.\-]+)\s*=\s*(.*)?\s*$/);
+        // matched?
+        if (keyValueArr !== null) {
+          const key = keyValueArr[1];
+          let value;
+          if (key === newVal.key) {
+            value = newVal.value;
+            found = true;
+          } else {
+            // default undefined or missing values to empty string
+            value = keyValueArr[2] ? keyValueArr[2] : '';
+          }
 
-        try {
-            // specifying an encoding returns a string instead of a buffer
-            const newObj = this.replace(fs.readFileSync(path, {
-                encoding: encoding
-            }), newVal);
-
-
-            fs.writeFileSync(path, '');
-            Object.keys(newObj).forEach(function(key) {
-                fs.appendFileSync(path, key + '=' + newObj[key] + '\n');
-                process.env[key] = newObj[key];
-            });
-
-            return true;
-        } catch (e) {
-            if (!silent) {
-                console.error(e);
-            }
-            return false;
+          obj[key] = value;
         }
-    },
+      });
 
-    /*
-     * Replaces a value on a given source buffer
-     * @param {Object} newVal - param name and new value of param
-     * @param {String|Buffer} src - source to be parsed
-     * @returns {Object}
-     */
-    replace: function(src, newVal) {
-        const obj = {};
-        let found = false;
-
-        // convert Buffers before splitting into lines and processing
-        src.toString().split('\n')
-            .forEach(function(line) {
-                // matching "KEY' and 'VAL' in 'KEY=VAL'
-                const keyValueArr = line.match(/^\s*([\w\.\-]+)\s*=\s*(.*)?\s*$/);
-                // matched?
-                if (keyValueArr !== null) {
-                    const key = keyValueArr[1];
-                    let value;
-                    if (key === newVal.key) {
-                        value = newVal.value;
-                        found = true;
-                    } else {
-                        // default undefined or missing values to empty string
-                        value = keyValueArr[2] ? keyValueArr[2] : '';
-                    }
-
-                    obj[key] = value;
-                }
-            });
-
-        if (!found) {
-            obj[newVal.key] = newVal.value;
-        }
-
-        return obj;
+    if (!found) {
+      obj[newVal.key] = newVal.value;
     }
 
+    return obj;
+  },
 };
 
 module.exports.load = module.exports.config;

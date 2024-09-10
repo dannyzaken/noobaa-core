@@ -10,13 +10,10 @@ coretest.setup({ pools_to_create: [coretest.POOL_LIST[0]] });
 const mocha = require('mocha');
 // const assert = require('assert');
 
-mocha.describe('agent', function() {
+mocha.describe('agent', function () {
+  mocha.it.skip('should run agents', function () {
+    this.timeout(20000); // eslint-disable-line no-invalid-this
 
-    mocha.it.skip('should run agents', function() {
-        this.timeout(20000); // eslint-disable-line no-invalid-this
-
-        // TODO test_agent is empty...
-
-    });
-
+    // TODO test_agent is empty...
+  });
 });

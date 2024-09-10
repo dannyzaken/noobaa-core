@@ -7,50 +7,45 @@
  *
  */
 module.exports = {
+  $id: 'scrubber_api',
 
-    $id: 'scrubber_api',
-
-    methods: {
-
-        build_chunks: {
-            method: 'PUT',
-            params: {
-                type: 'object',
-                required: ['chunk_ids'],
-                properties: {
-                    chunk_ids: {
-                        type: 'array',
-                        items: { objectid: true }
-                    },
-                    tier: { objectid: true },
-                    evict: {
-                        type: 'boolean',
-                    },
-                    current_tiers: {
-                        type: 'array',
-                        items: { objectid: true }
-                    },
-                }
-            },
-            auth: { system: 'admin' }
+  methods: {
+    build_chunks: {
+      method: 'PUT',
+      params: {
+        type: 'object',
+        required: ['chunk_ids'],
+        properties: {
+          chunk_ids: {
+            type: 'array',
+            items: { objectid: true },
+          },
+          tier: { objectid: true },
+          evict: {
+            type: 'boolean',
+          },
+          current_tiers: {
+            type: 'array',
+            items: { objectid: true },
+          },
         },
-
-        make_room_in_tier: {
-            method: 'PUT',
-            params: {
-                type: 'object',
-                required: ['bucket', 'tier'],
-                properties: {
-                    bucket: { objectid: true },
-                    tier: { objectid: true },
-                }
-            },
-            auth: { system: 'admin' }
-        },
-
+      },
+      auth: { system: 'admin' },
     },
 
-    definitions: {
+    make_room_in_tier: {
+      method: 'PUT',
+      params: {
+        type: 'object',
+        required: ['bucket', 'tier'],
+        properties: {
+          bucket: { objectid: true },
+          tier: { objectid: true },
+        },
+      },
+      auth: { system: 'admin' },
+    },
+  },
 
-    }
+  definitions: {},
 };

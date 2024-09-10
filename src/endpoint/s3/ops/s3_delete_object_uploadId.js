@@ -6,19 +6,19 @@
  * AKA Abort Multipart Upload
  */
 async function delete_object_uploadId(req) {
-    await req.object_sdk.abort_object_upload({
-        obj_id: req.query.uploadId,
-        bucket: req.params.bucket,
-        key: req.params.key,
-    });
+  await req.object_sdk.abort_object_upload({
+    obj_id: req.query.uploadId,
+    bucket: req.params.bucket,
+    key: req.params.key,
+  });
 }
 
 module.exports = {
-    handler: delete_object_uploadId,
-    body: {
-        type: 'empty',
-    },
-    reply: {
-        type: 'empty',
-    },
+  handler: delete_object_uploadId,
+  body: {
+    type: 'empty',
+  },
+  reply: {
+    type: 'empty',
+  },
 };

@@ -12,15 +12,17 @@ const mocha = require('mocha');
 const assert = require('assert');
 
 const { MapClient } = require('../../sdk/map_client');
-const system_store = require('../../server/system_services/system_store').get_instance();
+const system_store =
+  require('../../server/system_services/system_store').get_instance();
 const db_client = require('../../util/db_client');
 const { ChunkAPI } = require('../../sdk/map_api_types');
 
-/* eslint max-lines-per-function: ["error", 600]*/
-coretest.describe_mapper_test_case({
+coretest.describe_mapper_test_case(
+  {
     name: 'map_client',
     bucket_name_prefix: 'test-map-client',
-}, ({
+  },
+  ({
     test_name,
     bucket_name,
     data_placement,
@@ -32,10 +34,11 @@ coretest.describe_mapper_test_case({
     total_blocks,
     total_replicas,
     chunk_coder_config,
-}) => {
-
+  }) => {
     // TODO we need to create more nodes and pools to support all MAPPER_TEST_CASES
-    if (data_placement !== 'SPREAD' || num_pools !== 1 || total_blocks !== 1) return;
+    if (data_placement !== 'SPREAD' || num_pools !== 1 || total_blocks !== 1) {
+      return;
+    }
 
     const { SYSTEM } = coretest;
 
@@ -44,10 +47,10 @@ coretest.describe_mapper_test_case({
     /** @type {nb.Bucket} */
     let bucket;
 
-    mocha.before(async function() {
-        await system_store.load();
-        system = system_store.data.systems_by_name[SYSTEM];
-        bucket = system.buckets_by_name[bucket_name];
+    mocha.before(async function () {
+      await system_store.load();
+      system = system_store.data.systems_by_name[SYSTEM];
+      bucket = system.buckets_by_name[bucket_name];
     });
 
     // COMMENTED OUT AS IT FAILS FOR NOW
@@ -81,7 +84,6 @@ coretest.describe_mapper_test_case({
     //     });
     //     await mc.run();
     // });
-
 
     /*
     mocha.describe('select_tier_for_write', function() {
@@ -205,258 +207,282 @@ coretest.describe_mapper_test_case({
 
     */
 
-    mocha.describe('move blocks to storage class', function() {
-        mocha.it('should not attempt movement when move_to_tier is not set', async function() {
-            // mock rpc_client
-            const mock_rpc_client = {
-                block_store: {
-                    move_blocks_to_storage_class: () => {
-                        throw new Error('should not be called');
-                    }
-                }
-            };
+    mocha.describe('move blocks to storage class', function () {
+      mocha.it(
+        'should not attempt movement when move_to_tier is not set',
+        async function () {
+          // mock rpc_client
+          const mock_rpc_client = {
+            block_store: {
+              move_blocks_to_storage_class: () => {
+                throw new Error('should not be called');
+              },
+            },
+          };
 
-            // @ts-ignore
-            const mc = new MapClient({
-                chunks: generate_mock_chunks(1),
-                rpc_client: mock_rpc_client,
-            });
+          // @ts-ignore
+          const mc = new MapClient({
+            chunks: generate_mock_chunks(1),
+            rpc_client: mock_rpc_client,
+          });
 
+          await mc.move_blocks_to_storage_class();
+        },
+      );
+
+      mocha.it(
+        'should not attempt movement when current_tiers is not set',
+        async function () {
+          let movement_attempted = false;
+
+          // mock rpc_client
+          const mock_rpc_client = {
+            block_store: {
+              move_blocks_to_storage_class: () => {
+                movement_attempted = true;
+
+                return ['mocked_response'];
+              },
+            },
+          };
+
+          const temporary_tier = generate_mock_tier();
+
+          // @ts-ignore
+          const mc = new MapClient({
+            chunks: generate_mock_chunks(1),
+            rpc_client: mock_rpc_client,
+            move_to_tier: temporary_tier,
+          });
+
+          await mc.move_blocks_to_storage_class();
+
+          assert.strictEqual(movement_attempted, false);
+        },
+      );
+
+      mocha.it(
+        'should throw error when attempt movement when len(current_tiers) does not match len(chunks)',
+        async function () {
+          // mock rpc_client
+          const mock_rpc_client = {
+            block_store: {
+              move_blocks_to_storage_class: () => ['mocked_response'],
+            },
+          };
+
+          const temporary_tier = generate_mock_tier();
+
+          // @ts-ignore
+          const mc = new MapClient({
+            chunks: generate_mock_chunks(2),
+            rpc_client: mock_rpc_client,
+            move_to_tier: temporary_tier,
+            current_tiers: [bucket.tiering.tiers[0].tier],
+          });
+
+          let errored = false;
+
+          try {
             await mc.move_blocks_to_storage_class();
+          } catch (err) {
+            errored = true;
+          }
+
+          assert.strictEqual(errored, true);
+        },
+      );
+
+      mocha.it(
+        'should not attempt movement when storage classes are same',
+        async function () {
+          let movement_attempted = false;
+
+          // mock rpc_client
+          const mock_rpc_client = {
+            block_store: {
+              move_blocks_to_storage_class: () => {
+                movement_attempted = true;
+
+                return ['mocked_response'];
+              },
+            },
+          };
+
+          // @ts-ignore
+          const mc = new MapClient({
+            chunks: generate_mock_chunks(1),
+            rpc_client: mock_rpc_client,
+            move_to_tier: bucket.tiering.tiers[0].tier,
+            current_tiers: [bucket.tiering.tiers[0].tier],
+          });
+
+          await mc.move_blocks_to_storage_class();
+
+          assert.strictEqual(movement_attempted, false);
+        },
+      );
+
+      mocha.it(
+        'should not attempt movement when storage pools differ',
+        async function () {
+          let movement_attempted = false;
+
+          // mock rpc_client
+          const mock_rpc_client = {
+            block_store: {
+              move_blocks_to_storage_class: () => {
+                movement_attempted = true;
+
+                return ['mocked_response'];
+              },
+            },
+          };
+
+          const temporary_tier = generate_mock_tier();
+
+          // @ts-ignore
+          const mc = new MapClient({
+            chunks: generate_mock_chunks(1),
+            rpc_client: mock_rpc_client,
+            move_to_tier: temporary_tier,
+            current_tiers: [bucket.tiering.tiers[0].tier],
+          });
+
+          await mc.move_blocks_to_storage_class();
+
+          assert.strictEqual(movement_attempted, false);
+        },
+      );
+
+      mocha.it('should attempt movement', async function () {
+        let movement_attempted = false;
+        let movement_block_ids = [];
+        let movement_storage_class = '';
+        let movement_address = '';
+
+        // mock rpc_client
+        const mock_rpc_client = {
+          block_store: {
+            move_blocks_to_storage_class: (
+              { block_ids, storage_class },
+              { address },
+            ) => {
+              movement_attempted = true;
+              movement_block_ids = block_ids;
+              movement_storage_class = storage_class;
+              movement_address = address;
+
+              return ['mocked_response'];
+            },
+          },
+        };
+
+        const temporary_tier = generate_mock_tier({
+          storage_class: 'GLACIER_IR',
+          mirrors: [
+            {
+              spread_pools:
+                bucket.tiering.tiers[0].tier.mirrors[0].spread_pools,
+            },
+          ],
         });
 
-        mocha.it('should not attempt movement when current_tiers is not set', async function() {
-            let movement_attempted = false;
+        const chunks = generate_mock_chunks(1);
 
-            // mock rpc_client
-            const mock_rpc_client = {
-                block_store: {
-                    move_blocks_to_storage_class: () => {
-                        movement_attempted = true;
-
-                        return ["mocked_response"];
-                    }
-                }
-            };
-
-            const temporary_tier = generate_mock_tier();
-
-            // @ts-ignore
-            const mc = new MapClient({
-                chunks: generate_mock_chunks(1),
-                rpc_client: mock_rpc_client,
-                move_to_tier: temporary_tier
-            });
-
-            await mc.move_blocks_to_storage_class();
-
-            assert.strictEqual(movement_attempted, false);
+        // @ts-ignore
+        const mc = new MapClient({
+          chunks,
+          rpc_client: mock_rpc_client,
+          move_to_tier: temporary_tier,
+          current_tiers: [bucket.tiering.tiers[0].tier],
         });
 
-        mocha.it('should throw error when attempt movement when len(current_tiers) does not match len(chunks)', async function() {
-            // mock rpc_client
-            const mock_rpc_client = {
-                block_store: {
-                    move_blocks_to_storage_class: () => ["mocked_response"]
-                }
-            };
+        await mc.move_blocks_to_storage_class();
 
-            const temporary_tier = generate_mock_tier();
-
-            // @ts-ignore
-            const mc = new MapClient({
-                chunks: generate_mock_chunks(2),
-                rpc_client: mock_rpc_client,
-                move_to_tier: temporary_tier,
-                current_tiers: [bucket.tiering.tiers[0].tier]
-            });
-
-            let errored = false;
-
-            try {
-                await mc.move_blocks_to_storage_class();
-            } catch (err) {
-                errored = true;
-            }
-
-
-            assert.strictEqual(errored, true);
-        });
-
-        mocha.it('should not attempt movement when storage classes are same', async function() {
-            let movement_attempted = false;
-
-            // mock rpc_client
-            const mock_rpc_client = {
-                block_store: {
-                    move_blocks_to_storage_class: () => {
-                        movement_attempted = true;
-
-                        return ["mocked_response"];
-                    }
-                }
-            };
-
-            // @ts-ignore
-            const mc = new MapClient({
-                chunks: generate_mock_chunks(1),
-                rpc_client: mock_rpc_client,
-                move_to_tier: bucket.tiering.tiers[0].tier,
-                current_tiers: [bucket.tiering.tiers[0].tier]
-            });
-
-            await mc.move_blocks_to_storage_class();
-
-            assert.strictEqual(movement_attempted, false);
-        });
-
-        mocha.it('should not attempt movement when storage pools differ', async function() {
-            let movement_attempted = false;
-
-            // mock rpc_client
-            const mock_rpc_client = {
-                block_store: {
-                    move_blocks_to_storage_class: () => {
-                        movement_attempted = true;
-
-                        return ["mocked_response"];
-                    }
-                }
-            };
-
-            const temporary_tier = generate_mock_tier();
-
-            // @ts-ignore
-            const mc = new MapClient({
-                chunks: generate_mock_chunks(1),
-                rpc_client: mock_rpc_client,
-                move_to_tier: temporary_tier,
-                current_tiers: [bucket.tiering.tiers[0].tier]
-            });
-
-            await mc.move_blocks_to_storage_class();
-
-            assert.strictEqual(movement_attempted, false);
-        });
-
-        mocha.it('should attempt movement', async function() {
-            let movement_attempted = false;
-            let movement_block_ids = [];
-            let movement_storage_class = '';
-            let movement_address = '';
-
-            // mock rpc_client
-            const mock_rpc_client = {
-                block_store: {
-                    move_blocks_to_storage_class: ({ block_ids, storage_class }, { address }) => {
-                        movement_attempted = true;
-                        movement_block_ids = block_ids;
-                        movement_storage_class = storage_class;
-                        movement_address = address;
-
-                        return ["mocked_response"];
-                    }
-                }
-            };
-
-            const temporary_tier = generate_mock_tier({
-                storage_class: 'GLACIER_IR',
-                mirrors: [
-                    {
-                        spread_pools: bucket.tiering.tiers[0].tier.mirrors[0].spread_pools,
-                    }
-                ]
-            });
-
-            const chunks = generate_mock_chunks(1);
-
-            // @ts-ignore
-            const mc = new MapClient({
-                chunks,
-                rpc_client: mock_rpc_client,
-                move_to_tier: temporary_tier,
-                current_tiers: [bucket.tiering.tiers[0].tier]
-            });
-
-            await mc.move_blocks_to_storage_class();
-
-            assert.strictEqual(movement_attempted, true);
-            assert.strictEqual(movement_block_ids.length, 1);
-            assert.strictEqual(movement_block_ids[0], String(chunks[0].frags[0].blocks[0].block_md.id));
-            assert.strictEqual(movement_storage_class, temporary_tier.storage_class);
-            assert.strictEqual(movement_address, 'fcall://mocked_address');
-        });
+        assert.strictEqual(movement_attempted, true);
+        assert.strictEqual(movement_block_ids.length, 1);
+        assert.strictEqual(
+          movement_block_ids[0],
+          String(chunks[0].frags[0].blocks[0].block_md.id),
+        );
+        assert.strictEqual(
+          movement_storage_class,
+          temporary_tier.storage_class,
+        );
+        assert.strictEqual(movement_address, 'fcall://mocked_address');
+      });
     });
 
-
     function generate_mock_chunks(count) {
-        return Array(count).fill(
-          new ChunkAPI(
-            {
-              bucket_id: String(bucket._id),
-              tier_id: String(bucket.tiering.tiers[0].tier._id),
-              chunk_coder_config: { replicas: 1 },
-              size: 1,
-              compress_size: 1,
-              frag_size: 1,
-              frags: [
-                {
-                  data_index: 1,
-                  blocks: [
-                    {
-                      block_md: {
-                        id: db_client.instance().new_object_id(),
-                        pool: Object.values(system.pools_by_name)[0]._id,
-                        address: 'fcall://mocked_address',
-                      },
+      return Array(count).fill(
+        new ChunkAPI(
+          {
+            bucket_id: String(bucket._id),
+            tier_id: String(bucket.tiering.tiers[0].tier._id),
+            chunk_coder_config: { replicas: 1 },
+            size: 1,
+            compress_size: 1,
+            frag_size: 1,
+            frags: [
+              {
+                data_index: 1,
+                blocks: [
+                  {
+                    block_md: {
+                      id: db_client.instance().new_object_id(),
+                      pool: Object.values(system.pools_by_name)[0]._id,
+                      address: 'fcall://mocked_address',
                     },
-                  ],
-                },
-              ],
-              parts: [],
-            },
-            system_store
-          )
-        );
+                  },
+                ],
+              },
+            ],
+            parts: [],
+          },
+          system_store,
+        ),
+      );
     }
 
     /**
-     * 
-     * @param {Record<any, any>} overrides 
+     *
+     * @param {Record<any, any>} overrides
      * @returns {nb.Tier}
      */
     function generate_mock_tier(overrides = {}) {
-        /** @type {nb.ChunkCoderConfig} */
-        const chunk_config = {
-            replicas: 1
-        };
+      /** @type {nb.ChunkCoderConfig} */
+      const chunk_config = {
+        replicas: 1,
+      };
 
-        const tier = {
-            _id: db_client.instance().new_object_id(),
-            name: 'mocked_tier',
-            system: system,
-            data_placement: 'MIRROR',
-            chunk_config: {
+      const tier = {
+        _id: db_client.instance().new_object_id(),
+        name: 'mocked_tier',
+        system: system,
+        data_placement: 'MIRROR',
+        chunk_config: {
+          _id: db_client.instance().new_object_id(),
+          system: system,
+          chunk_coder_config: chunk_config,
+        },
+        mirrors: [
+          {
+            spread_pools: [
+              {
                 _id: db_client.instance().new_object_id(),
-                system: system,
-                chunk_coder_config: chunk_config
-            },
-            mirrors: [
-                {
-                    spread_pools: [
-                        {
-                            _id: db_client.instance().new_object_id(),
-                            name: 'mocked_pool',
-                        }
-                    ]
-                }
-            ]
-        };
+                name: 'mocked_pool',
+              },
+            ],
+          },
+        ],
+      };
 
-        Object.keys(overrides).forEach(key => {
-            _.set(tier, key, overrides[key]);
-        });
+      Object.keys(overrides).forEach(key => {
+        _.set(tier, key, overrides[key]);
+      });
 
-        return tier;
+      return tier;
     }
-});
+  },
+);

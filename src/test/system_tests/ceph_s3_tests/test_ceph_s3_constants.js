@@ -1,23 +1,23 @@
 /* Copyright (C) 2022 NooBaa */
-"use strict";
+'use strict';
 
 const CEPH_TEST = {
-    test_dir: 'src/test/system_tests/ceph_s3_tests/',
-    s3_test_dir: 's3-tests/',
-    ceph_config: 'test_ceph_s3_config.conf',
-    tox_config: 'tox.ini',
-    new_account_params: {
-        name: 'cephalt',
-        email: 'ceph.alt@noobaa.com',
-        has_login: false,
-        s3_access: true,
-    },
-    new_account_params_tenant: {
-        name: 'cephtenant',
-        email: 'ceph.tenant@noobaa.com',
-        has_login: false,
-        s3_access: true,
-    },
+  test_dir: 'src/test/system_tests/ceph_s3_tests/',
+  s3_test_dir: 's3-tests/',
+  ceph_config: 'test_ceph_s3_config.conf',
+  tox_config: 'tox.ini',
+  new_account_params: {
+    name: 'cephalt',
+    email: 'ceph.alt@noobaa.com',
+    has_login: false,
+    s3_access: true,
+  },
+  new_account_params_tenant: {
+    name: 'cephtenant',
+    email: 'ceph.tenant@noobaa.com',
+    has_login: false,
+    s3_access: true,
+  },
 };
 
 // For NSFS NC path (using default values)

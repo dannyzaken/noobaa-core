@@ -4,17 +4,17 @@
 // const BlobError = require('../blob_errors').BlobError;
 
 function get_container_acl(req, res) {
-    return {
-        SignedIdentifiers: {}
-    };
+  return {
+    SignedIdentifiers: {},
+  };
 }
 
 module.exports = {
-    handler: get_container_acl,
-    body: {
-        type: 'empty',
-    },
-    reply: {
-        type: 'xml',
-    },
+  handler: get_container_acl,
+  body: {
+    type: 'empty',
+  },
+  reply: {
+    type: 'xml',
+  },
 };

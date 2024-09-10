@@ -1,4 +1,5 @@
 # libutp - The uTorrent Transport Protocol library.
+
 Copyright (c) 2010 BitTorrent, Inc.
 
 uTP is a TCP-like implementation of [LEDBAT][ledbat] documented as a BitTorrent
@@ -31,8 +32,8 @@ See utp.h for more details and other API documentation.
 ## Example
 
 See ucat.c. Build with:
- 
-   make ucat
+
+make ucat
 
 ## Building
 

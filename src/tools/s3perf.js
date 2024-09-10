@@ -12,24 +12,24 @@ const RandStream = require('../util/rand_stream');
 const { cluster } = require('../util/fork_utils');
 
 const size_units_mult = {
-    KB: 1024,
-    MB: 1024 * 1024,
-    GB: 1024 * 1024 * 1024
+  KB: 1024,
+  MB: 1024 * 1024,
+  GB: 1024 * 1024 * 1024,
 };
 
 const argv = minimist(process.argv.slice(2), {
-    string: [
-        'endpoint',
-        'access_key',
-        'secret_key',
-        'bucket',
-        'head',
-        'get',
-        'put',
-        'upload',
-        'delete',
-        'mb',
-    ],
+  string: [
+    'endpoint',
+    'access_key',
+    'secret_key',
+    'bucket',
+    'head',
+    'get',
+    'put',
+    'upload',
+    'delete',
+    'mb',
+  ],
 });
 
 argv.sig = argv.sig || 's3';
@@ -44,10 +44,10 @@ argv.part_size = argv.part_size || 5;
 const data_size = argv.size * size_units_mult[argv.size_units];
 
 if (!size_units_mult[argv.size_units]) {
-    throw new Error('Unrecognized size_units ' + argv.size_units);
+  throw new Error('Unrecognized size_units ' + argv.size_units);
 }
 if (argv.upload && data_size < argv.part_size * 1024 * 1024) {
-    throw new Error('data_size lower than part_size ' + data_size);
+  throw new Error('data_size lower than part_size ' + data_size);
 }
 
 const start_time = Date.now();
@@ -66,21 +66,21 @@ let last_op_lat_sum = 0;
 let op_func;
 
 if (argv.help) {
-    print_usage();
+  print_usage();
 } else if (typeof argv.head === 'string') {
-    op_func = head_object;
+  op_func = head_object;
 } else if (typeof argv.get === 'string') {
-    op_func = get_object;
+  op_func = get_object;
 } else if (typeof argv.put === 'string') {
-    op_func = put_object;
+  op_func = put_object;
 } else if (typeof argv.upload === 'string') {
-    op_func = upload_object;
+  op_func = upload_object;
 } else if (typeof argv.delete === 'string') {
-    op_func = delete_object;
+  op_func = delete_object;
 } else if (typeof argv.mb === 'string') {
-    op_func = create_bucket;
+  op_func = create_bucket;
 } else {
-    print_usage();
+  print_usage();
 }
 
 // @ts-ignore
@@ -89,103 +89,105 @@ http.globalAgent.keepAlive = true;
 https.globalAgent.keepAlive = true;
 
 const s3 = new AWS.S3({
-    endpoint: argv.endpoint,
-    accessKeyId: argv.access_key && String(argv.access_key),
-    secretAccessKey: argv.secret_key && String(argv.secret_key),
-    s3ForcePathStyle: true,
-    signatureVersion: argv.sig, // s3 or v4
-    computeChecksums: argv.checksum || false, // disabled by default for performance
-    s3DisableBodySigning: !argv.signing || true, // disabled by default for performance
-    region: argv.region || 'us-east-1',
+  endpoint: argv.endpoint,
+  accessKeyId: argv.access_key && String(argv.access_key),
+  secretAccessKey: argv.secret_key && String(argv.secret_key),
+  s3ForcePathStyle: true,
+  signatureVersion: argv.sig, // s3 or v4
+  computeChecksums: argv.checksum || false, // disabled by default for performance
+  s3DisableBodySigning: !argv.signing || true, // disabled by default for performance
+  region: argv.region || 'us-east-1',
 });
 
 // AWS config does not use https.globalAgent
 // so for https we need to set the agent manually
 if (s3.endpoint.protocol === 'https:') {
-    s3.config.update({
-        httpOptions: {
-            agent: new https.Agent({
-                keepAlive: true,
-                rejectUnauthorized: !argv.selfsigned,
-            })
-        }
+  s3.config.update({
+    httpOptions: {
+      agent: new https.Agent({
+        keepAlive: true,
+        rejectUnauthorized: !argv.selfsigned,
+      }),
+    },
+  });
+  if (!argv.selfsigned) {
+    // @ts-ignore
+    AWS.events.on('error', err => {
+      if (err.message === 'self signed certificate') {
+        setTimeout(
+          () =>
+            console.log(
+              '\n*** You can accept self signed certificates with: --selfsigned\n',
+            ),
+          10,
+        );
+      }
     });
-    if (!argv.selfsigned) {
-        // @ts-ignore
-        AWS.events.on('error', err => {
-            if (err.message === 'self signed certificate') {
-                setTimeout(() => console.log(
-                    '\n*** You can accept self signed certificates with: --selfsigned\n'
-                ), 10);
-            }
-        });
-    }
+  }
 }
 
 if (cluster.isPrimary) {
-    run_master();
+  run_master();
 } else {
-    run_worker();
+  run_worker();
 }
 
 async function run_master() {
-    console.log(argv);
-    if (argv.forks > 1) {
-        for (let i = 0; i < argv.forks; i++) {
-            const worker = cluster.fork();
-            console.warn('WORKER', worker.process.pid, 'STARTED');
-            worker.on('message', handle_message);
-        }
-        cluster.on('exit', (worker, code, signal) => {
-            console.warn('WORKER', worker.process.pid, 'EXITED', code, signal);
-            exit_all();
-        });
-    } else {
-        run_worker();
+  console.log(argv);
+  if (argv.forks > 1) {
+    for (let i = 0; i < argv.forks; i++) {
+      const worker = cluster.fork();
+      console.warn('WORKER', worker.process.pid, 'STARTED');
+      worker.on('message', handle_message);
     }
+    cluster.on('exit', (worker, code, signal) => {
+      console.warn('WORKER', worker.process.pid, 'EXITED', code, signal);
+      exit_all();
+    });
+  } else {
+    run_worker();
+  }
 
-    setInterval(run_reporter, 1000).unref();
+  setInterval(run_reporter, 1000).unref();
 }
 
 function run_reporter() {
+  const now = Date.now();
+  const time = now - last_reported;
+  const time_total = now - start_time;
+  const ops = op_count - last_op_count;
+  const size = total_size - last_total_size;
+  const lat = op_lat_sum - last_op_lat_sum;
+  const tx = (size / time) * 1000;
+  const tx_total = (total_size / time_total) * 1000;
 
-    const now = Date.now();
-    const time = now - last_reported;
-    const time_total = now - start_time;
-    const ops = op_count - last_op_count;
-    const size = total_size - last_total_size;
-    const lat = op_lat_sum - last_op_lat_sum;
-    const tx = size / time * 1000;
-    const tx_total = total_size / time_total * 1000;
+  console.log(
+    `TOTAL: Throughput ${size_utils.human_size(tx_total)}/sec Latency ${
+      op_count ? (op_lat_sum / op_count).toFixed(3) : 0
+    }ms IOPS ${((op_count / time_total) * 1000).toFixed(
+      3,
+    )}/sec OPS ${op_count} | CURRENT: Throughput ${size_utils.human_size(
+      tx,
+    )}/sec Latency ${ops ? (lat / ops).toFixed(3) : 0}ms IOPS ${(
+      (ops / time) *
+      1000
+    ).toFixed(3)}/sec OPS ${ops}`,
+  );
 
-    console.log(`TOTAL: Throughput ${
-        size_utils.human_size(tx_total)
-        }/sec Latency ${
-        op_count ? (op_lat_sum / op_count).toFixed(3) : 0
-        }ms IOPS ${
-        (op_count / time_total * 1000).toFixed(3)
-        }/sec OPS ${op_count} | CURRENT: Throughput ${
-        size_utils.human_size(tx)
-        }/sec Latency ${
-        ops ? (lat / ops).toFixed(3) : 0
-        }ms IOPS ${
-        (ops / time * 1000).toFixed(3)
-        }/sec OPS ${ops}`);
+  last_reported = now;
+  last_op_count = op_count;
+  last_total_size = total_size;
+  last_op_lat_sum = op_lat_sum;
 
-    last_reported = now;
-    last_op_count = op_count;
-    last_total_size = total_size;
-    last_op_lat_sum = op_lat_sum;
-
-    if (now - start_time > argv.time * 1000) {
-        console.warn('TEST DONE');
-        exit_all();
-    }
+  if (now - start_time > argv.time * 1000) {
+    console.warn('TEST DONE');
+    exit_all();
+  }
 }
 
 function exit_all() {
-    Object.keys(cluster.workers).forEach(w => cluster.workers[w].send('exit'));
-    process.exit();
+  Object.keys(cluster.workers).forEach(w => cluster.workers[w].send('exit'));
+  process.exit();
 }
 
 /**
@@ -194,46 +196,46 @@ function exit_all() {
  *  size: number;
  *  took_ms: number;
  * }} Msg
- * @param {Msg|'exit'} msg 
+ * @param {Msg|'exit'} msg
  */
 function handle_message(msg) {
-    if (msg === 'exit') {
-        process.exit();
-    } else if (msg.took_ms >= 0) {
-        op_count += msg.ops;
-        total_size += msg.size;
-        op_lat_sum += msg.took_ms;
-    }
+  if (msg === 'exit') {
+    process.exit();
+  } else if (msg.took_ms >= 0) {
+    op_count += msg.ops;
+    total_size += msg.size;
+    op_lat_sum += msg.took_ms;
+  }
 }
 
 function send_message(msg) {
-    if (process.send) {
-        process.send(msg);
-    } else {
-        handle_message(msg);
-    }
+  if (process.send) {
+    process.send(msg);
+  } else {
+    handle_message(msg);
+  }
 }
 
 async function run_worker() {
-    if (process.send) process.on('message', handle_message);
-    for (let i = 0; i < argv.concur; ++i) {
-        setImmediate(run_worker_loop);
-    }
+  if (process.send) process.on('message', handle_message);
+  for (let i = 0; i < argv.concur; ++i) {
+    setImmediate(run_worker_loop);
+  }
 }
 
 async function run_worker_loop() {
-    try {
-        for (;;) {
-            const hrtime = process.hrtime();
-            const size = await op_func();
-            const hrtook = process.hrtime(hrtime);
-            const took_ms = (hrtook[0] * 1e-3) + (hrtook[1] * 1e-6);
-            send_message({ ops: 1, size, took_ms });
-        }
-    } catch (err) {
-        console.error('WORKER', process.pid, 'ERROR', err.stack || err);
-        process.exit();
+  try {
+    for (;;) {
+      const hrtime = process.hrtime();
+      const size = await op_func();
+      const hrtook = process.hrtime(hrtime);
+      const took_ms = hrtook[0] * 1e-3 + hrtook[1] * 1e-6;
+      send_message({ ops: 1, size, took_ms });
     }
+  } catch (err) {
+    console.error('WORKER', process.pid, 'ERROR', err.stack || err);
+    process.exit();
+  }
 }
 
 /** @type {AWS.S3.ListObjectsOutput} */
@@ -246,113 +248,129 @@ let _list_objects_promise = null;
  * It will list objects and keep the list in memory, returning the objects in list order,
  * while fetching the next list pages on demand.
  * If prefix is provided it will be used to filter objects keys.
- * 
+ *
  * @param {string} [prefix]
  * @returns {Promise<AWS.S3.Object>}
  */
 async function get_next_object(prefix) {
-    while (_list_objects_next >= _list_objects.Contents.length) {
-        if (_list_objects_promise) {
-            // console.log('get_next_object: wait for promise');
-            await _list_objects_promise;
-        } else {
-            const marker = _list_objects.IsTruncated ?
-                (_list_objects.NextMarker || _list_objects.Contents[_list_objects.Contents.length - 1]?.Key) :
-                undefined;
-            _list_objects_promise = s3.listObjects({
-                Bucket: argv.bucket,
-                Prefix: prefix,
-                Marker: marker,
-            }).promise();
-            _list_objects = await _list_objects_promise;
-            _list_objects_promise = null;
-            _list_objects_next = 0;
-            console.log('get_next_object: got', _list_objects.Contents.length, 'objects from marker', marker);
-        }
+  while (_list_objects_next >= _list_objects.Contents.length) {
+    if (_list_objects_promise) {
+      // console.log('get_next_object: wait for promise');
+      await _list_objects_promise;
+    } else {
+      const marker =
+        _list_objects.IsTruncated ?
+          _list_objects.NextMarker ||
+          _list_objects.Contents[_list_objects.Contents.length - 1]?.Key
+        : undefined;
+      _list_objects_promise = s3
+        .listObjects({
+          Bucket: argv.bucket,
+          Prefix: prefix,
+          Marker: marker,
+        })
+        .promise();
+      _list_objects = await _list_objects_promise;
+      _list_objects_promise = null;
+      _list_objects_next = 0;
+      console.log(
+        'get_next_object: got',
+        _list_objects.Contents.length,
+        'objects from marker',
+        marker,
+      );
     }
+  }
 
-    const obj = _list_objects.Contents[_list_objects_next];
-    _list_objects_next += 1;
-    return obj;
+  const obj = _list_objects.Contents[_list_objects_next];
+  _list_objects_next += 1;
+  return obj;
 }
 
 async function head_object() {
-    const obj = await get_next_object(argv.head);
-    await s3.headObject({ Bucket: argv.bucket, Key: obj.Key }).promise();
-    return 0;
+  const obj = await get_next_object(argv.head);
+  await s3.headObject({ Bucket: argv.bucket, Key: obj.Key }).promise();
+  return 0;
 }
 
 async function get_object() {
-    const obj = await get_next_object(argv.get);
-    await new Promise((resolve, reject) => {
-        s3.getObject({
-                Bucket: argv.bucket,
-                Key: obj.Key,
-            })
-            .createReadStream()
-            .on('finish', resolve)
-            .on('error', reject)
-            .on('data', data => {
-                send_message({ ops: 0, size: data.length, took_ms: 0 });
-            });
-    });
-    return 0;
+  const obj = await get_next_object(argv.get);
+  await new Promise((resolve, reject) => {
+    s3.getObject({
+      Bucket: argv.bucket,
+      Key: obj.Key,
+    })
+      .createReadStream()
+      .on('finish', resolve)
+      .on('error', reject)
+      .on('data', data => {
+        send_message({ ops: 0, size: data.length, took_ms: 0 });
+      });
+  });
+  return 0;
 }
 
 async function delete_object() {
-    const obj = await get_next_object(argv.delete);
-    await s3.deleteObject({
-        Bucket: argv.bucket,
-        Key: obj.Key
-    }).promise();
-    return 0;
+  const obj = await get_next_object(argv.delete);
+  await s3
+    .deleteObject({
+      Bucket: argv.bucket,
+      Key: obj.Key,
+    })
+    .promise();
+  return 0;
 }
 
 async function put_object() {
-    const upload_key = argv.put + '-' + Date.now().toString(36);
-    await s3.putObject({
-            Bucket: argv.bucket,
-            Key: upload_key,
-            ContentLength: data_size,
-            Body: new RandStream(data_size, {
-                highWaterMark: 1024 * 1024,
-            })
-        })
-        .on('httpUploadProgress', progress => {
-            send_message({ ops: 0, size: progress.loaded, took_ms: 0 });
-        })
-        .promise();
-    return 0;
+  const upload_key = argv.put + '-' + Date.now().toString(36);
+  await s3
+    .putObject({
+      Bucket: argv.bucket,
+      Key: upload_key,
+      ContentLength: data_size,
+      Body: new RandStream(data_size, {
+        highWaterMark: 1024 * 1024,
+      }),
+    })
+    .on('httpUploadProgress', progress => {
+      send_message({ ops: 0, size: progress.loaded, took_ms: 0 });
+    })
+    .promise();
+  return 0;
 }
 
 async function upload_object() {
-    const upload_key = argv.upload + '-' + Date.now().toString(36);
-    await s3.upload({
-            Bucket: argv.bucket,
-            Key: upload_key,
-            ContentLength: data_size,
-            Body: new RandStream(data_size, {
-                highWaterMark: 1024 * 1024,
-            })
-        }, {
-            partSize: argv.part_size * 1024 * 1024,
-            queueSize: argv.part_concur
-        })
-        .on('httpUploadProgress', progress => {
-            send_message({ ops: 0, size: progress.loaded, took_ms: 0 });
-        })
-        .promise();
-    return 0;
+  const upload_key = argv.upload + '-' + Date.now().toString(36);
+  await s3
+    .upload(
+      {
+        Bucket: argv.bucket,
+        Key: upload_key,
+        ContentLength: data_size,
+        Body: new RandStream(data_size, {
+          highWaterMark: 1024 * 1024,
+        }),
+      },
+      {
+        partSize: argv.part_size * 1024 * 1024,
+        queueSize: argv.part_concur,
+      },
+    )
+    .on('httpUploadProgress', progress => {
+      send_message({ ops: 0, size: progress.loaded, took_ms: 0 });
+    })
+    .promise();
+  return 0;
 }
 
 async function create_bucket() {
-    const new_bucket = argv.mb + '-' + Date.now().toString(36);
-    await s3.createBucket({ Bucket: new_bucket }).promise();
-    return 0;
+  const new_bucket = argv.mb + '-' + Date.now().toString(36);
+  await s3.createBucket({ Bucket: new_bucket }).promise();
+  return 0;
 }
 
 function print_usage() {
-    console.log(`
+  console.log(`
 Usage:
   --help                 show this usage
   --time <sec>           running time in seconds (0 seconds by default)
@@ -379,5 +397,5 @@ General S3 Flags:
   --aws                  (default is false) Use AWS endpoint and subdomain-style buckets
   --checksum             (default is false) Calculate checksums on data. slower.
 `);
-    process.exit();
+  process.exit();
 }
