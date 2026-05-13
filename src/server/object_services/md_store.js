@@ -1669,7 +1669,7 @@ class MDStore {
         const values = [`${bucket.system._id}`, `${bucket._id}`, dedup_keys];
 
         try {
-            const res = await db_client.instance().executeSQL(query, values, { preferred_pool: this._postgres_pool });
+            const res = await db_client.instance().executeSQL(query, values, { preferred_pool: this._postgres_pool, query_name: 'find_chunks_by_dedup_key' });
 
             const chunks_map = new Map();
             const all_blocks = [];

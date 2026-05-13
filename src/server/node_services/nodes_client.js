@@ -10,6 +10,9 @@ const db_client = require('../../util/db_client');
 const node_allocator = require('./node_allocator');
 const system_store = require('../system_services/system_store').get_instance();
 
+const LIST_NODES_IDENTITY_CACHE_TTL_MS = 10000;
+const _list_nodes_identity_cache = new Map();
+
 const NODE_FIELDS_FOR_MAP = Object.freeze([
     'name',
     'pool',
@@ -62,7 +65,15 @@ class NodesClient {
     }
 
     list_nodes_by_identity(system_id, nodes_identities, fields) {
-        return server_rpc.client.node.list_nodes({
+        const cache_key = nodes_identities.map(n => n.id).sort().join(',');
+        const cached = _list_nodes_identity_cache.get(cache_key);
+        if (cached && Date.now() < cached.expiry) {
+            return Promise.resolve(cached.result);
+        }
+        if (cached && cached.promise) {
+            return cached.promise;
+        }
+        const promise = server_rpc.client.node.list_nodes({
                 query: { nodes: nodes_identities },
                 fields,
             }, {
@@ -73,8 +84,19 @@ class NodesClient {
             })
             .then(res => {
                 db_client.instance().fix_id_type(res.nodes);
+                _list_nodes_identity_cache.set(cache_key, {
+                    result: res,
+                    expiry: Date.now() + LIST_NODES_IDENTITY_CACHE_TTL_MS,
+                    promise: null,
+                });
                 return res;
+            })
+            .catch(err => {
+                _list_nodes_identity_cache.delete(cache_key);
+                throw err;
             });
+        _list_nodes_identity_cache.set(cache_key, { result: null, expiry: 0, promise });
+        return promise;
     }
 
     get_nodes_stats_by_cloud_service(system_id, start_date, end_date) {

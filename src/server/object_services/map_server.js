@@ -91,7 +91,7 @@ class GetMapping {
             dbg.log0('GetMapping.find_dups: found keys', dedup_keys.length);
             const dup_chunks_db = await MDStore.instance().find_chunks_by_dedup_key(bucket, dedup_keys);
             const dup_chunks = dup_chunks_db.map(chunk_db => new ChunkDB(chunk_db));
-            dbg.log0('GetMapping.find_dups: dup_chunks', dup_chunks);
+            dbg.log0('GetMapping.find_dups: found', dup_chunks.length, 'dup_chunks:', dup_chunks.slice(0, 10).map(chunk => chunk._id.toString()));
             await _prepare_chunks_group({ chunks: dup_chunks, location_info: this.location_info });
             for (const dup_chunk of dup_chunks) {
                 if (mapper.is_chunk_good_for_dedup(dup_chunk)) {

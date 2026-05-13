@@ -6,6 +6,7 @@ const S3Error = require('../s3_errors').S3Error;
 const s3_utils = require('../s3_utils');
 const http_utils = require('../../../util/http_utils');
 const rdma_utils = require('../../../util/rdma_utils');
+const time_utils = require('../../../util/time_utils');
 
 /* eslint-disable max-statements */
 
@@ -15,7 +16,7 @@ const rdma_utils = require('../../../util/rdma_utils');
  * @param {nb.S3Response} res
  */
 async function get_object(req, res) {
-
+    const get_object_start = time_utils.millistamp();
     req.object_sdk.setup_abort_controller(req, res);
     const agent_header = req.headers['user-agent'];
     const noobaa_trigger_agent = agent_header && agent_header.includes('exec-env/NOOBAA_FUNCTION');
@@ -46,7 +47,9 @@ async function get_object(req, res) {
         md_params.should_prefetch_mappings = true;
     }
 
+    const read_object_md_start = time_utils.millistamp();
     const object_md = await req.object_sdk.read_object_md(md_params);
+    time_utils.time_average_log(time_utils.millistamp() - read_object_md_start, 'S3_READ_OBJECT_MD');
 
     s3_utils.set_response_object_md(res, object_md);
     s3_utils.set_encryption_response_headers(req, res, object_md.encryption);
@@ -59,6 +62,8 @@ async function get_object(req, res) {
     }
     http_utils.set_response_headers_from_request(req, res);
     if (!version_id) await http_utils.set_expiration_header(req, res, object_md); // setting expiration header for bucket lifecycle
+    const set_expiration_header_start = time_utils.millistamp();
+    time_utils.time_average_log(time_utils.millistamp() - set_expiration_header_start, 'S3_READ_SET_EXPIRATION_HEADER');
     const obj_size = object_md.size;
     const params = {
         object_md,
@@ -147,6 +152,10 @@ async function get_object(req, res) {
                 duration_ms: req.start_time ? Date.now() - req.start_time : undefined,
             }, err.message);
             res.destroy(err);
+        });
+
+        read_stream.on('end', () => {
+            time_utils.time_average_log(time_utils.millistamp() - get_object_start, 'S3_GET_OBJECT');
         });
         read_stream.pipe(res);
     }

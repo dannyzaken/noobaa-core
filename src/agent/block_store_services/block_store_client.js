@@ -1,7 +1,9 @@
 /* Copyright (C) 2016 NooBaa */
 'use strict';
 
-const AWS = require('aws-sdk');
+const noobaa_s3_client = require('../../sdk/noobaa_s3_client/noobaa_s3_client');
+const { NodeHttpHandler } = require('@smithy/node-http-handler');
+
 const _ = require('lodash');
 
 const Storage = require('../../util/google_storage_wrap');
@@ -16,7 +18,9 @@ const { RPC_BUFFERS, RpcError } = require('../../rpc');
 const { get_block_internal_dir } = require('../../agent/block_store_services/block_store_base');
 const util = require('util');
 const cloud_utils = require('../../util/cloud_utils');
+const time_utils = require('../../util/time_utils');
 
+let s3_static;
 
 const block_store_info_cache = new LRUCache({
     name: 'BlockStoreInfoCache',
@@ -39,32 +43,48 @@ class BlockStoreClient {
         this.send_usage_stats();
     }
 
-    write_block(rpc_client, params, options) {
+    async write_block(rpc_client, params, options) {
+        const write_block_start = time_utils.millistamp();
+        let res;
         const { block_md } = params;
         switch (block_md.node_type) {
             case 'BLOCK_STORE_S3':
-                return this._delegate_write_block_s3(rpc_client, params, options);
+                res = await this._delegate_write_block_s3(rpc_client, params, options);
+                break;
             case 'BLOCK_STORE_AZURE':
-                return this._delegate_write_block_azure(rpc_client, params, options);
+                res = await this._delegate_write_block_azure(rpc_client, params, options);
+                break;
             case 'BLOCK_STORE_GOOGLE':
-                return this._delegate_write_block_google(rpc_client, params, options);
+                res = await this._delegate_write_block_google(rpc_client, params, options);
+                break;
             default:
-                return rpc_client.block_store.write_block(params, options);
+                res = await rpc_client.block_store.write_block(params, options);
+                break;
         }
+        time_utils.time_average_log(time_utils.millistamp() - write_block_start, 'WRITE_BLOCK');
+        return res;
     }
 
-    read_block(rpc_client, params, options) {
+    async read_block(rpc_client, params, options) {
+        const read_block_start = time_utils.millistamp();
+        let res;
         const { block_md } = params;
         switch (block_md.node_type) {
             case 'BLOCK_STORE_S3':
-                return this._delegate_read_block_s3(rpc_client, params, options);
+                res = await this._delegate_read_block_s3(rpc_client, params, options);
+                break;
             case 'BLOCK_STORE_AZURE':
-                return this._delegate_read_block_azure(rpc_client, params, options);
+                res = await this._delegate_read_block_azure(rpc_client, params, options);
+                break;
             case 'BLOCK_STORE_GOOGLE':
-                return this._delegate_read_block_google(rpc_client, params, options);
+                res = await this._delegate_read_block_google(rpc_client, params, options);
+                break;
             default:
-                return rpc_client.block_store.read_block(params, options);
+                res = await rpc_client.block_store.read_block(params, options);
+                break;
         }
+        time_utils.time_average_log(time_utils.millistamp() - read_block_start, 'READ_BLOCK');
+        return res;
     }
 
     async _delegate_write_block_google(rpc_client, params, options) {
@@ -308,9 +328,9 @@ class BlockStoreClient {
                     Key: `${bs_info.blocks_path}/${block_dir}/${block_id}`,
                     Metadata: disable_metadata ? undefined : { noobaablockmd: encoded_md },
                 };
-                s3_params.httpOptions = {
-                    agent: http_utils.get_unsecured_agent(s3_params.endpoint)
-                };
+                s3_params.requestHandler = new NodeHttpHandler({
+                    httpsAgent: http_utils.get_unsecured_agent(s3_params.endpoint),
+                });
                 if (bs_info.connection_params.aws_sts_arn) {
                     const creds = await cloud_utils.generate_aws_sdkv3_sts_creds(s3_params, "_delegate_write_block_s3_session");
                     s3_params.accessKeyId = creds.accessKeyId;
@@ -321,9 +341,11 @@ class BlockStoreClient {
                     'got s3_params from block_store. writing using S3 sdk. s3_params =',
                     _.omit(s3_params, 'secretAccessKey'),
                     'aws_sts_arn', bs_info.connection_params.aws_sts_arn);
-                const s3 = new AWS.S3(s3_params);
+                if (!s3_static) {
+                    s3_static = noobaa_s3_client.get_s3_client_v3_params(s3_params);
+                }
                 write_params.Body = data;
-                await s3.putObject(write_params).promise();
+                await s3_static.putObject(write_params);
                 const data_length = data.length;
                 const usage = data_length ? {
                     size: (block_md.is_preallocated ? 0 : data_length) + encoded_md.length,
@@ -361,9 +383,9 @@ class BlockStoreClient {
                     Key: `${bs_info.blocks_path}/${block_dir}/${block_id}`
                 };
                 const disable_metadata = bs_info.disable_metadata;
-                s3_params.httpOptions = {
-                    agent: http_utils.get_unsecured_agent(s3_params.endpoint)
-                };
+                s3_params.requestHandler = new NodeHttpHandler({
+                    httpsAgent: http_utils.get_unsecured_agent(s3_params.endpoint),
+                });
                 if (bs_info.connection_params.aws_sts_arn) {
                     const creds = await cloud_utils.generate_aws_sdkv3_sts_creds(s3_params, "_delegate_read_block_s3_session");
                     s3_params.accessKeyId = creds.accessKeyId;
@@ -371,17 +393,22 @@ class BlockStoreClient {
                     s3_params.sessionToken = creds.sessionToken;
                 }
                 dbg.log1('_delegate_read_block_s3:',
-                    'got s3_params from block_store. writing using S3 sdk. s3_params =',
+                    'got s3_params from block_store. reading using S3 sdk. s3_params =',
                     _.omit(s3_params, 'secretAccessKey'),
                     'aws_sts_arn', bs_info.connection_params.aws_sts_arn);
-                const s3 = new AWS.S3(s3_params);
-                const data = await s3.getObject(read_params).promise();
+                if (!s3_static) {
+                    s3_static = noobaa_s3_client.get_s3_client_v3_params(s3_params);
+                }
+                const data = await s3_static.getObject(read_params);
+                const body = data.Body.transformToByteArray ?
+                    Buffer.from(await data.Body.transformToByteArray()) :
+                    data.Body;
                 const noobaablockmd = data.Metadata.noobaablockmd || data.Metadata.noobaa_block_md;
                 const store_block_md = disable_metadata ? block_md :
                     JSON.parse(Buffer.from(noobaablockmd, 'base64').toString());
                 this._update_usage_stats(rpc_client, { size: block_md.size, count: 1 }, options.address, 'READ');
                 return {
-                    [RPC_BUFFERS]: { data: data.Body },
+                    [RPC_BUFFERS]: { data: body },
                     block_md: store_block_md,
                 };
             } catch (err) {

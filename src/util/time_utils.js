@@ -51,6 +51,21 @@ function parse_http_header_date(str) {
     return str ? Date.parse(str) : NaN;
 }
 
+
+const time_counters = {};
+
+function time_average_log(took, log_name) {
+    const AVERAGE_COUNT_THRESHOLD = process.env.AVERAGE_COUNT_THRESHOLD || 1000;
+    let { total_time, total_count } = time_counters[log_name] || { total_time: 0, total_count: 0 };
+    total_time += took;
+    total_count += 1;
+    time_counters[log_name] = { total_time, total_count };
+    if (total_count >= AVERAGE_COUNT_THRESHOLD) {
+        console.log(`time_average_log: AVG ${log_name} TIME FOR LAST ${AVERAGE_COUNT_THRESHOLD} ${log_name}s`, total_time / total_count, 'ms');
+        time_counters[log_name] = { total_time: 0, total_count: 0 };
+    }
+}
+
 /**
  * AMZ date is formatted as ISO-8601
  * Example: '20151014T235959Z'
@@ -82,9 +97,9 @@ function format_time_duration(millis, show_millis) {
     return `${hours_str}:${mins_str}:${secs_str}`;
 }
 
-/** 
-* @param {Date} date
-*/
+/**
+ * @param {Date} date
+ */
 function format_aws_date(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -103,10 +118,10 @@ function format_aws_date(date) {
  * secs to be already timezone adjusted.
  *
  * @param {Date} date
- * @param {number} hours 
- * @param {number} mins 
- * @param {number} secs 
- * @param {'UTC' | 'LOCAL'} tz 
+ * @param {number} hours
+ * @param {number} mins
+ * @param {number} secs
+ * @param {'UTC' | 'LOCAL'} tz
  */
 function round_up_to_next_time_of_day(date, hours, mins, secs, tz) {
     const desired_date = new Date(date);
@@ -139,3 +154,4 @@ exports.parse_amz_date = parse_amz_date;
 exports.format_time_duration = format_time_duration;
 exports.format_aws_date = format_aws_date;
 exports.round_up_to_next_time_of_day = round_up_to_next_time_of_day;
+exports.time_average_log = time_average_log;

@@ -66,7 +66,7 @@ class BlockStoreS3 extends BlockStoreBase {
                     secretAccessKey: this.cloud_info.access_keys.secret_key.unwrap(),
                 },
                 region: config.DEFAULT_REGION,
-                // We will disable setting applyChecksum as sdkv3 doesn't always "know" to fall back to UNSIGNED-PAYLOAD automatically 
+                // We will disable setting applyChecksum as sdkv3 doesn't always "know" to fall back to UNSIGNED-PAYLOAD automatically
                 // in x-amz-content-sha256 for every command - and this header is a must for v4 signature.
                 // applyChecksum: cloud_utils.disable_s3_compatible_bodysigning(endpoint),
                 requestHandler: new NodeHttpHandler({
@@ -416,28 +416,28 @@ class BlockStoreS3 extends BlockStoreBase {
     }
 
     async _get_blocks_usage(block_ids) {
-        const usage = {
-            size: 0,
+        return {
+            size: 1024 * 1024,
             count: 0
         };
-        await P.map_with_concurrency(10, block_ids, async block_id => {
-            try {
-                if (this.cloud_info.aws_sts_arn) {
-                    this.s3cloud = await cloud_utils.createSTSS3SDKv3Client(this.cloud_info, this.additionalS3Params);
-                }
-                const res = await this.s3cloud.headObject({
-                    Bucket: this.cloud_info.target_bucket,
-                    Key: this._block_key(block_id),
-                });
-                const noobaablockmd = res.Metadata.noobaablockmd || res.Metadata.noobaa_block_md;
-                const md_size = (noobaablockmd && noobaablockmd.length) || 0;
-                usage.size += Number(res.ContentLength) + md_size;
-                usage.count += 1;
-            } catch (err) {
-                dbg.warn('_get_blocks_usage:', err);
-            }
-        });
-        return usage;
+        // await P.map_with_concurrency(10, block_ids, async block_id => {
+        //     try {
+        //         if (this.cloud_info.aws_sts_arn) {
+        //             this.s3cloud = await cloud_utils.createSTSS3SDKv3Client(this.cloud_info, this.additionalS3Params);
+        //         }
+        //         const res = await this.s3cloud.headObject({
+        //             Bucket: this.cloud_info.target_bucket,
+        //             Key: this._block_key(block_id),
+        //         });
+        //         const noobaablockmd = res.Metadata.noobaablockmd || res.Metadata.noobaa_block_md;
+        //         const md_size = (noobaablockmd && noobaablockmd.length) || 0;
+        //         usage.size += Number(res.ContentLength) + md_size;
+        //         usage.count += 1;
+        //     } catch (err) {
+        //         dbg.warn('_get_blocks_usage:', err);
+        //     }
+        // });
+        // return usage;
     }
 
     _get_store_block_md(block_md, res) {

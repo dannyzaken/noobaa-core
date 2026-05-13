@@ -8,6 +8,7 @@ const S3Error = require('../s3_errors').S3Error;
 const http_utils = require('../../../util/http_utils');
 const rdma_utils = require('../../../util/rdma_utils');
 const config = require('../../../../config');
+const time_utils = require('../../../util/time_utils');
 
 const s3_error_options = {
     ErrorClass: S3Error,
@@ -21,6 +22,7 @@ const s3_error_options = {
  * @param {nb.S3Response} res
  */
 async function put_object(req, res) {
+    const put_object_start = time_utils.millistamp();
     const encryption = s3_utils.parse_encryption(req);
     const copy_source = s3_utils.parse_copy_source(req);
     const tagging = s3_utils.parse_tagging_header(req);
@@ -66,6 +68,7 @@ async function put_object(req, res) {
         azure_invalid_md_header: req.headers['azure-metadata-handling'] || undefined,
     });
 
+
     if (reply.version_id && reply.version_id !== 'null') {
         res.setHeader('x-amz-version-id', reply.version_id);
     }
@@ -96,12 +99,15 @@ async function put_object(req, res) {
         size: size,
         tagging: tagging,
     };
+    const set_expiration_header_start = time_utils.millistamp();
     await http_utils.set_expiration_header(req, res, object_info); // setting expiration header for bucket lifecycle
+    time_utils.time_average_log(time_utils.millistamp() - set_expiration_header_start, 'S3_PUT_SET_EXPIRATION_HEADER');
 
     if (reply.seq) {
         res.seq = reply.seq;
         delete reply.seq;
     }
+    time_utils.time_average_log(time_utils.millistamp() - put_object_start, 'S3_PUT_OBJECT');
 }
 
 

@@ -1948,7 +1948,7 @@ function get_etag(entity, updates) {
     if (sha256_b64) return 'sha256-' + Buffer.from(sha256_b64, 'base64').toString('hex');
 
     const id = updates?._id || entity._id;
-    if (id) return 'id-' + id.toHexString();
+    if (id) return 'id-' + make_md_id(id).toHexString();
 
     return '';
 }

@@ -15,6 +15,7 @@ const stream_utils = require('../util/stream_utils');
 const ChunkSplitter = require('../util/chunk_splitter');
 const CoalesceStream = require('../util/coalesce_stream');
 const system_store = require('../server/system_services/system_store').get_instance();
+const time_utils = require('../util/time_utils');
 
 const { MapClient } = require('./map_client');
 const { ChunkAPI } = require('./map_api_types');
@@ -372,9 +373,13 @@ class ObjectIO {
     async _upload_stream(params, complete_params, is_copy) {
         try {
             // on non server side copy the buffer will be taken when called to read_object_stream
+            const upload_stream_before_sem = time_utils.millistamp();
             const res = await this._io_buffers_sem.surround_count(
                 _get_io_semaphore_size(is_copy ? 0 : params.size),
-                () => this._upload_stream_internal(params, complete_params)
+                () => {
+                    time_utils.time_average_log(time_utils.millistamp() - upload_stream_before_sem, 'UPLOAD_STREAM_SEM_WAIT');
+                    return this._upload_stream_internal(params, complete_params);
+                }
             );
             return res;
         } catch (err) {
@@ -389,6 +394,8 @@ class ObjectIO {
      * @param {Object} complete_params
      */
     async _upload_stream_internal(params, complete_params) {
+
+        const upload_stream_internal_start = time_utils.millistamp();
 
         params.desc = _.pick(params, 'obj_id', 'num', 'bucket', 'key');
         dbg.log1('UPLOAD:', params.desc, 'streaming to', params.bucket, params.key);
@@ -454,6 +461,8 @@ class ObjectIO {
 
         if (splitter.md5) complete_params.md5_b64 = splitter.md5.toString('base64');
         if (splitter.sha256) complete_params.sha256_b64 = splitter.sha256.toString('base64');
+
+        time_utils.time_average_log(time_utils.millistamp() - upload_stream_internal_start, 'UPLOAD_STREAM_INTERNAL');
     }
 
 
@@ -469,6 +478,7 @@ class ObjectIO {
      * @param {(err?: Error) => void} callback
      */
     async _upload_chunks(params, complete_params, chunks, callback) {
+        const upload_chunks_start = time_utils.millistamp();
         try {
             const is_using_encryption = params.encryption || (params.copy_source && params.copy_source.encryption);
             params.range = {
@@ -562,6 +572,9 @@ class ObjectIO {
             }
 
             if (params.upload_chunks_hook) params.upload_chunks_hook(params.range.end - params.range.start);
+
+            time_utils.time_average_log(time_utils.millistamp() - upload_chunks_start, 'UPLOAD_CHUNKS');
+
             return callback();
         } catch (err) {
             dbg.error('UPLOAD: _upload_chunks', err.stack || err);
@@ -643,9 +656,12 @@ class ObjectIO {
                 return;
             }
             const { chunks: prefetched_chunks, effective_end } =
-               _take_prefetched_chunks_for_range(params.object_md, reader.pos, requested_end);
+            _take_prefetched_chunks_for_range(params.object_md, reader.pos, requested_end);
             const io_sem_size = _get_io_semaphore_size(effective_end - reader.pos);
+            const read_object_before_sem = time_utils.millistamp();
             this._io_buffers_sem.surround_count(io_sem_size, async () => {
+                const read_object_sem_wait_time = time_utils.millistamp() - read_object_before_sem;
+                time_utils.time_average_log(read_object_sem_wait_time, 'READ_OBJECT_SEM_WAIT');
                 try {
                     const buffers = await this.read_object({
                         ...params,
@@ -949,6 +965,7 @@ function _take_prefetched_chunks_for_range(object_md, read_start, read_end) {
     if (!chunks.length) return { chunks: undefined, effective_end: read_end };
     return { chunks, effective_end: Math.min(coverage_end, read_end) };
 }
+
 function _get_io_semaphore_size(size) {
     // TODO: Currently we have a gap regarding chunked uploads
     // We assume that the chunked upload will take 1MB

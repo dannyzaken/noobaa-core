@@ -83,8 +83,11 @@ async function delete_blocks(blocks) {
         // We should not worry about advancing the delete since there wouldn't be any parallel calls
         // There is only a single builder which will delete the blocks and they won't be called afterwards
         await MDStore.instance().delete_blocks_by_ids(db_client.instance().uniq_ids(blocks, '_id'));
-        // Even if we crash here we can assume that the reclaimer will handle the deletions
-        await delete_blocks_from_nodes(blocks);
+
+        // Removed delete_blocks_from_nodes from the delete_blocks path. Leaving the actual deletion of the data to the agent_blocks_reclaimer
+        // When doing the deletion from the delete_blocks path, we perform a lot of small batches of blocks per objectmd. This can consume a lot
+        // of memory in the agent. agent_blocks_reclaimer handles the deletion of the blocks in a more efficient way.
+        // await delete_blocks_from_nodes(blocks);
     } catch (error) {
         dbg.error('delete_blocks has error:', error, 'for blocks:', blocks);
         throw error;

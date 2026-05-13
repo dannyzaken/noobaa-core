@@ -34,6 +34,8 @@ mongodb.Binary.prototype[util.inspect.custom] = function custom_inspect_binary()
     return `<mongodb.Binary ${this.buffer.toString('base64')} >`;
 };
 
+let query_time_total = 0;
+let query_time_count = 0;
 
 const COMPARISON_OPS = [
     '$eq',
@@ -205,8 +207,7 @@ async function log_query(pg_client, query, tag, millitook, should_explain) {
 
     if (millitook > config.LONG_DB_QUERY_THRESHOLD) {
         dbg.warn(
-            `QUERY_LOG: LONG QUERY (OVER ${config.LONG_DB_QUERY_THRESHOLD} ms) -
-            please check whether the DB and core pods have sufficient CPU and memory `,
+            `QUERY_LOG: LONG QUERY (OVER ${config.LONG_DB_QUERY_THRESHOLD} ms) - please check whether the DB and core pods have sufficient CPU and memory `,
             JSON.stringify(log_obj)
         );
     } else {
@@ -246,7 +247,7 @@ function convert_timestamps(where_clause) {
 
 
 async function _do_query(pg_client, q, transaction_counter, options = {}) {
-    const {log_errors = true} = options;
+    const { log_errors = true } = options;
     query_counter += 1;
 
     dbg.log3("pg_client.options?.host =", pg_client.options?.host, ", retry =", pg_client.retry_with_default_pool, ", q =", q);
@@ -258,6 +259,13 @@ async function _do_query(pg_client, q, transaction_counter, options = {}) {
         const res = await pg_client.query(q);
         const milliend = time_utils.millistamp();
         const millitook = milliend - millistart;
+        query_time_total += millitook;
+        query_time_count += 1;
+        if (query_time_count >= 1000) {
+            dbg.log0('QUERY_LOG: AVG QUERY TIME FOR LAST 1000 QUERIES', query_time_total / query_time_count, 'ms');
+            query_time_total = 0;
+            query_time_count = 0;
+        }
         if (process.env.PG_ENABLE_QUERY_LOG === 'true' || millitook > config.LONG_DB_QUERY_THRESHOLD) {
             // noticed that some failures in explain are invalidating the transaction.
             // myabe did something wrong but for now don't try to EXPLAIN the query when in transaction.

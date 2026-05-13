@@ -15,7 +15,7 @@ const nb_native = require('../util/nb_native');
 const http_utils = require('../util/http_utils');
 const nc_mkm = require('../manage_nsfs/nc_master_key_manager').get_instance();
 const NoobaaEvent = require('../manage_nsfs/manage_nsfs_events_utils').NoobaaEvent;
-const {ConfigFS} = require('../sdk/config_fs');
+const { ConfigFS } = require('../sdk/config_fs');
 const _ = require('lodash');
 
 const OP_TO_EVENT = Object.freeze({
@@ -37,7 +37,7 @@ class Notificator {
      * @param {Object} options
      */
 
-    constructor({name, fs_context, connect_files_dir, nc_config_fs, batch_size}) {
+    constructor({ name, fs_context, connect_files_dir, nc_config_fs, batch_size }) {
         this.name = name;
         this.connect_str_to_connection = new Map();
         this.notif_to_connect = new Map();
@@ -225,19 +225,20 @@ class HttpNotificator {
     }
 
     connect() {
-        this.agent = new this.protocol.Agent(this.connect_obj.agent_request_object);
+        this.agent = new this.protocol.Agent({ ...this.connect_obj.agent_request_object, keepAlive: true });
     }
 
     promise_notify(notif, promise_failure_cb, failure_ctxt) {
         return new Promise(resolve => {
             const req = this.protocol.request({
-                agent: this.agent,
-                method: 'POST',
-                ...this.connect_obj.request_options_object},
+                    agent: this.agent,
+                    method: 'POST',
+                    ...this.connect_obj.request_options_object
+                },
                 result => {
-                //result.pipe(process.stdout);
-                resolve();
-            });
+                    //result.pipe(process.stdout);
+                    resolve();
+                });
             req.on('error', err => {
                 if (req.destroyed) {
                     //error emitted because of timeout, nothing more to do
@@ -345,8 +346,7 @@ function load_files(object) {
 function get_connection(connect) {
     switch (connect.notification_protocol.toLowerCase()) {
         case 'http':
-        case 'https':
-        {
+        case 'https': {
             return new HttpNotificator(connect);
         }
         case 'kafka': {
@@ -378,7 +378,7 @@ async function test_notifications(notifs, nc_config_dir, req) {
         config_fs = new ConfigFS(nc_config_dir);
         connect_files_dir = config_fs.connections_dir_path;
     }
-    const notificator = new Notificator({connect_files_dir, nc_config_fs: config_fs});
+    const notificator = new Notificator({ connect_files_dir, nc_config_fs: config_fs });
     for (const notif of notifs) {
         let connect;
         let connection;
@@ -462,10 +462,10 @@ function compose_notification_req(req, res, bucket, notif_conf, reply) {
     };
     notif.requestParameters = {
         sourceIPAddress: http_utils.parse_client_ip(req),
-        };
+    };
     notif.responseElements = {
-            "x-amz-request-id": req.request_id,
-            "x-amz-id-2": req.request_id,
+        "x-amz-request-id": req.request_id,
+        "x-amz-id-2": req.request_id,
     };
     notif.s3.object.key = req.params.key;
     notif.s3.object.size = res.size_for_notif;
@@ -495,7 +495,7 @@ function compose_notification_req(req, res, bucket, notif_conf, reply) {
 
 function compose_notification_lifecycle(deleted_obj, notif_conf, bucket, object_sdk) {
 
-    const notif = compose_notification_base(notif_conf, bucket, {object_sdk});
+    const notif = compose_notification_base(notif_conf, bucket, { object_sdk });
 
     notif.eventName = OP_TO_EVENT.lifecycle_delete.name + ':' +
         ((deleted_obj.created_delete_marker || deleted_obj.delete_marker) ? 'DeleteMarkerCreated' : 'Delete');
@@ -619,7 +619,7 @@ function check_free_space_if_needed(req) {
         //is the ratio of available blocks less than the configures threshold?
         if (check_free_space().below) {
             //yes. raise an event.
-            new NoobaaEvent(NoobaaEvent.NOTIFICATION_LOW_SPACE).create_event(null, {fs_stat});
+            new NoobaaEvent(NoobaaEvent.NOTIFICATION_LOW_SPACE).create_event(null, { fs_stat });
         }
     }
 }
@@ -697,8 +697,8 @@ async function encrypt_connect_file(data) {
  */
 function should_notify_on_event(bucket, event_name) {
     return config.NOTIFICATION_LOG_DIR && bucket.notifications &&
-    _.some(bucket.notifications, notif =>
-    (!notif.Events || _.some(notif.Events, event => event.includes(event_name))));
+        _.some(bucket.notifications, notif =>
+            (!notif.Events || _.some(notif.Events, event => event.includes(event_name))));
 }
 
 exports.Notificator = Notificator;

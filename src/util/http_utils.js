@@ -42,20 +42,21 @@ const INTERNAL_CA_CERTS = process.env.INTERNAL_CA_CERTS || '/var/run/secrets/kub
 const EXTERNAL_CA_CERTS = process.env.EXTERNAL_CA_CERTS || '/etc/ocp-injected-ca-bundle/ca-bundle.crt';
 
 const { HTTP_PROXY, HTTPS_PROXY, NO_PROXY } = process.env;
-const http_agent = new http.Agent();
+const http_agent = new http.Agent({ keepAlive: true });
 const https_agent = new https.Agent({
+    keepAlive: true,
     ca: (ca => (ca.length ? ca : undefined))([
         fs_utils.try_read_file_sync(INTERNAL_CA_CERTS),
         fs_utils.try_read_file_sync(EXTERNAL_CA_CERTS),
     ].filter(Boolean))
 });
-const unsecured_https_agent = new https.Agent({ rejectUnauthorized: false });
+const unsecured_https_agent = new https.Agent({ rejectUnauthorized: false, keepAlive: true });
 const http_proxy_agent = HTTP_PROXY ?
-    new HttpProxyAgent(HTTP_PROXY) : null;
+    new HttpProxyAgent(HTTP_PROXY, { keepAlive: true }) : null;
 const https_proxy_agent = HTTPS_PROXY ?
-    new HttpsProxyAgent(HTTPS_PROXY) : null;
+    new HttpsProxyAgent(HTTPS_PROXY, { keepAlive: true }) : null;
 const unsecured_https_proxy_agent = HTTPS_PROXY ?
-    new HttpsProxyAgent(HTTPS_PROXY, { rejectUnauthorized: false }) : null;
+    new HttpsProxyAgent(HTTPS_PROXY, { rejectUnauthorized: false, keepAlive: true }) : null;
 
 const no_proxy_list = (NO_PROXY ? NO_PROXY.split(',') : []).map(addr => {
     let kind = 'FQDN';
@@ -75,10 +76,10 @@ const non_printable_regexp = /[\x00-\x1F]/;
 
 /**
  * Since header values can be either string or array of strings we need to handle both cases.
- * While most callers might prefer to always handle a single string value, which is why we 
+ * While most callers might prefer to always handle a single string value, which is why we
  * have this helper, some callers might prefer to always convert to array of strings,
  * which is why we have hdr_as_arr().
- * 
+ *
  * @param {import('http').IncomingHttpHeaders} headers
  * @param {string} key the header name
  * @param {string} [join_sep] optional separator to join multiple values, if not provided only the first value is returned
@@ -95,10 +96,10 @@ function hdr_as_str(headers, key, join_sep) {
 
 /**
  * Since header values can be either string or array of strings we need to handle both cases.
- * While most callers might prefer to always handle a single string value, which is why we 
+ * While most callers might prefer to always handle a single string value, which is why we
  * have hdr_as_str(), some callers might prefer to always convert to array of strings,
  * which is why we have this helper.
- * 
+ *
  * @param {import('http').IncomingHttpHeaders} headers
  * @param {string} key the header name
  * @returns {string[]|undefined} the header string value or undefined if not found
@@ -112,7 +113,7 @@ function hdr_as_arr(headers, key) {
 }
 
 /**
- * @param {http.IncomingMessage & NodeJS.Dict} req 
+ * @param {http.IncomingMessage & NodeJS.Dict} req
  * @returns {querystring.ParsedUrlQuery}
  */
 function parse_url_query(req) {
@@ -152,8 +153,8 @@ function parse_client_ip(req) {
  */
 
 /**
- * 
- * @param {*} req 
+ *
+ * @param {*} req
  * @param {*} prefix
  * @returns {MDConditions|void}
  */
@@ -467,7 +468,7 @@ function send_reply(req, res, reply, options) {
         dbg.log1('HTTP REPLY XML', req.method, req.originalUrl,
             JSON.stringify(req.headers),
             xml_reply.length <= 2000 ?
-                xml_reply : xml_reply.slice(0, 1000) + ' ... ' + xml_reply.slice(-1000));
+            xml_reply : xml_reply.slice(0, 1000) + ' ... ' + xml_reply.slice(-1000));
         if (res.headersSent) {
             dbg.log0('Sending xml reply in body, bit too late for headers');
         } else {
@@ -540,9 +541,9 @@ function get_unsecured_agent(endpoint) {
 }
 
 /**
- * 
- * @param {string} endpoint 
- * @param {boolean} request_unsecured 
+ *
+ * @param {string} endpoint
+ * @param {boolean} request_unsecured
  * @returns {https.Agent | http.Agent | HttpsProxyAgent | HttpProxyAgent}
  */
 function _get_http_agent(endpoint, request_unsecured) {
@@ -612,9 +613,9 @@ function make_https_request(options, body, body_encoding) {
 }
 
 /**
- * 
- * @param {http.RequestOptions} options 
- * @param {*} body 
+ *
+ * @param {http.RequestOptions} options
+ * @param {*} body
  * @returns {Promise<http.IncomingMessage>}
  */
 async function make_http_request(options, body) {
@@ -807,7 +808,7 @@ function set_cors_headers(req, res, cors) {
  * }} CORSRule
  * @param {http.IncomingMessage} req
  * @param {http.ServerResponse} res
- * @param {CORSRule[]} cors_rules 
+ * @param {CORSRule[]} cors_rules
  */
 function set_cors_headers_s3(req, res, cors_rules) {
     if (!config.S3_CORS_ENABLED || !cors_rules) return;
@@ -908,17 +909,17 @@ function http_get(uri, options) {
 }
 
 /**
- * Log on accepted and closed connections to the http server, 
+ * Log on accepted and closed connections to the http server,
  * including fd and remote address for better debugging of connection issues
- * @param {net.Socket} conn 
+ * @param {net.Socket} conn
  */
 function http_server_connections_logger(conn) {
     // @ts-ignore
     const fd = conn._handle?.fd;
     const info = { port: conn.localPort, fd, remote: conn.remoteAddress };
-    dbg.log0('HTTP connection accepted', info);
+    dbg.log1('HTTP connection accepted', info);
     conn.once('close', () => {
-        dbg.log0('HTTP connection closed', info);
+        dbg.log1('HTTP connection closed', info);
     });
 }
 
@@ -1052,8 +1053,8 @@ function handle_server_error(err) {
 /**
  * set_response_headers_from_request sets the response headers based on the request headers
  * gap - response-content-encoding needs to be added with a more complex logic
- * @param {http.IncomingMessage & { query: querystring.ParsedUrlQuery }} req 
- * @param {http.ServerResponse} res 
+ * @param {http.IncomingMessage & { query: querystring.ParsedUrlQuery }} req
+ * @param {http.ServerResponse} res
  */
 function set_response_headers_from_request(req, res) {
     dbg.log2(`set_response_headers_from_request req.query ${util.inspect(req.query)}`);
@@ -1068,7 +1069,7 @@ function set_response_headers_from_request(req, res) {
  * Authenticate JWT bearer token for metrics / version endpoints.
  * Returns `true` on success, `false` after the function already sent an HTTP
  * response (401/403) and the caller should terminate the handler early.
- * 
+ *
  * @param {import('http').IncomingMessage} req
  * @param {import('http').ServerResponse} res
  * @param {string[]} [roles]
