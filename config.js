@@ -146,6 +146,10 @@ config.RPC_PING_INTERVAL_MS = 20000;
 // setting number of pings above the time it takes to get connect timeout
 config.RPC_PING_EXHAUSTED_COUNT = (config.RPC_CONNECT_TIMEOUT / config.RPC_PING_INTERVAL_MS) + 2;
 
+// validate RPC params/reply against the API schema (ajv) - disabling saves CPU,
+// notably for in-process RPCs (LOCAL_MD_SERVER / LOCAL_N2N_AGENT endpoints)
+config.RPC_VALIDATE_SCHEMAS = true;
+
 config.RECONN_BACKOFF_BASE = 250;
 config.RECONN_BACKOFF_MAX = 5000;
 config.RECONN_BACKOFF_FACTOR = 1.2;

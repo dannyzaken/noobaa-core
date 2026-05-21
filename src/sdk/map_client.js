@@ -393,6 +393,14 @@ class MapClient {
      * @returns {Promise<nb.Chunk[]>}
      */
     async read_object_mapping() {
+        // Fast path: build chunks from the mapping prefetched by read_object_md
+        // and skip this RPC when it would be redundant (see _chunks_from_prefetched_mapping).
+        const prefetched = this._chunks_from_prefetched_mapping();
+        if (prefetched) {
+            dbg.log1('MapClient.read_object_mapping: using prefetched mapping, skipping RPC');
+            return prefetched;
+        }
+
         const res = await this.rpc_client.object.read_object_mapping({
             obj_id: this.object_md.obj_id,
             bucket: this.object_md.bucket,
@@ -403,13 +411,42 @@ class MapClient {
             location_info: this.location_info,
             prefetched_chunks: this.prefetched_chunks,
         });
-        return res.chunks.map(chunk_info => {
-            // TODO: Maybe move this to map_reader?
-            if (this.object_md.encryption && this.object_md.encryption.key_b64) {
-                chunk_info.cipher_key_b64 = this.object_md.encryption.key_b64;
-            }
-            return new ChunkAPI(chunk_info, system_store);
-        });
+        return res.chunks.map(chunk_info => this._chunk_api_from_info(chunk_info));
+    }
+
+    /**
+     * Build chunks directly from the mapping prefetched by read_object_md so the
+     * read_object_mapping RPC can be skipped. read_object_md already returns the
+     * fully-resolved mapping, and the server-side read_object_mapping consumes
+     * prefetched_chunks the same way - its only extra work is update_chunks_on_read.
+     * Returns undefined when that extra work may matter and the RPC is still needed:
+     * - no mapping was prefetched
+     * - a location-aware read, which may scrub blocks for locality
+     * - a multi-tier bucket, which relies on read-triggered promotion between tiers
+     * @returns {nb.Chunk[] | undefined}
+     */
+    _chunks_from_prefetched_mapping() {
+        if (!this.prefetched_chunks || !this.prefetched_chunks.length) return undefined;
+        if (this.location_info) return undefined;
+
+        const chunks = this.prefetched_chunks.map(chunk_info => this._chunk_api_from_info(chunk_info));
+
+        const tiers = chunks[0]?.bucket?.tiering?.tiers;
+        if (!tiers || tiers.length !== 1) return undefined;
+
+        return chunks;
+    }
+
+    /**
+     * @param {nb.ChunkInfo} chunk_info
+     * @returns {nb.Chunk}
+     */
+    _chunk_api_from_info(chunk_info) {
+        // TODO: Maybe move this to map_reader?
+        if (this.object_md.encryption && this.object_md.encryption.key_b64) {
+            chunk_info.cipher_key_b64 = this.object_md.encryption.key_b64;
+        }
+        return new ChunkAPI(chunk_info, system_store);
     }
     /**
      * @returns {Promise<void>}

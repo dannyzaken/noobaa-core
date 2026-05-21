@@ -12,6 +12,7 @@ const RpcError = require('./rpc_error');
 const RPC_BUFFERS = require('./rpc_request').RPC_BUFFERS;
 const schema_utils = require('../util/schema_utils');
 const schema_keywords = require('../util/schema_keywords');
+const config = require('../../config');
 
 const VALID_HTTP_METHODS = {
     GET: 1,
@@ -110,6 +111,7 @@ class RpcSchema {
                 }
 
                 method_api.validate_params = (params, desc) => {
+                    if (!config.RPC_VALIDATE_SCHEMAS) return;
                     const result = method_api.params_validator(params);
                     if (!result) {
                         dbg.error('INVALID_SCHEMA_PARAMS', desc, method_api.fullname,
@@ -120,6 +122,7 @@ class RpcSchema {
                 };
 
                 method_api.validate_reply = (reply, desc) => {
+                    if (!config.RPC_VALIDATE_SCHEMAS) return;
                     const result = method_api.reply_validator(reply);
                     if (!result) {
                         dbg.error('INVALID_SCHEMA_REPLY', desc, method_api.fullname,
