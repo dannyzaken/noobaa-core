@@ -95,6 +95,7 @@ RUN dnf install -y epel-release && \
     jemalloc \
     xz \
     python3-pip \
+    fio \
     cronie && \
     dnf clean all
 
