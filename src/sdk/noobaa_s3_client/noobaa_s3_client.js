@@ -12,6 +12,7 @@ const { NodeHttpHandler } = require("@smithy/node-http-handler");
 const config = require('../../../config');
 const http_utils = require('../../util/http_utils');
 const cloud_utils = require('../../util/cloud_utils');
+const dbg = require('../../util/debug_module')(__filename);
 
 // The params are the AWS SDK V3 params.
 // params = a map of parameters that are passed to the constructor of S3 Object in order to to bind to every request
@@ -106,7 +107,7 @@ function get_requestHandler_with_suitable_agent(endpoint) {
 /**
  * When using aws sdk v3 we get the error object with values that start with an uppercase instead of lowercase
  * we want to fix this value to be start with a lowercase (example: v2: code, v3: Code).
- * 
+ *
  * @param {object} err
  */
 function fix_error_object(err) {
@@ -118,7 +119,7 @@ function fix_error_object(err) {
                 const lowercaseKey = key.toLowerCase();
                 // If we remove the "if" statement above (key === "Code") then we need to check also key !== lowercaseKey
                 // to avoid running over a valid value.
-                // remove the next comment and delete the if 2 lines below. 
+                // remove the next comment and delete the if 2 lines below.
                 // if (key !== lowercaseKey && !Object.hasOwn(err, lowercaseKey)) {
                 if (!Object.hasOwn(err, lowercaseKey)) {
                     err[lowercaseKey] = err[key];

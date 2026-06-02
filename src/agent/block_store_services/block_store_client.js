@@ -16,6 +16,7 @@ const { RPC_BUFFERS, RpcError } = require('../../rpc');
 const { get_block_internal_dir } = require('../../agent/block_store_services/block_store_base');
 const util = require('util');
 const cloud_utils = require('../../util/cloud_utils');
+const noobaa_s3_client = require('../../sdk/noobaa_s3_client/noobaa_s3_client');
 
 
 const block_store_info_cache = new LRUCache({
@@ -324,27 +325,40 @@ class BlockStoreClient {
                 const block_dir = get_block_internal_dir(block_id);
                 const disable_metadata = bs_info.disable_metadata;
                 const encoded_md = disable_metadata ? '' : Buffer.from(JSON.stringify(block_md)).toString('base64');
-                const write_params = {
+                const endpoint = s3_params.endpoint;
+
+                let credentials;
+                if (bs_info.connection_params.aws_sts_arn) {
+                    credentials = await cloud_utils.generate_aws_sdkv3_sts_creds(s3_params, "_delegate_write_block_s3_session");
+                } else {
+                    credentials = {
+                        accessKeyId: s3_params.accessKeyId,
+                        secretAccessKey: s3_params.secretAccessKey,
+                    };
+                }
+
+                dbg.log1('_delegate_write_block_s3:',
+                    'got s3_params from block_store. writing using S3 sdk v3. endpoint =', endpoint,
+                    'aws_sts_arn', bs_info.connection_params.aws_sts_arn);
+
+                const s3 = noobaa_s3_client.get_s3_client_v3_params({
+                    endpoint,
+                    credentials,
+                    forcePathStyle: true,
+                    // signatureVersion: s3_params.signatureVersion,
+                    region: config.DEFAULT_REGION,
+                    requestHandler: noobaa_s3_client.get_requestHandler_with_suitable_agent(endpoint),
+                    requestChecksumCalculation: 'WHEN_REQUIRED',
+                    responseChecksumValidation: 'WHEN_REQUIRED',
+                });
+
+                await s3.putObject({
                     Bucket: bs_info.target_bucket,
                     Key: `${bs_info.blocks_path}/${block_dir}/${block_id}`,
+                    Body: data,
                     Metadata: disable_metadata ? undefined : { noobaablockmd: encoded_md },
-                };
-                s3_params.httpOptions = {
-                    agent: http_utils.get_unsecured_agent(s3_params.endpoint)
-                };
-                if (bs_info.connection_params.aws_sts_arn) {
-                    const creds = await cloud_utils.generate_aws_sdkv3_sts_creds(s3_params, "_delegate_write_block_s3_session");
-                    s3_params.accessKeyId = creds.accessKeyId;
-                    s3_params.secretAccessKey = creds.secretAccessKey;
-                    s3_params.sessionToken = creds.sessionToken;
-                }
-                dbg.log1('_delegate_write_block_s3:',
-                    'got s3_params from block_store. writing using S3 sdk. s3_params =',
-                    _.omit(s3_params, 'secretAccessKey'),
-                    'aws_sts_arn', bs_info.connection_params.aws_sts_arn);
-                const s3 = new AWS.S3(s3_params);
-                write_params.Body = data;
-                await s3.putObject(write_params).promise();
+                });
+
                 const data_length = data.length;
                 const usage = data_length ? {
                     size: (block_md.is_preallocated ? 0 : data_length) + encoded_md.length,
@@ -353,6 +367,7 @@ class BlockStoreClient {
                 this._update_usage_stats(rpc_client, usage, options.address, 'WRITE');
             } catch (err) {
                 dbg.error('S3 write operation failed for block:', util.inspect(block_md, { depth: 4 }), err);
+                noobaa_s3_client.fix_error_object(err);
                 if (err.code === 'NoSuchBucket') {
                     block_store_info_cache.invalidate_key(options.address);
                     throw new RpcError('STORAGE_NOT_EXIST', `s3 bucket not found for block ${block_md.id}. got error ${err}`);
@@ -377,36 +392,51 @@ class BlockStoreClient {
                 const s3_params = bs_info.connection_params;
                 const block_id = block_md.id;
                 const block_dir = get_block_internal_dir(block_id);
-                const read_params = {
-                    Bucket: bs_info.target_bucket,
-                    Key: `${bs_info.blocks_path}/${block_dir}/${block_id}`
-                };
                 const disable_metadata = bs_info.disable_metadata;
-                s3_params.httpOptions = {
-                    agent: http_utils.get_unsecured_agent(s3_params.endpoint)
-                };
+                const endpoint = s3_params.endpoint;
+
+                let credentials;
                 if (bs_info.connection_params.aws_sts_arn) {
-                    const creds = await cloud_utils.generate_aws_sdkv3_sts_creds(s3_params, "_delegate_read_block_s3_session");
-                    s3_params.accessKeyId = creds.accessKeyId;
-                    s3_params.secretAccessKey = creds.secretAccessKey;
-                    s3_params.sessionToken = creds.sessionToken;
+                    credentials = await cloud_utils.generate_aws_sdkv3_sts_creds(s3_params, "_delegate_read_block_s3_session");
+                } else {
+                    credentials = {
+                        accessKeyId: s3_params.accessKeyId,
+                        secretAccessKey: s3_params.secretAccessKey,
+                    };
                 }
+
                 dbg.log1('_delegate_read_block_s3:',
-                    'got s3_params from block_store. writing using S3 sdk. s3_params =',
-                    _.omit(s3_params, 'secretAccessKey'),
+                    'got s3_params from block_store. reading using S3 sdk v3. endpoint =', endpoint,
                     'aws_sts_arn', bs_info.connection_params.aws_sts_arn);
-                const s3 = new AWS.S3(s3_params);
-                const data = await s3.getObject(read_params).promise();
-                const noobaablockmd = data.Metadata.noobaablockmd || data.Metadata.noobaa_block_md;
+
+                const s3 = noobaa_s3_client.get_s3_client_v3_params({
+                    endpoint,
+                    credentials,
+                    forcePathStyle: true,
+                    // signatureVersion: s3_params.signatureVersion,
+                    region: config.DEFAULT_REGION,
+                    requestHandler: noobaa_s3_client.get_requestHandler_with_suitable_agent(endpoint),
+                    requestChecksumCalculation: 'WHEN_REQUIRED',
+                    responseChecksumValidation: 'WHEN_REQUIRED',
+                });
+
+                const res = await s3.getObject({
+                    Bucket: bs_info.target_bucket,
+                    Key: `${bs_info.blocks_path}/${block_dir}/${block_id}`,
+                });
+
+                const body = Buffer.isBuffer(res.Body) ? res.Body : await buffer_utils.read_stream_join(res.Body);
+                const noobaablockmd = res.Metadata.noobaablockmd || res.Metadata.noobaa_block_md;
                 const store_block_md = disable_metadata ? block_md :
                     JSON.parse(Buffer.from(noobaablockmd, 'base64').toString());
                 this._update_usage_stats(rpc_client, { size: block_md.size, count: 1 }, options.address, 'READ');
                 return {
-                    [RPC_BUFFERS]: { data: data.Body },
+                    [RPC_BUFFERS]: { data: body },
                     block_md: store_block_md,
                 };
             } catch (err) {
                 dbg.error('S3 read operation failed for block:', util.inspect(block_md, { depth: 4 }), err);
+                noobaa_s3_client.fix_error_object(err);
                 if (err.code === 'NoSuchBucket') {
                     block_store_info_cache.invalidate_key(options.address);
                     throw new RpcError('STORAGE_NOT_EXIST', `s3 bucket not found for block ${block_md.id}. got error ${err}`);
@@ -618,7 +648,7 @@ class BlockStoreClient {
                         succeeded_block_ids.push(block_md.id);
                     } catch (err) {
                         if (err.code === 404 && err.errors && err.errors[0] &&
-                                err.errors[0].reason === 'notFound') {
+                            err.errors[0].reason === 'notFound') {
                             // Object-level 404 with reason 'notFound': the specific block file doesn't
                             // exist in the bucket. This is an idempotent success - the block is already
                             // gone (e.g. previous partial deletion or external cleanup).
