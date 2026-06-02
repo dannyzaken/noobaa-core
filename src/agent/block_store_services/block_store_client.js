@@ -3,6 +3,15 @@
 
 const AWS = require('aws-sdk');
 const _ = require('lodash');
+const awsLite = require('@aws-lite/client');
+// @aws-lite/s3 is an ES module — load it once via dynamic import() on first use.
+let _aws_lite_s3_plugin;
+async function _get_aws_lite_s3_plugin() {
+    if (!_aws_lite_s3_plugin) {
+        _aws_lite_s3_plugin = (await import('@aws-lite/s3')).default;
+    }
+    return _aws_lite_s3_plugin;
+}
 
 const azure_storage = require('../../util/azure_storage_wrap');
 const P = require('../../util/promise');
@@ -24,6 +33,28 @@ const block_store_info_cache = new LRUCache({
     make_key: params => params.options.address,
     load: async ({ rpc_client, options }) => rpc_client.block_store.get_block_store_info({}, options),
 });
+
+// Cache aws-lite S3 clients per (endpoint, accessKeyId).
+// Client construction loads the plugin's methods once; reused across all blocks to the same target.
+// STS-creds branch bypasses this cache (still routed to v2/v3).
+const aws_lite_client_cache = new LRUCache({
+    name: 'AwsLiteS3ClientCache',
+    max_usage: 100,
+    expiry_ms: 10 * 60 * 1000,
+    make_key: ({ endpoint, accessKeyId }) => `${endpoint}|${accessKeyId}`,
+    load: async ({ endpoint, accessKeyId, secretAccessKey }) => {
+        const plugin = await _get_aws_lite_s3_plugin();
+        return awsLite({
+            accessKeyId,
+            secretAccessKey,
+            region: config.DEFAULT_REGION,
+            endpoint,
+            plugins: [plugin],
+            keepAlive: true,
+            retries: 0,
+        });
+    },
+});
 class BlockStoreClient {
 
     static instance() {
@@ -42,6 +73,9 @@ class BlockStoreClient {
         const { block_md } = params;
         switch (block_md.node_type) {
             case 'BLOCK_STORE_S3':
+                if (config.BLOCK_STORE_S3_CLIENT_IMPL === 'aws-lite') {
+                    return this._delegate_write_block_s3_aws_lite(rpc_client, params, options);
+                }
                 return this._delegate_write_block_s3(rpc_client, params, options);
             case 'BLOCK_STORE_AZURE':
                 return this._delegate_write_block_azure(rpc_client, params, options);
@@ -56,6 +90,9 @@ class BlockStoreClient {
         const { block_md } = params;
         switch (block_md.node_type) {
             case 'BLOCK_STORE_S3':
+                if (config.BLOCK_STORE_S3_CLIENT_IMPL === 'aws-lite') {
+                    return this._delegate_read_block_s3_aws_lite(rpc_client, params, options);
+                }
                 return this._delegate_read_block_s3(rpc_client, params, options);
             case 'BLOCK_STORE_AZURE':
                 return this._delegate_read_block_azure(rpc_client, params, options);
@@ -75,6 +112,9 @@ class BlockStoreClient {
         const node_type = block_mds[0] && block_mds[0].node_type;
         switch (node_type) {
             case 'BLOCK_STORE_S3':
+                if (config.BLOCK_STORE_S3_CLIENT_IMPL === 'aws-lite') {
+                    return this._delegate_delete_blocks_s3_aws_lite(rpc_client, block_mds, options);
+                }
                 return this._delegate_delete_blocks_s3(rpc_client, block_mds, options);
             case 'BLOCK_STORE_AZURE':
                 return this._delegate_delete_blocks_azure(rpc_client, block_mds, options);
@@ -651,6 +691,188 @@ class BlockStoreClient {
         })());
     }
 
+    async _delegate_write_block_s3_aws_lite(rpc_client, params, options) {
+        const { timeout = config.IO_WRITE_BLOCK_TIMEOUT } = options;
+        const { block_md } = params;
+        const data = params[RPC_BUFFERS].data;
+
+        return P.timeout(timeout, (async () => {
+            let bs_info;
+            try {
+                bs_info = await block_store_info_cache.get_with_cache({ options, rpc_client });
+                if (!bs_info) throw new Error("couldn't resolve cloud credentials");
+
+                const s3_params = bs_info.connection_params;
+                const block_id = block_md.id;
+                const block_dir = get_block_internal_dir(block_id);
+                const disable_metadata = bs_info.disable_metadata;
+                const encoded_md = disable_metadata ? '' :
+                    Buffer.from(JSON.stringify(block_md)).toString('base64');
+
+                // STS not in scope for POC — fall back to v2 path
+                if (s3_params.aws_sts_arn) {
+                    return this._delegate_write_block_s3(rpc_client, params, options);
+                }
+
+                const { S3 } = await aws_lite_client_cache.get_with_cache({
+                    endpoint: s3_params.endpoint,
+                    accessKeyId: s3_params.accessKeyId,
+                    secretAccessKey: s3_params.secretAccessKey,
+                });
+
+                const put_params = {
+                    Bucket: bs_info.target_bucket,
+                    Key: `${bs_info.blocks_path}/${block_dir}/${block_id}`,
+                    Body: data,
+                };
+                // aws-lite iterates Object.keys(params), so a `Metadata: undefined`
+                // key still triggers Object.entries(undefined) and throws.
+                // Only add the key when metadata is enabled.
+                if (!disable_metadata) {
+                    put_params.Metadata = { noobaablockmd: encoded_md };
+                }
+
+                await S3.PutObject(put_params);
+
+                const data_length = data.length;
+                const usage = data_length ? {
+                    size: (block_md.is_preallocated ? 0 : data_length) + encoded_md.length,
+                    count: block_md.is_preallocated ? 0 : 1,
+                } : { size: 0, count: 0 };
+                this._update_usage_stats(rpc_client, usage, options.address, 'WRITE');
+            } catch (err) {
+                dbg.error('aws-lite S3 write failed for block:', util.inspect(block_md, { depth: 4 }), err);
+                _throw_mapped_s3_error_aws_lite(err, options.address, block_md.id);
+            }
+        })());
+    }
+
+    async _delegate_read_block_s3_aws_lite(rpc_client, params, options) {
+        const { timeout = config.IO_READ_BLOCK_TIMEOUT } = options;
+        const { block_md } = params;
+
+        return P.timeout(timeout, (async () => {
+            let bs_info;
+            try {
+                bs_info = await block_store_info_cache.get_with_cache({ options, rpc_client });
+                if (!bs_info) throw new Error("couldn't resolve cloud credentials");
+
+                const s3_params = bs_info.connection_params;
+                const block_id = block_md.id;
+                const block_dir = get_block_internal_dir(block_id);
+                const disable_metadata = bs_info.disable_metadata;
+
+                // STS not in scope for POC — fall back to v2 path
+                if (s3_params.aws_sts_arn) {
+                    return this._delegate_read_block_s3(rpc_client, params, options);
+                }
+
+                const { S3 } = await aws_lite_client_cache.get_with_cache({
+                    endpoint: s3_params.endpoint,
+                    accessKeyId: s3_params.accessKeyId,
+                    secretAccessKey: s3_params.secretAccessKey,
+                });
+
+                const res = await S3.GetObject({
+                    Bucket: bs_info.target_bucket,
+                    Key: `${bs_info.blocks_path}/${block_dir}/${block_id}`,
+                    rawResponsePayload: true,
+                });
+
+                // res.Body is a Buffer when rawResponsePayload: true.
+                // Metadata header names: aws-lite delivers x-amz-meta-* lowercased — verify against COS.
+                const noobaablockmd = res.Metadata?.noobaablockmd || res.Metadata?.noobaa_block_md;
+                const store_block_md = disable_metadata ? block_md :
+                    JSON.parse(Buffer.from(noobaablockmd, 'base64').toString());
+
+                this._update_usage_stats(rpc_client,
+                    { size: block_md.size, count: 1 }, options.address, 'READ');
+
+                return {
+                    [RPC_BUFFERS]: { data: res.Body },
+                    block_md: store_block_md,
+                };
+            } catch (err) {
+                dbg.error('aws-lite S3 read failed for block:', util.inspect(block_md, { depth: 4 }), err);
+                _throw_mapped_s3_error_aws_lite(err, options.address, block_md.id);
+            }
+        })());
+    }
+
+    async _delegate_delete_blocks_s3_aws_lite(rpc_client, block_mds, options) {
+        const { timeout = config.IO_DELETE_BLOCK_TIMEOUT } = options;
+        return P.timeout(timeout, (async () => {
+            const block_ids = block_mds.map(md => md.id);
+            try {
+                const bs_info = await block_store_info_cache.get_with_cache({ options, rpc_client });
+                if (!bs_info) throw new Error("couldn't resolve cloud credentials");
+
+                const s3_params = bs_info.connection_params;
+
+                // STS not in scope for POC — fall back to v2 path
+                if (s3_params.aws_sts_arn) {
+                    return this._delegate_delete_blocks_s3(rpc_client, block_mds, options);
+                }
+
+                const { S3 } = await aws_lite_client_cache.get_with_cache({
+                    endpoint: s3_params.endpoint,
+                    accessKeyId: s3_params.accessKeyId,
+                    secretAccessKey: s3_params.secretAccessKey,
+                });
+
+                const objects = block_ids.map(id => ({
+                    Key: `${bs_info.blocks_path}/${get_block_internal_dir(id)}/${id}`,
+                }));
+
+                dbg.log1('_delegate_delete_blocks_s3_aws_lite: deleting', objects.length, 'blocks from', bs_info.target_bucket);
+                const res = await S3.DeleteObjects({
+                    Bucket: bs_info.target_bucket,
+                    Delete: { Objects: objects },
+                });
+
+                const failed_block_ids = [];
+                const failed_keys = new Set();
+                if (res.Errors && res.Errors.length) {
+                    for (const err of res.Errors) {
+                        const block_id = block_ids.find(id =>
+                            err.Key === `${bs_info.blocks_path}/${get_block_internal_dir(id)}/${id}`);
+                        if (block_id) {
+                            failed_block_ids.push(block_id);
+                            failed_keys.add(block_id);
+                        }
+                    }
+                    dbg.warn('_delegate_delete_blocks_s3_aws_lite: partial failures',
+                        failed_block_ids.length, 'of', block_ids.length);
+                }
+
+                const disable_metadata = bs_info.disable_metadata;
+                let deleted_size = 0;
+                let deleted_count = 0;
+                for (const block_md of block_mds) {
+                    if (failed_keys.has(block_md.id)) continue;
+                    const encoded_md = disable_metadata ? '' :
+                        Buffer.from(JSON.stringify(block_md)).toString('base64');
+                    deleted_size += (block_md.is_preallocated ? 0 : block_md.size) + encoded_md.length;
+                    deleted_count += block_md.is_preallocated ? 0 : 1;
+                }
+                if (deleted_size || deleted_count) {
+                    this._update_usage_stats(rpc_client, {
+                        size: -deleted_size,
+                        count: -deleted_count,
+                    }, options.address, 'WRITE');
+                }
+
+                return {
+                    succeeded_block_ids: block_ids.filter(id => !failed_keys.has(id)),
+                    failed_block_ids,
+                };
+            } catch (err) {
+                dbg.error('_delegate_delete_blocks_s3_aws_lite: ERROR', err);
+                _throw_mapped_s3_error_aws_lite(err, options.address, null);
+            }
+        })());
+    }
+
     _update_usage_stats(rpc_client, usage, address, read_or_write) {
         if (!this.io_stats.get(address)) {
             this.io_stats.set(address, {
@@ -707,5 +929,22 @@ class BlockStoreClient {
 
 /** @type {BlockStoreClient} */
 BlockStoreClient._instance = undefined;
+
+// aws-lite throws { statusCode, error: { Code, Message } } on HTTP errors (XML parsed),
+// or a plain Error for transport failures. This mirrors the v2 error-mapping shape.
+function _throw_mapped_s3_error_aws_lite(err, address, block_id) {
+    const code = err?.error?.Code || err?.code;
+    if (code === 'NoSuchBucket') {
+        block_store_info_cache.invalidate_key(address);
+        throw new RpcError('STORAGE_NOT_EXIST',
+            `s3 bucket not found${block_id ? ' for block ' + block_id : ''}. got error ${err}`);
+    }
+    if (code === 'AccessDenied') {
+        block_store_info_cache.invalidate_key(address);
+        throw new RpcError('AUTH_FAILED',
+            `access denied to s3 bucket${block_id ? ' for block ' + block_id : ''}. got error ${err}`);
+    }
+    throw err;
+}
 
 exports.instance = BlockStoreClient.instance;

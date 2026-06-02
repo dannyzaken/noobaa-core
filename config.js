@@ -327,6 +327,8 @@ config.IO_REPLICATE_BLOCK_TIMEOUT = 120 * 1000;
 config.IO_REPLICATE_RETRY_DELAY_MS = 100;
 config.IO_READ_BLOCK_TIMEOUT = 120 * 1000;
 config.IO_DELETE_BLOCK_TIMEOUT = 120 * 1000;
+// values: 'v2' (default), 'v3' (existing experimental path), 'aws-lite' (POC)
+config.BLOCK_STORE_S3_CLIENT_IMPL = process.env.BLOCK_STORE_S3_CLIENT_IMPL || 'v2';
 config.IO_WRITE_PART_ATTEMPTS_EXHAUSTED = 120 * 1000;
 
 config.IO_WRITE_CONCURRENCY_GLOBAL = 256;
