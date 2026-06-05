@@ -139,7 +139,7 @@ class Agent {
             } else {
                 block_store_options.root_path = this.storage_path;
                 this.node_type = 'BLOCK_STORE_FS';
-                this.block_store = new BlockStoreFs(block_store_options);
+                this.block_store = new BlockStoreMem(block_store_options);
             }
         } else {
             assert(this.token, 'missing param: token. ' +
@@ -739,7 +739,7 @@ class Agent {
      * but for other client-server protocols we need to choose.
      * Prefer the ip of a local network interface if the same as the server address,
      * to "easily" select the same internal network such as inside a cluster.
-     * @returns {string} 
+     * @returns {string}
      */
     get_node_ip() {
         const dbg = this.dbg;
