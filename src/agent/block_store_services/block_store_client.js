@@ -35,11 +35,15 @@ class BlockStoreClient {
 
     constructor() {
         this.io_stats = new Map();
+        this._mem_blocks = new Map();
         this.send_usage_stats();
     }
 
     write_block(rpc_client, params, options) {
         const { block_md } = params;
+        if (process.env.BLOCK_STORE_CLIENT_MEM === 'true') {
+            return this._write_block_mem(block_md, params[RPC_BUFFERS].data);
+        }
         switch (block_md.node_type) {
             case 'BLOCK_STORE_S3':
                 return this._delegate_write_block_s3(rpc_client, params, options);
@@ -54,6 +58,9 @@ class BlockStoreClient {
 
     read_block(rpc_client, params, options) {
         const { block_md } = params;
+        if (process.env.BLOCK_STORE_CLIENT_MEM === 'true') {
+            return this._read_block_mem(block_md);
+        }
         switch (block_md.node_type) {
             case 'BLOCK_STORE_S3':
                 return this._delegate_read_block_s3(rpc_client, params, options);
@@ -85,6 +92,25 @@ class BlockStoreClient {
                 return rpc_client.block_store.delete_blocks({ block_ids }, options);
             }
         }
+    }
+
+    _write_block_mem(block_md, data) {
+        const block_id = block_md.id;
+        dbg.log1('_write_block_mem: writing block', block_id, 'size', data.length);
+        this._mem_blocks.set(block_id, { data, block_md });
+    }
+
+    _read_block_mem(block_md) {
+        const block_id = block_md.id;
+        const b = this._mem_blocks.get(block_id);
+        if (!b) {
+            throw new RpcError('NOT_FOUND', 'No such block ' + block_id);
+        }
+        dbg.log1('_read_block_mem: reading block', block_id, 'size', b.data.length);
+        return {
+            [RPC_BUFFERS]: { data: b.data },
+            block_md: b.block_md,
+        };
     }
 
     async _delegate_write_block_google(rpc_client, params, options) {
@@ -599,7 +625,7 @@ class BlockStoreClient {
                         succeeded_block_ids.push(block_md.id);
                     } catch (err) {
                         if (err.code === 404 && err.errors && err.errors[0] &&
-                                err.errors[0].reason === 'notFound') {
+                            err.errors[0].reason === 'notFound') {
                             // Object-level 404 with reason 'notFound': the specific block file doesn't
                             // exist in the bucket. This is an idempotent success - the block is already
                             // gone (e.g. previous partial deletion or external cleanup).
