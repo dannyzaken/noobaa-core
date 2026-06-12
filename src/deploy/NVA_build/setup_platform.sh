@@ -30,8 +30,7 @@ function install_supervisor {
 
     # Generate default supervisord config
     echo_supervisord_conf > /etc/supervisord.conf
-    sed -i 's:logfile=.*:logfile=/log/supervisor/supervisord.log:' /etc/supervisord.conf
-    sed -i 's:;childlogdir=.*:childlogdir=/log/supervisor/:' /etc/supervisord.conf
+    sed -i 's:logfile=.*:logfile=/dev/stdout:' /etc/supervisord.conf
     sed -i 's:logfile_backups=.*:logfile_backups=5:' /etc/supervisord.conf
     sed -i 's:file=/tmp/supervisor.sock.*:file=/var/log/supervisor.sock:' /etc/supervisord.conf
     sed -i 's:pidfile=/tmp/supervisord.pid.*:pidfile=/var/log/supervisord.pid:' /etc/supervisord.conf
