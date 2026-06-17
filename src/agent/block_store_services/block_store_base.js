@@ -166,7 +166,9 @@ class BlockStoreBase {
     async _read_block_and_verify(block_md) {
         const block = await this._read_block(block_md);
         this._update_read_stats(block.data.length);
-        this._verify_block(block_md, block.data, block.block_md);
+        if (config.BLOCK_STORE_VERIFY_BLOCK) {
+            this._verify_block(block_md, block.data, block.block_md);
+        }
         return block;
     }
 
@@ -213,9 +215,9 @@ class BlockStoreBase {
 
     /**
      * throws error if `data_length` cannot fit into the block store
-     * 
+     *
      * NOTE: This method may get overridden by block store implementations (eg. block_store_fs)
-     * @param {*} data_length 
+     * @param {*} data_length
      */
     async _check_write_space(data_length) {
         const required_space = data_length + (1024 * 1024); // require some spare space
@@ -233,7 +235,7 @@ class BlockStoreBase {
 
     /**
      * @param {nb.BlockMD} block_md
-     * @param {Buffer} data 
+     * @param {Buffer} data
      */
     async write_block_internal(block_md, data) {
         dbg.log1('write_block', block_md.id, data.length, block_md.digest_b64, 'node', this.node_name);
@@ -326,7 +328,7 @@ class BlockStoreBase {
 
     /**
      * Abstract method - override me.
-     * 
+     *
      * @param {string[]} block_ids
      * @param {string} storage_class
      * @returns {Promise<{ moved_block_ids: string[] }>}
@@ -472,7 +474,7 @@ class BlockStoreBase {
 
     /**
      * Abstract method - override me.
-     * 
+     *
      * @param {nb.BlockMD} block_md
      * @returns {Promise<{ block_md: nb.BlockMD, data: Buffer }>}
      */
@@ -482,7 +484,7 @@ class BlockStoreBase {
 
     /**
      * Abstract method - override me.
-     * 
+     *
      * @param {nb.BlockMD} block_md
      * @param {Buffer} data
      * @param {{ ignore_usage?: boolean }} [options]
@@ -494,7 +496,7 @@ class BlockStoreBase {
 
     /**
      * Abstract method - override me.
-     * 
+     *
      * @param {string[]} block_ids
      * @returns {Promise<{ succeeded_block_ids: string[], failed_block_ids: string[] }>}
      */
@@ -504,7 +506,7 @@ class BlockStoreBase {
 
     /**
      * Abstract method - override me.
-     * 
+     *
      * @returns {Promise<void>}
      */
     async _write_usage_internal() {
