@@ -14,6 +14,7 @@ const SensitiveString = require('../../util/sensitive_string');
 const config = require('../../../config');
 const MDStore = require('../object_services/md_store').MDStore;
 const BucketStatsStore = require('../analytic_services/bucket_stats_store').BucketStatsStore;
+const BucketUsageStore = require('../object_services/bucket_usage_store').BucketUsageStore;
 const fs_utils = require('../../util/fs_utils');
 const js_utils = require('../../util/js_utils');
 const { RpcError } = require('../../rpc');
@@ -376,6 +377,18 @@ async function create_bucket(req) {
         });
 
         await system_store.make_changes(changes);
+
+        // SPIKE (real time bucket quota) - seed the counter row so the upload path
+        // only ever issues a plain UPDATE. Never fail bucket creation over it:
+        // the upload path lazily creates the row for any bucket that has none.
+        if (config.BUCKET_USAGE_COUNTER_ENABLED) {
+            try {
+                await BucketUsageStore.instance().create_bucket_row(bucket._id);
+            } catch (err) {
+                dbg.error('create_bucket: failed to create bucket usage counter row', bucket._id, err);
+            }
+        }
+
         req.load_auth();
         if (req.rpc_params.bucket_claim || req.rpc_params.namespace) {
             try {

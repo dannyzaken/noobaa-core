@@ -15,6 +15,7 @@ const db_client = require('../../util/db_client');
 const { decode_json, escapeLiteral } = require('../../util/postgres_client.js');
 
 const aggregate_functions = require('../../util/aggregate_functions');
+const { BucketUsageStore } = require('./bucket_usage_store');
 const object_md_schema = require('./schemas/object_md_schema');
 const object_md_indexes = require('./schemas/object_md_indexes');
 const object_part_schema = require('./schemas/object_part_schema');
@@ -160,22 +161,44 @@ class MDStore {
     }
 
     /**
+     * SPIKE (real time bucket quota) - append the per-bucket used-storage delta to a
+     * bulk op so it commits in the same transaction as the object metadata.
+     * Appended last on purpose: the hot counter row is locked only for the tail of
+     * the transaction, which keeps the contention window as short as possible.
+     *
+     * The counter row is created with the bucket, so this is a plain UPDATE. It adds
+     * 1 to the bulk's nMatched/nModified - callers must account for that.
+     *
+     * @param {Object} bulk
+     * @param {{ bucket_id: any, size_delta: number, count_delta: number }} [usage_delta]
+     * @returns {Promise<number>} number of extra rows the bulk will report as modified
+     */
+    async _add_bucket_usage_delta(bulk, usage_delta) {
+        if (!usage_delta) return 0;
+        const store = BucketUsageStore.instance();
+        await store.ensure_bucket_row(usage_delta.bucket_id);
+        bulk.add_query(store.build_delta_query(usage_delta));
+        return 1;
+    }
+
+    /**
      * All mapping inserts in a single batched transaction (BEGIN + INSERTs + COMMIT)
      * to reduce WAL flushes. Optionally includes the object row for the first
      * put_mapping with deferred_object_md.
      */
-    async insert_mappings_in_transaction({ object_md, chunks, parts, blocks }) {
+    async insert_mappings_in_transaction({ object_md, chunks, parts, blocks, usage_delta }) {
         const entries = [];
         if (object_md) entries.push({ table: this._objects, docs: [object_md] });
         if (chunks && chunks.length) entries.push({ table: this._chunks, docs: chunks });
         if (parts && parts.length) entries.push({ table: this._parts, docs: parts });
         if (blocks && blocks.length) entries.push({ table: this._blocks, docs: blocks });
-        if (!entries.length) return;
+        if (!entries.length && !usage_delta) return;
 
         const bulk = db_client.instance().initializeMultiTableBulkOp(this._postgres_pool);
         bulk.insert_many(entries);
+        const usage_rows = await this._add_bucket_usage_delta(bulk, usage_delta);
         const res = await bulk.execute();
-        if (!res.ok) {
+        if (!res.ok || res.nModified < usage_rows) {
             throw res.err || new Error('insert_mappings_in_transaction: bulk insert failed');
         }
     }
@@ -186,7 +209,7 @@ class MDStore {
      * Accepts either delete_obj_id (by id) or bucket_id + key (by key) for the soft-delete.
      * When using bucket_id + key the separate find_object_null_version lookup is eliminated.
      */
-    async delete_and_insert_deferred({ delete_obj_id, bucket_id, key, object_md, chunks, parts, blocks }) {
+    async delete_and_insert_deferred({ delete_obj_id, bucket_id, key, object_md, chunks, parts, blocks, usage_delta }) {
         const bulk = db_client.instance().initializeMultiTableBulkOp(this._postgres_pool);
         const deleted_json = JSON.stringify({ deleted: new Date().toISOString(), version_past: true });
         if (delete_obj_id) {
@@ -211,8 +234,9 @@ class MDStore {
             ...(parts && parts.length ? [{ table: this._parts, docs: parts }] : []),
             ...(blocks && blocks.length ? [{ table: this._blocks, docs: blocks }] : []),
         ]);
+        const usage_rows = await this._add_bucket_usage_delta(bulk, usage_delta);
         const res = await bulk.execute();
-        if (!res.ok) {
+        if (!res.ok || res.nModified < usage_rows) {
             throw res.err || new Error('delete_and_insert_deferred: bulk operation failed');
         }
     }
@@ -223,6 +247,29 @@ class MDStore {
             compact_updates(set_updates, unset_updates, inc_updates)
         );
         db_client.instance().check_update_one(res, 'object');
+    }
+
+    /**
+     * SPIKE (real time bucket quota) - same as update_object_by_id, but carries the
+     * bucket usage delta in the same transaction. Used by the completion paths that
+     * have no previous version to soft-delete.
+     *
+     * @param {nb.ID} obj_id
+     * @param {Object} [set_updates]
+     * @param {Object} [unset_updates]
+     * @param {Object} [usage_delta]
+     */
+    async update_object_by_id_with_usage(obj_id, set_updates, unset_updates, usage_delta) {
+        if (!usage_delta) return this.update_object_by_id(obj_id, set_updates, unset_updates);
+        const bulk = this._objects.initializeOrderedBulkOp();
+        bulk.find({ _id: obj_id }).updateOne({ $set: set_updates, $unset: unset_updates });
+        const usage_rows = await this._add_bucket_usage_delta(bulk, usage_delta);
+        const res = await bulk.execute();
+        if (!res.ok || res.nModified !== 1 + usage_rows) {
+            dbg.error('update_object_by_id_with_usage: partial bulk update',
+                _.clone(res), obj_id, set_updates, unset_updates);
+            throw res.err || new Error('update_object_by_id_with_usage: partial bulk update');
+        }
     }
 
     /**
@@ -647,6 +694,7 @@ class MDStore {
      * @param {nb.ObjectMD} params.put_obj
      * @param {Object} [params.set_updates]
      * @param {Object} [params.unset_updates]
+     * @param {Object} [params.usage_delta]
      * @returns {Promise<void>}
      */
     async complete_object_upload_latest_mark_remove_current({
@@ -654,14 +702,16 @@ class MDStore {
         put_obj,
         set_updates,
         unset_updates,
+        usage_delta,
     }) {
         const bulk = this._objects.initializeOrderedBulkOp();
         bulk.find({ _id: unmark_obj._id, deleted: null })
             .updateOne({ $set: { version_past: true } });
         bulk.find({ _id: put_obj._id, deleted: null })
             .updateOne({ $set: set_updates, $unset: unset_updates });
+        const usage_rows = await this._add_bucket_usage_delta(bulk, usage_delta);
         const res = await bulk.execute();
-        if (!res.ok || res.nMatched !== 2 || res.nModified !== 2) {
+        if (!res.ok || res.nMatched !== 2 + usage_rows || res.nModified !== 2 + usage_rows) {
             dbg.error('complete_object_upload_latest_mark_remove_current: partial bulk update',
                 _.clone(res), unmark_obj, put_obj, set_updates, unset_updates);
             throw res.err || new Error('complete_object_upload_latest_mark_remove_current: partial bulk update');
@@ -679,6 +729,7 @@ class MDStore {
         put_obj,
         set_updates,
         unset_updates,
+        usage_delta,
     }) {
         const bulk = this._objects.initializeOrderedBulkOp();
         const deleted_json = JSON.stringify({ deleted: new Date().toISOString(), version_past: true });
@@ -692,8 +743,9 @@ class MDStore {
         );
         bulk.find({ _id: put_obj._id, deleted: null })
             .updateOne({ $set: set_updates, $unset: unset_updates });
+        const usage_rows = await this._add_bucket_usage_delta(bulk, usage_delta);
         const res = await bulk.execute();
-        if (!res.ok || res.nModified < 1) {
+        if (!res.ok || res.nModified < 1 + usage_rows) {
             dbg.error('complete_object_upload_mark_remove_by_key: partial bulk update',
                 _.clone(res), bucket_id, key, put_obj, set_updates, unset_updates);
             throw res.err || new Error('complete_object_upload_mark_remove_by_key: partial bulk update');
@@ -707,6 +759,7 @@ class MDStore {
      * @param {nb.ObjectMD} params.put_obj
      * @param {Object} [params.set_updates]
      * @param {Object} [params.unset_updates]
+     * @param {Object} [params.usage_delta]
      * @returns {Promise<void>}
      */
     async complete_object_upload_latest_mark_remove_current_and_delete({
@@ -715,6 +768,7 @@ class MDStore {
         put_obj,
         set_updates,
         unset_updates,
+        usage_delta,
     }) {
         const bulk = this._objects.initializeOrderedBulkOp();
         if (delete_obj) {
@@ -729,8 +783,9 @@ class MDStore {
 
         bulk.find({ _id: put_obj._id, deleted: null })
             .updateOne({ $set: set_updates, $unset: unset_updates });
+        const usage_rows = await this._add_bucket_usage_delta(bulk, usage_delta);
         const res = await bulk.execute();
-        const number_of_queries = delete_obj ? 3 : 2;
+        const number_of_queries = (delete_obj ? 3 : 2) + usage_rows;
         if (!res.ok || res.nMatched !== number_of_queries || res.nModified !== number_of_queries) {
             dbg.error('complete_object_upload_latest_mark_remove_current_and_delete: partial bulk update',
                 _.clone(res), unmark_obj, put_obj, set_updates, unset_updates);

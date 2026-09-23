@@ -1,5 +1,5 @@
 /* Copyright (C) 2016 NooBaa */
-/*eslint max-lines: ["error", 2850]*/
+/*eslint max-lines: ["error", 2900]*/
 'use strict';
 
 require('../../util/fips');
@@ -2320,11 +2320,33 @@ function _get_delete_obj_reply(deleted_obj, created_obj) {
 }
 
 
+/**
+ * SPIKE (real time bucket quota) - the delta this upload adds to the bucket counter row.
+ * Returns undefined when the feature is off, and then nothing about the upload changes.
+ *
+ * Simplification: this only adds. A real implementation must also subtract the size of the
+ * version being overwritten (and of deleted objects), which needs the old size inside the
+ * same statement - e.g. folding the soft-delete UPDATE ... RETURNING into a CTE. The write
+ * pattern we are measuring here - one extra row lock per completion - is the same either way.
+ *
+ * @param {Object} req
+ * @param {number} size
+ */
+function _bucket_usage_delta(req, size) {
+    if (!config.BUCKET_USAGE_COUNTER_ENABLED) return undefined;
+    return {
+        bucket_id: req.bucket._id,
+        size_delta: size || 0,
+        count_delta: 1,
+    };
+}
+
 async function _put_object_handle_latest_with_retries({ req, put_obj, set_updates, unset_updates, deferred_mappings = undefined }) {
     const put_obj_attempts = 3;
+    const usage_delta = _bucket_usage_delta(req, set_updates.size);
     await P.retry({
         func: async () => {
-            await _put_object_handle_latest({ req, put_obj, set_updates, unset_updates, deferred_mappings });
+            await _put_object_handle_latest({ req, put_obj, set_updates, unset_updates, deferred_mappings, usage_delta });
         },
         attempts: put_obj_attempts,
         delay_ms: 50,
@@ -2334,7 +2356,7 @@ async function _put_object_handle_latest_with_retries({ req, put_obj, set_update
     });
 }
 
-async function _put_object_handle_latest({ req, put_obj, set_updates, unset_updates, deferred_mappings }) {
+async function _put_object_handle_latest({ req, put_obj, set_updates, unset_updates, deferred_mappings, usage_delta }) {
     const bucket_versioning = req.bucket.versioning;
 
     if (bucket_versioning === 'DISABLED') {
@@ -2347,6 +2369,7 @@ async function _put_object_handle_latest({ req, put_obj, set_updates, unset_upda
                         delete_obj_id: obj._id,
                         object_md: put_obj,
                         ...deferred_mappings,
+                        usage_delta,
                     });
                 } else {
                     await MDStore.instance().complete_object_upload_latest_mark_remove_current_and_delete({
@@ -2354,15 +2377,17 @@ async function _put_object_handle_latest({ req, put_obj, set_updates, unset_upda
                         put_obj: put_obj,
                         set_updates,
                         unset_updates,
+                        usage_delta,
                     });
                 }
             } else if (deferred_mappings) {
                 await MDStore.instance().insert_mappings_in_transaction({
                     object_md: put_obj,
                     ...deferred_mappings,
+                    usage_delta,
                 });
             } else {
-                await MDStore.instance().update_object_by_id(put_obj._id, set_updates, unset_updates);
+                await MDStore.instance().update_object_by_id_with_usage(put_obj._id, set_updates, unset_updates, usage_delta);
             }
         } else if (deferred_mappings) {
             // No md_conditions: soft-delete by key + insert new object + mappings in one batch
@@ -2371,6 +2396,7 @@ async function _put_object_handle_latest({ req, put_obj, set_updates, unset_upda
                 key: put_obj.key,
                 object_md: put_obj,
                 ...deferred_mappings,
+                usage_delta,
             });
         } else {
             // No md_conditions: soft-delete by key + update put_obj in one batch
@@ -2380,6 +2406,7 @@ async function _put_object_handle_latest({ req, put_obj, set_updates, unset_upda
                 put_obj,
                 set_updates,
                 unset_updates,
+                usage_delta,
             });
         }
         return;
@@ -2395,10 +2422,11 @@ async function _put_object_handle_latest({ req, put_obj, set_updates, unset_upda
                 put_obj,
                 set_updates,
                 unset_updates,
+                usage_delta,
             });
         } else {
             // 6
-            await MDStore.instance().update_object_by_id(put_obj._id, set_updates, unset_updates);
+            await MDStore.instance().update_object_by_id_with_usage(put_obj._id, set_updates, unset_updates, usage_delta);
         }
         return;
     }
@@ -2418,10 +2446,11 @@ async function _put_object_handle_latest({ req, put_obj, set_updates, unset_upda
                         put_obj,
                         set_updates,
                         unset_updates,
+                        usage_delta,
                     });
                 } else {
                     // 6
-                    await MDStore.instance().update_object_by_id(put_obj._id, set_updates, unset_updates);
+                    await MDStore.instance().update_object_by_id_with_usage(put_obj._id, set_updates, unset_updates, usage_delta);
                 }
             } else {
                 http_utils.check_md_conditions(req.rpc_params.md_conditions, obj);
@@ -2430,6 +2459,7 @@ async function _put_object_handle_latest({ req, put_obj, set_updates, unset_upda
                     put_obj,
                     set_updates,
                     unset_updates,
+                    usage_delta,
                 });
             }
         } else {
@@ -2442,10 +2472,11 @@ async function _put_object_handle_latest({ req, put_obj, set_updates, unset_upda
                     put_obj,
                     set_updates,
                     unset_updates,
+                    usage_delta,
                 });
             } else {
                 // 6
-                await MDStore.instance().update_object_by_id(put_obj._id, set_updates, unset_updates);
+                await MDStore.instance().update_object_by_id_with_usage(put_obj._id, set_updates, unset_updates, usage_delta);
             }
         }
     }

@@ -734,6 +734,16 @@ config.MAPPINGS_PREFETCH_NUM_PARTS = config.IO_OBJECT_RANGE_ALIGN / config.CHUNK
 config.DB_PREPARED_STATEMENTS_ENABLED = true;
 
 config.DEFERRED_PUT_MAPPING_MAX_PARTS = 30; // max deferred parts before flushing mappings to DB
+
+///////////////////////////////
+// REAL TIME BUCKET QUOTA     //
+///////////////////////////////
+// SPIKE ONLY - measures the cost of maintaining a per-bucket used-storage counter row
+// in the same transaction that completes an object upload. Nothing is enforced.
+// Toggle at runtime with CONFIG_JS_BUCKET_USAGE_COUNTER_ENABLED=true|false.
+config.BUCKET_USAGE_COUNTER_ENABLED = false;
+// Name of the counters table (one row per bucket).
+config.BUCKET_USAGE_COUNTER_TABLE = 'bucketusagecounters';
 ///////////////////////////////
 // CACHE (ACCOUNT, BUCKET)   //
 ///////////////////////////////
