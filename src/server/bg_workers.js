@@ -21,6 +21,7 @@ const lifecycle = require('./bg_services/lifecycle');
 const cluster_hb = require('./bg_services/cluster_hb');
 const server_rpc = require('./server_rpc');
 const db_client = require('../util/db_client');
+const { MDStore } = require('./object_services/md_store');
 const { BucketsReclaimer } = require('./bg_services/buckets_reclaimer');
 const { ObjectsReclaimer } = require('./bg_services/objects_reclaimer');
 const { RestoreWorker } = require('./bg_services/restore_worker');
@@ -270,6 +271,12 @@ async function main() {
     await system_store.wait_for_load();
     dbg.log0('BGWorkers SystemStore loaded, starting master workers');
     run_master_workers();
+
+    if (config.MD_EXPRESSION_STATS) {
+        MDStore.instance().create_expression_stats()
+            .then(() => dbg.log0('BGWorkers: MD expression statistics created'))
+            .catch(err => dbg.error('BGWorkers: failed creating MD expression statistics', err));
+    }
 }
 
 exports.main = main;

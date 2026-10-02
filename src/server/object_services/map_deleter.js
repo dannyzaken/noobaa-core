@@ -30,6 +30,35 @@ async function delete_object_mappings(obj) {
 }
 
 /**
+ * Set-based variant of delete_object_mappings for a batch of objects.
+ * Deletes parts in pages of at most `parts_page` rows, so a huge object can't create one huge
+ * transaction. Each page's chunks are checked in a separate statement after the page committed.
+ * @param {nb.ObjectMD[]} objs
+ * @param {number} parts_page
+ * @returns {Promise<{ num_parts: number, num_chunks: number, num_blocks: number, num_statements: number }>}
+ */
+async function delete_objects_mappings_set_based(objs, parts_page) {
+    const obj_ids = objs.filter(obj => obj && !obj.delete_marker).map(obj => obj._id);
+    const res = { num_parts: 0, num_chunks: 0, num_blocks: 0, num_statements: 0 };
+    if (!obj_ids.length) return res;
+    for (;;) {
+        const { num_parts, chunk_ids } = await MDStore.instance().delete_parts_of_objects_page(obj_ids, parts_page);
+        res.num_statements += 1;
+        res.num_parts += num_parts;
+        if (chunk_ids.length) {
+            const { num_chunks, num_blocks } = await MDStore.instance().delete_unreferenced_chunks_with_blocks(chunk_ids);
+            res.num_statements += 1;
+            res.num_chunks += num_chunks;
+            res.num_blocks += num_blocks;
+        }
+        if (num_parts < parts_page) break;
+    }
+    await MDStore.instance().delete_multiparts_of_objects(obj_ids);
+    res.num_statements += 1;
+    return res;
+}
+
+/**
  * Soft-delete parts and unreferenced chunks only (no multiparts)
  * Used when clearing a temporary STANDARD restore copy so archive MPU multipart MD is preserved
  * It is a copy of delete_object_mappings but without deleting multiparts
@@ -205,6 +234,7 @@ async function delete_blocks_from_node(blocks) {
 
 // EXPORTS
 exports.delete_object_mappings = delete_object_mappings;
+exports.delete_objects_mappings_set_based = delete_objects_mappings_set_based;
 exports.delete_object_parts = delete_object_parts;
 exports.delete_object_multiparts = delete_object_multiparts;
 exports.delete_object_mappings_for_expired_restore_or_transition = delete_object_mappings_for_expired_restore_or_transition;

@@ -1,5 +1,5 @@
 /* Copyright (C) 2016 NooBaa */
-/*eslint max-lines: ["error", 3000]*/
+/*eslint max-lines: ["error", 3100]*/
 'use strict';
 
 /** @typedef {typeof import('../../sdk/nb')} nb */
@@ -1801,6 +1801,106 @@ class MDStore {
                 deleted: delete_date
             },
         });
+    }
+
+    /**
+     * Set-based reclaim, step 1: soft-delete up to `limit` live parts of the given objects.
+     * The chunks of the returned parts must be checked by delete_unreferenced_chunks_with_blocks()
+     * in a SEPARATE statement, after this one committed. Doing both in one statement shares one
+     * snapshot, so two concurrent callers that delete different parts of the same chunk each see
+     * the other's part as live and the chunk is never reclaimed.
+     * @param {nb.ID[]} obj_ids
+     * @param {number} limit
+     * @returns {Promise<{ num_parts: number, chunk_ids: string[] }>}
+     */
+    async delete_parts_of_objects_page(obj_ids, limit) {
+        if (!obj_ids || !obj_ids.length) return { num_parts: 0, chunk_ids: [] };
+        const query = `
+            WITH page AS (
+                SELECT _id FROM ${this._parts.name}
+                WHERE data->>'obj' = ANY($1::text[]) AND data ? 'obj'
+                    AND (data->'deleted' IS NULL OR data->'deleted' = 'null'::jsonb)
+                LIMIT $3
+            )
+            UPDATE ${this._parts.name} p
+                SET data = jsonb_set(p.data, '{deleted}', to_jsonb($2::text), true)
+                FROM page WHERE p._id = page._id
+                RETURNING p.data->>'chunk' AS chunk`;
+        const params = [obj_ids.map(String), new Date().toISOString(), limit];
+        const res = await db_client.instance().executeSQL(query, params, { preferred_pool: this._postgres_pool });
+        const chunk_ids = _.uniq(res.rows.map(row => row.chunk).filter(Boolean));
+        return { num_parts: res.rows.length, chunk_ids };
+    }
+
+    /**
+     * @param {nb.ID[]} obj_ids
+     */
+    async delete_multiparts_of_objects(obj_ids) {
+        if (!obj_ids || !obj_ids.length) return;
+        const query = `
+            UPDATE ${this._multiparts.name}
+                SET data = jsonb_set(data, '{deleted}', to_jsonb($2::text), true)
+                WHERE data->>'obj' = ANY($1::text[]) AND data ? 'obj'
+                    AND (data->'deleted' IS NULL OR data->'deleted' = 'null'::jsonb)`;
+        await db_client.instance().executeSQL(query, [obj_ids.map(String), new Date().toISOString()],
+            { preferred_pool: this._postgres_pool });
+    }
+
+    /**
+     * Set-based reclaim, step 2: soft-delete the chunks that no live part references, and their blocks.
+     * Must run after the part deletes that released these chunks committed (see delete_parts_of_objects_page).
+     * Blocks are only marked deleted - agent_blocks_reclaimer deletes them from the nodes.
+     * @param {string[]} chunk_ids
+     * @returns {Promise<{ num_chunks: number, num_blocks: number }>}
+     */
+    async delete_unreferenced_chunks_with_blocks(chunk_ids) {
+        if (!chunk_ids || !chunk_ids.length) return { num_chunks: 0, num_blocks: 0 };
+        const query = `
+            WITH c AS (
+                UPDATE ${this._chunks.name} dc
+                    SET data = jsonb_set(dc.data - 'dedup_key', '{deleted}', to_jsonb($2::text), true)
+                    WHERE dc._id = ANY($1::bpchar[])
+                        AND (dc.data->'deleted' IS NULL OR dc.data->'deleted' = 'null'::jsonb)
+                        AND NOT EXISTS (
+                            SELECT 1 FROM ${this._parts.name} op
+                            WHERE op.data->>'chunk' = dc._id::text AND op.data ? 'chunk'
+                                AND (op.data->'deleted' IS NULL OR op.data->'deleted' = 'null'::jsonb))
+                    RETURNING dc._id
+            ), b AS (
+                UPDATE ${this._blocks.name} bl
+                    SET data = jsonb_set(bl.data, '{deleted}', to_jsonb($2::text), true)
+                    WHERE bl.data->>'chunk' IN (SELECT _id::text FROM c) AND bl.data ? 'chunk'
+                        AND (bl.data->'deleted' IS NULL OR bl.data->'deleted' = 'null'::jsonb)
+                    RETURNING 1
+            )
+            SELECT (SELECT count(*) FROM c)::int AS num_chunks, (SELECT count(*) FROM b)::int AS num_blocks`;
+        const res = await db_client.instance().executeSQL(query, [chunk_ids.map(String), new Date().toISOString()],
+            { preferred_pool: this._postgres_pool });
+        return res.rows[0];
+    }
+
+    /**
+     * Extended statistics on the jsonb expressions used by the reclaim and mapping queries.
+     * Postgres does not use a partial expression index's stats for selectivity, so without these
+     * it falls back to default estimates and can pick full index or seq scans (DFBUGS-7379).
+     */
+    async create_expression_stats() {
+        const stats = [
+            [this._parts.name, 'obj', `(data->>'obj')`],
+            [this._parts.name, 'chunk', `(data->>'chunk')`],
+            [this._parts.name, 'deleted', `(data->'deleted')`],
+            [this._chunks.name, 'deleted', `(data->'deleted')`],
+            [this._blocks.name, 'chunk', `(data->>'chunk')`],
+            [this._blocks.name, 'deleted', `(data->'deleted')`],
+        ];
+        for (const [table, name, expr] of stats) {
+            await db_client.instance().executeSQL(
+                `CREATE STATISTICS IF NOT EXISTS ${table}_${name}_expr_stats ON ${expr} FROM ${table}`, [],
+                { preferred_pool: this._postgres_pool });
+        }
+        for (const table of _.uniq(stats.map(s => s[0]))) {
+            await db_client.instance().executeSQL(`ANALYZE ${table}`, [], { preferred_pool: this._postgres_pool });
+        }
     }
 
     delete_parts(parts) {

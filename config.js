@@ -440,6 +440,12 @@ config.OBJECT_RECLAIMER_TRANSITION_SOURCE_BATCH_SIZE = 100;
 config.OBJECT_RECLAIMER_BATCH_DELAY = 100;
 config.OBJECT_RECLAIMER_ERROR_DELAY = 3000;
 config.OBJECT_RECLAIMER_ABORT_CONCURRENCY = 100;
+// reclaim the mappings of a whole batch with a few set-based statements instead of ~8 queries per object
+config.OBJECT_RECLAIMER_SET_BASED = false;
+// max parts soft-deleted per statement in set-based reclaim (bounds the transaction for huge objects)
+config.OBJECT_RECLAIMER_SET_BASED_PARTS_PAGE = 5000;
+// create extended statistics on jsonb expressions of the MD tables at bg_workers startup (DFBUGS-7379)
+config.MD_EXPRESSION_STATS = false;
 
 
 //////////////////

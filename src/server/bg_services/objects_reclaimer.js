@@ -63,11 +63,17 @@ class ObjectsReclaimer {
         const pending_archive_aborts = [];
         /** @type {{ [bucket_id: string]: object[] }} */
         const pending_archive_deletes_by_bucket = {};
+        /** @type {object[]} */
+        const set_based_objects = [];
 
         await P.all(unreclaimed_objects.map(async obj => {
             try {
                 const bucket = system_store.data.get_by_id(obj.bucket);
                 const is_remote_data = deep_archive_utils.is_remote_archive_object(obj, bucket);
+                if (config.OBJECT_RECLAIMER_SET_BASED && !is_remote_data) {
+                    set_based_objects.push(obj);
+                    return;
+                }
                 const has_local_copy = Boolean(obj.restore_status) || deep_archive_utils.is_transition_source_pending_purge(obj);
                 const should_delete_mappings = is_remote_data ? has_local_copy : true;
                 const is_md_only_multipart_upload = Boolean(obj.target_data_info?.upload_id);
@@ -92,6 +98,18 @@ class ObjectsReclaimer {
                 had_errors = true;
             }
         }));
+
+        if (set_based_objects.length) {
+            try {
+                const res = await map_deleter.delete_objects_mappings_set_based(
+                    set_based_objects, config.OBJECT_RECLAIMER_SET_BASED_PARTS_PAGE);
+                reclaimed_objects_ids.push(...set_based_objects.map(obj => obj._id));
+                dbg.log0('object_reclaimer: set-based reclaim:', { objects: set_based_objects.length, ...res });
+            } catch (err) {
+                dbg.error(`object_reclaimer: set-based reclaim failed for ${set_based_objects.length} objects:`, err);
+                had_errors = true;
+            }
+        }
 
         if (pending_archive_aborts.length) {
             const abort_result = await this._abort_archive_multiparts(pending_archive_aborts);
