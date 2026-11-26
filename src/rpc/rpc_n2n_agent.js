@@ -82,7 +82,7 @@ class RpcN2NAgent extends EventEmitter {
             },
             tcp_transient_passive: false,
             tcp_simultaneous_open: false,
-            tcp_tls: true,
+            tcp_tls: config.N2N_TCP_TLS,
 
             // udp options
             udp_port: true,

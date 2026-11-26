@@ -160,6 +160,12 @@ config.CLOUD_AGENTS_N2N_PORT = 60100;
 config.MONGO_AGENTS_N2N_PORT = 60100;
 
 config.N2N_OFFER_INTERNAL = false;
+// Number of n2n connections an rpc client keeps to the same peer address (e.g. endpoint -> storage agent).
+// Each request uses the connection with the fewest requests in flight. 1 keeps the single-connection behavior.
+config.RPC_N2N_CONNS_PER_ADDRESS = 1;
+// Initial tcp_tls of this process's n2n agent. Storage agents get the system n2n_config pushed by core,
+// but endpoints keep this value, so a lab TLS-off test must set it on the endpoints too.
+config.N2N_TCP_TLS = true;
 
 /////////////////////
 // ENDPOINT CONFIG //
