@@ -479,15 +479,16 @@ class RPC extends EventEmitter {
      * @returns {RpcBaseConnection}
      */
     _get_connection(addr_url, srv) {
-        let conn = this._connection_by_address.get(addr_url.href);
+        const pool_key = this._connection_pool_key(addr_url);
+        let conn = this._connection_by_address.get(pool_key);
 
         if (conn) {
             if (conn.is_closed()) {
                 dbg.log0('RPC _get_connection: remove stale connection',
-                    'address', addr_url.href,
+                    'address', pool_key,
                     'srv', srv,
                     'connid', conn.connid);
-                this._connection_by_address.delete(addr_url.href);
+                this._connection_by_address.delete(pool_key);
                 conn = null;
             } else {
                 dbg.log2('RPC _get_connection: existing',
@@ -506,9 +507,9 @@ class RPC extends EventEmitter {
                     'srv', srv);
                 return null;
             }
-            conn = this._new_connection(addr_url);
+            conn = this._new_connection(addr_url, pool_key);
             dbg.log2('RPC _get_connection: new',
-                'address', addr_url.href,
+                'address', pool_key,
                 'srv', srv,
                 'connid', conn.connid);
         }
@@ -517,9 +518,38 @@ class RPC extends EventEmitter {
     }
 
     /**
+     * Returns the key of the connection to use for addr_url in _connection_by_address.
+     * For n2n addresses with config.RPC_N2N_CONNS_PER_ADDRESS > 1 the address has several
+     * slots (href#pool<i>): a missing or closed slot is returned first (so it gets connected),
+     * otherwise the open slot with the fewest requests in flight.
+     * Every slot's connection keeps the original url, so n2n signaling targets the real peer.
+     * @param {URL} addr_url
+     * @returns {string}
+     */
+    _connection_pool_key(addr_url) {
+        const n = config.RPC_N2N_CONNS_PER_ADDRESS;
+        if (addr_url.protocol !== 'n2n:' || !(n > 1)) return addr_url.href;
+        let best_key;
+        let best_inflight = Infinity;
+        for (let i = 0; i < n; ++i) {
+            const key = addr_url.href + '#pool' + i;
+            const conn = this._connection_by_address.get(key);
+            if (!conn || conn.is_closed()) return key;
+            const inflight = conn._sent_requests ? conn._sent_requests.size : 0;
+            if (inflight < best_inflight) {
+                best_inflight = inflight;
+                best_key = key;
+            }
+        }
+        return best_key;
+    }
+
+    /**
+     * @param {URL} addr_url
+     * @param {string} [pool_key] key in _connection_by_address when it differs from addr_url.href
      * @returns {RpcBaseConnection}
      */
-    _new_connection(addr_url) {
+    _new_connection(addr_url, pool_key) {
         dbg.log1('RPC _new_connection:', addr_url);
         let conn;
         switch (addr_url.protocol) {
@@ -561,6 +591,7 @@ class RPC extends EventEmitter {
             }
         }
 
+        if (pool_key && pool_key !== addr_url.href) conn._pool_key = pool_key;
         this._accept_new_connection(conn);
         return conn;
     }
@@ -592,8 +623,8 @@ class RPC extends EventEmitter {
         if (!conn.transient) {
             // always replace previous connection in the address map,
             // assuming the new connection is preferred.
-            dbg.log3('RPC NEW CONNECTION', conn.connid, conn.url.href);
-            this._connection_by_address.set(conn.url.href, conn);
+            dbg.log3('RPC NEW CONNECTION', conn.connid, conn._pool_key || conn.url.href);
+            this._connection_by_address.set(conn._pool_key || conn.url.href, conn);
 
             // send pings to keepalive
             conn._ping_interval = setInterval(() => {
@@ -695,8 +726,9 @@ class RPC extends EventEmitter {
         dbg.log3('RPC _connection_closed:', conn.connid);
 
         // remove from connection pool
-        if (!conn.transient && this._connection_by_address.get(conn.url.href) === conn) {
-            this._connection_by_address.delete(conn.url.href);
+        const pool_key = conn._pool_key || conn.url.href;
+        if (!conn.transient && this._connection_by_address.get(pool_key) === conn) {
+            this._connection_by_address.delete(pool_key);
         }
 
         // reject pending requests
